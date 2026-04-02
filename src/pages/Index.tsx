@@ -343,7 +343,7 @@ const Index = () => {
       setPhase('error');
       return;
     }
-  }, []);
+  }, [track]);
 
   const _isManualPath = !linkedinUrl && !resumeFileRef.current;
 
