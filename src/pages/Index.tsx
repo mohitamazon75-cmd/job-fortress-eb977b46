@@ -189,7 +189,7 @@ const Index = () => {
         if (!isMountedRef.current) return;
         const row = data as ScanRow | null;
         if (row?.scan_status === 'complete' && row?.final_json_report) {
-          console.log('[AutoRecover] Scan completed in backend, recovering result');
+          console.debug('[AutoRecover] Scan completed in backend, recovering result');
           setScanReport(row.final_json_report as ScanReport);
           setMoneyShotSeen(false);
           setPhase('reveal');
