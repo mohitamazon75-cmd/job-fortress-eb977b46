@@ -4,7 +4,7 @@
 // Both KGPeerCard and AITimelineCard MUST use this.
 // ═══════════════════════════════════════════════════════════════
 
-import { type ScanReport, normalizeTools } from '@/lib/scan-engine';
+import { type ScanReport, type SkillThreatIntel, normalizeTools } from '@/lib/scan-engine';
 import { inferSeniorityTier } from '@/lib/seniority-utils';
 
 // Deterministic hash for stable fallback percentages
@@ -24,6 +24,8 @@ export interface ClassifiedSkill {
   weight?: number;
   estimatedMonths: number;
   actionTag: string;
+  /** Deep threat intelligence from Agent 2A — null for safe/unmatched skills */
+  threatIntel?: SkillThreatIntel | null;
 }
 
 function riskToMonths(risk: number): number {
@@ -48,6 +50,18 @@ function actionTag(risk: number): string {
   return '💪 Double down';
 }
 
+/** Build a lookup map from skill_threat_intel for O(1) matching */
+function buildThreatIntelMap(intel: SkillThreatIntel[] | null | undefined): Map<string, SkillThreatIntel> {
+  const map = new Map<string, SkillThreatIntel>();
+  if (!intel) return map;
+  for (const entry of intel) {
+    if (entry.skill) {
+      map.set(entry.skill.toLowerCase().trim(), entry);
+    }
+  }
+  return map;
+}
+
 /**
  * Returns the CANONICAL list of classified skills for a report.
  * Every UI component must use this — no independent classification.
@@ -60,6 +74,9 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
   const allSkills = [...((report as any).all_skills || [])].sort();
   const executionSkills = [...((report as any).execution_skills || report.execution_skills_dead || [])].sort();
   const di = report.determinism_index || 50;
+
+  // Build threat intel lookup from Agent 2A output
+  const threatIntelMap = buildThreatIntelMap(report.skill_threat_intel);
 
   // Build tool lookup
   const toolMap = new Map<string, string>();
@@ -77,21 +94,35 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
   const results: ClassifiedSkill[] = [];
   const seenSkills = new Set<string>();
 
+  /** Find threat intel for a skill name (fuzzy match) */
+  function findThreatIntel(skillName: string): SkillThreatIntel | null {
+    const key = skillName.toLowerCase().trim();
+    // Exact match
+    if (threatIntelMap.has(key)) return threatIntelMap.get(key)!;
+    // Substring match (e.g. "SEO Optimization" matches "SEO")
+    for (const [intelKey, intel] of threatIntelMap) {
+      if (key.includes(intelKey) || intelKey.includes(key)) return intel;
+    }
+    return null;
+  }
+
   // Priority 1: skill_adjustments (highest fidelity)
   for (const sa of skillAdjustments) {
     const key = sa.skill_name.toLowerCase();
     if (seenSkills.has(key)) continue;
     seenSkills.add(key);
     const isDead = deadSkills.some(d => d.toLowerCase() === key);
-    const toolName = toolMap.get(key) || (isDead ? (tools[0]?.tool_name || 'AI Tools') : null);
+    const intel = findThreatIntel(sa.skill_name);
+    const toolName = intel?.threat_tool || toolMap.get(key) || (isDead ? (tools[0]?.tool_name || 'AI Tools') : null);
     results.push({
       name: sa.skill_name,
-      risk: sa.automation_risk,
-      status: classifyStatus(sa.automation_risk),
+      risk: intel?.risk_pct ?? sa.automation_risk,
+      status: classifyStatus(intel?.risk_pct ?? sa.automation_risk),
       replacedBy: toolName,
       weight: sa.weight,
-      estimatedMonths: riskToMonths(sa.automation_risk),
-      actionTag: actionTag(sa.automation_risk),
+      estimatedMonths: riskToMonths(intel?.risk_pct ?? sa.automation_risk),
+      actionTag: actionTag(intel?.risk_pct ?? sa.automation_risk),
+      threatIntel: intel,
     });
   }
 
@@ -100,14 +131,16 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
     const key = ds.toLowerCase();
     if (seenSkills.has(key)) continue;
     seenSkills.add(key);
-    const baseRisk = 75 + (stableHash(ds) % 15);
+    const intel = findThreatIntel(ds);
+    const baseRisk = intel?.risk_pct ?? (75 + (stableHash(ds) % 15));
     results.push({
       name: ds,
       risk: baseRisk,
       status: classifyStatus(baseRisk),
-      replacedBy: toolMap.get(key) || tools[0]?.tool_name || 'AI Agents',
+      replacedBy: intel?.threat_tool || toolMap.get(key) || tools[0]?.tool_name || 'AI Agents',
       estimatedMonths: riskToMonths(baseRisk),
       actionTag: actionTag(baseRisk),
+      threatIntel: intel,
     });
   }
 
@@ -124,6 +157,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       replacedBy: null,
       estimatedMonths: riskToMonths(baseRisk),
       actionTag: '💪 Double down',
+      threatIntel: null,
     });
   }
 
@@ -135,14 +169,16 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       const key = skill.toLowerCase();
       if (seenSkills.has(key)) continue;
       seenSkills.add(key);
-      const baseRisk = isExecSkill(skill) ? Math.min(90, di + 10) : Math.max(10, Math.min(80, di));
+      const intel = findThreatIntel(skill);
+      const baseRisk = intel?.risk_pct ?? (isExecSkill(skill) ? Math.min(90, di + 10) : Math.max(10, Math.min(80, di)));
       results.push({
         name: skill,
         risk: baseRisk,
         status: classifyStatus(baseRisk),
-        replacedBy: baseRisk >= 40 ? (tools[0]?.tool_name || null) : null,
+        replacedBy: intel?.threat_tool || (baseRisk >= 40 ? (tools[0]?.tool_name || null) : null),
         estimatedMonths: riskToMonths(baseRisk),
         actionTag: actionTag(baseRisk),
+        threatIntel: intel,
       });
     }
   }
