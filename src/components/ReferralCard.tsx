@@ -54,7 +54,7 @@ export default function ReferralCard({ userId, existingGrantExpiry }: ReferralCa
           code = response.data.code;
         }
 
-        setReferralCode(code);
+        setReferralCode(code ?? null);
         setShareUrl(`https://jobbachao.com?ref=${code}`);
 
         // Fetch conversion count
