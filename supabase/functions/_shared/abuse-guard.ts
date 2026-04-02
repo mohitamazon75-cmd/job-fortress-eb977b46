@@ -8,7 +8,11 @@
  * Timing-safe comparison for secrets (service role keys, tokens).
  * Prevents timing oracle attacks by always performing HMAC comparison.
  */
-async function timingSafeEqual(a: string, b: string): Promise<boolean> {
+function toHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function timingSafeEqual(a: string, b: string): Promise<boolean> {
   const encoder = new TextEncoder();
   const aBytes = encoder.encode(a);
   const bBytes = encoder.encode(b);
@@ -23,7 +27,7 @@ async function timingSafeEqual(a: string, b: string): Promise<boolean> {
     crypto.subtle.sign("HMAC", key, aBytes),
     crypto.subtle.sign("HMAC", key, bBytes),
   ]);
-  return Buffer.from(sigA).toString("hex") === Buffer.from(sigB).toString("hex");
+  return toHex(sigA) === toHex(sigB);
 }
 
 const TRUSTED_ORIGINS = new Set([

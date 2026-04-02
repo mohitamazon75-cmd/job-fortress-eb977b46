@@ -437,6 +437,33 @@ export async function triggerProcessScan(
 ): Promise<{ accepted: boolean; reason?: 'rate_limited' | 'failed'; error?: string }> {
   const body: Record<string, unknown> = { scanId, forceRefresh };
   const scanClient = accessToken ? createScanClient(accessToken) : supabase;
+  const processScanUrl = `${SUPABASE_URL}/functions/v1/process-scan`;
+
+  const getProcessScanHeaders = async (): Promise<Record<string, string>> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session?.access_token || SUPABASE_KEY}`,
+    };
+
+    if (!session?.access_token && accessToken) {
+      headers['x-scan-access-token'] = accessToken;
+    }
+
+    return headers;
+  };
+
+  const readFunctionError = async (response: Response): Promise<string> => {
+    const contentType = response.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+      const payload = await response.json().catch(() => null) as { error?: string; message?: string } | null;
+      return payload?.error || payload?.message || `HTTP ${response.status}`;
+    }
+
+    const text = await response.text().catch(() => '');
+    return text || `HTTP ${response.status}`;
+  };
 
   const markScanError = async () => {
     try {
@@ -453,27 +480,28 @@ export async function triggerProcessScan(
     const INVOKE_WAIT_MS = 12_000;
 
     try {
-      const invokeResult = await Promise.race([
-        supabase.functions.invoke('process-scan', { body }).then((result) => ({ timedOut: false as const, result })).catch(err => {
-          console.error('[scan-engine]', err);
-          throw err;
-        }),
-        new Promise<{ timedOut: true }>((resolve) => setTimeout(() => resolve({ timedOut: true }), INVOKE_WAIT_MS)),
-      ]);
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), INVOKE_WAIT_MS);
 
-      if (invokeResult.timedOut) {
-        console.debug(`[Scan] process-scan invoke still running after ${INVOKE_WAIT_MS}ms; continuing with status polling`);
+      const response = await fetch(processScanUrl, {
+        method: 'POST',
+        headers: await getProcessScanHeaders(),
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      window.clearTimeout(timer);
+
+      if (response.ok) {
+        await response.text().catch(() => '');
         return { accepted: true };
       }
 
-      const { error } = (invokeResult as { timedOut: false; result: { error: any } }).result;
-      if (!error) return { accepted: true };
-
-      const status = (error as any)?.context?.status ?? (error as any)?.status ?? null;
-      const message = (error as any)?.message ?? String(error);
+      const status = response.status;
+      const message = await readFunctionError(response);
 
       if (status === 429 || /429|rate limit/i.test(message)) {
-        console.warn('process-scan invoke returned 429:', message);
+        console.warn('process-scan request returned 429:', message);
 
         const { data: current } = await scanClient
           .from('scans')
@@ -491,7 +519,7 @@ export async function triggerProcessScan(
       }
 
       if (status && status >= 400 && status < 500 && status !== 408) {
-        console.warn(`process-scan invoke non-retriable error (status ${status}):`, message);
+        console.warn(`process-scan request non-retriable error (status ${status}):`, message);
         await markScanError();
         return { accepted: false, reason: 'failed', error: message };
       }
@@ -504,15 +532,20 @@ export async function triggerProcessScan(
         .single();
 
       if ((current2 as any)?.scan_status === 'processing' || (current2 as any)?.scan_status === 'running') {
-        console.warn('[Scan] process-scan invoke returned transient error; scan is still active, continuing polling');
+        console.warn('[Scan] process-scan request returned transient error; scan is still active, continuing polling');
         return { accepted: true };
       }
 
       await markScanError();
       return { accepted: false, reason: 'failed' };
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.debug(`[Scan] process-scan request still running after ${INVOKE_WAIT_MS}ms; continuing with status polling`);
+        return { accepted: true };
+      }
+
       const errMessage = err instanceof Error ? err.message : String(err);
-      console.warn('process-scan invoke exception:', err);
+      console.warn('process-scan request exception:', err);
 
       const { data: current3 } = await scanClient
         .from('scans')
@@ -521,7 +554,7 @@ export async function triggerProcessScan(
         .single();
 
       if ((current3 as any)?.scan_status === 'processing' || (current3 as any)?.scan_status === 'running') {
-        console.warn('[Scan] process-scan invoke exception but scan is active; continuing polling');
+        console.warn('[Scan] process-scan request exception but scan is active; continuing polling');
         return { accepted: true };
       }
 

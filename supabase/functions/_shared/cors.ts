@@ -25,7 +25,7 @@ function isAllowedOrigin(origin: string): boolean {
 
 const CORS_HEADERS_BASE = {
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-supabase-api-version, x-requested-with, accept, origin",
+    "authorization, x-client-info, apikey, content-type, x-scan-access-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-supabase-api-version, x-requested-with, accept, origin",
   "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 };
 

@@ -9,7 +9,7 @@ import {
 } from "../_shared/deterministic-engine.ts";
 import { getLocale } from "../_shared/locale-config.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
-import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
+import { guardRequest, timingSafeEqual, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { logEdgeError, trackUsage } from "../_shared/edge-logger.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
@@ -147,9 +147,6 @@ Deno.serve(async (req) => {
     const blocked = guardRequest(req, corsHeaders);
     if (blocked) return blocked;
 
-    const { userId: jwtUserId, blocked: jwtBlocked } = await validateJwtClaims(req, corsHeaders);
-    if (jwtBlocked) return jwtBlocked;
-
     const { scanId, forceRefresh } = await req.json();
     if (!scanId) {
       return new Response(JSON.stringify({ error: "scanId is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -161,6 +158,23 @@ Deno.serve(async (req) => {
     const { data: scan, error: scanErr } = await supabase.from("scans").select("*").eq("id", scanId).single();
     if (scanErr || !scan) {
       return new Response(JSON.stringify({ error: "Scan not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const scanAccessToken = req.headers.get("x-scan-access-token")?.trim() || null;
+    const hasValidScanAccess = !!scanAccessToken && !!scan.access_token && await timingSafeEqual(scanAccessToken, scan.access_token);
+
+    let jwtUserId: string | null = null;
+    if (!hasValidScanAccess) {
+      const { userId, blocked: jwtBlocked } = await validateJwtClaims(req, corsHeaders);
+      if (jwtBlocked) return jwtBlocked;
+      jwtUserId = userId;
+
+      if (scan.user_id && jwtUserId && scan.user_id !== jwtUserId) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // ── Immediately claim the scan to prevent duplicate processing ──
