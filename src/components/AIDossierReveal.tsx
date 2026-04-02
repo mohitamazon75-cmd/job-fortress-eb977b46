@@ -399,6 +399,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           moatSkillCount={moatSkills.length}
           talentDensity={marketModel?.talent_density ?? 'moderate'}
           seniorityTier={report.seniority_tier ?? 'PROFESSIONAL'}
+          defaultOpen={true}
         />
       </motion.div>
 

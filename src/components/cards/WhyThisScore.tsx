@@ -143,13 +143,16 @@ export default function WhyThisScore({
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between px-4 py-3 bg-muted/50 rounded-2xl hover:bg-muted/70 transition-colors"
       >
-        <span className="text-sm font-semibold text-foreground">Why is your score {score}?</span>
-        <motion.div
-          animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-        </motion.div>
+        <span className="text-sm font-semibold text-foreground">🔍 Why is your score {score}?</span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-xs text-primary font-semibold">{isExpanded ? '▲ hide' : '▼ see the 5 factors'}</span>
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          </motion.div>
+        </span>
       </button>
 
       {/* Expanded Content */}
