@@ -115,11 +115,11 @@ export default function IntelTab({ props }: { props: DashboardSharedProps }) {
 
     try {
       const { error: err } = await supabase
-        .from('intel_watchlist')
+        .from('intel_watchlist' as any)
         .insert({
           user_id: userId,
-          signal_json: signal,
-        });
+          signal_json: signal as any,
+        } as any);
 
       if (err) throw err;
 
