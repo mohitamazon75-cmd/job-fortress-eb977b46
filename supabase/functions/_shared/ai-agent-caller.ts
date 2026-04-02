@@ -93,10 +93,7 @@ async function callAgentCore(
     if (!resp.ok) {
       const errText = await resp.text();
       console.error(`[${agentName}] AI error [${resp.status}] on ${model}:`, errText.slice(0, 300));
-      if (model === PRO_MODEL) {
-        console.log(`[${agentName}] Falling back to ${FALLBACK_MODEL}...`);
-        return callAgentCore(apiKey, agentName, systemPrompt, userPrompt, FALLBACK_MODEL, temperature, timeoutMs);
-      }
+      // No internal fallback — model-fallback.ts handles the chain externally
       return null;
     }
 
