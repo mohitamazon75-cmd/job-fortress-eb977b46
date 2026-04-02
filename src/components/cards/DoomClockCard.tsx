@@ -90,62 +90,129 @@ function ProximityGauge({ value }: { value: number }) {
   );
 }
 
-// ── Skill Threat Row ────────────────────────────────────────────────────────
+// ── Skill Threat Row — enriched with threat intel ────────────────────────────
 function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: number }) {
+  const [expanded, setExpanded] = useState(false);
   const ml = monthsLabel(skill.estimatedMonths);
   const uc = urgencyConfig(ml.urgency);
+  const intel = skill.threatIntel;
+  const hasIntel = !!intel;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 + index * 0.1 }}
-      className={`rounded-xl border ${uc.border} ${uc.bg} p-4 space-y-3`}
+      className={`rounded-xl border ${uc.border} ${uc.bg} overflow-hidden`}
     >
-      {/* Skill name + timeline */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${uc.dot} flex-shrink-0`} />
-            <p className="text-sm font-bold text-foreground leading-tight break-words">{skill.name}</p>
+      {/* Header row */}
+      <button
+        type="button"
+        onClick={() => hasIntel && setExpanded(!expanded)}
+        className={`w-full p-4 text-left ${hasIntel ? 'cursor-pointer' : 'cursor-default'}`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${uc.dot} flex-shrink-0`} />
+              <p className="text-sm font-bold text-foreground leading-tight break-words">{skill.name}</p>
+            </div>
+            {skill.replacedBy && (
+              <p className="text-[11px] text-muted-foreground mt-1 ml-4">
+                <span className="font-semibold text-foreground/70">Threatened by:</span> {sanitize(skill.replacedBy, 50)}
+              </p>
+            )}
           </div>
-          {skill.replacedBy && (
-            <p className="text-[11px] text-muted-foreground mt-1 ml-4">
-              <span className="font-semibold text-foreground/70">Replaced by:</span> {sanitize(skill.replacedBy, 50)}
-            </p>
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="text-right">
+              <p className={`text-sm font-black ${uc.text}`}>{ml.text}</p>
+              <p className="text-[10px] text-muted-foreground">est. window</p>
+            </div>
+            {hasIntel && (
+              expanded
+                ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                : <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
         </div>
-        <div className="flex-shrink-0 text-right">
-          <p className={`text-sm font-black ${uc.text}`}>{ml.text}</p>
-          <p className="text-[10px] text-muted-foreground">est. window</p>
-        </div>
-      </div>
 
-      {/* Risk bar */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">AI automation risk</span>
-          <span className={`text-xs font-black ${uc.text}`}>{skill.risk}%</span>
+        {/* Risk bar */}
+        <div className="space-y-1 mt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">AI automation risk</span>
+            <span className={`text-xs font-black ${uc.text}`}>{skill.risk}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${skill.risk}%` }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 + index * 0.1 }}
+              className={`h-full rounded-full ${
+                skill.risk >= 75 ? 'bg-destructive' :
+                skill.risk >= 50 ? 'bg-prophet-gold' :
+                'bg-prophet-green'
+              }`}
+            />
+          </div>
         </div>
-        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+      </button>
+
+      {/* Expanded threat intel panel */}
+      <AnimatePresence>
+        {expanded && intel && (
           <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${skill.risk}%` }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 + index * 0.1 }}
-            className={`h-full rounded-full ${
-              skill.risk >= 75 ? 'bg-destructive' :
-              skill.risk >= 50 ? 'bg-prophet-gold' :
-              'bg-prophet-green'
-            }`}
-          />
-        </div>
-      </div>
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 space-y-3 border-t border-border/30 pt-3">
+              {/* What AI does */}
+              <div className="flex items-start gap-2.5">
+                <div className="w-6 h-6 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Bot className="w-3.5 h-3.5 text-destructive" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-destructive/80 mb-0.5">What AI does today</p>
+                  <p className="text-xs text-foreground/90 leading-relaxed">{intel.what_ai_does}</p>
+                </div>
+              </div>
 
-      {/* Action tag */}
-      <div className="flex items-center gap-2 pt-1">
-        <ArrowRight className="w-3 h-3 text-primary flex-shrink-0" />
-        <p className="text-[11px] font-semibold text-primary">{skill.actionTag}</p>
-      </div>
+              {/* What human still owns */}
+              <div className="flex items-start gap-2.5">
+                <div className="w-6 h-6 rounded-lg bg-prophet-green/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Brain className="w-3.5 h-3.5 text-prophet-green" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-prophet-green/80 mb-0.5">Your human edge</p>
+                  <p className="text-xs text-foreground/90 leading-relaxed">{intel.what_human_still_owns}</p>
+                </div>
+              </div>
+
+              {/* Industry proof */}
+              <div className="flex items-start gap-2.5">
+                <div className="w-6 h-6 rounded-lg bg-prophet-gold/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Building2 className="w-3.5 h-3.5 text-prophet-gold" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-prophet-gold/80 mb-0.5">Industry evidence</p>
+                  <p className="text-xs text-foreground/90 leading-relaxed italic">{intel.industry_proof}</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Action tag - always visible */}
+      {!expanded && (
+        <div className="flex items-center gap-2 px-4 pb-3">
+          <ArrowRight className="w-3 h-3 text-primary flex-shrink-0" />
+          <p className="text-[11px] font-semibold text-primary">{skill.actionTag}</p>
+          {hasIntel && <span className="text-[9px] text-muted-foreground ml-auto">tap for details</span>}
+        </div>
+      )}
     </motion.div>
   );
 }
