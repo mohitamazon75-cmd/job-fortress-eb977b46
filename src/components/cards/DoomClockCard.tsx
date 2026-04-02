@@ -428,9 +428,14 @@ export default function DoomClockCard({ report, scanId }: Props) {
 
       {/* ── Skill Threat Cards ── */}
       <div className="space-y-3">
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
-          Skills closest to AI disruption
-        </p>
+        <div className="flex items-center justify-between px-1">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            Skills closest to AI disruption
+          </p>
+          {topSkills.some(s => s.threatIntel) && (
+            <p className="text-[9px] text-primary font-semibold">Tap each for deep analysis ↓</p>
+          )}
+        </div>
         {topSkills.map((skill, i) => (
           <SkillThreatRow key={`${skill.name}-${i}`} skill={skill} index={i} />
         ))}
