@@ -141,6 +141,7 @@ function isTrustedLinkedinResult(urlInput: string, titleInput: string, contentIn
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
   const corsHeaders = getCorsHeaders(req);
+  let globalTimer: ReturnType<typeof setTimeout> | undefined;
 
   try {
     const blocked = guardRequest(req, corsHeaders);
