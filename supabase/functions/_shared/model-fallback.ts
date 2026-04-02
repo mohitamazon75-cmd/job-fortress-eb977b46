@@ -60,7 +60,7 @@ export async function callAgentWithFallback(
       systemPrompt, userPrompt,
       model, temperature,
       // Reduce timeout for fallback attempts
-      chain.length === 1 ? timeoutMs : Math.min(timeoutMs, 25_000),
+      chain.length === 1 ? timeoutMs : Math.min(timeoutMs, 15_000),
     );
     if (result !== null) {
       if (chain.length > 1) {
