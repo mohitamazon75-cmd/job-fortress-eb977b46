@@ -147,10 +147,10 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
   const FREE_CORE_CARDS: Array<{ id: string; title: string; subtitle: string; Icon: LucideIcon; iconColor: string }> = [
     // 1. VIRAL HOOK — doom clock (fear + specificity). Computed, no API cost.
     { id: 'doom-clock', title: 'Your Skill Doom Clock', subtitle: 'Which of your skills AI will replace first — and when', Icon: Clock, iconColor: 'text-destructive' },
-    // 2. SHARE — score card. Computed + shareable = viral loop, no API cost.
-    { id: 'score-card', title: 'Your Career Score Card', subtitle: 'Generate & share your AI-readiness score with your network', Icon: Trophy, iconColor: 'text-prophet-gold' },
-    // 3. GATE — blurred preview of Pro features. Static, no API cost.
+    // 2. GATE — emotional paywall at peak fear moment for max conversion.
     { id: 'conversion-gate', title: 'Unlock Your Career Defense Package', subtitle: 'Your personalized plan is ready — see what Pro unlocks', Icon: Shield, iconColor: 'text-primary' },
+    // 3. SHARE — score card after gate so users who didn't convert still share.
+    { id: 'score-card', title: 'Your Career Score Card', subtitle: 'Generate & share your AI-readiness score with your network', Icon: Trophy, iconColor: 'text-prophet-gold' },
   ];
 
   const PRO_CORE_CARDS: Array<{ id: string; title: string; subtitle: string; Icon: LucideIcon; iconColor: string }> = [

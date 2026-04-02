@@ -9,6 +9,7 @@ interface WhyThisScoreProps {
   moatSkillCount: number;
   talentDensity: string;
   seniorityTier: string;
+  defaultOpen?: boolean;
 }
 
 interface FactorBar {
@@ -24,8 +25,9 @@ export default function WhyThisScore({
   moatSkillCount,
   talentDensity,
   seniorityTier,
+  defaultOpen = false,
 }: WhyThisScoreProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(defaultOpen);
 
   // Compute automation overlap factor
   const automationFactor: FactorBar = {
