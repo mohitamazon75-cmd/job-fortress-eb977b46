@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 import { useRequestMutex } from "@/hooks/use-request-mutex";
 import RiskIQLanding from "@/components/riskiq/RiskIQLanding";
 import RiskIQFormScreen from "@/components/riskiq/RiskIQForm";
