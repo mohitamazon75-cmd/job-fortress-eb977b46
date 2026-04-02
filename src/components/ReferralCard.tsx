@@ -42,7 +42,7 @@ export default function ReferralCard({ userId, existingGrantExpiry }: ReferralCa
           throw fetchErr;
         }
 
-        let code = existingReferral?.referral_code;
+        let code = (existingReferral as any)?.referral_code;
 
         // If no code exists, create one
         if (!code) {

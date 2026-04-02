@@ -99,9 +99,9 @@ export default function AdminDashboard() {
         }
 
         const { data: profile, error: profileErr } = await supabase
-          .from('profiles')
+          .from('user_roles' as any)
           .select('role')
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .single();
 
         if (profileErr || !profile) {
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
           return;
         }
 
-        if (profile.role !== 'admin') {
+        if ((profile as any).role !== 'admin') {
           navigate('/');
           return;
         }

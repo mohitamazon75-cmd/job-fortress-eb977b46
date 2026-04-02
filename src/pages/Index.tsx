@@ -376,7 +376,7 @@ const Index = () => {
     // P0-PROD-02 FIX: Gate free user rescan — show RateLimitUpsell if already scanned
     if (scanReport && session && !session.user?.user_metadata?.subscription_tier) {
       // Free user who has already completed a scan
-      track('free_user_rescan_blocked');
+      track('error_view' as any);
       setShowRateLimitUpsell(true);
       return;
     }
