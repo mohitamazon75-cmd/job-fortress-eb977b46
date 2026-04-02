@@ -340,7 +340,7 @@ export async function createScan(params: {
         } catch {}
       }
 
-      console.log('[Scan] Created via edge function:', scanId);
+      console.debug('[Scan] Created via edge function:', scanId);
       const triggered = !!(fnData.triggered);
       return { id: scanId, accessToken, triggered };
     }
@@ -366,7 +366,7 @@ export async function createScan(params: {
 
     const existing = existingScans as { id: string; access_token: string; created_at: string }[] | null;
     if (existing?.[0]) {
-      console.log('[Scan] Reusing recent processing scan:', existing[0].id);
+      console.debug('[Scan] Reusing recent processing scan:', existing[0].id);
       return { id: existing[0].id, accessToken: existing[0].access_token };
     }
   }
@@ -452,7 +452,7 @@ export async function triggerProcessScan(
       ]);
 
       if (invokeResult.timedOut) {
-        console.log(`[Scan] process-scan invoke still running after ${INVOKE_WAIT_MS}ms; continuing with status polling`);
+        console.debug(`[Scan] process-scan invoke still running after ${INVOKE_WAIT_MS}ms; continuing with status polling`);
         return { accepted: true };
       }
 
@@ -569,7 +569,7 @@ export function subscribeScanStatus(
         .single();
       const row = data as Record<string, unknown> | null;
       if (row?.scan_status === 'complete' && row?.final_json_report) {
-        console.log('[Scan] Immediate check found completed scan');
+        console.debug('[Scan] Immediate check found completed scan');
         const parsed = parseScanReport(row.final_json_report);
         if (parsed) {
           resolve(parsed);
@@ -608,7 +608,7 @@ export function subscribeScanStatus(
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         realtimeConnected = true;
-        console.log('[Scan] Realtime connected');
+        console.debug('[Scan] Realtime connected');
         // Re-check immediately after realtime connects to catch updates during connection
         immediateCheck();
       }

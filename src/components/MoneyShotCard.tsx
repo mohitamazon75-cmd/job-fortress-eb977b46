@@ -83,8 +83,8 @@ function Counter({ target, duration = 1500, prefix = '', suffix = '', className,
 
 export default function MoneyShotCard({ report, onContinue, scanId }: MoneyShotCardProps) {
   useEffect(() => {
-    console.log('[MoneyShotCard] MOUNTED');
-    return () => console.log('[MoneyShotCard] UNMOUNTED');
+    console.debug('[MoneyShotCard] MOUNTED');
+    return () => console.debug('[MoneyShotCard] UNMOUNTED');
   }, []);
 
   const [phase, setPhase] = useState<'invoice' | 'multiplier' | 'ready'>('invoice');

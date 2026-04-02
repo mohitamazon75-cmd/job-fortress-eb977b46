@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, memo, lazy, Suspense } from 'react';
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import HeroSection from '@/components/HeroSection';
 import SocialProofSection from '@/components/SocialProofSection';
 import InputMethodStep from '@/components/InputMethodStep';
@@ -103,13 +103,13 @@ const Index = () => {
   const [industry, setIndustry] = useState('');
   const [yearsExperience, setYearsExperience] = useState('');
   const [metroTier, setMetroTier] = useState('');
-  const [keySkills, setKeySkills] = useState('');
+  const [_keySkills, setKeySkills] = useState('');
   const [scanId, setScanId] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [scanReport, setScanReport] = useState<ScanReport | null>(null);
   const [moneyShotSeen, setMoneyShotSeen] = useState(false);
   const [showReAuth, setShowReAuth] = useState(false);
-  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [_showGoalModal, _setShowGoalModal] = useState(false);
   const [showPostRevealGoalModal, setShowPostRevealGoalModal] = useState(false);
   const [scanGoals, setScanGoals] = useState<ScanGoals | null>(null);
   const [errorScanStatus, setErrorScanStatus] = useState<string | null>(null);
@@ -189,7 +189,7 @@ const Index = () => {
         if (!isMountedRef.current) return;
         const row = data as ScanRow | null;
         if (row?.scan_status === 'complete' && row?.final_json_report) {
-          console.log('[AutoRecover] Scan completed in backend, recovering result');
+          console.debug('[AutoRecover] Scan completed in backend, recovering result');
           setScanReport(row.final_json_report as ScanReport);
           setMoneyShotSeen(false);
           setPhase('reveal');
@@ -205,7 +205,7 @@ const Index = () => {
   // Scroll to top on phase change + track phase
   useEffect(() => {
     window.scrollTo(0, 0);
-    console.log('[Phase]', phase, { scanReport: !!scanReport, moneyShotSeen });
+    console.debug('[Phase]', phase, { scanReport: !!scanReport, moneyShotSeen });
     if (phase === 'hero') track('landing_view');
     else if (phase === 'processing') track('scan_start');
     else if (phase === 'reveal') track('score_view');
@@ -344,11 +344,11 @@ const Index = () => {
         return;
       }
     } else {
-      console.log('[Scan] process-scan already triggered server-side, skipping frontend invoke');
+      console.debug('[Scan] process-scan already triggered server-side, skipping frontend invoke');
     }
   }, []);
 
-  const isManualPath = !linkedinUrl && !resumeFileRef.current;
+  const _isManualPath = !linkedinUrl && !resumeFileRef.current;
 
   const handleSelectMetro = async (v: string) => {
     setMetroTier(v);
