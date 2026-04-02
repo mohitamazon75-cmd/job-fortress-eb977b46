@@ -61,11 +61,11 @@ export default function IntelTab({ props }: { props: DashboardSharedProps }) {
 
       const response = await supabase.functions.invoke('role-intel', {
         body: {
-          role: report.role || report.detected_role,
+          role: report.role || (report as any).detected_role,
           industry: report.industry,
-          company: report.company_name,
+          company: (report as any).company_name,
           skills: report.moat_skills || [],
-          city: report.city || report.location,
+          city: (report as any).city || (report as any).location,
           score: report.determinism_index,
         },
       });
