@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Sword, Scale, Zap, ExternalLink, Play, AlertTriangle, TrendingUp, TrendingDown, Minus, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { type ScanReport } from '@/lib/scan-engine';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 import DOMPurify from 'dompurify';
 
 // Sanitize config: only allow bold/italic formatting tags, no attributes that run JS
