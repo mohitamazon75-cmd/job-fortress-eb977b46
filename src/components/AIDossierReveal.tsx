@@ -636,8 +636,7 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
 
   // Start dossier streaming immediately (with hard timeout so UI can never hang)
   const startStreaming = useCallback(async () => {
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!baseUrl) throw new Error('VITE_SUPABASE_URL is not configured');
+    const baseUrl = SUPABASE_URL_CONFIG;
     const CHAT_URL = `${baseUrl}/functions/v1/ai-dossier`;
     const STREAM_TIMEOUT_MS = 25000;
     const controller = new AbortController();
