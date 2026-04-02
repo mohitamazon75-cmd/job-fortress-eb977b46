@@ -287,7 +287,7 @@ const Index = () => {
     }
   };
   
-  const startScanPipeline = useCallback(async (id: string, token: string, forceRefresh = false, alreadyTriggered = false) => {
+  const startScanPipeline = useCallback(async (id: string, token: string, forceRefresh = false) => {
     cleanupRef.current?.();
     const cleanup = subscribeScanStatus(
       id,
@@ -335,18 +335,15 @@ const Index = () => {
       }
     }
 
-    // Trigger scan AFTER resume upload; skip if already triggered server-side by create-scan
-    if (!alreadyTriggered) {
-      const trigger = await triggerProcessScan(id, forceRefresh, token);
-      if (!trigger.accepted) {
-        console.warn('Scan trigger rejected:', trigger.reason);
-        setPhase('error');
-        return;
-      }
-    } else {
-      console.debug('[Scan] process-scan already triggered server-side, skipping frontend invoke');
+    // Always trigger from the client as the reliable source of truth.
+    // The create-scan server-side trigger is only a best-effort backup.
+    const trigger = await triggerProcessScan(id, forceRefresh, token);
+    if (!trigger.accepted) {
+      console.warn('Scan trigger rejected:', trigger.reason, trigger.error);
+      setPhase('error');
+      return;
     }
-  }, []);
+  }, [track]);
 
   const _isManualPath = !linkedinUrl && !resumeFileRef.current;
 
@@ -382,7 +379,7 @@ const Index = () => {
     const result = await withMutex('launchScan', async () => {
       setPhase('processing');
       try {
-        const { id, accessToken: token, triggered } = await createScan({
+        const { id, accessToken: token } = await createScan({
           linkedinUrl: linkedinUrl || undefined,
           resumeFilePath: resumeFileRef.current ? 'pending-upload' : undefined,
           country: country || 'IN',
@@ -398,7 +395,7 @@ const Index = () => {
         }
         setScanId(id);
         setAccessToken(token);
-        await startScanPipeline(id, token, true, triggered);
+        await startScanPipeline(id, token, true);
       } catch (err) {
         console.error('Scan creation failed:', err);
         setPhase('error');
