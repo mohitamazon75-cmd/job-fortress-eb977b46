@@ -1098,9 +1098,9 @@ ${kgContext}`;
 
     // Agents 2A+2B+2C promise — with model fallback chain
     const agents2Promise = Promise.allSettled([
-      callAgentWithFallback(LOVABLE_API_KEY, "Agent2A:Risk", AGENT_2A_RISK_ANALYSIS, `Generate risk analysis for:\n${sharedProfileContext}\n\nUse "${displayName}" by name. Reference "${displayCompany}".`, activeModel, 0.3, 35_000).then(r => r.data),
-      callAgentWithFallback(LOVABLE_API_KEY, "Agent2B:Plan", AGENT_2B_ACTION_PLAN, `Generate tier-calibrated action plan for:\n${sharedProfileContext}\nTier: ${seniorityTier}\nCountry: ${locale.label}\nCurrency: ${locale.currency}\nGeo Arbitrage Delta: ${locale.currencySymbol}${geoArb?.probability_adjusted_delta_inr || 0}/month\nJob Boards: ${locale.jobBoards.join(", ")}${rescanContext ? `\n${rescanContext}` : ''}`, activeModel, 0.35, 35_000).then(r => r.data),
-      callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", AGENT_2C_PIVOT_MAPPING, `Map career pivots for:\n${sharedProfileContext}\nMoat Score: ${det.moat_score}/100. Pivots must be realistic for ${seniorityTier} tier.\nCountry: ${locale.label}. Use job titles from ${locale.jobBoards.join("/")}.`, FAST_MODEL, 0.3, 35_000).then(r => r.data),
+      callAgentWithFallback(LOVABLE_API_KEY, "Agent2A:Risk", AGENT_2A_RISK_ANALYSIS, `Generate risk analysis for:\n${sharedProfileContext}\n\nUse "${displayName}" by name. Reference "${displayCompany}".`, activeModel, 0.3, 25_000).then(r => r.data),
+      callAgentWithFallback(LOVABLE_API_KEY, "Agent2B:Plan", AGENT_2B_ACTION_PLAN, `Generate tier-calibrated action plan for:\n${sharedProfileContext}\nTier: ${seniorityTier}\nCountry: ${locale.label}\nCurrency: ${locale.currency}\nGeo Arbitrage Delta: ${locale.currencySymbol}${geoArb?.probability_adjusted_delta_inr || 0}/month\nJob Boards: ${locale.jobBoards.join(", ")}${rescanContext ? `\n${rescanContext}` : ''}`, activeModel, 0.35, 25_000).then(r => r.data),
+      callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", AGENT_2C_PIVOT_MAPPING, `Map career pivots for:\n${sharedProfileContext}\nMoat Score: ${det.moat_score}/100. Pivots must be realistic for ${seniorityTier} tier.\nCountry: ${locale.label}. Use job titles from ${locale.jobBoards.join("/")}.`, FAST_MODEL, 0.3, 25_000).then(r => r.data),
     ]);
 
     // ── Await all in parallel with defensive timeout ──
