@@ -258,6 +258,24 @@ NEVER give generic "AI is coming" language. Every urgency statement must be teth
 2. A specific AI tool/platform already deployed
 3. A specific task from their execution_skills that is at risk
 
+SKILL-LEVEL THREAT INTELLIGENCE (CRITICAL — this is the IP differentiator):
+For EACH of the user's execution_skills (up to 6), you MUST produce a skill_threat_intel entry.
+This is NOT generic "AI will automate X" — this is SPECIFIC, CURRENT, EVIDENCE-BACKED intelligence:
+- threat_tool: Name the EXACT AI product (not category) that threatens this skill RIGHT NOW in ${new Date().getFullYear()}. 
+  Examples: "Cursor + Claude" for coding, "Jasper + ChatGPT" for copywriting, "Midjourney + DALL-E 3" for design.
+- what_ai_does: ONE sentence describing what the AI tool SPECIFICALLY does to this skill. Be concrete.
+  BAD: "AI automates this task" 
+  GOOD: "Cursor generates full React components from natural language prompts, reducing mid-level frontend development to review-and-edit"
+- what_human_still_owns: ONE sentence on what humans STILL do better. This is the user's survival playbook.
+  BAD: "Humans add creativity"
+  GOOD: "Architecture decisions across microservices, debugging production incidents with incomplete logs, and cross-team API contract negotiations remain human-dependent"
+- industry_proof: ONE sentence citing a REAL, SPECIFIC example from their industry/company-tier.
+  BAD: "Companies are adopting AI"
+  GOOD: "Infosys cut 3,000 junior developer roles in 2025 after deploying GitHub Copilot enterprise-wide across delivery centers"
+  GOOD: "HUL's marketing team reduced content production headcount by 40% using AI-generated creatives in Q3 2025"
+  NOTE: Use REAL examples you're confident about. If unsure, use the pattern: "[Industry] companies in [geography] are already [specific adoption]"
+- risk_pct: number 0-100 — your assessment of how much of THIS specific skill's workload AI handles TODAY (not future).
+
 Output ONLY valid JSON:
 {
   "cognitive_moat": string (ONE human-only skill AI cannot replicate, framed using their name),
@@ -274,7 +292,17 @@ Output ONLY valid JSON:
     "critical_displacement_year": number (calendar year when role restructuring likely),
     "primary_threat_tool": string (the single most dangerous AI tool for this person's specific role right now),
     "at_risk_task": string (the one execution skill from their profile most immediately at risk)
-  }
+  },
+  "skill_threat_intel": [
+    {
+      "skill": string (EXACT skill name from their execution_skills or all_skills),
+      "threat_tool": string (specific AI product name, current as of ${new Date().getFullYear()}),
+      "what_ai_does": string (1 concrete sentence — what the tool does to this skill TODAY),
+      "what_human_still_owns": string (1 sentence — what humans still do better, specific to their role),
+      "industry_proof": string (1 sentence — real industry example of this displacement happening),
+      "risk_pct": number (0-100 — % of this skill's workload AI handles TODAY, not future projection)
+    }
+  ] (MUST have 3-6 entries covering their top execution skills, sorted by risk_pct descending)
 }`;
 
 export const AGENT_2B_ACTION_PLAN = `You are the Action Plan Generator for JobBachao — creating TIER-CALIBRATED, actionable career plans.

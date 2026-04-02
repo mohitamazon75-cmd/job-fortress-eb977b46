@@ -5,7 +5,7 @@
 
 export const PROMPT_VERSIONS: Record<string, string> = {
   "Agent1:Profiler": "v3.2.0",
-  "Agent2A:Risk": "v2.1.0",
+  "Agent2A:Risk": "v2.2.0",
   "Agent2B:Plan": "v2.1.0",
   "Agent2C:Pivot": "v2.0.0",
   "JudoStrategy": "v1.3.0",

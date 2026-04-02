@@ -298,6 +298,7 @@ export function assembleReport(input: ReportAssemblyInput): any {
     immediate_next_step: validatedAgent2?.immediate_next_step || null,
     skill_gap_map: validatedAgent2?.skill_gap_map || [],
     cultural_risk_assessment: validatedAgent2?.cultural_risk_assessment || null,
+    skill_threat_intel: validatedAgent2?.skill_threat_intel || null,
     pivot_rationale: validatedAgent2?.pivot_rationale || null,
     geo_arbitrage: geoArb, tier2_alternative: tier2,
     moat_score: det.moat_score, urgency_score: det.urgency_score,

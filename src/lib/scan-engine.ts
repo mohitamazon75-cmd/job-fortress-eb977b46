@@ -279,6 +279,16 @@ export interface ScanReport {
   current_role?: string | null;
   defense_plan?: string | null;
   user_is_pro?: boolean;
+  skill_threat_intel?: SkillThreatIntel[] | null;
+}
+
+export interface SkillThreatIntel {
+  skill: string;
+  threat_tool: string;
+  what_ai_does: string;
+  what_human_still_owns: string;
+  industry_proof: string;
+  risk_pct: number;
 }
 
 // Helper to normalize tools (can be string or object)
