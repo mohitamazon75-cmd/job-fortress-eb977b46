@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 import { useRequestMutex } from "@/hooks/use-request-mutex";
 import RiskIQLanding from "@/components/riskiq/RiskIQLanding";
 import RiskIQFormScreen from "@/components/riskiq/RiskIQForm";
@@ -39,15 +40,13 @@ export default function AdvancedBeta() {
     dossierAbortRef.current = new AbortController();
 
     try {
-      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!baseUrl) throw new Error('VITE_SUPABASE_URL is not configured');
       const response = await fetch(
-        `${baseUrl}/functions/v1/ai-dossier`,
+        `${SUPABASE_URL}/functions/v1/ai-dossier`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ report: reportData }),
           signal: dossierAbortRef.current.signal,

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, TrendingUp, Shield, Clock, DollarSign, Loader2, ChevronDown, ChevronUp, Zap, Target, Sparkles, X, Lock, Check, Rocket, BarChart3 } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 import type { PivotEngineOutput, PivotRecommendation, SkillGap } from '@/types/pivot-engine.types';
 import { useSubscription } from '@/hooks/use-subscription';
 import ProUpgradeModal from '@/components/ProUpgradeModal';
@@ -220,14 +221,12 @@ export default function CareerPivotCard({ report }: { report: ScanReport }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Please sign in to analyze career pivots.');
 
-      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!baseUrl) throw new Error('VITE_SUPABASE_URL is not configured');
-      const resp = await fetch(`${baseUrl}/functions/v1/run-pivot-analysis`, {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/run-pivot-analysis`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           role: report.role,

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Briefcase, ChevronDown, ExternalLink, Loader2, RefreshCw, Shield, TrendingUp } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 
 export interface RealJobListing {
   title: string;
@@ -42,15 +43,13 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
         setError('auth_required');
         return;
       }
-      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!baseUrl) throw new Error('VITE_SUPABASE_URL is not configured');
-      const resp = await fetch(`${baseUrl}/functions/v1/best-fit-jobs`, {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/best-fit-jobs`, {
         method: 'POST',
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           role: report.role,

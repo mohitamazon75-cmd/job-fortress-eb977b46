@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ScanReport, normalizeTools } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPABASE_URL as SUPABASE_URL_CONFIG, SUPABASE_PUBLISHABLE_KEY as SUPABASE_KEY_CONFIG } from '@/lib/supabase-config';
 import { ArrowRight, Sparkles, Zap, Shield, Brain, TrendingUp, TrendingDown, Minus, Swords, Target, Search, Database, BarChart3, Globe, Lock, Bot, Loader2, ChevronDown } from 'lucide-react';
 import { computeStabilityScore, computeScoreBreakdown } from '@/lib/stability-score';
 import { getVerbatimRole, deflateRoleInText } from '@/lib/role-guard';
@@ -636,8 +637,7 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
 
   // Start dossier streaming immediately (with hard timeout so UI can never hang)
   const startStreaming = useCallback(async () => {
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!baseUrl) throw new Error('VITE_SUPABASE_URL is not configured');
+    const baseUrl = SUPABASE_URL_CONFIG;
     const CHAT_URL = `${baseUrl}/functions/v1/ai-dossier`;
     const STREAM_TIMEOUT_MS = 25000;
     const controller = new AbortController();
@@ -646,14 +646,14 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const authToken = session?.access_token || SUPABASE_KEY_CONFIG;
 
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: SUPABASE_KEY_CONFIG,
         },
         body: JSON.stringify({ report }),
         signal: controller.signal,

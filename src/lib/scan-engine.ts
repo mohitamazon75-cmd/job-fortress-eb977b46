@@ -3,16 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 
 // ── Scan-specific client: adds x-scan-access-token header so RLS policy
 //    "Anon can select scan by access_token" allows reading without user JWT
-// Security: never hardcode fallback credentials — if env vars are missing the app
-// must fail loudly at startup rather than silently ship prod keys in the bundle.
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY as SUPABASE_KEY } from '@/lib/supabase-config';
 
 function createScanClient(accessToken: string) {
-  // Validate inside the function — module-level throw causes a blank screen on first render
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    throw new Error('[scan-engine] VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY env var is not set. Check your .env file.');
-  }
   return createClient(SUPABASE_URL, SUPABASE_KEY, {
     global: { headers: { 'x-scan-access-token': accessToken } },
     auth: { persistSession: false },

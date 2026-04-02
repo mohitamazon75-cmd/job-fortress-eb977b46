@@ -55,12 +55,9 @@ import { useAnalytics } from '@/hooks/use-analytics';
 import { useRequestMutex } from '@/hooks/use-request-mutex';
 
 // Helper: create a Supabase client with x-scan-access-token header so RLS allows reading
-// Security: read from env vars only — never hardcode fallback credentials in client bundles.
+import { SUPABASE_URL as SB_URL, SUPABASE_PUBLISHABLE_KEY as SB_KEY } from '@/lib/supabase-config';
 function createScanCheckClient(accessToken: string) {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) throw new Error('Supabase env vars not configured');
-  return createClient(url, key, {
+  return createClient(SB_URL, SB_KEY, {
     global: { headers: { 'x-scan-access-token': accessToken } },
     auth: { persistSession: false },
   });

@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 // Fetches cohort intelligence for a given scan_id.
 // Tries the cohort_cache table first (fast, no compute).
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 // Falls back to calling the cohort-match edge function if no
 // cached result exists (triggers computation + caching).
 //
@@ -70,13 +71,12 @@ export function useCohortIntel(scanId: string | undefined): UseCohortIntelResult
           return;
         }
 
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const resp = await fetch(`${supabaseUrl}/functions/v1/cohort-match`, {
+        const resp = await fetch(`${SUPABASE_URL}/functions/v1/cohort-match`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'apikey': SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({ scan_id: scanId }),
         });

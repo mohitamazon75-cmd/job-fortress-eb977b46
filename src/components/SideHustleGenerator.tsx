@@ -8,6 +8,7 @@ import {
   Star, ExternalLink
 } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 import { supabase } from '@/integrations/supabase/client';
 import { getVerbatimRole } from '@/lib/role-guard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -703,15 +704,13 @@ const SideHustleGenerator: React.FC<SideHustleGeneratorProps> = ({ report, onCom
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl) throw new Error('VITE_SUPABASE_URL is not configured');
       const resp = await fetch(
-        `${supabaseUrl}/functions/v1/generate-side-hustles`,
+        `${SUPABASE_URL}/functions/v1/generate-side-hustles`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${session?.access_token || SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ report: { ...report, role: getVerbatimRole(report) }, country }),
         }
