@@ -287,7 +287,7 @@ const Index = () => {
     }
   };
   
-  const startScanPipeline = useCallback(async (id: string, token: string, forceRefresh = false, alreadyTriggered = false) => {
+  const startScanPipeline = useCallback(async (id: string, token: string, forceRefresh = false) => {
     cleanupRef.current?.();
     const cleanup = subscribeScanStatus(
       id,
