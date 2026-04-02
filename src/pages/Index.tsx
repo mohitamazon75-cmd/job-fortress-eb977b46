@@ -103,7 +103,7 @@ const Index = () => {
   const [industry, setIndustry] = useState('');
   const [yearsExperience, setYearsExperience] = useState('');
   const [metroTier, setMetroTier] = useState('');
-  const [keySkills, setKeySkills] = useState('');
+  const [_keySkills, setKeySkills] = useState('');
   const [scanId, setScanId] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [scanReport, setScanReport] = useState<ScanReport | null>(null);
