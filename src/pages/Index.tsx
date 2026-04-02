@@ -188,11 +188,10 @@ const Index = () => {
       .select('scan_status, final_json_report')
       .eq('id', scanId)
       .single()
-      .then(({ data }) => {
+      .then(({ data }: any) => {
         if (!isMountedRef.current) return;
         const row = data as ScanRow | null;
         if (row?.scan_status === 'complete' && row?.final_json_report) {
-          // Backend finished — show the result automatically
           console.log('[AutoRecover] Scan completed in backend, recovering result');
           setScanReport(row.final_json_report as ScanReport);
           setMoneyShotSeen(false);
@@ -201,7 +200,7 @@ const Index = () => {
           setErrorScanStatus(row?.scan_status ?? 'unknown');
         }
       })
-      .catch(() => {
+      .then(undefined, () => {
         if (isMountedRef.current) setErrorScanStatus('unknown');
       });
   }, [phase, scanId, accessToken]);
