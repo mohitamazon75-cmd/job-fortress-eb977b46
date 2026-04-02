@@ -732,7 +732,7 @@ Deno.serve(async (req) => {
 
     if (!agent1) {
       agent1 = await callAgent(LOVABLE_API_KEY, "Agent1:Profiler", AGENT_1_PROFILER,
-        agent1UserPrompt, PRO_MODEL, 0.1, 40_000);
+        agent1UserPrompt, PRO_MODEL, 0.1, 30_000);
       if (!agent1) {
         console.error("[Agent1:Profiler] Profiler failed — cannot produce reliable report");
         await updateScan(supabase, scanId, null, null, null);
