@@ -303,7 +303,7 @@ export default function DoomClockCard({ report, scanId }: Props) {
     [allSkills]
   );
 
-  const topSkills = atRisk.slice(0, 4); // Show up to 4 skills
+  const topSkills = atRisk.slice(0, 5); // Show up to 5 skills
   const totalAtRisk = atRisk.length;
   const safeCount = allSkills.filter(s => s.status === 'safe').length;
   const aiProximity = computeAIProximity(allSkills);
