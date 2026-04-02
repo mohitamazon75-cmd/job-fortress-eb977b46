@@ -14,9 +14,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Pro gate — verify active subscription before serving dossier
-  const subGuard = await requirePro(req);
-  if (subGuard) return subGuard;
+  // Pro gate disabled during beta/waitlist phase
+  // const subGuard = await requirePro(req);
+  // if (subGuard) return subGuard;
 
   try {
     const { report } = await req.json();
