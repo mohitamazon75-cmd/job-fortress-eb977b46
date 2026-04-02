@@ -194,18 +194,17 @@ Deno.serve(async (req: Request) => {
     // ── 1. Load the scan report ──────────────────────────────
     const { data: scan, error: scanError } = await supabase
       .from("scans")
-      .select("id, report_json, user_id")
+      .select("id, final_json_report, user_id")
       .eq("id", scan_id)
-      .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (scanError || !scan) {
+    if (scanError || !scan || !scan.final_json_report) {
       return new Response(JSON.stringify({ error: "Scan not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const report = scan.report_json as Record<string, any>;
+    const report = scan.final_json_report as Record<string, any>;
 
     // ── 2. Build + store embedding ───────────────────────────
     const embedding = buildEmbedding(report);
