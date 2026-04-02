@@ -11,8 +11,8 @@ const GPT5_MODEL = "google/gemini-3.1-pro-preview"; // Tier 1: Deep reasoning & 
 const PRO_MODEL = "google/gemini-3-pro-preview"; // Tier 2: Core analysis
 const FLASH_MODEL = "google/gemini-3-flash-preview"; // Tier 3: Fast synthesis
 const FALLBACK_MODEL = "google/gemini-2.5-pro";  // Emergency fallback
-const DEFAULT_TIMEOUT_MS = 50_000;
-const HARD_TIMEOUT_FLOOR_MS = 65_000;
+const DEFAULT_TIMEOUT_MS = 30_000;
+const HARD_TIMEOUT_FLOOR_MS = 40_000;
 
 export { AI_URL, GPT5_MODEL, PRO_MODEL, FLASH_MODEL, FALLBACK_MODEL, DEFAULT_TIMEOUT_MS };
 
