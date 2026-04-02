@@ -16,11 +16,12 @@ interface Props {
 }
 
 interface TrendPoint {
-  label: string;       // "Mar '25" short date
+  label: string;
   score: number;
   scanId: string;
   daysAgo: number;
   isCurrent?: boolean;
+  [key: string]: unknown;
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
