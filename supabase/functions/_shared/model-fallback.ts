@@ -34,7 +34,7 @@ export async function callAgentWithFallback(
   userPrompt: string,
   preferredModel = TIER1,
   temperature = 0.3,
-  timeoutMs = 50_000,
+  timeoutMs = 30_000,
 ): Promise<FallbackResult> {
   const start = Date.now();
   const chain: string[] = [];
