@@ -1,42 +1,24 @@
 /**
- * ShareableScoreCard — compact share & challenge card (v2)
+ * ShareableScoreCard — viral share card with emotional hooks (v3)
  *
- * No longer shows the full score card inline (users already saw it).
- * Instead: a tight "challenge a friend" CTA with auto-generated share image.
- * The capture target is hidden off-screen for html2canvas only.
+ * Light theme, professional design. Viral psychology:
+ * 1. Social comparison — "Safer than X% of professionals in your field"
+ * 2. Loss aversion — "₹X salary erosion if no action"
+ * 3. Identity signal — sharing makes you look proactive/smart
+ * 4. Challenge hook — "Can you beat my score?"
+ * 5. Specific data — moat skills, AI exposure %, replacement timeline
+ *
+ * Capture target uses inline styles (html2canvas safe).
  */
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Share2, MessageCircle, Users, Sparkles } from 'lucide-react';
+import { Download, Share2, MessageCircle, Users, Sparkles, Trophy } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { computeStabilityScore } from '@/lib/stability-score';
+import { classifySkills } from '@/lib/unified-skill-classifier';
 
 interface Props {
   report: ScanReport;
-}
-
-interface Tier {
-  label: string;
-  sublabel: string;
-  hex: string;
-  bg: string;
-  border: string;
-  ring: string;
-}
-
-function getTier(score: number): Tier {
-  if (score >= 70) return {
-    label: 'SAFE ZONE', sublabel: 'Your career is well-positioned',
-    hex: '#22c55e', bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.35)', ring: 'rgba(34,197,94,0.25)',
-  };
-  if (score >= 50) return {
-    label: 'HEADS UP', sublabel: 'Some risk — action advised',
-    hex: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.35)', ring: 'rgba(245,158,11,0.25)',
-  };
-  return {
-    label: 'ACT NOW', sublabel: 'High AI exposure — pivot fast',
-    hex: '#ef4444', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.35)', ring: 'rgba(239,68,68,0.25)',
-  };
 }
 
 function sanitizeStr(str: string, maxLen = 60): string {
@@ -47,72 +29,198 @@ function safeFileName(str: string): string {
   return str.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase().substring(0, 50) || 'career';
 }
 
-// ── Hidden capture target (off-screen, inline styles for html2canvas) ────────
+function getTierData(score: number) {
+  if (score >= 70) return { label: 'SAFE ZONE', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0', emoji: '🛡️', ringColor: 'rgba(22,163,74,0.15)' };
+  if (score >= 50) return { label: 'WARNING ZONE', color: '#d97706', bg: '#fffbeb', border: '#fde68a', emoji: '⚠️', ringColor: 'rgba(217,119,6,0.15)' };
+  return { label: 'DANGER ZONE', color: '#dc2626', bg: '#fef2f2', border: '#fecaca', emoji: '🚨', ringColor: 'rgba(220,38,38,0.15)' };
+}
+
+// ── Light Theme Capture Target ──────────────────────────────────────────────
 function CaptureTarget({
-  innerRef, score, tier, role, industry, moatSkills, aiExposure, humanEdge, date,
+  innerRef, score, role, industry, moatSkills, aiExposure,
+  topThreat, threatTimeline, salaryRisk, peerPercentile, date,
 }: {
   innerRef: React.RefObject<HTMLDivElement | null>;
-  score: number; tier: Tier; role: string; industry: string;
-  moatSkills: string[]; aiExposure: number; humanEdge: number; date: string;
+  score: number; role: string; industry: string;
+  moatSkills: string[]; aiExposure: number;
+  topThreat: string; threatTimeline: string;
+  salaryRisk: string; peerPercentile: number;
+  date: string;
 }) {
+  const tier = getTierData(score);
+
   return (
     <div
       ref={innerRef as React.RefObject<HTMLDivElement>}
       style={{
         position: 'absolute', left: -9999, top: -9999,
-        width: 380,
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e1b2e 55%, #0f172a 100%)',
-        borderRadius: 20, border: `1.5px solid ${tier.border}`,
-        padding: '28px 24px 22px',
+        width: 400,
+        background: '#ffffff',
+        borderRadius: 20,
+        border: `2px solid ${tier.border}`,
+        padding: '0',
         fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif',
-        boxSizing: 'border-box', overflow: 'hidden',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: tier.ring, filter: 'blur(60px)', pointerEvents: 'none' }} />
+      {/* Top accent bar */}
+      <div style={{
+        height: 6,
+        background: `linear-gradient(90deg, ${tier.color}, ${tier.color}88)`,
+      }} />
 
-      <div style={{ marginBottom: 18 }}>
-        <p style={{ color: '#94a3b8', fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', margin: 0 }}>Career Risk Assessment</p>
-        <p style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 800, margin: '4px 0 0', lineHeight: 1.3 }}>{role}</p>
-        <p style={{ color: '#64748b', fontSize: 11, fontWeight: 500, margin: '2px 0 0' }}>{industry}</p>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 20 }}>
-        <div style={{ width: 96, height: 96, borderRadius: '50%', border: `3px solid ${tier.hex}`, background: tier.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 0 24px ${tier.ring}` }}>
-          <span style={{ color: tier.hex, fontSize: 32, fontWeight: 900, lineHeight: 1, letterSpacing: '-1px' }}>{score}</span>
-          <span style={{ color: '#475569', fontSize: 10, fontWeight: 600, marginTop: 1 }}>/100</span>
-        </div>
-        <div>
-          <div style={{ display: 'inline-block', background: tier.bg, border: `1px solid ${tier.border}`, borderRadius: 6, padding: '3px 10px', marginBottom: 6 }}>
-            <span style={{ color: tier.hex, fontSize: 11, fontWeight: 900, letterSpacing: '0.12em' }}>{tier.label}</span>
+      <div style={{ padding: '24px 24px 20px' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+          <div>
+            <p style={{ color: '#64748b', fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', margin: 0 }}>
+              AI Career Assessment
+            </p>
+            <p style={{ color: '#0f172a', fontSize: 17, fontWeight: 800, margin: '4px 0 0', lineHeight: 1.3 }}>
+              {role}
+            </p>
+            <p style={{ color: '#94a3b8', fontSize: 11, fontWeight: 500, margin: '2px 0 0' }}>
+              {industry}
+            </p>
           </div>
-          <p style={{ color: '#94a3b8', fontSize: 12, fontWeight: 500, margin: 0, lineHeight: 1.4 }}>{tier.sublabel}</p>
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
-        {[{ label: 'Human Edge', value: `${humanEdge}%`, color: '#22c55e' }, { label: 'AI Exposure', value: `${aiExposure}%`, color: '#ef4444' }].map(({ label, value, color }) => (
-          <div key={label} style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 12px' }}>
-            <p style={{ color: '#64748b', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>{label}</p>
-            <p style={{ color, fontSize: 22, fontWeight: 900, margin: '2px 0 0', lineHeight: 1 }}>{value}</p>
-          </div>
-        ))}
-      </div>
-
-      {moatSkills.length > 0 && (
-        <div style={{ marginBottom: 18 }}>
-          <p style={{ color: '#475569', fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', margin: '0 0 6px' }}>Top Moat Skills</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {moatSkills.map(skill => (
-              <span key={skill} style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>{skill}</span>
-            ))}
+          {/* Score circle */}
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            border: `3px solid ${tier.color}`,
+            background: tier.bg,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: `0 0 20px ${tier.ringColor}`,
+          }}>
+            <span style={{ color: tier.color, fontSize: 28, fontWeight: 900, lineHeight: 1, letterSpacing: '-1px' }}>
+              {score}
+            </span>
+            <span style={{ color: '#94a3b8', fontSize: 9, fontWeight: 600, marginTop: 1 }}>/100</span>
           </div>
         </div>
-      )}
 
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 12 }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <p style={{ color: '#334155', fontSize: 10, fontWeight: 700, margin: 0 }}>jobbachao.com</p>
-        <p style={{ color: '#334155', fontSize: 10, fontWeight: 500, margin: 0 }}>{date}</p>
+        {/* Tier badge */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          background: tier.bg, border: `1px solid ${tier.border}`,
+          borderRadius: 8, padding: '5px 12px', marginBottom: 16,
+        }}>
+          <span style={{ fontSize: 14 }}>{tier.emoji}</span>
+          <span style={{ color: tier.color, fontSize: 11, fontWeight: 900, letterSpacing: '0.1em' }}>
+            {tier.label}
+          </span>
+        </div>
+
+        {/* ── Viral Insight Grid ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+          {/* Peer comparison — social proof trigger */}
+          <div style={{
+            background: '#f8fafc', border: '1px solid #e2e8f0',
+            borderRadius: 10, padding: '10px 12px',
+          }}>
+            <p style={{ color: '#94a3b8', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
+              Safer than
+            </p>
+            <p style={{ color: '#0f172a', fontSize: 22, fontWeight: 900, margin: '2px 0 0', lineHeight: 1 }}>
+              {peerPercentile}%
+            </p>
+            <p style={{ color: '#94a3b8', fontSize: 9, fontWeight: 500, margin: '2px 0 0' }}>
+              of professionals
+            </p>
+          </div>
+
+          {/* AI exposure — fear trigger */}
+          <div style={{
+            background: '#fef2f2', border: '1px solid #fecaca',
+            borderRadius: 10, padding: '10px 12px',
+          }}>
+            <p style={{ color: '#94a3b8', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
+              AI Exposure
+            </p>
+            <p style={{ color: '#dc2626', fontSize: 22, fontWeight: 900, margin: '2px 0 0', lineHeight: 1 }}>
+              {aiExposure}%
+            </p>
+            <p style={{ color: '#94a3b8', fontSize: 9, fontWeight: 500, margin: '2px 0 0' }}>
+              of tasks at risk
+            </p>
+          </div>
+        </div>
+
+        {/* ── Most urgent threat — loss aversion ── */}
+        <div style={{
+          background: '#fff7ed', border: '1px solid #fed7aa',
+          borderRadius: 10, padding: '10px 14px', marginBottom: 12,
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>⏳</span>
+          <div>
+            <p style={{ color: '#0f172a', fontSize: 12, fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
+              {topThreat}
+            </p>
+            <p style={{ color: '#9a3412', fontSize: 10, fontWeight: 600, margin: '2px 0 0' }}>
+              Estimated {threatTimeline} before AI disruption
+            </p>
+          </div>
+        </div>
+
+        {/* Salary erosion — if available */}
+        {salaryRisk && (
+          <div style={{
+            background: '#fef2f2', border: '1px solid #fecaca',
+            borderRadius: 10, padding: '8px 14px', marginBottom: 12,
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>💸</span>
+            <p style={{ color: '#0f172a', fontSize: 11, fontWeight: 700, margin: 0 }}>
+              {salaryRisk} <span style={{ color: '#dc2626', fontWeight: 600 }}>annual salary erosion risk</span>
+            </p>
+          </div>
+        )}
+
+        {/* Moat skills — identity signal */}
+        {moatSkills.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <p style={{ color: '#64748b', fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', margin: '0 0 6px' }}>
+              🛡️ My Strongest Defenses
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+              {moatSkills.map(skill => (
+                <span key={skill} style={{
+                  background: '#f0fdf4', border: '1px solid #bbf7d0',
+                  color: '#16a34a', borderRadius: 6, padding: '3px 10px',
+                  fontSize: 10, fontWeight: 700,
+                }}>
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* CTA / Challenge hook */}
+        <div style={{
+          background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+          borderRadius: 10, padding: '10px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          marginBottom: 14,
+        }}>
+          <span style={{ color: '#ffffff', fontSize: 12, fontWeight: 800 }}>
+            Can you beat my score? →
+          </span>
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: 600 }}>
+            jobbachao.com
+          </span>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{ color: '#cbd5e1', fontSize: 9, fontWeight: 600, margin: 0 }}>
+            jobbachao.com · AI Career Intelligence
+          </p>
+          <p style={{ color: '#cbd5e1', fontSize: 9, fontWeight: 500, margin: 0 }}>{date}</p>
+        </div>
       </div>
     </div>
   );
@@ -127,17 +235,33 @@ export default function ShareableScoreCard({ report }: Props) {
   const [shareError, setShareError] = useState<string | null>(null);
 
   const score = computeStabilityScore(report);
-  const tier = getTier(score);
-  const moatSkills = (report.moat_skills ?? []).slice(0, 3);
+  const tier = getTierData(score);
+  const moatSkills = (report.moat_skills ?? []).slice(0, 4);
   const aiExposure = Math.round(report.determinism_index ?? 50);
-  const humanEdge = Math.max(0, 100 - aiExposure);
   const role = sanitizeStr(report.role || 'Professional', 50);
   const industry = sanitizeStr(report.industry || '', 50);
   const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
+  // Derive viral data points
+  const allSkills = classifySkills(report);
+  const atRisk = allSkills.filter(s => s.status !== 'safe').sort((a, b) => a.estimatedMonths - b.estimatedMonths);
+  const topThreat = sanitizeStr(atRisk[0]?.name || 'Key skills', 40);
+  const threatMonths = atRisk[0]?.estimatedMonths ?? 24;
+  const threatTimeline = threatMonths <= 6 ? '< 6 months' : threatMonths <= 12 ? '~1 year' : threatMonths <= 24 ? '~2 years' : '~3 years';
+
+  const peerPercentile = Math.min(95, Math.max(5, Math.round(
+    (report.market_position_model?.market_percentile as number) ??
+    (typeof report.peer_percentile_estimate === 'number' ? report.peer_percentile_estimate : score)
+  )));
+
+  const salaryBleedMonthly = report.salary_bleed_monthly ?? 0;
+  const salaryRisk = salaryBleedMonthly > 0
+    ? `₹${(salaryBleedMonthly * 12 / 100000).toFixed(1)}L`
+    : '';
+
   useEffect(() => { return () => { mountedRef.current = false }; }, []);
 
-  // Auto-generate image on mount
+  // Auto-generate on mount
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!cardRef.current || !mountedRef.current) return;
@@ -145,14 +269,12 @@ export default function ShareableScoreCard({ report }: Props) {
         const html2canvas = (await import('html2canvas')).default;
         if (!mountedRef.current) return;
         const canvas = await html2canvas(cardRef.current, {
-          backgroundColor: null, scale: 2, useCORS: true, logging: false,
+          backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false,
           width: cardRef.current.offsetWidth, height: cardRef.current.offsetHeight,
         });
         if (!mountedRef.current) return;
         setImageUrl(canvas.toDataURL('image/png'));
-      } catch {
-        // Silent — share buttons will trigger manual capture
-      }
+      } catch { /* silent */ }
     }, 600);
     return () => clearTimeout(timer);
   }, []);
@@ -164,7 +286,7 @@ export default function ShareableScoreCard({ report }: Props) {
     try {
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: null, scale: 2, useCORS: true, logging: false,
+        backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false,
         width: cardRef.current.offsetWidth, height: cardRef.current.offsetHeight,
       });
       const url = canvas.toDataURL('image/png');
@@ -187,128 +309,116 @@ export default function ShareableScoreCard({ report }: Props) {
     a.click();
   }, [ensureImage, role]);
 
-  const handleWhatsApp = useCallback(async () => {
-    const shareText = `I scored ${score}/100 on JobBachao's AI Career Assessment 🛡️\n\nWhat's YOUR score? Check free → jobbachao.com`;
-    const waText = encodeURIComponent(shareText);
-    window.open(`https://wa.me/?text=${waText}`, '_blank', 'noopener,noreferrer');
-  }, [score]);
+  const handleWhatsApp = useCallback(() => {
+    const text = score >= 70
+      ? `🛡️ I'm in the SAFE ZONE — ${score}/100 AI-readiness. Safer than ${peerPercentile}% of professionals.\n\nCan you beat my score? → jobbachao.com`
+      : `⚠️ My AI career risk score is ${score}/100. ${topThreat} could be disrupted in ${threatTimeline}.\n\nWhat's YOUR score? → jobbachao.com`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  }, [score, peerPercentile, topThreat, threatTimeline]);
 
   const handleShare = useCallback(async () => {
     const url = await ensureImage();
     if (!url) return;
-
-    const shareText = tier.label === 'SAFE ZONE'
-      ? `✅ Safe Zone: ${score}/100 AI-readiness. What's yours? → jobbachao.com`
-      : tier.label === 'HEADS UP'
-      ? `⚠️ Heads Up: ${score}/100 AI-readiness. Check yours → jobbachao.com`
-      : `🚀 ${score}/100 AI-readiness. Time to act. Check yours → jobbachao.com`;
-
+    const text = `My AI Career Score: ${score}/100 — Safer than ${peerPercentile}% of professionals. Can you beat it? → jobbachao.com`;
     if (navigator.share && navigator.canShare) {
       try {
         const blob = await (await fetch(url)).blob();
         const file = new File([blob], `career-score-${score}.png`, { type: 'image/png' });
         if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ title: 'My Career Score', text: shareText, files: [file] });
+          await navigator.share({ title: 'My Career Score', text, files: [file] });
           return;
         }
       } catch { /* fall through */ }
     }
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener noreferrer');
+  }, [ensureImage, score, peerPercentile]);
 
-    const waText = encodeURIComponent(`${shareText}\n\n(Save the image and attach it)`);
-    window.open(`https://wa.me/?text=${waText}`, '_blank', 'noopener noreferrer');
-  }, [ensureImage, score, tier.label]);
-
-  // Tier-aware accent
-  const tierAccent = score >= 70 ? 'prophet-green' : score >= 50 ? 'prophet-gold' : 'destructive';
+  // Viral share text for the card
+  const viralHook = score >= 70
+    ? `You're safer than ${peerPercentile}% of Indian professionals. Make them jealous.`
+    : score >= 50
+    ? `${topThreat} could be disrupted in ${threatTimeline}. Your friends need to know their risk too.`
+    : `${aiExposure}% of your tasks are at risk. Don't let your friends find out the hard way.`;
 
   return (
     <div className="space-y-4">
       {/* Hidden capture target */}
       <CaptureTarget
-        innerRef={cardRef} score={score} tier={tier} role={role}
-        industry={industry} moatSkills={moatSkills} aiExposure={aiExposure}
-        humanEdge={humanEdge} date={date}
+        innerRef={cardRef} score={score} role={role} industry={industry}
+        moatSkills={moatSkills} aiExposure={aiExposure} topThreat={topThreat}
+        threatTimeline={threatTimeline} salaryRisk={salaryRisk}
+        peerPercentile={peerPercentile} date={date}
       />
 
-      {/* ── Challenge Card ── */}
+      {/* ── Main Card ── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-border bg-card p-5 space-y-4"
+        className="rounded-2xl border border-border bg-card overflow-hidden"
       >
-        {/* Score summary row */}
-        <div className="flex items-center gap-4">
-          <div className={`w-16 h-16 rounded-full border-2 border-${tierAccent} bg-${tierAccent}/10 flex items-center justify-center flex-shrink-0`}>
-            <span className={`text-2xl font-black text-${tierAccent}`}>{score}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-black text-foreground leading-tight">
-              Challenge your colleagues
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              Share your score card and see who's more AI-proof. The image is auto-generated and ready to send.
+        {/* Emotional hook header */}
+        <div className="px-5 pt-5 pb-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+              Your Shareable Score Card
             </p>
           </div>
+
+          <p className="text-sm font-bold text-foreground leading-snug">
+            {viralHook}
+          </p>
         </div>
 
-        {/* Preview thumbnail (if available) */}
+        {/* Preview */}
         <AnimatePresence>
           {imageUrl && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="rounded-xl overflow-hidden border border-border"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="px-4 pb-3"
             >
-              <img src={imageUrl} alt={`Career score card for ${role}`} className="w-full" />
+              <div className="rounded-xl overflow-hidden border border-border shadow-sm">
+                <img src={imageUrl} alt={`Career score card for ${role}`} className="w-full" />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Action buttons */}
-        <div className="grid grid-cols-3 gap-2.5">
-          <button
-            type="button"
-            onClick={handleDownload}
-            disabled={capturing}
-            className="flex items-center justify-center gap-1.5 py-3 rounded-xl border border-border bg-card text-foreground font-bold text-xs hover:bg-muted/50 transition-colors disabled:opacity-60"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={handleWhatsApp}
-            className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#25D366] text-white font-bold text-xs hover:bg-[#20BA5A] transition-colors"
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-            WhatsApp
-          </button>
-          <button
-            type="button"
-            onClick={handleShare}
-            disabled={capturing}
-            className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition-colors disabled:opacity-60"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            Share
-          </button>
-        </div>
+        <div className="px-4 pb-4 space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button" onClick={handleDownload} disabled={capturing}
+              className="flex items-center justify-center gap-1.5 py-3 rounded-xl border border-border bg-card text-foreground font-bold text-xs hover:bg-muted/50 transition-colors disabled:opacity-60"
+            >
+              <Download className="w-3.5 h-3.5" /> Save
+            </button>
+            <button
+              type="button" onClick={handleWhatsApp}
+              className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#25D366] text-white font-bold text-xs hover:bg-[#20BA5A] transition-colors"
+            >
+              <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+            </button>
+            <button
+              type="button" onClick={handleShare} disabled={capturing}
+              className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 transition-colors disabled:opacity-60"
+            >
+              <Share2 className="w-3.5 h-3.5" /> Share
+            </button>
+          </div>
 
-        {shareError && <p className="text-xs text-destructive text-center">{shareError}</p>}
+          {shareError && <p className="text-xs text-destructive text-center">{shareError}</p>}
+        </div>
       </motion.div>
 
-      {/* Social proof nudge */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="flex items-center justify-center gap-2 py-2"
-      >
+      {/* Social proof */}
+      <div className="flex items-center justify-center gap-2 py-1">
         <Users className="w-3.5 h-3.5 text-muted-foreground" />
         <p className="text-[11px] text-muted-foreground">
           <span className="font-bold text-foreground">12,400+</span> cards shared this week
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }
