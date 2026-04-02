@@ -329,6 +329,72 @@ export type Database = {
           },
         ]
       }
+      calibration_config: {
+        Row: {
+          key: string
+          note: string | null
+          updated_at: string
+          updated_by: string | null
+          value: number
+        }
+        Insert: {
+          key: string
+          note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value: number
+        }
+        Update: {
+          key?: string
+          note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
+      calibration_log: {
+        Row: {
+          applied: boolean
+          created_at: string
+          current_accel_rate: number | null
+          delta: number | null
+          direction_accuracy: number | null
+          id: string
+          mean_error_pct: number | null
+          model_version: string
+          notes: string | null
+          sample_size: number
+          suggested_accel_rate: number | null
+        }
+        Insert: {
+          applied?: boolean
+          created_at?: string
+          current_accel_rate?: number | null
+          delta?: number | null
+          direction_accuracy?: number | null
+          id?: string
+          mean_error_pct?: number | null
+          model_version: string
+          notes?: string | null
+          sample_size: number
+          suggested_accel_rate?: number | null
+        }
+        Update: {
+          applied?: boolean
+          created_at?: string
+          current_accel_rate?: number | null
+          delta?: number | null
+          direction_accuracy?: number | null
+          id?: string
+          mean_error_pct?: number | null
+          model_version?: string
+          notes?: string | null
+          sample_size?: number
+          suggested_accel_rate?: number | null
+        }
+        Relationships: []
+      }
       challenges: {
         Row: {
           challenge_code: string
@@ -434,6 +500,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cohort_cache: {
+        Row: {
+          cohort_label: string
+          cohort_size: number
+          computed_at: string
+          insight_text: string
+          median_doom_months: number | null
+          median_stability: number | null
+          pct_improved: number | null
+          scan_id: string
+          top_skill_gain: string | null
+        }
+        Insert: {
+          cohort_label?: string
+          cohort_size?: number
+          computed_at?: string
+          insight_text?: string
+          median_doom_months?: number | null
+          median_stability?: number | null
+          pct_improved?: number | null
+          scan_id: string
+          top_skill_gain?: string | null
+        }
+        Update: {
+          cohort_label?: string
+          cohort_size?: number
+          computed_at?: string
+          insight_text?: string
+          median_doom_months?: number | null
+          median_stability?: number | null
+          pct_improved?: number | null
+          scan_id?: string
+          top_skill_gain?: string | null
+        }
+        Relationships: []
+      }
       company_benchmarks: {
         Row: {
           assessment_count: number
@@ -497,6 +599,42 @@ export type Database = {
           total_cost_usd?: number | null
           total_tokens?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      defense_milestones: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          milestone_key: string
+          milestone_label: string
+          phase: number
+          resource_url: string | null
+          scan_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          milestone_key: string
+          milestone_label: string
+          phase: number
+          resource_url?: string | null
+          scan_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          milestone_key?: string
+          milestone_label?: string
+          phase?: number
+          resource_url?: string | null
+          scan_id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -733,6 +871,27 @@ export type Database = {
           },
         ]
       }
+      intel_watchlist: {
+        Row: {
+          added_at: string
+          id: string
+          signal_json: Json
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          id?: string
+          signal_json: Json
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          id?: string
+          signal_json?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       invite_codes: {
         Row: {
           code: string
@@ -832,6 +991,69 @@ export type Database = {
         }
         Relationships: []
       }
+      kg_node_overrides: {
+        Row: {
+          base_automation_prob: number | null
+          confidence: number
+          current_demand_trend: string | null
+          partial_displacement_years: number | null
+          role_id: string
+          salary_percentile: number | null
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          base_automation_prob?: number | null
+          confidence?: number
+          current_demand_trend?: string | null
+          partial_displacement_years?: number | null
+          role_id: string
+          salary_percentile?: number | null
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          base_automation_prob?: number | null
+          confidence?: number
+          current_demand_trend?: string | null
+          partial_displacement_years?: number | null
+          role_id?: string
+          salary_percentile?: number | null
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      learning_resources: {
+        Row: {
+          created_at: string | null
+          estimated_hours: number | null
+          id: string
+          platform: string | null
+          skill_category: string
+          title: string
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          estimated_hours?: number | null
+          id?: string
+          platform?: string | null
+          skill_category: string
+          title: string
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          estimated_hours?: number | null
+          id?: string
+          platform?: string | null
+          skill_category?: string
+          title?: string
+          url?: string
+        }
+        Relationships: []
+      }
       market_signals: {
         Row: {
           ai_job_mentions_pct: number | null
@@ -843,9 +1065,9 @@ export type Database = {
           metro_tier: string
           posting_change_pct: number | null
           posting_volume_30d: number | null
+          posting_volume_note: string | null
           posting_volume_proxy: number | null
           posting_volume_source: string | null
-          posting_volume_note: string | null
           snapshot_date: string
         }
         Insert: {
@@ -858,9 +1080,9 @@ export type Database = {
           metro_tier?: string
           posting_change_pct?: number | null
           posting_volume_30d?: number | null
+          posting_volume_note?: string | null
           posting_volume_proxy?: number | null
           posting_volume_source?: string | null
-          posting_volume_note?: string | null
           snapshot_date?: string
         }
         Update: {
@@ -873,9 +1095,9 @@ export type Database = {
           metro_tier?: string
           posting_change_pct?: number | null
           posting_volume_30d?: number | null
+          posting_volume_note?: string | null
           posting_volume_proxy?: number | null
           posting_volume_source?: string | null
-          posting_volume_note?: string | null
           snapshot_date?: string
         }
         Relationships: [
@@ -984,6 +1206,66 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_pro_grants: {
+        Row: {
+          expires_at: string
+          grant_reason: string | null
+          granted_at: string | null
+          id: string
+          referral_count: number | null
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          grant_reason?: string | null
+          granted_at?: string | null
+          id?: string
+          referral_count?: number | null
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          grant_reason?: string | null
+          granted_at?: string | null
+          id?: string
+          referral_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          converted_at: string | null
+          created_at: string | null
+          id: string
+          referee_scan_id: string | null
+          referee_user_id: string | null
+          referral_code: string
+          referrer_user_id: string
+          status: string
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string
+          referee_scan_id?: string | null
+          referee_user_id?: string | null
+          referral_code: string
+          referrer_user_id: string
+          status?: string
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string
+          referee_scan_id?: string | null
+          referee_user_id?: string | null
+          referral_code?: string
+          referrer_user_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       scan_feedback: {
         Row: {
           accuracy_rating: number | null
@@ -1038,12 +1320,50 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_vectors: {
+        Row: {
+          created_at: string
+          doom_clock_months: number | null
+          embedding: number[]
+          industry: string | null
+          role_family: string | null
+          scan_id: string
+          seniority_tier: string | null
+          stability_score: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doom_clock_months?: number | null
+          embedding: number[]
+          industry?: string | null
+          role_family?: string | null
+          scan_id: string
+          seniority_tier?: string | null
+          stability_score?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doom_clock_months?: number | null
+          embedding?: number[]
+          industry?: string | null
+          role_family?: string | null
+          scan_id?: string
+          seniority_tier?: string | null
+          stability_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       scans: {
         Row: {
           access_token: string | null
           country: string | null
           created_at: string
           determinism_index: number | null
+          dpdp_consent_at: string | null
+          dpdp_consent_given: boolean | null
           enrichment_cache: Json | null
           enrichment_cached_at: string | null
           feedback_flag: string | null
@@ -1068,6 +1388,8 @@ export type Database = {
           country?: string | null
           created_at?: string
           determinism_index?: number | null
+          dpdp_consent_at?: string | null
+          dpdp_consent_given?: boolean | null
           enrichment_cache?: Json | null
           enrichment_cached_at?: string | null
           feedback_flag?: string | null
@@ -1092,6 +1414,8 @@ export type Database = {
           country?: string | null
           created_at?: string
           determinism_index?: number | null
+          dpdp_consent_at?: string | null
+          dpdp_consent_given?: boolean | null
           enrichment_cache?: Json | null
           enrichment_cached_at?: string | null
           feedback_flag?: string | null
@@ -1116,6 +1440,7 @@ export type Database = {
       score_history: {
         Row: {
           created_at: string
+          delta_summary: Json | null
           determinism_index: number
           id: string
           industry: string | null
@@ -1127,6 +1452,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delta_summary?: Json | null
           determinism_index: number
           id?: string
           industry?: string | null
@@ -1138,6 +1464,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delta_summary?: Json | null
           determinism_index?: number
           id?: string
           industry?: string | null
@@ -1193,6 +1520,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      skill_predictions: {
+        Row: {
+          actual_half_life_months: number | null
+          actual_risk_score: number | null
+          calibration_input: Json | null
+          direction_correct: boolean | null
+          doom_clock_months: number | null
+          error_pct: number | null
+          id: string
+          model_version: string | null
+          months_elapsed: number | null
+          predicted_at: string
+          predicted_half_life_months: number
+          predicted_risk_score: number
+          scan_id: string
+          skill_name: string
+          user_id: string
+          validated: boolean
+          validated_at: string | null
+        }
+        Insert: {
+          actual_half_life_months?: number | null
+          actual_risk_score?: number | null
+          calibration_input?: Json | null
+          direction_correct?: boolean | null
+          doom_clock_months?: number | null
+          error_pct?: number | null
+          id?: string
+          model_version?: string | null
+          months_elapsed?: number | null
+          predicted_at?: string
+          predicted_half_life_months?: number
+          predicted_risk_score?: number
+          scan_id: string
+          skill_name: string
+          user_id: string
+          validated?: boolean
+          validated_at?: string | null
+        }
+        Update: {
+          actual_half_life_months?: number | null
+          actual_risk_score?: number | null
+          calibration_input?: Json | null
+          direction_correct?: boolean | null
+          doom_clock_months?: number | null
+          error_pct?: number | null
+          id?: string
+          model_version?: string | null
+          months_elapsed?: number | null
+          predicted_at?: string
+          predicted_half_life_months?: number
+          predicted_risk_score?: number
+          scan_id?: string
+          skill_name?: string
+          user_id?: string
+          validated?: boolean
+          validated_at?: string | null
+        }
+        Relationships: []
       }
       skill_risk_matrix: {
         Row: {
