@@ -97,12 +97,12 @@ export default function IntelTab({ props }: { props: DashboardSharedProps }) {
   const loadWatchlist = async () => {
     try {
       const { data, error: err } = await supabase
-        .from('intel_watchlist')
+        .from('intel_watchlist' as any)
         .select('signal_json')
         .eq('user_id', userId);
 
       if (!err && data) {
-        const ids = new Set(data.map(item => item.signal_json.id));
+        const ids = new Set((data as any[]).map((item: any) => item.signal_json?.id).filter(Boolean));
         setWatchlistIds(ids);
       }
     } catch (err) {
