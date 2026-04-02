@@ -340,7 +340,7 @@ export async function createScan(params: {
         } catch {}
       }
 
-      console.log('[Scan] Created via edge function:', scanId);
+      console.debug('[Scan] Created via edge function:', scanId);
       const triggered = !!(fnData.triggered);
       return { id: scanId, accessToken, triggered };
     }
