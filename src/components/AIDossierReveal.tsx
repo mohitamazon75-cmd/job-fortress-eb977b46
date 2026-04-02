@@ -473,36 +473,49 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         </motion.div>
       )}
 
-      {/* Risk Tease — free users: 1 revealed, 2 locked */}
-      {!isProUser && topAtRisk.length > 0 && (
+      {/* AI Impact Snapshot — free users: auto-opened, top 2 sections with pills */}
+      {!isProUser && (topAtRisk.length > 0 || moatSkills.length > 0) && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
-          className="rounded-2xl border-2 border-destructive/20 bg-destructive/[0.03] p-5">
-          <p className="text-[10px] font-black uppercase tracking-widest text-destructive mb-3">⚡ At Risk In Your Role</p>
-          {/* First risk — fully revealed */}
-          <div className="rounded-lg border border-destructive/20 bg-destructive/[0.04] px-3 py-2.5 mb-2">
-            <p className="text-sm font-bold text-foreground">{topAtRisk[0]}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">High automation overlap detected</p>
-          </div>
-          {/* Remaining risks — blurred */}
-          {topAtRisk.slice(1).map((_, i) => (
-            <div key={i} className="relative rounded-lg border border-border bg-card/50 px-3 py-2.5 mb-2 overflow-hidden">
-              <div className="blur-sm select-none pointer-events-none opacity-60">
-                <p className="text-sm font-bold text-foreground">Risk area identified</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Analysis complete</p>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center gap-1.5">
-                <Lock className="w-3 h-3 text-muted-foreground" />
-                <span className="text-[10px] font-black text-muted-foreground">See in full plan</span>
+          className="rounded-2xl border-2 border-border bg-card p-5 space-y-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">AI Impact Snapshot</p>
+
+          {/* Section 1: At Risk */}
+          {topAtRisk.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-destructive">⚠️ What's at risk in your role right now</p>
+              <div className="flex flex-wrap gap-1.5">
+                {topAtRisk.slice(0, 3).map((skill, i) => (
+                  <span key={i} className="bg-destructive/10 text-destructive border border-destructive/20 rounded-full text-xs font-bold px-3 py-1">
+                    {skill}
+                  </span>
+                ))}
               </div>
             </div>
-          ))}
-          {topAtRisk.length < 3 && (
-            <p className="text-[11px] text-muted-foreground mt-1">Your full analysis identifies all risk areas in detail.</p>
           )}
+
+          {/* Section 2: Safe Zones */}
+          {moatSkills.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-prophet-green">🛡️ Your safe zones</p>
+              <div className="flex flex-wrap gap-1.5">
+                {moatSkills.slice(0, 3).map((skill, i) => (
+                  <span key={i} className="bg-prophet-green/10 text-prophet-green border border-prophet-green/20 rounded-full text-xs font-bold px-3 py-1">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Fade-out teaser */}
+          <div className="pt-2 border-t border-border/50 flex items-center gap-1.5">
+            <Lock className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-semibold">Full dossier in your defense plan →</span>
+          </div>
         </motion.div>
       )}
 
-      {/* Free Action Card — replaces dead-end CTA */}
+      {/* Free Action Card — "#1 Move This Month" */}
       {!isProUser && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}>
           <FreeActionCard
