@@ -31,13 +31,13 @@ async function loadRazorpaySDK(): Promise<void> {
 async function activateSubscription(
   paymentId: string, orderId: string | undefined, tier: string, authToken: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/activate-subscription`;
+  const url = `${SUPABASE_URL}/functions/v1/activate-subscription`;
   const resp = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${authToken}`,
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      apikey: SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({ payment_id: paymentId, order_id: orderId, tier }),
   });

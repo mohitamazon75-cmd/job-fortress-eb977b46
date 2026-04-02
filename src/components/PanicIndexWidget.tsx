@@ -93,10 +93,10 @@ export default function PanicIndexWidget({ industry, role }: PanicIndexWidgetPro
         if (industry) params.set('industry', industry);
         if (role) params.set('role', role);
 
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/panic-index?${params.toString()}`;
+        const url = `${SUPABASE_URL}/functions/v1/panic-index?${params.toString()}`;
         const resp = await fetch(url, {
           headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
           },
         });
 

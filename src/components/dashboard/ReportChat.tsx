@@ -43,9 +43,7 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
     let assistantSoFar = '';
 
     try {
-      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!baseUrl) throw new Error('VITE_SUPABASE_URL is not configured');
-      const CHAT_URL = `${baseUrl}/functions/v1/chat-report`;
+      const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat-report`;
 
       // Step 1: Validate identity via getUser() (server-verified, tamper-proof).
       // Step 2: getSession() is used ONLY to retrieve the access_token string for
@@ -53,7 +51,7 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
       const { data: { user } } = await supabase.auth.getUser();
       const authToken = user
         ? (await supabase.auth.getSession()).data.session?.access_token
-        : import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        : SUPABASE_PUBLISHABLE_KEY;
 
       const resp = await fetch(CHAT_URL, {
         method: 'POST',

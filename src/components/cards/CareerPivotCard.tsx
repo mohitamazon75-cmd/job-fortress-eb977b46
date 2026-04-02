@@ -220,14 +220,12 @@ export default function CareerPivotCard({ report }: { report: ScanReport }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Please sign in to analyze career pivots.');
 
-      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!baseUrl) throw new Error('VITE_SUPABASE_URL is not configured');
-      const resp = await fetch(`${baseUrl}/functions/v1/run-pivot-analysis`, {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/run-pivot-analysis`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           role: report.role,

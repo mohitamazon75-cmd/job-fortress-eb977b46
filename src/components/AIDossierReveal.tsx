@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ScanReport, normalizeTools } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPABASE_URL as SUPABASE_URL_CONFIG, SUPABASE_PUBLISHABLE_KEY as SUPABASE_KEY_CONFIG } from '@/lib/supabase-config';
 import { ArrowRight, Sparkles, Zap, Shield, Brain, TrendingUp, TrendingDown, Minus, Swords, Target, Search, Database, BarChart3, Globe, Lock, Bot, Loader2, ChevronDown } from 'lucide-react';
 import { computeStabilityScore, computeScoreBreakdown } from '@/lib/stability-score';
 import { getVerbatimRole, deflateRoleInText } from '@/lib/role-guard';
