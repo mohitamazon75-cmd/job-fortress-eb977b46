@@ -344,7 +344,7 @@ const Index = () => {
         return;
       }
     } else {
-      console.log('[Scan] process-scan already triggered server-side, skipping frontend invoke');
+      console.debug('[Scan] process-scan already triggered server-side, skipping frontend invoke');
     }
   }, []);
 
