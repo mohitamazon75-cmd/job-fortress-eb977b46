@@ -147,7 +147,7 @@ export async function callAgent(
   temperature = 0.3,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 ): Promise<any> {
-  const hardTimeoutMs = Math.max(timeoutMs + 20_000, HARD_TIMEOUT_FLOOR_MS);
+  const hardTimeoutMs = Math.max(timeoutMs + 5_000, HARD_TIMEOUT_FLOOR_MS);
   const start = Date.now();
 
   return await new Promise<any>((resolve) => {
