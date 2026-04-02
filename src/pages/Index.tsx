@@ -335,16 +335,13 @@ const Index = () => {
       }
     }
 
-    // Trigger scan AFTER resume upload; skip if already triggered server-side by create-scan
-    if (!alreadyTriggered) {
-      const trigger = await triggerProcessScan(id, forceRefresh, token);
-      if (!trigger.accepted) {
-        console.warn('Scan trigger rejected:', trigger.reason);
-        setPhase('error');
-        return;
-      }
-    } else {
-      console.debug('[Scan] process-scan already triggered server-side, skipping frontend invoke');
+    // Always trigger from the client as the reliable source of truth.
+    // The create-scan server-side trigger is only a best-effort backup.
+    const trigger = await triggerProcessScan(id, forceRefresh, token);
+    if (!trigger.accepted) {
+      console.warn('Scan trigger rejected:', trigger.reason, trigger.error);
+      setPhase('error');
+      return;
     }
   }, []);
 
