@@ -379,7 +379,7 @@ const Index = () => {
     const result = await withMutex('launchScan', async () => {
       setPhase('processing');
       try {
-        const { id, accessToken: token, triggered } = await createScan({
+        const { id, accessToken: token } = await createScan({
           linkedinUrl: linkedinUrl || undefined,
           resumeFilePath: resumeFileRef.current ? 'pending-upload' : undefined,
           country: country || 'IN',
@@ -395,7 +395,7 @@ const Index = () => {
         }
         setScanId(id);
         setAccessToken(token);
-        await startScanPipeline(id, token, true, triggered);
+        await startScanPipeline(id, token, true);
       } catch (err) {
         console.error('Scan creation failed:', err);
         setPhase('error');
