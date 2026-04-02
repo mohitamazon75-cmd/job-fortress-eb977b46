@@ -348,7 +348,7 @@ const Index = () => {
     }
   }, []);
 
-  const isManualPath = !linkedinUrl && !resumeFileRef.current;
+  const _isManualPath = !linkedinUrl && !resumeFileRef.current;
 
   const handleSelectMetro = async (v: string) => {
     setMetroTier(v);
