@@ -8,7 +8,7 @@
  * html2canvas capture target uses inline hex/rgba — no CSS custom properties —
  * so the image renders faithfully across all devices.
  */
-import { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Share2, Download, AlertTriangle, Zap, MessageCircle } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
