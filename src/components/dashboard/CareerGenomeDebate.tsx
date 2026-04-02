@@ -296,7 +296,7 @@ export default function CareerGenomeDebate({ report, scanId }: { report: ScanRep
     abortRef.current = controller;
 
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/career-genome`;
+      const url = `${SUPABASE_URL}/functions/v1/career-genome`;
       const { supabase } = await import('@/integrations/supabase/client');
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -304,8 +304,8 @@ export default function CareerGenomeDebate({ report, scanId }: { report: ScanRep
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${session?.access_token || SUPABASE_PUBLISHABLE_KEY}`,
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ report, scanId }),
         signal: controller.signal,

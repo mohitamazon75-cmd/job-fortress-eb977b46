@@ -38,8 +38,8 @@ export default function IntelWatchlist({ userId, onWatchlistChange }: IntelWatch
   const [removing, setRemoving] = useState<string | null>(null);
 
   const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
   );
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { TrendingDown, TrendingUp, Activity, AlertTriangle, BarChart3, Newspaper, Zap, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 
 interface PersonalizedArticle {
   title: string;

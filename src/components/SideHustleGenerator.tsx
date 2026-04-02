@@ -8,6 +8,7 @@ import {
   Star, ExternalLink
 } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 import { supabase } from '@/integrations/supabase/client';
 import { getVerbatimRole } from '@/lib/role-guard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

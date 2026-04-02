@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, TrendingUp, Shield, Clock, DollarSign, Loader2, ChevronDown, ChevronUp, Zap, Target, Sparkles, X, Lock, Check, Rocket, BarChart3 } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 import type { PivotEngineOutput, PivotRecommendation, SkillGap } from '@/types/pivot-engine.types';
 import { useSubscription } from '@/hooks/use-subscription';
 import ProUpgradeModal from '@/components/ProUpgradeModal';

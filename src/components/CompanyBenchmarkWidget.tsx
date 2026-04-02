@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Briefcase, Target, Star, MapPin } from 'lucide-react';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 
 interface Company {
   company: string;

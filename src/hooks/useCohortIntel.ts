@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 // Fetches cohort intelligence for a given scan_id.
 // Tries the cohort_cache table first (fast, no compute).
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 // Falls back to calling the cohort-match edge function if no
 // cached result exists (triggers computation + caching).
 //
