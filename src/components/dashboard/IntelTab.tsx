@@ -61,11 +61,11 @@ export default function IntelTab({ props }: { props: DashboardSharedProps }) {
 
       const response = await supabase.functions.invoke('role-intel', {
         body: {
-          role: report.role || report.detected_role,
+          role: report.role || (report as any).detected_role,
           industry: report.industry,
-          company: report.company_name,
+          company: (report as any).company_name,
           skills: report.moat_skills || [],
-          city: report.city || report.location,
+          city: (report as any).city || (report as any).location,
           score: report.determinism_index,
         },
       });
@@ -97,12 +97,12 @@ export default function IntelTab({ props }: { props: DashboardSharedProps }) {
   const loadWatchlist = async () => {
     try {
       const { data, error: err } = await supabase
-        .from('intel_watchlist')
+        .from('intel_watchlist' as any)
         .select('signal_json')
-        .eq('user_id', userId);
+      .eq('user_id', userId!);
 
       if (!err && data) {
-        const ids = new Set(data.map(item => item.signal_json.id));
+        const ids = new Set((data as any[]).map((item: any) => item.signal_json?.id).filter(Boolean));
         setWatchlistIds(ids);
       }
     } catch (err) {
@@ -115,11 +115,11 @@ export default function IntelTab({ props }: { props: DashboardSharedProps }) {
 
     try {
       const { error: err } = await supabase
-        .from('intel_watchlist')
+        .from('intel_watchlist' as any)
         .insert({
           user_id: userId,
-          signal_json: signal,
-        });
+          signal_json: signal as any,
+        } as any);
 
       if (err) throw err;
 
@@ -127,7 +127,7 @@ export default function IntelTab({ props }: { props: DashboardSharedProps }) {
 
       // Check if limit exceeded
       const { count } = await supabase
-        .from('intel_watchlist')
+        .from('intel_watchlist' as any)
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId);
 

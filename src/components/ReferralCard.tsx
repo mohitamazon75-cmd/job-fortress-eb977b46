@@ -32,7 +32,7 @@ export default function ReferralCard({ userId, existingGrantExpiry }: ReferralCa
 
         // Check for existing referral code
         const { data: existingReferral, error: fetchErr } = await supabase
-          .from('referrals')
+          .from('referrals' as any)
           .select('referral_code')
           .eq('referrer_user_id', userId)
           .limit(1)
@@ -42,7 +42,7 @@ export default function ReferralCard({ userId, existingGrantExpiry }: ReferralCa
           throw fetchErr;
         }
 
-        let code = existingReferral?.referral_code;
+        let code = (existingReferral as any)?.referral_code;
 
         // If no code exists, create one
         if (!code) {
@@ -54,12 +54,12 @@ export default function ReferralCard({ userId, existingGrantExpiry }: ReferralCa
           code = response.data.code;
         }
 
-        setReferralCode(code);
+        setReferralCode(code ?? null);
         setShareUrl(`https://jobbachao.com?ref=${code}`);
 
         // Fetch conversion count
         const { count, error: countErr } = await supabase
-          .from('referrals')
+          .from('referrals' as any)
           .select('*', { count: 'exact', head: true })
           .eq('referrer_user_id', userId)
           .eq('status', 'converted');

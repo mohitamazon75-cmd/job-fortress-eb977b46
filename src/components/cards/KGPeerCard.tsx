@@ -46,8 +46,8 @@ export default function KGPeerCard({ report }: KGPeerCardProps) {
     : undefined);
   const hasRealPercentile = percentile != null;
   const percentileNum = typeof percentile === 'string' 
-    ? parseInt(percentile.replace(/[^\d]/g, '')) || 50
-    : percentile ?? 50;
+    ? parseInt((percentile as string).replace(/[^\d]/g, '')) || 50
+    : (percentile as number) ?? 50;
 
   if (skillNodes.length === 0) return null;
 

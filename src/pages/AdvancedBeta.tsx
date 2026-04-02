@@ -23,10 +23,10 @@ export default function AdvancedBeta() {
   const dossierAbortRef = useRef<AbortController | null>(null);
 
   // DEPRECATED: Bluff Boss and Fake It removed (gimmick functions per Phase A pivot)
-  // const [bluffData, setBluffData] = useState<any>(null);
-  // const [bluffLoading, setBluffLoading] = useState(false);
-  // const [fakeItData, setFakeItData] = useState<any>(null);
-  // const [fakeItLoading, setFakeItLoading] = useState(false);
+  const [bluffData, setBluffData] = useState<any>(null);
+  const [bluffLoading, setBluffLoading] = useState(false);
+  const [fakeItData, setFakeItData] = useState<any>(null);
+  const [fakeItLoading, setFakeItLoading] = useState(false);
 
   // Stream the dossier from ai-dossier edge function
   const streamDossier = useCallback(async (reportData: RiskIQResult) => {

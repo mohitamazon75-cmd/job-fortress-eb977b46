@@ -16,11 +16,12 @@ interface Props {
 }
 
 interface TrendPoint {
-  label: string;       // "Mar '25" short date
+  label: string;
   score: number;
   scanId: string;
   daysAgo: number;
   isCurrent?: boolean;
+  [key: string]: unknown;
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -135,7 +136,7 @@ export default function ScoreTrendCard({ report, scanId }: Props) {
             if (row.final_json_report) {
               try {
                 const report = typeof row.final_json_report === 'object' && row.final_json_report
-                  ? row.final_json_report as ScanReport
+                  ? row.final_json_report as unknown as ScanReport
                   : null;
                 if (report) {
                   s = computeStabilityScore(report);
@@ -154,7 +155,7 @@ export default function ScoreTrendCard({ report, scanId }: Props) {
               isCurrent: false,
             };
           })
-          .filter((p): p is TrendPoint => p !== null);
+          .filter((p): p is NonNullable<typeof p> => p !== null) as TrendPoint[];
 
         // Always append current scan as the rightmost point
         const allPoints: TrendPoint[] = [

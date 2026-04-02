@@ -21,7 +21,7 @@ export default function ScoreTimeline({ userId, currentScore }: ScoreTimelinePro
       try {
         // Get score history
         const { data: history } = await supabase
-          .from('score_history' as string)
+          .from('score_history' as any)
           .select('created_at, determinism_index, survivability_score')
           .eq('user_id', userId)
           .order('created_at', { ascending: true })
@@ -29,7 +29,7 @@ export default function ScoreTimeline({ userId, currentScore }: ScoreTimelinePro
 
         // Get score events (drift events)
         const { data: events } = await supabase
-          .from('score_events' as string)
+          .from('score_events' as any)
           .select('computed_at, delta, reason, event_type')
           .eq('user_id', userId)
           .order('computed_at', { ascending: true })
@@ -37,13 +37,13 @@ export default function ScoreTimeline({ userId, currentScore }: ScoreTimelinePro
 
         if (!history?.length) return;
 
-        const mapped: TimelinePoint[] = history.map((h) => ({
+        const mapped: TimelinePoint[] = (history as any[]).map((h: any) => ({
           month: new Date(h.created_at).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }),
           score: h.determinism_index ?? h.survivability_score ?? currentScore,
         }));
 
         // Overlay drift events on existing points
-        events?.forEach((ev) => {
+        (events as any[])?.forEach((ev: any) => {
           const evMonth = new Date(ev.computed_at).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
           const existing = mapped.find((p) => p.month === evMonth);
           if (existing) existing.event = ev.reason;

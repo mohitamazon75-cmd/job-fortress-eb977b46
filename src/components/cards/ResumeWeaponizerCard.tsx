@@ -162,7 +162,7 @@ export default function ResumeWeaponizerCard({ report, scanId }: { report: ScanR
               placeholder={`e.g. Senior ${role}`}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3" />
           </div>
-          <button onClick={fetchWeaponized} disabled={loading}
+          <button onClick={() => fetchWeaponized()} disabled={loading}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-destructive text-destructive-foreground font-black text-sm hover:bg-destructive/90 transition-colors disabled:opacity-50">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             {loading ? 'Rewriting...' : 'Weaponize My Resume'}
@@ -171,7 +171,7 @@ export default function ResumeWeaponizerCard({ report, scanId }: { report: ScanR
         {error && (
           <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-center">
             <p className="text-xs text-destructive">{error}</p>
-            <button onClick={fetchWeaponized} className="text-xs font-bold text-primary hover:underline mt-1">Try Again</button>
+            <button onClick={() => fetchWeaponized()} className="text-xs font-bold text-primary hover:underline mt-1">Try Again</button>
           </div>
         )}
       </div>
@@ -199,7 +199,7 @@ export default function ResumeWeaponizerCard({ report, scanId }: { report: ScanR
             </div>
             <ArrowRight className="w-5 h-5 text-prophet-green" />
             <div className="text-center">
-              <p className="text-lg font-bold text-prophet-green">~{Math.max(ats.score_estimate_after - 5, 0)}–{Math.min(ats.score_estimate_after + 5, 100)}%</p>
+              <p className="text-lg font-bold text-prophet-green">~{Math.max((ats.score_estimate_after ?? 0) - 5, 0)}–{Math.min((ats.score_estimate_after ?? 0) + 5, 100)}%</p>
               <p className="text-[11px] text-muted-foreground">After</p>
             </div>
           </div>

@@ -32,7 +32,7 @@ export default function MilestoneChecklist({ userId, scanId }: MilestoneChecklis
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('defense_milestones')
+        .from('defense_milestones' as any)
         .select('id, phase, milestone_key, milestone_label, resource_url, completed_at')
         .eq('user_id', userId)
         .eq('scan_id', scanId)
@@ -44,7 +44,7 @@ export default function MilestoneChecklist({ userId, scanId }: MilestoneChecklis
         return;
       }
 
-      setMilestones(data || []);
+      setMilestones((data as any) || []);
     } catch (err) {
       console.error('Error fetching milestones:', err);
     } finally {
@@ -64,7 +64,7 @@ export default function MilestoneChecklist({ userId, scanId }: MilestoneChecklis
 
     try {
       const { error } = await supabase
-        .from('defense_milestones')
+        .from('defense_milestones' as any)
         .update({
           completed_at: isCompleting ? new Date().toISOString() : null,
         })

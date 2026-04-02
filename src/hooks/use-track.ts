@@ -5,7 +5,7 @@ export function useTrack(scanId?: string) {
   const track = useCallback(async (event: string, props?: Record<string, unknown>) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      await supabase.from('behavior_events' as string).insert({
+      await supabase.from('behavior_events' as any).insert({
         user_id: session?.user?.id ?? null,
         scan_id: scanId ?? null,
         event_name: event,

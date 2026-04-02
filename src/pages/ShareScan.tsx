@@ -12,9 +12,8 @@ export default function ShareScan() {
     const fetchMeta = async () => {
       // Use a SECURITY DEFINER RPC that returns only safe preview fields —
       // never the full final_json_report blob which may contain PII.
-      // @ts-expect-error — RPC type will be added after Supabase types regeneration
       const { data } = await supabase
-        .rpc('get_scan_share_preview', { scan_id: scanId })
+        .rpc('get_scan_share_preview' as any, { scan_id: scanId })
         .maybeSingle();
 
       if (data) {

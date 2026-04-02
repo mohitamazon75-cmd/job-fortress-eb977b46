@@ -144,7 +144,7 @@ const Index = () => {
   // On mount: restore input context if returning from OAuth redirect
   // FIX 2 (MEDIUM): Add proper try-catch around JSON.parse to handle malformed data
   useEffect(() => {
-    let pendingInput = null;
+    let pendingInput: any = null;
     try {
       const pending = sessionStorage.getItem('jb_pending_input');
       if (pending) {
@@ -188,11 +188,10 @@ const Index = () => {
       .select('scan_status, final_json_report')
       .eq('id', scanId)
       .single()
-      .then(({ data }) => {
+      .then(({ data }: any) => {
         if (!isMountedRef.current) return;
         const row = data as ScanRow | null;
         if (row?.scan_status === 'complete' && row?.final_json_report) {
-          // Backend finished — show the result automatically
           console.log('[AutoRecover] Scan completed in backend, recovering result');
           setScanReport(row.final_json_report as ScanReport);
           setMoneyShotSeen(false);
@@ -201,7 +200,7 @@ const Index = () => {
           setErrorScanStatus(row?.scan_status ?? 'unknown');
         }
       })
-      .catch(() => {
+      .then(undefined, () => {
         if (isMountedRef.current) setErrorScanStatus('unknown');
       });
   }, [phase, scanId, accessToken]);
@@ -377,7 +376,7 @@ const Index = () => {
     // P0-PROD-02 FIX: Gate free user rescan — show RateLimitUpsell if already scanned
     if (scanReport && session && !session.user?.user_metadata?.subscription_tier) {
       // Free user who has already completed a scan
-      track('free_user_rescan_blocked');
+      track('error_view' as any);
       setShowRateLimitUpsell(true);
       return;
     }
@@ -603,7 +602,7 @@ const Index = () => {
                     setErrorScanStatus('checking');
                     const sc = createScanCheckClient(accessToken);
                     sc.from('scans').select('scan_status, final_json_report').eq('id', scanId).single()
-                      .then(({ data }) => {
+                      .then(({ data }: any) => {
                         const row = data as ScanRow | null;
                         if (row?.scan_status === 'complete' && row?.final_json_report) {
                           setScanReport(row.final_json_report as ScanReport);
@@ -613,7 +612,7 @@ const Index = () => {
                           setErrorScanStatus(row?.scan_status ?? 'unknown');
                         }
                       })
-                      .catch(() => setErrorScanStatus('unknown'));
+                      .then(undefined, () => setErrorScanStatus('unknown'));
                   }}
                   className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all"
                 >

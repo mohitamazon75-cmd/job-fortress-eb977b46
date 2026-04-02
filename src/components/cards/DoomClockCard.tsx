@@ -8,7 +8,7 @@
  * html2canvas capture target uses inline hex/rgba — no CSS custom properties —
  * so the image renders faithfully across all devices.
  */
-import { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Share2, Download, AlertTriangle, Zap, MessageCircle } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
@@ -101,7 +101,7 @@ function CaptureTarget({
 }) {
   return (
     <div
-      ref={innerRef}
+      ref={innerRef as React.RefObject<HTMLDivElement>}
       style={{
         width: 380,
         background: 'linear-gradient(150deg, #0d1117 0%, #1a0f0f 60%, #0d1117 100%)',
@@ -200,16 +200,30 @@ export default function DoomClockCard({ report, scanId }: Props) {
   const [lastCaptureMs, setLastCaptureMs] = useState(0);
   const { track } = useTrack(scanId);
 
+  // Get skills sorted by urgency (lowest months = highest risk = first)
+  const allSkills = classifySkills(report);
+  const atRisk = allSkills
+    .filter(s => s.status !== 'safe')
+    .sort((a, b) => a.estimatedMonths - b.estimatedMonths);
+
+  const topSkills = atRisk.slice(0, 3);
+  const totalAtRisk = atRisk.length;
+  const mostUrgentMonths = topSkills[0]?.estimatedMonths ?? 24;
+  const mostUrgentLabel = monthsLabel(mostUrgentMonths);
+
+  // Sanitize user-controlled strings at derivation time
+  const role = sanitize(report.role || 'Professional', 50);
+  const industry = sanitize(report.industry || '', 50);
+  const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
   // Cleanup on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => { mountedRef.current = false };
   }, []);
 
   // ── Auto-capture on mount — removes the "Generate" friction step ──────────
-  // We wait 800ms for the DOM + fonts to fully paint before capturing.
-  // If capture fails silently (e.g. CSP, old browser), the manual button still works.
-  React.useEffect(() => {
-    if (topSkills.length === 0) return; // nothing to capture
+  useEffect(() => {
+    if (topSkills.length === 0) return;
     const timer = setTimeout(async () => {
       if (!cardRef.current || !mountedRef.current) return;
       try {
@@ -231,23 +245,7 @@ export default function DoomClockCard({ report, scanId }: Props) {
       }
     }, 800);
     return () => clearTimeout(timer);
-  }, [topSkills]); // re-fire if skills change (fixes stale closure bug)
-
-  // Get skills sorted by urgency (lowest months = highest risk = first)
-  const allSkills = classifySkills(report);
-  const atRisk = allSkills
-    .filter(s => s.status !== 'safe')
-    .sort((a, b) => a.estimatedMonths - b.estimatedMonths);
-
-  const topSkills = atRisk.slice(0, 3);
-  const totalAtRisk = atRisk.length;
-  const mostUrgentMonths = topSkills[0]?.estimatedMonths ?? 24;
-  const mostUrgentLabel = monthsLabel(mostUrgentMonths);
-
-  // Sanitize user-controlled strings at derivation time
-  const role = sanitize(report.role || 'Professional', 50);
-  const industry = sanitize(report.industry || '', 50);
-  const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  }, [topSkills.length]); // re-fire if skills change
 
   // ── capture ──────────────────────────────────────────────────────────────
   const CAPTURE_COOLDOWN_MS = 1500;
