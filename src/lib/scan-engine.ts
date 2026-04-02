@@ -452,7 +452,7 @@ export async function triggerProcessScan(
       ]);
 
       if (invokeResult.timedOut) {
-        console.log(`[Scan] process-scan invoke still running after ${INVOKE_WAIT_MS}ms; continuing with status polling`);
+        console.debug(`[Scan] process-scan invoke still running after ${INVOKE_WAIT_MS}ms; continuing with status polling`);
         return { accepted: true };
       }
 
