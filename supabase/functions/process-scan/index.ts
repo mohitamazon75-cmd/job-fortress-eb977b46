@@ -141,6 +141,7 @@ function isTrustedLinkedinResult(urlInput: string, titleInput: string, contentIn
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
   const corsHeaders = getCorsHeaders(req);
+  let globalTimer: ReturnType<typeof setTimeout> | undefined;
 
   try {
     const blocked = guardRequest(req, corsHeaders);
@@ -218,7 +219,6 @@ Deno.serve(async (req) => {
     // ── Global timeout (request-scoped to prevent cross-request interference) ──
     const globalStart = Date.now();
     let globalTimedOut = false;
-    let globalTimer: ReturnType<typeof setTimeout> | undefined;
     globalTimer = setTimeout(() => {
       globalTimedOut = true;
       console.warn(`[Orchestrator] Soft timeout threshold reached (${GLOBAL_TIMEOUT_MS}ms) for scan ${scanId} — continuing in degraded mode`);
@@ -732,7 +732,7 @@ Deno.serve(async (req) => {
 
     if (!agent1) {
       agent1 = await callAgent(LOVABLE_API_KEY, "Agent1:Profiler", AGENT_1_PROFILER,
-        agent1UserPrompt, PRO_MODEL, 0.1, 40_000);
+        agent1UserPrompt, PRO_MODEL, 0.1, 30_000);
       if (!agent1) {
         console.error("[Agent1:Profiler] Profiler failed — cannot produce reliable report");
         await updateScan(supabase, scanId, null, null, null);
@@ -1090,17 +1090,17 @@ ${kgContext}`;
     const judoDietPromise = hasTimeBudget(15_000) ? Promise.allSettled([
       callAgentWithFallback(LOVABLE_API_KEY, "JudoStrategy", JUDO_STRATEGY_SYSTEM_PROMPT,
         buildSeniorityJudoPrompt(seniorityTier, expYears, displayName, displayCompany, agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry, profileInput.strategic_skills, profileInput.execution_skills, profileInput.all_skills, det.determinism_index, det.survivability.score, scan.metro_tier || "tier1", null, profileInput.executive_impact || null),
-        activeModel, 0.3, 35_000).then(r => r.data),
+        activeModel, 0.3, 25_000).then(r => r.data),
       callAgent(LOVABLE_API_KEY, "WeeklyDiet", WEEKLY_DIET_SYSTEM_PROMPT,
         buildSeniorityDietPrompt(seniorityTier, expYears, displayName, agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry, profileInput.strategic_skills, null),
-        FAST_MODEL, 0.3, 20_000),
+        FAST_MODEL, 0.3, 15_000),
     ]) : Promise.resolve(null);
 
     // Agents 2A+2B+2C promise — with model fallback chain
     const agents2Promise = Promise.allSettled([
-      callAgentWithFallback(LOVABLE_API_KEY, "Agent2A:Risk", AGENT_2A_RISK_ANALYSIS, `Generate risk analysis for:\n${sharedProfileContext}\n\nUse "${displayName}" by name. Reference "${displayCompany}".`, activeModel, 0.3, 35_000).then(r => r.data),
-      callAgentWithFallback(LOVABLE_API_KEY, "Agent2B:Plan", AGENT_2B_ACTION_PLAN, `Generate tier-calibrated action plan for:\n${sharedProfileContext}\nTier: ${seniorityTier}\nCountry: ${locale.label}\nCurrency: ${locale.currency}\nGeo Arbitrage Delta: ${locale.currencySymbol}${geoArb?.probability_adjusted_delta_inr || 0}/month\nJob Boards: ${locale.jobBoards.join(", ")}${rescanContext ? `\n${rescanContext}` : ''}`, activeModel, 0.35, 35_000).then(r => r.data),
-      callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", AGENT_2C_PIVOT_MAPPING, `Map career pivots for:\n${sharedProfileContext}\nMoat Score: ${det.moat_score}/100. Pivots must be realistic for ${seniorityTier} tier.\nCountry: ${locale.label}. Use job titles from ${locale.jobBoards.join("/")}.`, FAST_MODEL, 0.3, 35_000).then(r => r.data),
+      callAgentWithFallback(LOVABLE_API_KEY, "Agent2A:Risk", AGENT_2A_RISK_ANALYSIS, `Generate risk analysis for:\n${sharedProfileContext}\n\nUse "${displayName}" by name. Reference "${displayCompany}".`, activeModel, 0.3, 25_000).then(r => r.data),
+      callAgentWithFallback(LOVABLE_API_KEY, "Agent2B:Plan", AGENT_2B_ACTION_PLAN, `Generate tier-calibrated action plan for:\n${sharedProfileContext}\nTier: ${seniorityTier}\nCountry: ${locale.label}\nCurrency: ${locale.currency}\nGeo Arbitrage Delta: ${locale.currencySymbol}${geoArb?.probability_adjusted_delta_inr || 0}/month\nJob Boards: ${locale.jobBoards.join(", ")}${rescanContext ? `\n${rescanContext}` : ''}`, activeModel, 0.35, 25_000).then(r => r.data),
+      callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", AGENT_2C_PIVOT_MAPPING, `Map career pivots for:\n${sharedProfileContext}\nMoat Score: ${det.moat_score}/100. Pivots must be realistic for ${seniorityTier} tier.\nCountry: ${locale.label}. Use job titles from ${locale.jobBoards.join("/")}.`, FAST_MODEL, 0.3, 25_000).then(r => r.data),
     ]);
 
     // ── Await all in parallel with defensive timeout ──

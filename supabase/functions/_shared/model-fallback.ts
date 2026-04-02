@@ -34,7 +34,7 @@ export async function callAgentWithFallback(
   userPrompt: string,
   preferredModel = TIER1,
   temperature = 0.3,
-  timeoutMs = 50_000,
+  timeoutMs = 30_000,
 ): Promise<FallbackResult> {
   const start = Date.now();
   const chain: string[] = [];
@@ -60,7 +60,7 @@ export async function callAgentWithFallback(
       systemPrompt, userPrompt,
       model, temperature,
       // Reduce timeout for fallback attempts
-      chain.length === 1 ? timeoutMs : Math.min(timeoutMs, 25_000),
+      chain.length === 1 ? timeoutMs : Math.min(timeoutMs, 15_000),
     );
     if (result !== null) {
       if (chain.length > 1) {
