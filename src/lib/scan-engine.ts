@@ -608,7 +608,7 @@ export function subscribeScanStatus(
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         realtimeConnected = true;
-        console.log('[Scan] Realtime connected');
+        console.debug('[Scan] Realtime connected');
         // Re-check immediately after realtime connects to catch updates during connection
         immediateCheck();
       }
