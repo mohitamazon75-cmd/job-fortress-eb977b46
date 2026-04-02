@@ -1,6 +1,7 @@
 import { buildDossierPrompt, buildProfileContext } from "./prompt-builder.ts";
 import { createTokenTrackingTransform } from "../_shared/token-tracker.ts";
-import { requirePro } from "../_shared/subscription-guard.ts";
+// Pro gate disabled during beta/waitlist phase — all users get full access
+// import { requirePro } from "../_shared/subscription-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,9 +14,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Pro gate — verify active subscription before serving dossier
-  const subGuard = await requirePro(req);
-  if (subGuard) return subGuard;
+  // Pro gate disabled during beta/waitlist phase
+  // const subGuard = await requirePro(req);
+  // if (subGuard) return subGuard;
 
   try {
     const { report } = await req.json();
