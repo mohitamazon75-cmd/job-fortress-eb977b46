@@ -44,7 +44,7 @@ export default function MilestoneChecklist({ userId, scanId }: MilestoneChecklis
         return;
       }
 
-      setMilestones(data || []);
+      setMilestones((data as any) || []);
     } catch (err) {
       console.error('Error fetching milestones:', err);
     } finally {
