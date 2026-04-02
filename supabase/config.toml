@@ -1,0 +1,66 @@
+project_id = "dlpeirtuaxydoyzwzdyz"
+
+# SECURITY POLICY: JWT Verification
+# By default, ALL functions require verify_jwt = true (Supabase gateway enforces authentication).
+# Only functions listed below have explicit verify_jwt = false for specific, legitimate reasons:
+#
+# - Webhooks (receive signed payloads, not JWTs)
+# - Public/anonymous features (share links, onboarding, public previews)
+# - Server-to-server operations (background jobs, scheduled tasks, monitoring)
+# - Functions with custom auth (admin dashboards with password checks)
+#
+# ANY OTHER FUNCTION DEFAULTS TO verify_jwt = true AND REQUIRES AUTHENTICATION.
+
+# Webhook: Razorpay sends HMAC-signed payloads, not JWT
+[functions.razorpay-webhook]
+verify_jwt = false
+
+# Public share preview images (no auth required)
+[functions.og-image]
+verify_jwt = false
+
+# Anonymous share link validation (validates custom token, not JWT)
+[functions.validate-shared-token]
+verify_jwt = false
+
+# Pre-login anonymous functionality
+[functions.create-scan]
+verify_jwt = false
+
+[functions.migrate-anon-scans]
+verify_jwt = false
+
+# Onboarding functions (before user is authenticated)
+[functions.parse-resume]
+verify_jwt = false
+
+[functions.parse-linkedin]
+verify_jwt = false
+
+# Server-side storage setup (internal operation)
+[functions.create-bucket]
+verify_jwt = false
+
+# Server-to-server monitoring operations
+[functions.send-alerts]
+verify_jwt = false
+
+[functions.process-email-queue]
+verify_jwt = false
+
+# Functions with custom admin authentication (password-based, not JWT)
+[functions.monitoring-dashboard]
+verify_jwt = false
+
+[functions.admin-dashboard]
+verify_jwt = false
+
+# Scheduled/background jobs (no user JWT in context)
+[functions.generate-weekly-brief]
+verify_jwt = false
+
+[functions.fetch-weekly-intel]
+verify_jwt = false
+
+[functions.coach-nudge]
+verify_jwt = false

@@ -1,0 +1,275 @@
+// ═══════════════════════════════════════════════════════════════
+// AI Agent Caller — JSON-focused LLM call with timeout, fallback,
+// truncated-JSON recovery, and automatic retry on malformed output.
+// ═══════════════════════════════════════════════════════════════
+
+import { trackAgentLatency } from "./edge-logger.ts";
+import { logTokenUsage } from "./token-tracker.ts";
+
+const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const GPT5_MODEL = "google/gemini-3.1-pro-preview"; // Tier 1: Deep reasoning & narrative (was GPT-5)
+const PRO_MODEL = "google/gemini-3-pro-preview"; // Tier 2: Core analysis
+const FLASH_MODEL = "google/gemini-3-flash-preview"; // Tier 3: Fast synthesis
+const FALLBACK_MODEL = "google/gemini-2.5-pro";  // Emergency fallback
+const DEFAULT_TIMEOUT_MS = 50_000;
+const HARD_TIMEOUT_FLOOR_MS = 65_000;
+
+export { AI_URL, GPT5_MODEL, PRO_MODEL, FLASH_MODEL, FALLBACK_MODEL, DEFAULT_TIMEOUT_MS };
+
+/** Strip markdown fences from LLM output */
+function stripFences(raw: string): string {
+  return raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+}
+
+/** Attempt to recover truncated JSON by finding the last closing brace */
+function recoverTruncatedJson(raw: string): unknown | null {
+  // Find the last complete JSON object using bracket counting
+  let braceDepth = 0;
+  let inString = false;
+  let escaped = false;
+  let lastCompleteEnd = -1;
+
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\' && inString) { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') braceDepth++;
+    if (ch === '}') {
+      braceDepth--;
+      if (braceDepth === 0) lastCompleteEnd = i;
+    }
+  }
+
+  if (lastCompleteEnd < 0) return null;
+
+  try {
+    return JSON.parse(raw.slice(0, lastCompleteEnd + 1));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Internal AI call implementation.
+ * Includes per-request AbortController timeout and fallback model retry.
+ */
+async function callAgentCore(
+  apiKey: string,
+  agentName: string,
+  systemPrompt: string,
+  userPrompt: string,
+  model = PRO_MODEL,
+  temperature = 0.3,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<any> {
+  console.log(`[${agentName}] Starting...`);
+  const start = Date.now();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    // GPT-5 only supports temperature=1
+    const effectiveTemp = model.includes("gpt-5") ? 1 : temperature;
+    const resp = await fetch(AI_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: effectiveTemp,
+        generationConfig: {
+          responseMimeType: "application/json",
+        },
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error(`[${agentName}] AI error [${resp.status}] on ${model}:`, errText.slice(0, 300));
+      if (model === PRO_MODEL) {
+        console.log(`[${agentName}] Falling back to ${FALLBACK_MODEL}...`);
+        return callAgentCore(apiKey, agentName, systemPrompt, userPrompt, FALLBACK_MODEL, temperature, timeoutMs);
+      }
+      return null;
+    }
+
+    const data = await resp.json();
+    // Fire-and-forget token tracking
+    logTokenUsage("callAgent", agentName, model, data);
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      console.error(`[${agentName}] No content in response`);
+      return null;
+    }
+
+    // Primary parse
+    const cleaned = stripFences(content);
+    try {
+      const parsed = JSON.parse(cleaned);
+      console.log(`[${agentName}] Complete in ${Date.now() - start}ms using ${model}`);
+      return parsed;
+    } catch {
+      // Truncated recovery
+      const recovered = recoverTruncatedJson(cleaned);
+      if (recovered) {
+        console.log(`[${agentName}] Recovered truncated JSON in ${Date.now() - start}ms`);
+        return recovered;
+      }
+
+      console.error(`[${agentName}] JSON parse failed:`, content.slice(0, 300));
+      // Retry with JSON nudge
+      return retryWithJsonNudge(apiKey, agentName, systemPrompt, userPrompt, content, model, timeoutMs);
+    }
+  } catch (err: any) {
+    clearTimeout(timeout);
+    if (err?.name === "AbortError") {
+      console.warn(`[${agentName}] Timed out after ${timeoutMs}ms`);
+      return null;
+    }
+    console.error(`[${agentName}] Error:`, err);
+    return null;
+  }
+}
+
+/**
+ * Public AI call wrapper with an additional hard cap to prevent rare hanging promises.
+ */
+export async function callAgent(
+  apiKey: string,
+  agentName: string,
+  systemPrompt: string,
+  userPrompt: string,
+  model = PRO_MODEL,
+  temperature = 0.3,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<any> {
+  const hardTimeoutMs = Math.max(timeoutMs + 20_000, HARD_TIMEOUT_FLOOR_MS);
+  const start = Date.now();
+
+  return await new Promise<any>((resolve) => {
+    let settled = false;
+
+    const settle = (result: any, timedOut: boolean) => {
+      if (settled) return;
+      settled = true;
+      const latencyMs = Date.now() - start;
+      // Fire-and-forget telemetry
+      trackAgentLatency(agentName, latencyMs, timedOut, model).catch(() => {});
+      resolve(result);
+    };
+
+    const hardTimer = setTimeout(() => {
+      console.warn(`[${agentName}] Hard timeout after ${hardTimeoutMs}ms (forcing null fallback)`);
+      settle(null, true);
+    }, hardTimeoutMs);
+
+    callAgentCore(apiKey, agentName, systemPrompt, userPrompt, model, temperature, timeoutMs)
+      .then((result) => {
+        if (settled) return;
+        clearTimeout(hardTimer);
+        settle(result, result === null);
+      })
+      .catch((err) => {
+        if (settled) return;
+        clearTimeout(hardTimer);
+        console.error(`[${agentName}] Fatal wrapper error:`, err);
+        settle(null, true);
+      });
+  });
+}
+
+/** Single retry attempt with an explicit JSON-only instruction */
+async function retryWithJsonNudge(
+  apiKey: string,
+  agentName: string,
+  systemPrompt: string,
+  userPrompt: string,
+  previousContent: string,
+  model: string,
+  timeoutMs: number,
+): Promise<any> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const resp = await fetch(AI_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+          { role: "assistant", content: previousContent },
+          { role: "user", content: "Your previous response was not valid JSON. Please respond with ONLY a valid JSON object, no markdown, no code fences, no explanation." },
+        ],
+        temperature: 0.1,
+        generationConfig: {
+          responseMimeType: "application/json",
+        },
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!resp.ok) { await resp.text(); return null; }
+
+    const retryData = await resp.json();
+    logTokenUsage("callAgent", `${agentName}:retry`, model, retryData);
+    const retryContent = retryData.choices?.[0]?.message?.content;
+    if (!retryContent) return null;
+
+    const retryJson = stripFences(retryContent);
+    try {
+      return JSON.parse(retryJson);
+    } catch {
+      return recoverTruncatedJson(retryJson);
+    }
+  } catch {
+    console.error(`[${agentName}] Retry also failed`);
+    return null;
+  }
+}
+
+/**
+ * Fetch with exponential backoff for external APIs (Firecrawl, etc).
+ * Retries on 5xx and 429 errors.
+ */
+export async function fetchWithBackoff(
+  url: string,
+  init: RequestInit,
+  maxRetries = 3,
+  baseDelayMs = 1000,
+  attemptTimeoutMs = 12_000,
+): Promise<Response> {
+  let lastResponse: Response | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), attemptTimeoutMs);
+      const resp = await fetch(url, { ...init, signal: controller.signal });
+      clearTimeout(timeout);
+
+      lastResponse = resp;
+      if (resp.ok || (resp.status < 500 && resp.status !== 429)) return resp;
+      await resp.text(); // consume body
+    } catch (err: any) {
+      if (err?.name !== "AbortError") throw err;
+      console.warn(`[fetchWithBackoff] ${url} timed out after ${attemptTimeoutMs}ms (attempt ${attempt + 1}/${maxRetries})`);
+    }
+
+    if (attempt < maxRetries - 1) {
+      const delay = Math.min(baseDelayMs * Math.pow(2, attempt), 8000) + Math.random() * 500;
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+
+  if (lastResponse) return lastResponse;
+  throw new Error(`fetchWithBackoff failed for ${url} after ${maxRetries} attempt(s)`);
+}

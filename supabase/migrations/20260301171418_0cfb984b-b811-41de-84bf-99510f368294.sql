@@ -1,0 +1,1 @@
+ALTER TABLE public.scans ADD COLUMN IF NOT EXISTS access_token TEXT DEFAULT encode(gen_random_bytes(32), 'hex');

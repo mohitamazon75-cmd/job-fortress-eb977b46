@@ -1,0 +1,1 @@
+DELETE FROM scan_rate_limits WHERE created_at < now() - interval '1 hour';

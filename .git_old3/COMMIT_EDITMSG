@@ -1,0 +1,30 @@
+fix: resolve all 36 Critical + High static analysis issues
+
+Security & Auth:
+- Fix ghost import use-auth → useAuth in Index.tsx
+- Add env var validation guard in supabase/client.ts (throws on missing vars)
+- Remove hardcoded Supabase credentials from vite.config.ts fallbacks
+- Fix AuthGuard dev bypass to use import.meta.env.DEV (not hostname check)
+- Add admin role check on /admin/monitor route via AuthGuard requiredRole prop
+
+Type Safety:
+- Add parseScanReport() helper in scan-engine.ts; replace all unsafe `as ScanReport` casts
+- Add missing fields (matched_job_family, peer_percentile_estimate) to ScanReport type
+- Fix PeerComparisonPreviewCard typo: peer_percentile_percentile → peer_percentile_estimate
+- Replace non-null assertion on optional field in ResumeWeaponizerCard
+- Fix ScoreTrendCard unsafe cast with null-checked pattern
+- Fix Math.max() on potentially empty array in JobSafetyCard
+
+Runtime Safety:
+- Add .catch() on promise chains in scan-engine.ts
+- Add top-level try/catch in use-subscription.ts fetch logic
+- Fix stale closures in InterviewCheatSheetCard and SkillUpgradePlanCard useEffects
+- Fix VITE_SUPABASE_ANON_KEY → VITE_SUPABASE_PUBLISHABLE_KEY in IntelWatchlist
+- Add VITE_SUPABASE_URL guards before URL template literals in 5 components
+- Add InsightCards array bounds check before card.Icon access
+
+Edge Functions:
+- Remove tool/system-prompt contradiction in best-fit-jobs (salary estimation)
+- Add TIER_PRICES undefined guard in activate-subscription (rejects invalid tiers)
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>

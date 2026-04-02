@@ -1,0 +1,41 @@
+fix: apply QA sweep — 36 issues fixed across 18 files
+
+Critical:
+- useAuth.ts: sequence getSession() before onAuthStateChange subscription (race condition)
+- useAuth.ts: throw error on signOut failure instead of silent swallow
+- scan-engine.ts: check authError from getUser() before using user
+- Index.tsx: guard createScan() result before calling startScanPipeline()
+- LinkedInRoastCard.tsx: optional chain roastItems[0]?.roast to prevent crash on empty array
+
+High:
+- use-subscription.ts: check profileError before accessing profile fields
+- Index.tsx: remove duplicate session useState/getSession, use useAuth() hook
+- CareerObituaryCard.tsx: add mounted guard in useEffect to prevent memory leak
+- CareerObituaryCard.tsx: replace index-only .map() keys with content-based keys
+- LinkedInRoastCard.tsx: expand useMemo dependency array from [report] to all captured vars
+- LinkedInRoastCard.tsx: replace (tools[0] as any) cast with runtime type guard
+- LinkedInRoastCard.tsx: || → ?? for all string fallbacks on array index access
+- ShareableScoreCard.tsx: guard handleDownload against double-submit with downloading state
+- 16 buttons across 6 files: add type="button" + focus-visible ring (accessibility)
+- activate-subscription: improve bearer token null-safety check
+- razorpay-webhook: replace === with timing-safe byte comparison for HMAC verification
+- best-fit-jobs: sanitise error messages — log internally, return generic message to client
+
+Medium:
+- scan-engine.ts: increase MAX_TOTAL_WAIT_MS from 3min to 6min
+- scan-engine.ts: refresh auth token before polling starts
+- scan-engine.ts: propagate actual error messages through return objects
+- Index.tsx: wrap JSON.parse(sessionStorage) in try-catch with cleanup
+- Index.tsx: clear stale hasResume flag when resumeFileRef is null after OAuth redirect
+- Index.tsx: add reload-loop guard on chunk error (sessionStorage flag)
+- Index.tsx: extract ScanRow interface (remove inline `any` type)
+- DoomClockCard.tsx: add mountedRef guard in handleCapture to prevent post-unmount setState
+- stability-score.ts: remove (report as any).moat_score cast — field already in interface
+- FearScoreDecay.tsx: raise text-[7px] → text-[9px], add aria-hidden to decorative labels
+
+Low:
+- CoachOptInCard.tsx: set error state on missing scanId instead of silent return
+- tailwind.config.ts: add whatsapp / whatsapp-dark color tokens
+- LinkedInRoastCard.tsx: replace bg-[#25D366] with bg-whatsapp design token
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>

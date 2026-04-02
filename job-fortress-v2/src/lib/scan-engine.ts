@@ -1,0 +1,727 @@
+import { supabase } from '@/integrations/supabase/client';
+import { createClient } from '@supabase/supabase-js';
+
+// ── Scan-specific client: adds x-scan-access-token header so RLS policy
+//    "Anon can select scan by access_token" allows reading without user JWT
+// Security: never hardcode fallback credentials — if env vars are missing the app
+// must fail loudly at startup rather than silently ship prod keys in the bundle.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  throw new Error('[scan-engine] VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY env var is not set. Check your .env file.');
+}
+
+function createScanClient(accessToken: string) {
+  return createClient(SUPABASE_URL, SUPABASE_KEY, {
+    global: { headers: { 'x-scan-access-token': accessToken } },
+    auth: { persistSession: false },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Issue #8: Safe ScanReport parsing helper
+// ─────────────────────────────────────────────────────────────
+function parseScanReport(raw: unknown): ScanReport | null {
+  if (!raw || typeof raw !== 'object') return null;
+  return raw as ScanReport;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// V3.2 SCAN REPORT TYPES
+// ═══════════════════════════════════════════════════════════════
+
+export interface ReplacingTool {
+  tool_name: string;
+  automates_task: string;
+  adoption_stage: 'Early' | 'Growing' | 'Mainstream';
+}
+
+export interface GeoArbitrage {
+  target_market: string;
+  raw_delta_inr_monthly: number;
+  probability_adjusted_delta_inr: number;
+  geo_probability_pct: number;
+  expected_value_12mo_inr: number;
+  fastest_path_weeks: number;
+}
+
+export interface Tier2Alternative {
+  recommended_city: string;
+  salary_estimate_inr: number;
+  probability: number;
+}
+
+export interface ObsolescenceTimeline {
+  purple_zone_months: number;
+  yellow_zone_months: number;
+  orange_zone_months: number;
+  red_zone_months: number;
+  already_in_warning: boolean;
+}
+
+export interface Survivability {
+  score: number;
+  breakdown: {
+    experience_bonus: number;
+    strategic_bonus: number;
+    geo_bonus: number;
+    adaptability_bonus: number;
+  };
+  primary_vulnerability: string;
+  peer_percentile_estimate: string;
+}
+
+export interface SkillGap {
+  missing_skill: string;
+  importance_for_pivot: number;
+  fastest_path: string;
+  weeks_to_proficiency: number;
+  salary_unlock_inr_monthly: number;
+}
+
+export interface LearningResource {
+  title: string;
+  author_or_platform: string;
+  url?: string;
+  why_relevant: string;
+}
+
+export interface WeeklyAction {
+  week: number;
+  theme: string;
+  action: string;
+  deliverable: string;
+  effort_hours: number;
+  fallback_action: string;
+  books?: LearningResource[];
+  courses?: LearningResource[];
+  videos?: LearningResource[];
+}
+
+export interface ImmediateNextStep {
+  action: string;
+  rationale: string;
+  time_required: string;
+  deliverable: string;
+}
+
+export interface CulturalRiskAssessment {
+  risk_level: 'LOW' | 'MEDIUM' | 'HIGH';
+  family_conversation_script: string;
+  social_proof_example: string;
+}
+
+export interface DataQuality {
+  profile_completeness: number;
+  kg_coverage: number;
+  overall: 'HIGH' | 'MEDIUM' | 'LOW';
+  unmatched_skills_count?: number;
+  salary_source?: 'real_api' | 'not_available';
+  market_signals_source?: 'real_api' | 'tavily_search';
+  posting_count_source?: 'real_api' | 'search_result_count';
+  data_age_hours?: number | null;
+  profile_completeness_pct?: number;
+  profile_gaps?: string[];
+}
+
+// Task 1: Score Breakdown
+export interface SkillAdjustment {
+  skill_name: string;
+  automation_risk: number;
+  weight: number;
+  contribution: number;
+}
+
+export interface ScoreBreakdown {
+  base_score: number;
+  skill_adjustments: SkillAdjustment[];
+  weighted_skill_average: number | null;
+  market_pressure: number;
+  experience_reduction: number;
+  pre_clamp_score: number;
+  final_clamped: number;
+  salary_bleed_breakdown: {
+    depreciation_rate: number;
+    market_amplifier: number;
+    ai_pressure_add: number;
+    final_rate: number;
+  };
+  survivability_breakdown: {
+    base: number;
+    experience_bonus: number;
+    strategic_bonus: number;
+    geo_bonus: number;
+    adaptability_bonus: number;
+    seniority_bonus: number;
+    di_penalty: number;
+    final: number;
+  };
+}
+
+// Task 2: Score Variability
+export interface ScoreVariability {
+  di_range: { low: number; high: number };
+  months_range: { low: number; high: number };
+  salary_bleed_range: { low: number; high: number };
+}
+
+export interface ExecutiveImpactSignals {
+  revenue_scope_usd: number | null;
+  team_size_direct: number | null;
+  team_size_org: number | null;
+  budget_authority_usd: number | null;
+  regulatory_domains: string[];
+  geographic_scope: string[];
+  board_exposure: boolean;
+  investor_facing: boolean;
+  domain_tenure_years: number | null;
+  cross_industry_pivots: number;
+  moat_type: 'REGULATORY' | 'SCALE' | 'RELATIONSHIP' | 'DOMAIN' | 'HYBRID' | null;
+  moat_evidence: string | null;
+}
+
+export interface ScanReport {
+  role: string;
+  determinism_index: number;
+  determinism_confidence?: 'VERY HIGH' | 'HIGH' | 'MEDIUM' | 'LOW';
+  months_remaining: number;
+  salary_bleed_monthly: number;
+  total_5yr_loss_inr?: number;
+  execution_skills_dead: string[];
+  cognitive_moat: string;
+  moat_skills: string[];
+  industry: string;
+  ai_tools_replacing: (string | ReplacingTool)[];
+  arbitrage_role: string;
+  arbitrage_companies_count: number;
+  free_advice_1: string;
+  free_advice_2: string;
+  free_advice_3?: string;
+  geo_advantage: string;
+  geo_arbitrage?: GeoArbitrage | null;
+  tier2_alternative?: Tier2Alternative | null;
+  obsolescence_timeline?: ObsolescenceTimeline | null;
+  survivability?: Survivability | null;
+  skill_gap_map?: SkillGap[];
+  weekly_action_plan?: WeeklyAction[];
+  immediate_next_step?: ImmediateNextStep | null;
+  cultural_risk_assessment?: CulturalRiskAssessment | null;
+  tone_tag?: 'CRITICAL' | 'WARNING' | 'MODERATE' | 'STABLE';
+  dead_end_narrative?: string;
+  source: string;
+  // Persisted skill arrays from Agent 1 for insight cards
+  all_skills?: string[];
+  execution_skills?: string[];
+  strategic_skills?: string[];
+  linkedin_name?: string | null;
+  linkedin_company?: string | null;
+  seniority_tier?: 'EXECUTIVE' | 'SENIOR_LEADER' | 'MANAGER' | 'PROFESSIONAL' | 'ENTRY' | null;
+  executive_impact?: ExecutiveImpactSignals | null;
+  data_quality?: DataQuality | null;
+  engine_version?: string;
+  computation_method?: {
+    numbers: string;
+    qualitative: string;
+    kg_skills_matched: number;
+  };
+  // Task 1 & 2
+  score_breakdown?: ScoreBreakdown | null;
+  score_variability?: ScoreVariability | null;
+  // Task 8
+  compound_role?: boolean;
+  role_components?: string[];
+  // Task 6
+  company_tier?: string | null;
+  // ML Enhancement
+  ml_enhanced?: boolean;
+  ml_timed_out?: boolean;
+  ml_raw?: any;
+  automation_risk?: number | null;
+  judo_strategy?: {
+    recommended_tool: string;
+    pitch: string;
+    survivability_after_judo: number;
+    months_gained: number;
+  } | null;
+  weekly_survival_diet?: {
+    theme: string;
+    read: { title: string; action: string; time_commitment: string };
+    watch: { title: string; action: string; time_commitment: string };
+    listen: { title: string; action: string; time_commitment: string };
+  } | null;
+  market_position_model?: {
+    market_percentile: number;
+    competitive_tier: string;
+    leverage_status: string;
+    talent_density: string;
+    demand_trend: string;
+  } | null;
+  career_shock_simulator?: {
+    expected_time_to_rehire_months: number;
+    worst_case_scenario_months: number;
+    financial_runway_needed_in_months: number;
+    salary_drop_percentage: number;
+    most_probable_role_offered?: string;
+    highest_probability_hiring_industries?: string[];
+  } | null;
+  // Phase 2: Full-Spectrum Tier Intelligence
+  moat_score?: number;
+  urgency_score?: number;
+  automatable_task_ratio?: 'HIGH' | 'MEDIUM' | 'LOW';
+  primary_ai_threat_vector?: string;
+  moat_indicators?: string[];
+  metro_tier?: string | null;
+  // Fields populated from scan context
+  country?: string;
+  years_experience?: string;
+  estimated_monthly_salary_inr?: number;
+  pivot_roles?: Array<{ role?: string; title?: string; [key: string]: unknown }>;
+  // Graph/peer analysis fields
+  matched_job_family?: string;
+  peer_percentile_estimate?: number;
+}
+
+// Helper to normalize tools (can be string or object)
+export function normalizeTools(tools: (string | ReplacingTool)[]): ReplacingTool[] {
+  return (tools || []).map((t) => {
+    if (typeof t === 'string') return { tool_name: t, automates_task: 'Various tasks', adoption_stage: 'Growing' as const };
+    return t;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCAN OPERATIONS
+// ═══════════════════════════════════════════════════════════════
+
+export async function createScan(params: {
+  linkedinUrl?: string;
+  resumeFilePath?: string;
+  country?: string;
+  industry?: string;
+  yearsExperience?: string;
+  metroTier?: string;
+  keySkills?: string;
+}): Promise<{ id: string; accessToken: string; triggered?: boolean }> {
+  // Check if user is authenticated to associate scan with user
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError) {
+    throw new Error('Authentication check failed. Please sign in again.')
+  }
+
+  // ── Use the create-scan edge function (service role) to bypass RLS ──
+  // The "Allow anonymous insert" policy was removed (migration 20260309140336),
+  // so direct REST inserts fail with 401 for anon users.  The edge function
+  // runs with SUPABASE_SERVICE_ROLE_KEY and handles dedup + safe insertion.
+  try {
+    const { data: fnData, error: fnError } = await supabase.functions.invoke('create-scan', {
+      body: {
+        linkedinUrl: params.linkedinUrl || null,
+        resumeFilePath: params.resumeFilePath || null,
+        country: params.country || 'IN',
+        industry: params.industry || null,
+        yearsExperience: params.yearsExperience || null,
+        metroTier: params.metroTier || null,
+        keySkills: params.keySkills || null,
+        userId: user?.id || null,
+      },
+    });
+
+    if (!fnError && fnData?.id) {
+      const scanId = fnData.id as string;
+      const accessToken = fnData.accessToken as string;
+
+      // Week 1 #1: Store scan ID for anonymous migration with 30-day TTL
+      if (!user?.id) {
+        try {
+          const scanEntry = { id: scanId, storedAt: Date.now() };
+          const existing = JSON.parse(localStorage.getItem('anon_scans') || '[]');
+          const pruned = existing.filter((e: any) => Date.now() - e.storedAt < 30 * 24 * 60 * 60 * 1000);
+          localStorage.setItem('anon_scans', JSON.stringify([...pruned, scanEntry].slice(-10)));
+        } catch {}
+      }
+
+      console.log('[Scan] Created via edge function:', scanId);
+      const triggered = !!(fnData.triggered);
+      return { id: scanId, accessToken, triggered };
+    }
+
+    // Log edge function error but fall through to direct insert attempt
+    console.warn('[Scan] create-scan edge function failed, trying direct insert:', fnError);
+  } catch (fnErr) {
+    console.warn('[Scan] create-scan edge function threw, trying direct insert:', fnErr);
+  }
+
+  // ── Fallback: direct REST insert (works when RLS allows anon INSERT) ──
+  // P1-4 FIX: Only reuse scans created within 2 min AND still actively progressing
+  if (user?.id) {
+    const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    const { data: existingScans } = await supabase
+      .from('scans')
+      .select('id, access_token, created_at')
+      .eq('user_id', user.id)
+      .eq('scan_status', 'processing')
+      .gte('created_at', twoMinAgo)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const existing = existingScans as { id: string; access_token: string; created_at: string }[] | null;
+    if (existing?.[0]) {
+      console.log('[Scan] Reusing recent processing scan:', existing[0].id);
+      return { id: existing[0].id, accessToken: existing[0].access_token };
+    }
+  }
+
+  const insertPayload: Record<string, unknown> = {
+    linkedin_url: params.linkedinUrl || null,
+    resume_file_path: params.resumeFilePath || null,
+    country: params.country || 'IN',
+    industry: params.industry || null,
+    years_experience: params.yearsExperience || null,
+    metro_tier: params.metroTier || null,
+    scan_status: 'processing',
+    payment_status: 'unpaid',
+    // Store manual key skills in enrichment_cache for process-scan to read
+    ...(params.keySkills ? { enrichment_cache: { key_skills: params.keySkills } } : {}),
+  };
+
+  if (user?.id) {
+    insertPayload.user_id = user.id;
+  }
+
+  const { data, error } = await supabase
+    .from('scans')
+    .insert(insertPayload as any)
+    .select('id, access_token')
+    .single();
+
+  if (error) throw error;
+  const row = data as { id: string; access_token: string } | null;
+  if (!row?.id) throw new Error('Scan creation returned no ID');
+
+  // Week 1 #1: Store scan ID for anonymous migration with 30-day TTL
+  if (!user?.id) {
+    try {
+      const scanEntry = { id: row.id, storedAt: Date.now() };
+      const existing = JSON.parse(localStorage.getItem('anon_scans') || '[]');
+      const pruned = existing.filter((e: any) => Date.now() - e.storedAt < 30 * 24 * 60 * 60 * 1000);
+      localStorage.setItem('anon_scans', JSON.stringify([...pruned, scanEntry].slice(-10)));
+    } catch {}
+  }
+
+  return { id: row.id, accessToken: row.access_token };
+}
+
+export async function uploadResume(file: File, scanId: string): Promise<string> {
+  const filePath = `${scanId}/${file.name}`;
+  const { error } = await supabase.storage
+    .from('resumes')
+    .upload(filePath, file, { contentType: file.type || 'application/pdf', upsert: true });
+  if (error) throw error;
+  return filePath;
+}
+
+export async function triggerProcessScan(
+  scanId: string,
+  forceRefresh = false,
+  accessToken?: string
+): Promise<{ accepted: boolean; reason?: 'rate_limited' | 'failed'; error?: string }> {
+  const body: Record<string, unknown> = { scanId, forceRefresh };
+  const scanClient = accessToken ? createScanClient(accessToken) : supabase;
+
+  const markScanError = async () => {
+    try {
+      await supabase
+        .from('scans')
+        .update({ scan_status: 'error' })
+        .eq('id', scanId);
+    } catch (updateErr) {
+      console.warn('Failed to mark scan as error after invoke failure:', updateErr);
+    }
+  };
+
+  const tryInvoke = async (): Promise<{ accepted: boolean; reason?: 'rate_limited' | 'failed'; error?: string }> => {
+    const INVOKE_WAIT_MS = 12_000;
+
+    try {
+      const invokeResult = await Promise.race([
+        supabase.functions.invoke('process-scan', { body }).then((result) => ({ timedOut: false as const, result })).catch(err => {
+          console.error('[scan-engine]', err);
+          throw err;
+        }),
+        new Promise<{ timedOut: true }>((resolve) => setTimeout(() => resolve({ timedOut: true }), INVOKE_WAIT_MS)),
+      ]);
+
+      if (invokeResult.timedOut) {
+        console.log(`[Scan] process-scan invoke still running after ${INVOKE_WAIT_MS}ms; continuing with status polling`);
+        return { accepted: true };
+      }
+
+      const { error } = (invokeResult as { timedOut: false; result: { error: any } }).result;
+      if (!error) return { accepted: true };
+
+      const status = (error as any)?.context?.status ?? (error as any)?.status ?? null;
+      const message = (error as any)?.message ?? String(error);
+
+      if (status === 429 || /429|rate limit/i.test(message)) {
+        console.warn('process-scan invoke returned 429:', message);
+
+        const { data: current } = await scanClient
+          .from('scans')
+          .select('scan_status')
+          .eq('id', scanId)
+          .single();
+
+        if ((current as any)?.scan_status === 'processing' || (current as any)?.scan_status === 'running') {
+          console.warn('[Scan] 429 received but scan is active; continuing polling');
+          return { accepted: true };
+        }
+
+        await markScanError();
+        return { accepted: false, reason: 'rate_limited' };
+      }
+
+      if (status && status >= 400 && status < 500 && status !== 408) {
+        console.warn(`process-scan invoke non-retriable error (status ${status}):`, message);
+        await markScanError();
+        return { accepted: false, reason: 'failed', error: message };
+      }
+
+      // Ambiguous network failures: avoid duplicate invocations. If row is still processing, continue polling.
+      const { data: current2 } = await scanClient
+        .from('scans')
+        .select('scan_status')
+        .eq('id', scanId)
+        .single();
+
+      if ((current2 as any)?.scan_status === 'processing' || (current2 as any)?.scan_status === 'running') {
+        console.warn('[Scan] process-scan invoke returned transient error; scan is still active, continuing polling');
+        return { accepted: true };
+      }
+
+      await markScanError();
+      return { accepted: false, reason: 'failed' };
+    } catch (err) {
+      const errMessage = err instanceof Error ? err.message : String(err);
+      console.warn('process-scan invoke exception:', err);
+
+      const { data: current3 } = await scanClient
+        .from('scans')
+        .select('scan_status')
+        .eq('id', scanId)
+        .single();
+
+      if ((current3 as any)?.scan_status === 'processing' || (current3 as any)?.scan_status === 'running') {
+        console.warn('[Scan] process-scan invoke exception but scan is active; continuing polling');
+        return { accepted: true };
+      }
+
+      await markScanError();
+      return { accepted: false, reason: 'failed', error: errMessage };
+    }
+  };
+
+  return tryInvoke();
+}
+
+export function subscribeScanStatus(
+  scanId: string,
+  accessToken: string,
+  onComplete: (report: ScanReport) => void,
+  onError?: () => void
+) {
+  // Use scan-specific client with x-scan-access-token header so RLS allows reading
+  const scanClient = createScanClient(accessToken);
+
+  let resolved = false;
+  let pollTimeout: ReturnType<typeof setTimeout> | null = null;
+  let hardTimeout: ReturnType<typeof setTimeout> | null = null;
+  let realtimeConnected = false;
+
+  const clearTimers = () => {
+    if (pollTimeout) clearTimeout(pollTimeout);
+    if (hardTimeout) clearTimeout(hardTimeout);
+  };
+
+  const resolve = (report: ScanReport) => {
+    if (resolved) return;
+    resolved = true;
+    clearTimers();
+    channel.unsubscribe();
+    onComplete(report);
+  };
+
+  const reject = () => {
+    if (resolved) return;
+    resolved = true;
+    clearTimers();
+    channel.unsubscribe();
+    onError?.();
+  };
+
+  // Immediate check: the scan may already be complete before we subscribe
+  const immediateCheck = async () => {
+    if (resolved) return;
+    try {
+      const { data } = await scanClient
+        .from('scans')
+        .select('scan_status, final_json_report, industry')
+        .eq('id', scanId)
+        .single();
+      const row = data as Record<string, unknown> | null;
+      if (row?.scan_status === 'complete' && row?.final_json_report) {
+        console.log('[Scan] Immediate check found completed scan');
+        const parsed = parseScanReport(row.final_json_report);
+        if (parsed) {
+          resolve(parsed);
+        }
+      } else if (row?.scan_status === 'failed' || row?.scan_status === 'invalid_input' || row?.scan_status === 'error') {
+        reject();
+      }
+    } catch (e) {
+      console.warn('[Scan] Immediate check error:', e);
+    }
+  };
+
+  // PRIMARY: Realtime subscription
+  const channel = supabase
+    .channel(`scan-${scanId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'scans',
+        filter: `id=eq.${scanId}`,
+      },
+      (payload) => {
+        const row = payload.new as any;
+        if (row.scan_status === 'complete' && row.final_json_report) {
+          const parsed = parseScanReport(row.final_json_report);
+          if (parsed) {
+            resolve(parsed);
+          }
+        } else if (row.scan_status === 'failed' || row.scan_status === 'invalid_input' || row.scan_status === 'error') {
+          reject();
+        }
+      }
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        realtimeConnected = true;
+        console.log('[Scan] Realtime connected');
+        // Re-check immediately after realtime connects to catch updates during connection
+        immediateCheck();
+      }
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('[Scan] Realtime failed, activating polling fallback');
+        realtimeConnected = false;
+        startPolling();
+      }
+    });
+
+  // FALLBACK: Polling with exponential backoff
+  const getPollingInterval = (attempt: number) =>
+    attempt < 2 ? 3000 : attempt < 5 ? 5000 : attempt < 10 ? 8000 : 10000;
+  const MAX_POLL_ATTEMPTS = 25; // ~3+ minutes with backoff
+
+  const pollForResult = async (attempt: number) => {
+    if (resolved) return;
+
+    try {
+      const { data } = await scanClient
+        .from('scans')
+        .select('scan_status, final_json_report, industry')
+        .eq('id', scanId)
+        .single();
+
+      const row = data as Record<string, unknown> | null;
+      if (row?.scan_status === 'complete' && row?.final_json_report) {
+        const parsed = parseScanReport(row.final_json_report);
+        if (parsed) {
+          resolve(parsed);
+        }
+        return;
+      }
+      if (row?.scan_status === 'failed' || row?.scan_status === 'invalid_input' || row?.scan_status === 'error') {
+        reject();
+        return;
+      }
+    } catch (error) {
+      console.warn('[Scan] Poll error, retrying...', error);
+    }
+
+    if (attempt < MAX_POLL_ATTEMPTS) {
+      pollTimeout = setTimeout(() => void pollForResult(attempt + 1), getPollingInterval(attempt));
+      return;
+    }
+
+    console.error('[Scan] Pipeline timed out after poll attempts');
+    reject();
+  };
+
+  const startPolling = () => {
+    if (resolved || pollTimeout) return;
+    void pollForResult(0);
+  };
+
+  // Refresh token to ensure it won't expire during a long scan
+  (async () => {
+    try {
+      await supabase.auth.refreshSession();
+    } catch (e) {
+      console.warn('Token refresh before polling failed:', e);
+      // Non-fatal — continue anyway
+    }
+  })();
+
+  // Do an immediate check right away (catches already-complete scans)
+  immediateCheck().catch(err => console.error('[scan-engine]', err));
+
+  // Global timeout (applies even if Realtime is connected but no updates arrive)
+  const MAX_TOTAL_WAIT_MS = 360_000; // 6 min — allows longer scans to complete
+  hardTimeout = setTimeout(() => {
+    if (resolved) return;
+    console.error('[Scan] Global timeout reached, failing scan subscription');
+    reject();
+  }, MAX_TOTAL_WAIT_MS);
+
+  // Grace period: start polling as a safety net even when Realtime is connected
+  setTimeout(() => {
+    if (!resolved) {
+      if (!realtimeConnected) {
+        console.warn('[Scan] Realtime grace period expired, starting safety polling');
+      }
+      startPolling();
+    }
+  }, 10_000);
+
+  return () => {
+    resolved = true;
+    clearTimers();
+    channel.unsubscribe();
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════════════════════
+
+export function formatINR(amount: number): string {
+  return formatCurrency(amount, 'IN');
+}
+
+export function formatCurrency(amount: number, country?: string | null): string {
+  const code = (country || 'IN').toUpperCase();
+  const config: Record<string, { locale: string; currency: string }> = {
+    IN: { locale: 'en-IN', currency: 'INR' },
+    US: { locale: 'en-US', currency: 'USD' },
+    AE: { locale: 'en-AE', currency: 'AED' },
+  };
+  const { locale, currency } = config[code] || config.IN;
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}

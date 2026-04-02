@@ -1,0 +1,229 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                        QA AUDIT — CRITICAL FINDINGS                        ║
+║                     Job Fortress Vite + Supabase SPA                        ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+EDGE FUNCTIONS FOUND:  65 total
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CRITICAL: 0 of 65 functions are deployed to Supabase                        │
+│ All functions written and ready, but unreachable because:                   │
+│ 1. Wrong Supabase project configured                                        │
+│ 2. Wrong database schema (astrology app, not job fortress)                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+DATABASE SCHEMA MISMATCH:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PROJECT:    trivecta (cakvjjopadfpkeekpdog) — ASTROLOGY APP               │
+│ EXPECTS:    27 tables (scans, profiles, payments, analytics_events, etc.)  │
+│ ACTUAL:     5 tables (birth_charts, agent_outputs, reports, profiles...)   │
+│                                                                              │
+│ RESULT:     ALL frontend database queries will fail immediately             │
+│             supabase.from('scans').select(...) → "relation not found"      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+FIX REQUIRED: Update .env.local VITE_SUPABASE_URL to correct Job Fortress project
+
+
+SECURITY ISSUES FOUND: 5 total
+
+┌─ HIGH SEVERITY (2) ─────────────────────────────────────────────────────────┐
+│                                                                               │
+│ 1. SALARY RANGE HALLUCINATION                                               │
+│    File:     supabase/functions/best-fit-jobs/index.ts                      │
+│    Lines:    218-219                                                        │
+│    Issue:    Schema says "salary_range if available or ESTIMATED"           │
+│              Prompt says "ONLY if explicitly stated, return null otherwise"  │
+│              AI may hallucinate salary data                                  │
+│    Fix:      Change schema to explicitly forbid estimation                  │
+│                                                                               │
+│ 2. MISSING JWT TIMING-SAFE COMPARISON                                       │
+│    File:     supabase/functions/activate-subscription/index.ts              │
+│    Line:     39                                                             │
+│    Issue:    Token validated but no timing-safe comparison                  │
+│              Could allow service role escalation                            │
+│    Fix:      Use validateJwtClaims() from abuse-guard.ts                    │
+│              OR implement timing-safe HMAC comparison                       │
+│                                                                               │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ MEDIUM SEVERITY (3) ────────────────────────────────────────────────────────┐
+│                                                                               │
+│ 3. SIGNATURE COMPARISON NOT TIMING-SAFE                                     │
+│    File:     supabase/functions/razorpay-webhook/index.ts                   │
+│    Lines:    37-38                                                          │
+│    Issue:    Direct string equality (===) leaks timing information           │
+│    Fix:      Use timing-safe HMAC comparison                                │
+│                                                                               │
+│ 4. RACE CONDITION IN SCAN DEDUPLICATION                                     │
+│    File:     supabase/functions/create-scan/index.ts                        │
+│    Lines:    38-57                                                          │
+│    Issue:    Identical requests within 2min reuse same scanId               │
+│              process-scan triggered twice (fire-and-forget)                 │
+│              Could cause double-processing                                  │
+│    Fix:      Add DB unique constraint, return 409 Conflict on duplicate     │
+│                                                                               │
+│ 5. POOR ERROR HANDLING IN AI RESPONSE PARSING                               │
+│    File:     supabase/functions/best-fit-jobs/index.ts                      │
+│    Lines:    260-276                                                        │
+│    Issue:    Error message "Failed to parse AI response" exposes internals   │
+│    Fix:      Return generic error message only                              │
+│                                                                               │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌─ LOW SEVERITY (1) ──────────────────────────────────────────────────────────┐
+│                                                                               │
+│ 6. CONFUSING VALIDATION FUNCTIONS                                           │
+│    File:     supabase/functions/_shared/abuse-guard.ts                      │
+│    Issue:    Both validateRequest() and guardRequest() exported              │
+│              Creates confusion about which to call                          │
+│    Fix:      Make validateRequest() private, use only guardRequest()         │
+│                                                                               │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+
+ENVIRONMENT VARIABLES: ✓ SECURE
+
+Frontend (.env):
+  ✓ VITE_SUPABASE_URL              — Correctly prefixed, safe
+  ✓ VITE_SUPABASE_PUBLISHABLE_KEY  — Anon key only, safe
+  ✓ VITE_RAZORPAY_KEY_ID           — Publishable key, safe
+
+Edge Function Secrets (server-side):
+  ✓ SUPABASE_SERVICE_ROLE_KEY      — Used only in functions, not exposed
+  ✓ LOVABLE_API_KEY                — AI gateway, server-side
+  ✓ RAZORPAY_WEBHOOK_SECRET        — Webhook verification
+  ✓ FIRECRAWL_API_KEY              — Web scraping, server-side
+  ✓ TAVILY_SEARCH_API              — Search, server-side
+  ✓ PERPLEXITY_API_KEY             — Research, server-side
+
+Result: NO HARDCODED SECRETS DETECTED ✓
+
+
+CORS CONFIGURATION: ✓ GOOD
+
+Allowed Origins:
+  ✓ https://ai-prophet.in (+ www)
+  ✓ https://jobbachao.com (+ www)
+  ✓ http://localhost:5173
+  ✓ http://localhost:8080
+  ✓ *.lovable.app (preview domains)
+  ✓ *.lovableproject.com
+
+Untrusted origins get "null" origin (browser blocks)
+Server-to-server calls get "*" (fire-and-forget safe)
+
+
+FRONTEND QUERIES: 27 database tables referenced
+
+Critical tables (MISSING IN "trivecta"):
+  ✗ scans                    — Core scan records
+  ✗ analytics_events         — Analytics tracking
+  ✗ scan_feedback            — User feedback
+  ✗ challenges               — Gamification
+  ✗ blueprint_history        — Career history
+  ✗ market_signals           — Market data
+  ✗ score_history            — Scoring history
+  ✗ weekly_briefs            — Brief generation
+  ✗ shared_reports           — Report sharing
+  ✗ email_nudges             — Email tracking
+  ✗ report_unlocks           — Access control
+  ✗ future_blueprints        — Career planning
+  ✗ intel_watchlist          — Watchlist
+  ✗ defense_milestones       — Milestones
+  ✗ diagnostic_results       — Diagnostics
+  ✗ discoverme_profiles      — Discovery
+  ✗ referrals                — Referral program
+  ✗ referral_pro_grants      — Referral rewards
+  ✗ resumes                  — Resume storage
+  ✗ beta_events              — Beta testing
+  ✗ error_logs               — Error logging
+  ✗ feedback                 — General feedback
+  ✗ assessments              — User assessments
+  ✗ children                 — Family data
+  ✗ payments                 — Payment tracking
+  ✗ skill_risk_matrix        — Skill analysis
+  ✗ enrichment_cache         — Caching layer
+
+  ✓ profiles                 — Exists (shared with astrology app)
+
+
+MANDATORY CHECKLIST:
+
+Before any testing/deployment:
+
+[ ] 1. FIX PROJECT CONFIGURATION
+      Update .env.local VITE_SUPABASE_URL to correct Job Fortress project
+      Confirm with: grep "VITE_SUPABASE_URL" .env.local
+
+[ ] 2. CREATE DATABASE TABLES
+      Run migrations to create all 27 required tables in correct project
+      Verify: supabase db list
+
+[ ] 3. DEPLOY EDGE FUNCTIONS
+      Deploy all 65 functions: for fn in supabase/functions/*/; do supabase functions deploy "$(basename "$fn")"; done
+      Verify: supabase functions list
+
+[ ] 4. FIX HIGH PRIORITY SECURITY ISSUES
+      [ ] activate-subscription: Add validateJwtClaims()
+      [ ] best-fit-jobs: Fix salary range schema
+      [ ] razorpay-webhook: Implement timing-safe comparison
+
+[ ] 5. TEST CORE FLOWS
+      [ ] Test create-scan → process-scan end-to-end
+      [ ] Test Razorpay webhook with valid signature
+      [ ] Test JWT validation in activate-subscription
+      [ ] Verify CORS allows frontend origins
+
+[ ] 6. FINAL VERIFICATION
+      All 27 frontend queries resolve without "relation not found"
+      All 65 edge functions respond at /functions/v1/{name}
+      No hardcoded secrets in git history
+
+
+FILES TO REVIEW:
+
+Audit Report:
+  → QA_AUDIT_REPORT_COMPREHENSIVE.md (full details)
+  → QA_FINDINGS_SUMMARY.txt (this file)
+
+Code Files to Fix:
+  → supabase/functions/best-fit-jobs/index.ts
+  → supabase/functions/activate-subscription/index.ts
+  → supabase/functions/razorpay-webhook/index.ts
+  → supabase/functions/create-scan/index.ts
+  → supabase/functions/_shared/abuse-guard.ts
+  → supabase/functions/_shared/cors.ts
+
+Config Files:
+  → .env.local (not in repo, verify it exists and is correct)
+  → .env.example (reference only)
+
+
+ESTIMATED REMEDIATION TIME:
+
+Critical Blockers:     2-3 hours
+  - Verify/create correct Supabase project
+  - Run migrations (create 27 tables)
+  - Deploy 65 edge functions
+
+High Priority Issues:  30-45 minutes
+  - Add JWT validation to activate-subscription
+  - Fix best-fit-jobs salary schema
+  - Implement timing-safe comparison in razorpay-webhook
+
+Medium Priority:       1-2 hours
+  - Standardize error responses
+  - Add unique constraint for scan deduplication
+  - Consolidate validation functions
+
+Testing:               2-3 hours
+  - End-to-end flow testing
+  - Security validation
+  - Error handling verification
+
+TOTAL: ~8-10 hours to production-ready
+
+
+Generated: March 31, 2026
+Audit Tool: QA Agent for Job Fortress
+Status: CRITICAL BLOCKERS IDENTIFIED — HALT DEPLOYMENT
