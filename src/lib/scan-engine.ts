@@ -366,7 +366,7 @@ export async function createScan(params: {
 
     const existing = existingScans as { id: string; access_token: string; created_at: string }[] | null;
     if (existing?.[0]) {
-      console.log('[Scan] Reusing recent processing scan:', existing[0].id);
+      console.debug('[Scan] Reusing recent processing scan:', existing[0].id);
       return { id: existing[0].id, accessToken: existing[0].access_token };
     }
   }
