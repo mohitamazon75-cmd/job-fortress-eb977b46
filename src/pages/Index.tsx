@@ -602,7 +602,7 @@ const Index = () => {
                     setErrorScanStatus('checking');
                     const sc = createScanCheckClient(accessToken);
                     sc.from('scans').select('scan_status, final_json_report').eq('id', scanId).single()
-                      .then(({ data }) => {
+                      .then(({ data }: any) => {
                         const row = data as ScanRow | null;
                         if (row?.scan_status === 'complete' && row?.final_json_report) {
                           setScanReport(row.final_json_report as ScanReport);
@@ -612,7 +612,7 @@ const Index = () => {
                           setErrorScanStatus(row?.scan_status ?? 'unknown');
                         }
                       })
-                      .catch(() => setErrorScanStatus('unknown'));
+                      .then(undefined, () => setErrorScanStatus('unknown'));
                   }}
                   className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all"
                 >
