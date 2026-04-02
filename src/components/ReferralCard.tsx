@@ -32,7 +32,7 @@ export default function ReferralCard({ userId, existingGrantExpiry }: ReferralCa
 
         // Check for existing referral code
         const { data: existingReferral, error: fetchErr } = await supabase
-          .from('referrals')
+          .from('referrals' as any)
           .select('referral_code')
           .eq('referrer_user_id', userId)
           .limit(1)
