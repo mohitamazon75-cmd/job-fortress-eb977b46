@@ -645,7 +645,7 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const authToken = session?.access_token || SUPABASE_KEY_CONFIG;
 
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
