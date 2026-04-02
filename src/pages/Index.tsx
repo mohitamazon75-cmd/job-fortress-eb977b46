@@ -205,7 +205,7 @@ const Index = () => {
   // Scroll to top on phase change + track phase
   useEffect(() => {
     window.scrollTo(0, 0);
-    console.log('[Phase]', phase, { scanReport: !!scanReport, moneyShotSeen });
+    console.debug('[Phase]', phase, { scanReport: !!scanReport, moneyShotSeen });
     if (phase === 'hero') track('landing_view');
     else if (phase === 'processing') track('scan_start');
     else if (phase === 'reveal') track('score_view');
