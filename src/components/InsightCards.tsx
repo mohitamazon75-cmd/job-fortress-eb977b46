@@ -150,7 +150,7 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
     // 2. GATE — emotional paywall at peak fear moment for max conversion.
     { id: 'conversion-gate', title: 'Your Career Defense Package', subtitle: 'Everything we built for you — explore each tool', Icon: Shield, iconColor: 'text-primary' },
     // 3. SHARE — score card after gate so users who didn't convert still share.
-    { id: 'score-card', title: 'Your Career Score Card', subtitle: 'Generate & share your AI-readiness score with your network', Icon: Trophy, iconColor: 'text-prophet-gold' },
+    { id: 'score-card', title: 'Challenge a Friend', subtitle: 'Share your score card and see who\'s more AI-proof', Icon: Trophy, iconColor: 'text-prophet-gold' },
   ];
 
   const PRO_CORE_CARDS: Array<{ id: string; title: string; subtitle: string; Icon: LucideIcon; iconColor: string }> = [
