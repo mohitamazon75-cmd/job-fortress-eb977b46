@@ -32,7 +32,7 @@ export default function MilestoneChecklist({ userId, scanId }: MilestoneChecklis
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('defense_milestones')
+        .from('defense_milestones' as any)
         .select('id, phase, milestone_key, milestone_label, resource_url, completed_at')
         .eq('user_id', userId)
         .eq('scan_id', scanId)
