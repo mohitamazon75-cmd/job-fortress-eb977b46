@@ -127,7 +127,7 @@ export default function IntelTab({ props }: { props: DashboardSharedProps }) {
 
       // Check if limit exceeded
       const { count } = await supabase
-        .from('intel_watchlist')
+        .from('intel_watchlist' as any)
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId);
 
