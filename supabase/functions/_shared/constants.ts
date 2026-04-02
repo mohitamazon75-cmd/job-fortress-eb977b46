@@ -29,6 +29,14 @@ export const SCORE_DELTA = {
   STABLE_BAND: 2,   // ±2 = "stable"
 } as const;
 
+/** Model identifiers — single source of truth */
+export const MODELS = {
+  GPT5: "google/gemini-3.1-pro-preview",
+  PRO: "google/gemini-3-pro-preview",
+  FLASH: "google/gemini-3-flash-preview",
+  FALLBACK: "google/gemini-2.5-pro",
+} as const;
+
 /** Supabase storage bucket names */
 export const BUCKETS = {
   RESUMES: "resumes",
