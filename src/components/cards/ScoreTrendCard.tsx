@@ -136,7 +136,7 @@ export default function ScoreTrendCard({ report, scanId }: Props) {
             if (row.final_json_report) {
               try {
                 const report = typeof row.final_json_report === 'object' && row.final_json_report
-                  ? row.final_json_report as ScanReport
+                  ? row.final_json_report as unknown as ScanReport
                   : null;
                 if (report) {
                   s = computeStabilityScore(report);
