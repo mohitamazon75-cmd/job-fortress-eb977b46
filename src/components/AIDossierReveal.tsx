@@ -652,7 +652,7 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: SUPABASE_KEY_CONFIG,
         },
         body: JSON.stringify({ report }),
         signal: controller.signal,
