@@ -35,6 +35,14 @@ export async function updateScan(
   name: string | null,
   company: string | null,
 ): Promise<void> {
+  if (!report || typeof report !== "object") {
+    await supabase
+      .from("scans")
+      .update({ scan_status: "failed" })
+      .eq("id", scanId);
+    return;
+  }
+
   report.linkedin_name = name;
   report.linkedin_company = company;
   await supabase
