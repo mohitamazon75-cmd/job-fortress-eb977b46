@@ -569,7 +569,7 @@ export function subscribeScanStatus(
         .single();
       const row = data as Record<string, unknown> | null;
       if (row?.scan_status === 'complete' && row?.final_json_report) {
-        console.log('[Scan] Immediate check found completed scan');
+        console.debug('[Scan] Immediate check found completed scan');
         const parsed = parseScanReport(row.final_json_report);
         if (parsed) {
           resolve(parsed);
