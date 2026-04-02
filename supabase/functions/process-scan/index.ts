@@ -219,7 +219,6 @@ Deno.serve(async (req) => {
     // ── Global timeout (request-scoped to prevent cross-request interference) ──
     const globalStart = Date.now();
     let globalTimedOut = false;
-    let globalTimer: ReturnType<typeof setTimeout> | undefined;
     globalTimer = setTimeout(() => {
       globalTimedOut = true;
       console.warn(`[Orchestrator] Soft timeout threshold reached (${GLOBAL_TIMEOUT_MS}ms) for scan ${scanId} — continuing in degraded mode`);
