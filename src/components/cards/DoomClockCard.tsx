@@ -245,23 +245,7 @@ export default function DoomClockCard({ report, scanId }: Props) {
       }
     }, 800);
     return () => clearTimeout(timer);
-  }, [topSkills]); // re-fire if skills change (fixes stale closure bug)
-
-  // Get skills sorted by urgency (lowest months = highest risk = first)
-  const allSkills = classifySkills(report);
-  const atRisk = allSkills
-    .filter(s => s.status !== 'safe')
-    .sort((a, b) => a.estimatedMonths - b.estimatedMonths);
-
-  const topSkills = atRisk.slice(0, 3);
-  const totalAtRisk = atRisk.length;
-  const mostUrgentMonths = topSkills[0]?.estimatedMonths ?? 24;
-  const mostUrgentLabel = monthsLabel(mostUrgentMonths);
-
-  // Sanitize user-controlled strings at derivation time
-  const role = sanitize(report.role || 'Professional', 50);
-  const industry = sanitize(report.industry || '', 50);
-  const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  }, [topSkills.length]); // re-fire if skills change
 
   // ── capture ──────────────────────────────────────────────────────────────
   const CAPTURE_COOLDOWN_MS = 1500;
