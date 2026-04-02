@@ -1090,10 +1090,10 @@ ${kgContext}`;
     const judoDietPromise = hasTimeBudget(15_000) ? Promise.allSettled([
       callAgentWithFallback(LOVABLE_API_KEY, "JudoStrategy", JUDO_STRATEGY_SYSTEM_PROMPT,
         buildSeniorityJudoPrompt(seniorityTier, expYears, displayName, displayCompany, agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry, profileInput.strategic_skills, profileInput.execution_skills, profileInput.all_skills, det.determinism_index, det.survivability.score, scan.metro_tier || "tier1", null, profileInput.executive_impact || null),
-        activeModel, 0.3, 35_000).then(r => r.data),
+        activeModel, 0.3, 25_000).then(r => r.data),
       callAgent(LOVABLE_API_KEY, "WeeklyDiet", WEEKLY_DIET_SYSTEM_PROMPT,
         buildSeniorityDietPrompt(seniorityTier, expYears, displayName, agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry, profileInput.strategic_skills, null),
-        FAST_MODEL, 0.3, 20_000),
+        FAST_MODEL, 0.3, 15_000),
     ]) : Promise.resolve(null);
 
     // Agents 2A+2B+2C promise — with model fallback chain
