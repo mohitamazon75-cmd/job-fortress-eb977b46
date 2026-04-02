@@ -69,11 +69,11 @@ export default function JobBachaoDashboard({ report, scanId, accessToken, onRese
     if (!user?.id) return;
     const { supabase: sb } = await import('@/integrations/supabase/client');
     try {
-      const { data } = await sb.from('referral_pro_grants')
+      const { data } = await sb.from('referral_pro_grants' as any)
         .select('expires_at')
         .eq('user_id', user.id)
         .single();
-      if (data?.expires_at && new Date(data.expires_at) > new Date()) {
+      if ((data as any)?.expires_at && new Date((data as any).expires_at) > new Date()) {
         setIsProUser(true);
       }
     } catch (e) {

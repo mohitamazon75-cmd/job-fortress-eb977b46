@@ -45,7 +45,7 @@ export function useAnalytics() {
 
     try {
       // Insert all queued events in a single batch
-      const { error } = await supabase.from('analytics_events').insert(
+      const { error } = await supabase.from('analytics_events' as any).insert(
         eventsToSend.map((e) => ({
           event_type: e.event_type,
           user_id: e.user_id,

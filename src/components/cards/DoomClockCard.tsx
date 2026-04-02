@@ -101,7 +101,7 @@ function CaptureTarget({
 }) {
   return (
     <div
-      ref={innerRef}
+      ref={innerRef as React.RefObject<HTMLDivElement>}
       style={{
         width: 380,
         background: 'linear-gradient(150deg, #0d1117 0%, #1a0f0f 60%, #0d1117 100%)',

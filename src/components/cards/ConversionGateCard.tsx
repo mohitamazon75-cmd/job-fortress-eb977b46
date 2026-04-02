@@ -25,7 +25,7 @@ interface PreviewTile {
 
 function buildPersonalisedTiles(report: ScanReport): PreviewTile[] {
   const role = report.role || 'your role';
-  const city = report.recommended_city || (report as any).city || 'your city';
+  const city = (report as any).recommended_city || (report as any).city || 'your city';
   const industry = report.industry || 'your industry';
 
   // Top at-risk skill from the classifier

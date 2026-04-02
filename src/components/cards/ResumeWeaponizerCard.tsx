@@ -199,7 +199,7 @@ export default function ResumeWeaponizerCard({ report, scanId }: { report: ScanR
             </div>
             <ArrowRight className="w-5 h-5 text-prophet-green" />
             <div className="text-center">
-              <p className="text-lg font-bold text-prophet-green">~{Math.max(ats.score_estimate_after - 5, 0)}–{Math.min(ats.score_estimate_after + 5, 100)}%</p>
+              <p className="text-lg font-bold text-prophet-green">~{Math.max((ats.score_estimate_after ?? 0) - 5, 0)}–{Math.min((ats.score_estimate_after ?? 0) + 5, 100)}%</p>
               <p className="text-[11px] text-muted-foreground">After</p>
             </div>
           </div>

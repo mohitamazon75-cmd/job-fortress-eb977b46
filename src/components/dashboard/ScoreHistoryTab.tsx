@@ -72,7 +72,7 @@ export default function ScoreHistoryTab({ userId, locale = 'en' }: ScoreHistoryT
 
         if (error) throw error;
 
-        setRecords(data || []);
+        setRecords((data as any) || []);
         setError(null);
       } catch (err) {
         console.error('[ScoreHistoryTab] Fetch error:', err);

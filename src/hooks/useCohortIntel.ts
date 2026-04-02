@@ -54,7 +54,7 @@ export function useCohortIntel(scanId: string | undefined): UseCohortIntelResult
         const { data: cached } = await supabase
           .from('cohort_cache')
           .select('*')
-          .eq('scan_id', scanId)
+          .eq('scan_id', scanId!)
           .single();
 
         if (!cancelled && cached) {

@@ -111,7 +111,7 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
   const allSkills = [...(report.moat_skills || []), ...(report.execution_skills_dead || []), ...(report.strategic_skills || [])].slice(0, 8);
   const enrichment = useLiveEnrichment(
     report.role, report.industry, allSkills, report.moat_skills || [],
-    (report.defense_plan?.pivot_options || []).map((p: any) => p.role || p.title).filter(Boolean),
+    ((report.defense_plan as any)?.pivot_options || []).map((p: any) => p.role || p.title).filter(Boolean),
     scanId, report.country
   );
   const liveTools = (enrichment.data?.tool_threats || []).slice(0, 3);

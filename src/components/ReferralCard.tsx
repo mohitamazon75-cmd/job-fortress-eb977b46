@@ -59,7 +59,7 @@ export default function ReferralCard({ userId, existingGrantExpiry }: ReferralCa
 
         // Fetch conversion count
         const { count, error: countErr } = await supabase
-          .from('referrals')
+          .from('referrals' as any)
           .select('*', { count: 'exact', head: true })
           .eq('referrer_user_id', userId)
           .eq('status', 'converted');

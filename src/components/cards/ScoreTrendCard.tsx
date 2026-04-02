@@ -155,7 +155,7 @@ export default function ScoreTrendCard({ report, scanId }: Props) {
               isCurrent: false,
             };
           })
-          .filter((p): p is TrendPoint => p !== null);
+          .filter((p): p is NonNullable<typeof p> => p !== null) as TrendPoint[];
 
         // Always append current scan as the rightmost point
         const allPoints: TrendPoint[] = [
