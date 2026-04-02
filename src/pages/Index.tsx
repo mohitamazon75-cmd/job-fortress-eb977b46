@@ -144,7 +144,7 @@ const Index = () => {
   // On mount: restore input context if returning from OAuth redirect
   // FIX 2 (MEDIUM): Add proper try-catch around JSON.parse to handle malformed data
   useEffect(() => {
-    let pendingInput = null;
+    let pendingInput: any = null;
     try {
       const pending = sessionStorage.getItem('jb_pending_input');
       if (pending) {
