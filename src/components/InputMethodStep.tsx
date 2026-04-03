@@ -152,23 +152,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
             </motion.div>
           )}
 
-          {/* Skip option — shown only on method selector */}
-          {!method && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="text-center mb-4"
-            >
-              <button
-                onClick={onSkip}
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 px-3 rounded-lg hover:bg-muted"
-              >
-                Skip — I'll enter my details manually
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </motion.div>
-          )}
+          {/* Skip option removed — users must provide LinkedIn or resume */}
 
           {/* LinkedIn input */}
           {method === 'linkedin' && (
