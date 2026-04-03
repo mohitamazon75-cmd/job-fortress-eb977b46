@@ -83,7 +83,8 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
   }, []);
 
   return (
-    <div className="relative min-h-screen flex flex-col overflow-hidden bg-background">
+    <div className="bg-background">
+      <div className="relative min-h-screen overflow-hidden">
       <GridBackground />
 
       {/* Nav */}
@@ -119,7 +120,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
       </motion.nav>
 
       {/* HERO */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 pb-8 sm:pb-16">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 pb-8 sm:pb-16">
         <div className="text-center max-w-5xl mx-auto w-full">
 
           {/* Eyebrow */}
@@ -328,7 +329,11 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
               ))}
             </div>
           </motion.div>
+        </div>
+      </div>
 
+      {/* Below-fold sections — outside the overflow-hidden hero */}
+      <div className="relative z-10 px-4">
           {/* What You Get — outcomes-focused section */}
           <WhatYouGetSection onCTA={onStart} />
 
@@ -368,7 +373,6 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
               </div>
             </div>
           </motion.div>
-        </div>
       </div>
 
       {/* Bottom bar */}
