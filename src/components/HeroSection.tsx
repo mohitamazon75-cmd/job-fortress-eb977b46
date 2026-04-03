@@ -328,7 +328,11 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
               ))}
             </div>
           </motion.div>
+        </div>
+      </div>
 
+      {/* Below-fold sections — outside the hero centering container */}
+      <div className="relative z-10 px-4">
           {/* What You Get — outcomes-focused section */}
           <WhatYouGetSection onCTA={onStart} />
 
@@ -368,7 +372,6 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
               </div>
             </div>
           </motion.div>
-        </div>
       </div>
 
       {/* Bottom bar */}
