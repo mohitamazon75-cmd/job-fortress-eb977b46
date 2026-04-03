@@ -47,24 +47,24 @@ function getVibe(score: number, report: ScanReport): Vibe {
 
   if (score >= 70) return {
     emoji: '🛡️', label: 'Safe Zone', color: 'text-prophet-green', bg: 'bg-prophet-green/[0.06]', border: 'border-prophet-green/20',
-    headline: `Your job is in a solid spot.`,
-    body: `${roleName} roles still need a real human in the seat. Only ~${Math.round(automationRisk)}% of your daily work overlaps with what AI can do.`,
-    replaceability: 'If you left tomorrow, they\'d feel it. Finding someone with your exact skill mix would take real effort.',
+    headline: `Strong today — but the landscape is shifting.`,
+    body: `${roleName} roles still need a real human — only ~${Math.round(automationRisk)}% overlaps with AI today. But that number was half this 18 months ago. The tools are getting better quietly.`,
+    replaceability: 'Replacing you today would be hard. But AI-augmented professionals are learning to match your output faster than you think.',
     bullets: [
-      `Hiring demand is ${demandLabel} — working in your favor`,
-      moatSkills >= 3 ? `${moatSkills} of your skills are genuinely hard to automate` : 'Your work requires real judgment — that\'s your natural defense',
-      talentDensity === 'scarce' ? 'The talent pool for your profile is thin — that\'s real leverage' : `As a ${tierLabel}, you carry knowledge that doesn't live in any document`,
+      `Hiring demand is ${demandLabel} — but companies are already testing AI alternatives for parts of this role`,
+      moatSkills >= 3 ? `${moatSkills} of your skills are hard to automate today — but the "safe" list shrinks every year` : 'Your judgment-heavy work protects you — for now. AI agents are starting to handle nuanced decisions too',
+      talentDensity === 'scarce' ? 'Thin talent pool gives you leverage — but only while AI can\'t replicate your edge' : `As a ${tierLabel}, your context is valuable — but institutional knowledge is exactly what AI is learning to capture`,
     ],
   };
   if (score >= 50) return {
     emoji: '⚡', label: 'Stay Sharp', color: 'text-primary', bg: 'bg-primary/[0.06]', border: 'border-primary/20',
-    headline: `Decent spot, but don't get too comfortable.`,
-    body: `About ${Math.round(automationRisk)}% of typical ${roleName} tasks could be handled by AI today. The bar for "valuable" is rising.`,
-    replaceability: 'You\'re valued, but not untouchable. The gap between "valued" and "irreplaceable" is usually just 1-2 skills.',
+    headline: `The danger zone where most people feel fine — until they don't.`,
+    body: `About ${Math.round(automationRisk)}% of typical ${roleName} tasks could be handled by AI today. A junior professional with AI tools can now match your output speed.`,
+    replaceability: 'You\'re valued — but "valued" and "irreplaceable" are very different things when budgets tighten.',
     bullets: [
-      `Market demand is ${demandLabel} — not terrible, not a seller's market either`,
-      moatSkills > 0 ? `${moatSkills} of your strengths are hard to replicate — double down on these` : 'Your biggest opportunity: develop a skill that\'s hard to hire for',
-      'Focus on the messy, human-judgment parts of your work — those are your insurance',
+      `Market demand is ${demandLabel} — but companies are hiring fewer people for more output now`,
+      moatSkills > 0 ? `${moatSkills} of your strengths are hard to replicate today — without active investment, that drops to zero within 2 years` : 'You don\'t have a clear "irreplaceable" skill yet — that\'s the single biggest risk we flag',
+      'The gap between your score and "at risk" is smaller than it looks — one AI breakthrough in your domain changes everything',
     ],
   };
   if (score >= 30) return {
@@ -86,7 +86,7 @@ function getVibe(score: number, report: ScanReport): Vibe {
     bullets: [
       `~${Math.round(automationRisk)}% of your tasks overlap with AI — one of the highest we see`,
       'Talent supply is high — you\'re competing with more people AND machines',
-      'Find a niche where human judgment matters, and make it your whole identity',
+      'Your defense plan maps the fastest escape route from this risk zone',
     ],
   };
 }
