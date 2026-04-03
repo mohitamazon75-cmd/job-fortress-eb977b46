@@ -83,7 +83,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
   }, []);
 
   return (
-    <div className="relative flex flex-col bg-background">
+    <div className="relative bg-background">
       <GridBackground />
 
       {/* Nav */}
