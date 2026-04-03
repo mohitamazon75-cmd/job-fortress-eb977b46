@@ -32,7 +32,7 @@ const TESTIMONIALS = [
 const STATS = [
   { value: '₹10/day', label: 'Less than a coffee — unlimited scans, full defense plan, AI career coach & salary scripts' },
   { value: '95×147', label: 'Job families × skill vectors in the Knowledge Graph — O*NET, ESCO, NASSCOM calibrated' },
-  { value: '2 min', label: 'Average time from LinkedIn URL to full career risk report with defense plan' },
+  { value: '< 4 min', label: 'We don\'t just ask an AI — we run your profile through 14,000+ skill vectors, a proprietary Knowledge Graph, and 3 reasoning models. That takes a moment. Accuracy takes longer than guessing.' },
 ];
 
 export default function SocialProofSection() {
