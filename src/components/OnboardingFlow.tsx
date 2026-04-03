@@ -257,13 +257,25 @@ export default function OnboardingFlow({
                   <input
                     type="text"
                     value={customIndustry}
-                    onChange={e => setCustomIndustry(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && customIndustry.trim()) onSelectIndustry(customIndustry.trim()); }}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setCustomIndustry(val);
+                      const trimmed = val.trim();
+                      if (!trimmed) { setCustomIndustryError(''); return; }
+                      if (trimmed.length < 3) { setCustomIndustryError('Too short — enter a real industry name.'); return; }
+                      if (!/^[a-zA-Z0-9\s&,\-\/().]+$/.test(trimmed)) { setCustomIndustryError('Only letters, numbers, and basic punctuation allowed.'); return; }
+                      if (/(.)\1{4,}/.test(trimmed)) { setCustomIndustryError('Please enter a valid industry name.'); return; }
+                      if (trimmed.split(/\s+/).length > 6) { setCustomIndustryError('Keep it short — max 6 words.'); return; }
+                      setCustomIndustryError('');
+                    }}
+                    onKeyDown={e => { if (e.key === 'Enter' && customIndustry.trim() && !customIndustryError) onSelectIndustry(customIndustry.trim()); }}
                     placeholder="Or type your industry..."
-                    maxLength={80}
-                    className="flex-1 h-12 rounded-xl border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    maxLength={60}
+                    className={`flex-1 h-12 rounded-xl border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 transition-all ${
+                      customIndustryError ? 'border-destructive focus:border-destructive focus:ring-destructive/20' : 'border-border focus:border-primary focus:ring-primary/20'
+                    }`}
                   />
-                  {customIndustry.trim() && (
+                  {customIndustry.trim() && !customIndustryError && (
                     <motion.button
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -276,6 +288,9 @@ export default function OnboardingFlow({
                     </motion.button>
                   )}
                 </div>
+                {customIndustryError && (
+                  <p className="text-xs text-destructive font-medium mt-1.5 px-1">{customIndustryError}</p>
+                )}
               </div>
             </div>
           )}
