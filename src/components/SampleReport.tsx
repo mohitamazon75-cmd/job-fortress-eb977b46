@@ -487,5 +487,6 @@ export default function SampleReport({ onCTA }: SampleReportProps) {
         </div>
       </motion.div>
     </div>
+    </section>
   );
 }
