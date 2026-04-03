@@ -147,9 +147,11 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
   const FREE_CORE_CARDS: Array<{ id: string; title: string; subtitle: string; Icon: LucideIcon; iconColor: string }> = [
     // 1. VIRAL HOOK — doom clock (fear + specificity). Computed, no API cost.
     { id: 'doom-clock', title: 'Your Skill Doom Clock', subtitle: 'Which of your skills AI will replace first — and when', Icon: Clock, iconColor: 'text-destructive' },
-    // 2. GATE — emotional paywall at peak fear moment for max conversion.
+    // 2. HOPE — real jobs you can apply to right now (key differentiator)
+    { id: 'best-fit', title: 'Best-Fit Jobs for You', subtitle: 'Real openings you can apply to right now', Icon: Briefcase, iconColor: 'text-primary' },
+    // 3. GATE — emotional paywall at peak fear moment for max conversion.
     { id: 'conversion-gate', title: 'Your Career Defense Package', subtitle: 'Everything we built for you — explore each tool', Icon: Shield, iconColor: 'text-primary' },
-    // 3. SHARE — score card after gate so users who didn't convert still share.
+    // 4. SHARE — score card after gate so users who didn't convert still share.
     { id: 'score-card', title: 'Challenge a Friend', subtitle: 'Share your score card and see who\'s more AI-proof', Icon: Trophy, iconColor: 'text-prophet-gold' },
   ];
 
