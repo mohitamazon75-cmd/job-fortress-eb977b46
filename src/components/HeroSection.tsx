@@ -83,7 +83,8 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
   }, []);
 
   return (
-    <div className="relative bg-background">
+    <div className="bg-background">
+      <div className="relative min-h-screen overflow-hidden">
       <GridBackground />
 
       {/* Nav */}
