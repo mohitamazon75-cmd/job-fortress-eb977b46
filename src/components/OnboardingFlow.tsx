@@ -57,6 +57,7 @@ export default function OnboardingFlow({
 }: OnboardingFlowProps) {
   const [skillsInput, setSkillsInput] = useState('');
   const [customIndustry, setCustomIndustry] = useState('');
+  const [customIndustryError, setCustomIndustryError] = useState('');
   const [skillsError, setSkillsError] = useState('');
   const isManualPath = !hasLinkedIn && !hasResume;
   const showSkillsStep = isManualPath && step === 5;
