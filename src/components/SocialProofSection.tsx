@@ -30,7 +30,7 @@ const TESTIMONIALS = [
 ];
 
 const STATS = [
-  { value: 'Free', label: 'No credit card required — full Career Position Score at no cost, forever' },
+  { value: '₹10/day', label: 'Less than a coffee — unlimited scans, full defense plan, AI career coach & salary scripts' },
   { value: '95×147', label: 'Job families × skill vectors in the Knowledge Graph — O*NET, ESCO, NASSCOM calibrated' },
   { value: '2 min', label: 'Average time from LinkedIn URL to full career risk report with defense plan' },
 ];
