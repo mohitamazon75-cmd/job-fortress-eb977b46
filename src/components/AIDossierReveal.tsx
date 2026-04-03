@@ -356,37 +356,47 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         )}
       </motion.div>
 
-      {/* Narrative Verdict */}
+      {/* Narrative Verdict — blurred for free users */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-        className={`rounded-2xl border-2 ${vibe.border} ${vibe.bg} p-5`}>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xl">{vibe.emoji}</span>
-          <span className={`text-[10px] font-black uppercase tracking-widest ${vibe.color}`}>{vibe.label}</span>
-        </div>
-        {vibe.warmIntro && (
-          <p className="text-sm text-foreground/70 leading-relaxed mb-3 italic border-l-2 border-border pl-3">
-            {vibe.warmIntro}
-          </p>
-        )}
-        <h3 className={`text-lg font-black leading-snug ${vibe.color} mb-2`}>{vibe.headline}</h3>
-        <p className="text-sm text-foreground/85 leading-relaxed">{vibe.body}</p>
+        className={`rounded-2xl border-2 ${vibe.border} ${vibe.bg} p-5 ${!isProUser ? 'relative overflow-hidden' : ''}`}>
+        <div className={!isProUser ? 'blur-[5px] select-none pointer-events-none' : ''}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xl">{vibe.emoji}</span>
+            <span className={`text-[10px] font-black uppercase tracking-widest ${vibe.color}`}>{vibe.label}</span>
+          </div>
+          {vibe.warmIntro && (
+            <p className="text-sm text-foreground/70 leading-relaxed mb-3 italic border-l-2 border-border pl-3">
+              {vibe.warmIntro}
+            </p>
+          )}
+          <h3 className={`text-lg font-black leading-snug ${vibe.color} mb-2`}>{vibe.headline}</h3>
+          <p className="text-sm text-foreground/85 leading-relaxed">{vibe.body}</p>
 
-        {isProUser && (
-          <>
-            <div className="rounded-lg border border-border bg-card/50 px-4 py-3 mt-4 mb-4">
-              <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-1">Replaceability</p>
-              <p className="text-sm text-foreground/80 leading-relaxed italic">{vibe.replaceability}</p>
+          {isProUser && (
+            <>
+              <div className="rounded-lg border border-border bg-card/50 px-4 py-3 mt-4 mb-4">
+                <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground mb-1">Replaceability</p>
+                <p className="text-sm text-foreground/80 leading-relaxed italic">{vibe.replaceability}</p>
+              </div>
+              <ul className="space-y-2">
+                {vibe.bullets.map((bullet, i) => (
+                  <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + i * 0.08 }} className="flex items-start gap-2.5">
+                    <span className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${vibe.color.replace('text-', 'bg-')}`} />
+                    <span className="text-sm text-foreground/80">{bullet}</span>
+                  </motion.li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+        {!isProUser && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex items-center gap-1.5 bg-background/80 backdrop-blur-sm rounded-full px-4 py-2 border border-border shadow-sm">
+              <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs font-bold text-muted-foreground">Detailed analysis in Pro</span>
             </div>
-            <ul className="space-y-2">
-              {vibe.bullets.map((bullet, i) => (
-                <motion.li key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + i * 0.08 }} className="flex items-start gap-2.5">
-                  <span className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${vibe.color.replace('text-', 'bg-')}`} />
-                  <span className="text-sm text-foreground/80">{bullet}</span>
-                </motion.li>
-              ))}
-            </ul>
-          </>
+          </div>
         )}
       </motion.div>
 
