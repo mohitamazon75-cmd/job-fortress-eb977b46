@@ -323,8 +323,18 @@ Deno.serve(async (req) => {
                     for (const exp of parsed.experience) rawProfileText += `  - ${exp.title} at ${exp.company} (${exp.duration})\n`;
                   }
                   profileExtractionConfidence = "high";
+                  // Reconcile experience: resume is ground truth
+                  if (parsed.yearsOfExperience && typeof parsed.yearsOfExperience === 'number' && parsed.yearsOfExperience > 0 && parsed.yearsOfExperience < 60) {
+                    resumeExtractedYears = parsed.yearsOfExperience;
+                    if (normalizedExperienceYears !== null && Math.abs(resumeExtractedYears - normalizedExperienceYears) > 2) {
+                      console.debug(`[Ingestion] Experience conflict: user selected "${scan.years_experience}" (${normalizedExperienceYears}y) but resume shows ${resumeExtractedYears}y — using resume value`);
+                      normalizedExperienceYears = resumeExtractedYears;
+                    } else if (normalizedExperienceYears === null) {
+                      normalizedExperienceYears = resumeExtractedYears;
+                    }
+                  }
                   // Security: log data shape only — never log PII (names, roles, companies) in production
-                  console.log(`[Ingestion] Resume parsed: name=${linkedinName ? '[present]' : '[absent]'}, role=${parsedLinkedinRole ? '[present]' : '[absent]'}`);
+                  console.debug(`[Ingestion] Resume parsed: name=${linkedinName ? '[present]' : '[absent]'}, role=${parsedLinkedinRole ? '[present]' : '[absent]'}, exp=${resumeExtractedYears ?? 'absent'}`);
                 } catch (e) {
                   console.error("[Ingestion] Resume parsing JSON failed:", e);
                   profileExtractionConfidence = "low";
