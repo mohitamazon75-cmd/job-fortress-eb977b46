@@ -277,7 +277,8 @@ Deno.serve(async (req) => {
     let parsedLinkedinIndustry: string | null = null;
     let parsedLinkedinRole: string | null = null;
     const linkedinInference = inferFromLinkedinUrl(scan.linkedin_url);
-    const normalizedExperienceYears = parseExperienceYears(scan.years_experience);
+    let normalizedExperienceYears = parseExperienceYears(scan.years_experience);
+    let resumeExtractedYears: number | null = null;
 
     // Resume parsing
     if (hasResume) {
