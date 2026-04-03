@@ -266,6 +266,9 @@ export default function OnboardingFlow({
                       if (!/^[a-zA-Z0-9\s&,\-\/().]+$/.test(trimmed)) { setCustomIndustryError('Only letters, numbers, and basic punctuation allowed.'); return; }
                       if (/(.)\1{4,}/.test(trimmed)) { setCustomIndustryError('Please enter a valid industry name.'); return; }
                       if (trimmed.split(/\s+/).length > 6) { setCustomIndustryError('Keep it short — max 6 words.'); return; }
+                      const blocked = ['drug','drugs','dealer','trafficking','smuggling','porn','pornography','gambling','illegal','murder','killing','theft','robbery','scam','fraud','prostitution','hitman','assassin','cartel','mafia','terrorist','terrorism','hacking','piracy','counterfeit','laundering','extortion','blackmail','kidnapping','arson','bribery','poaching'];
+                      const words = trimmed.toLowerCase().split(/\s+/);
+                      if (words.some(w => blocked.includes(w))) { setCustomIndustryError('Please enter a legitimate industry.'); return; }
                       setCustomIndustryError('');
                     }}
                     onKeyDown={e => { if (e.key === 'Enter' && customIndustry.trim() && !customIndustryError) onSelectIndustry(customIndustry.trim()); }}
