@@ -163,23 +163,14 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
   ];
 
   const PRO_CORE_CARDS: Array<{ id: string; title: string; subtitle: string; Icon: LucideIcon; iconColor: string }> = [
-    // 1. VIRAL HOOK — doom clock (fear + specificity = immediate share trigger)
-    { id: 'doom-clock', title: 'Your Skill Doom Clock', subtitle: 'Which of your skills AI will replace first — and when', Icon: Clock, iconColor: 'text-destructive' },
-    // 2. HOPE — real jobs you can apply to right now
-    { id: 'best-fit', title: 'Best-Fit Jobs for You', subtitle: 'Real openings you can apply to right now', Icon: Briefcase, iconColor: 'text-primary' },
-    // 3. AGENCY — the antidote to the fear in card 1
-    { id: 'defense', title: 'Your 90-Day Defense Plan', subtitle: 'Immediate actions · unconventional pivots · career upgrade path', Icon: Shield, iconColor: 'text-prophet-green' },
-    // 4. SHARE — score card AFTER user has absorbed value (share-when-primed, not share-when-cold)
+    { id: 'doom-clock', title: 'Your Skill Doom Clock', subtitle: doomSubtitle, Icon: Clock, iconColor: 'text-destructive' },
+    { id: 'best-fit', title: 'Best-Fit Jobs for You', subtitle: biggest_concern === 'job_market' ? 'Live openings matching your exact profile — updated daily' : 'Real openings you can apply to right now', Icon: Briefcase, iconColor: 'text-primary' },
+    { id: 'defense', title: 'Your 90-Day Defense Plan', subtitle: biggest_concern === 'ai_replacement' ? 'Your AI-proofing roadmap — specific actions, not generic advice' : 'Immediate actions · unconventional pivots · career upgrade path', Icon: Shield, iconColor: 'text-prophet-green' },
     { id: 'score-card', title: 'Your Career Score Card', subtitle: 'Generate & share your AI-readiness score with your network', Icon: Trophy, iconColor: 'text-prophet-gold' },
-    // 5. TOOL — tangible resume improvement
     { id: 'resume', title: 'ATS Resume Rewrite', subtitle: 'AI rewrites your resume to pass ATS filters & highlight human moats', Icon: FileText, iconColor: 'text-prophet-cyan' },
-    // 6. WIN — financial leverage moment
-    { id: 'salary-negotiation', title: 'Salary Negotiation Leverage', subtitle: 'Market gap · leverage signals · copy-paste scripts', Icon: DollarSign, iconColor: 'text-prophet-green' },
-    // 7. CONVERT — free ongoing support BEFORE the Pro paywall (free before paid)
+    { id: 'salary-negotiation', title: 'Salary Negotiation Leverage', subtitle: biggest_concern === 'salary_stagnation' ? 'Exact market gaps you can leverage for your next raise' : 'Market gap · leverage signals · copy-paste scripts', Icon: DollarSign, iconColor: 'text-prophet-green' },
     { id: 'coach', title: 'AI Career Coach', subtitle: 'Free · 3 personalized nudges over 48 hours', Icon: Brain, iconColor: 'text-primary' },
-    // 8. TOOL — skill development path (Pro-gated; after Coach so free value precedes paywall)
-    { id: 'skill-upgrade', title: 'My Skill Upgrade Plan', subtitle: 'Tools to learn · concepts to master · weekend deep-dives', Icon: Rocket, iconColor: 'text-primary' },
-    // 9. GATE — transparency + unlock deep insights
+    { id: 'skill-upgrade', title: 'My Skill Upgrade Plan', subtitle: biggest_concern === 'skill_gaps' ? 'The exact skills to close your biggest gaps — with timelines' : 'Tools to learn · concepts to master · weekend deep-dives', Icon: Rocket, iconColor: 'text-primary' },
     { id: 'deep-gate', title: 'What We Ran On Your Profile', subtitle: "The data behind your score · what we tested · where we're confident", Icon: Search, iconColor: 'text-muted-foreground' },
   ];
 
