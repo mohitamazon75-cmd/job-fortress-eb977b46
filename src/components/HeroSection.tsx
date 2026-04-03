@@ -333,46 +333,45 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
       </div>
 
       {/* Below-fold sections — outside the overflow-hidden hero */}
-      <div className="relative z-10 px-4">
-          {/* What You Get — outcomes-focused section */}
+      <div className="relative z-10">
           <WhatYouGetSection onCTA={onStart} />
-
-          {/* Sample Report — moved up for early engagement */}
           <SampleReport onCTA={onStart} />
-
-          {/* Industry Risk Heatmap */}
           <IndustryRiskHeatmap />
-
-          {/* Why Trust Us — single merged section */}
           <TrustSection />
 
           {/* Differentiator */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.5 }}
-            className="max-w-4xl mx-auto mt-6 rounded-2xl border border-border bg-card/30 p-5 sm:p-8"
-          >
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--gradient-primary)' }}>
-                <span className="text-primary-foreground font-black text-xl">≠</span>
-              </div>
-              <div>
-                <h3 className="font-black text-foreground text-base md:text-lg mb-1.5">
-                  This is <span className="text-primary">NOT</span> another ChatGPT wrapper.
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Career scores are computed by a <span className="text-foreground font-semibold">deterministic engine</span> backed by a <span className="text-foreground font-semibold">structured Knowledge Graph</span> — same inputs always produce the same score.
-                  Market signals and strategy use <span className="text-foreground font-semibold">fine-tuned reasoning models</span> grounded in your actual data, with sources cited.
-                </p>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {['Structured KG', 'Deterministic Scores', 'Cited Market Data', 'AI Strategy'].map(tag => (
-                    <span key={tag} className="text-[10px] font-bold px-2.5 py-1 rounded-full border border-primary/15 bg-primary/5 text-primary">{tag}</span>
-                  ))}
+          <div className="relative py-16 md:py-20">
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+            <div className="absolute inset-0 bg-muted/30" />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.5 }}
+              className="relative z-10 max-w-4xl mx-auto px-4 md:px-8"
+            >
+              <div className="rounded-2xl border border-border bg-card p-6 sm:p-10 shadow-sm">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--gradient-primary)' }}>
+                    <span className="text-primary-foreground font-black text-2xl">≠</span>
+                  </div>
+                  <div>
+                    <h3 className="font-black text-foreground text-lg md:text-xl mb-2">
+                      This is <span className="text-primary">NOT</span> another ChatGPT wrapper.
+                    </h3>
+                    <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                      Career scores are computed by a <span className="text-foreground font-bold">deterministic engine</span> backed by a <span className="text-foreground font-bold">structured Knowledge Graph</span> — same inputs always produce the same score.
+                      Market signals and strategy use <span className="text-foreground font-bold">fine-tuned reasoning models</span> grounded in your actual data, with sources cited.
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {['Structured KG', 'Deterministic Scores', 'Cited Market Data', 'AI Strategy'].map(tag => (
+                        <span key={tag} className="text-[11px] font-black px-3 py-1 rounded-full border border-primary/15 bg-primary/5 text-primary">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
       </div>
 
       {/* Bottom bar */}
