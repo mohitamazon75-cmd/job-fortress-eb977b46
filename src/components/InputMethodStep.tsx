@@ -228,6 +228,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                   {fileName || 'Upload your resume (PDF, Word — stays private)'}
                 </p>
                 <p className="text-sm text-muted-foreground">or click to browse • Max 5MB</p>
+                <p className="text-xs text-muted-foreground/70 mt-2">Please upload a text-based PDF, not a scanned image — image PDFs can't be read accurately.</p>
                 {fileError && (
                   <p className="text-sm text-destructive font-medium mt-2">{fileError}</p>
                 )}
