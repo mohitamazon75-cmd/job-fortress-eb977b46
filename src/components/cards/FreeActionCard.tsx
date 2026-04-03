@@ -33,20 +33,29 @@ export default function FreeActionCard({
       transition={{ duration: 0.5, delay: 0.3 }}
       className="space-y-4"
     >
-      {/* ── #1 Move This Month ── */}
-      <div className="bg-prophet-green/[0.06] border border-prophet-green/20 rounded-2xl p-5 space-y-3">
-        <p className="text-[10px] font-black uppercase tracking-widest text-prophet-green">
-          🎯 Your #1 Move This Month
-        </p>
-        <p className="text-sm font-bold text-foreground leading-snug">
-          {actionText}
-        </p>
-        <p className="text-xs text-muted-foreground mt-2">
-          Your full 90-day plan has 4 more targeted actions →
-        </p>
+      {/* ── #1 Move This Month — blurred teaser ── */}
+      <div className="relative rounded-2xl overflow-hidden">
+        <div className="bg-prophet-green/[0.06] border border-prophet-green/20 rounded-2xl p-5 space-y-3 blur-[6px] select-none pointer-events-none">
+          <p className="text-[10px] font-black uppercase tracking-widest text-prophet-green">
+            🎯 Your #1 Move This Month
+          </p>
+          <p className="text-sm font-bold text-foreground leading-snug">
+            {actionText}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Your full 90-day plan has 4 more targeted actions →
+          </p>
+        </div>
+        {/* Lock overlay */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex items-center gap-1.5 bg-background/80 backdrop-blur-sm rounded-full px-4 py-2 border border-border shadow-sm">
+            <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs font-bold text-muted-foreground">Unlock with Pro</span>
+          </div>
+        </div>
       </div>
 
-      {/* ── Pro Upgrade Teaser — value-first ── */}
+      {/* ── Pro Upgrade CTA — the only CTA ── */}
       <div className="rounded-2xl border-2 border-primary/20 bg-primary/[0.04] p-5 text-center space-y-3">
         <p className="text-[11px] font-black uppercase tracking-widest text-primary">
           Your Full Defense Plan
