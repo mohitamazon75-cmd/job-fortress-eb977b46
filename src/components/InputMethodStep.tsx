@@ -144,8 +144,8 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                   </div>
                   <h3 className="font-bold text-foreground text-lg mb-1">Upload Resume</h3>
                   <p className="text-sm text-muted-foreground">PDF only (max 5MB)</p>
-                  <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-prophet-cyan bg-prophet-cyan/8 px-3 py-1 rounded-full">
-                    <Sparkles className="w-3 h-3" /> AI-Powered Extraction
+                  <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-primary bg-primary/8 px-3 py-1 rounded-full">
+                    <Zap className="w-3 h-3" /> Recommended — best results
                   </span>
                 </div>
               </motion.button>
