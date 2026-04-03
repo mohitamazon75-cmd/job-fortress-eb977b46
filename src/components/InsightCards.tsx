@@ -186,15 +186,13 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
   // The concern-priority card bubbles to index 1 instead.
   const ORDERED_CORE_CARDS = (() => {
     const baseCards = isProUser ? PRO_CORE_CARDS : FREE_CORE_CARDS;
-    if (!isProUser || !biggest_concern) return baseCards;
+    if (!biggest_concern) return baseCards;
 
     const priorityMap: Record<string, string> = {
-      // salary_stagnation → show score-card first so the user can benchmark their leverage
-      // before jumping straight to negotiation tactics (which need context)
       salary_stagnation: 'score-card',
-      skill_gaps: 'skill-upgrade',
+      skill_gaps: isProUser ? 'skill-upgrade' : 'conversion-gate',
       job_market: 'best-fit',
-      ai_replacement: 'defense',
+      ai_replacement: isProUser ? 'defense' : 'conversion-gate',
     };
     const priorityId = priorityMap[biggest_concern];
     if (!priorityId) return baseCards;
