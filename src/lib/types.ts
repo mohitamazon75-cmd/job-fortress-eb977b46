@@ -10,9 +10,9 @@ export interface UserInput {
 }
 
 export const COUNTRIES = [
-  { label: 'India', flag: '🇮🇳', value: 'IN' },
-  { label: 'United States', flag: '🇺🇸', value: 'US' },
-  { label: 'UAE', flag: '🇦🇪', value: 'AE' },
+  { label: 'India', flag: '🇮🇳', value: 'IN', comingSoon: false },
+  { label: 'United States', flag: '🇺🇸', value: 'US', comingSoon: true },
+  { label: 'UAE', flag: '🇦🇪', value: 'AE', comingSoon: true },
 ] as const;
 
 export type CountryCode = typeof COUNTRIES[number]['value'];

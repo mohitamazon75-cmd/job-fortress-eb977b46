@@ -174,11 +174,14 @@ export default function OnboardingFlow({
                 {COUNTRIES.map((c) => (
                   <motion.button
                     key={c.value}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    onClick={() => onSelectCountry(c.value)}
+                    whileHover={c.comingSoon ? {} : { scale: 1.01 }}
+                    whileTap={c.comingSoon ? {} : { scale: 0.99 }}
+                    onClick={() => !c.comingSoon && onSelectCountry(c.value)}
+                    disabled={c.comingSoon}
                     className={`p-6 rounded-xl border text-left transition-all duration-200 ${
-                      country === c.value
+                      c.comingSoon
+                        ? 'border-border bg-muted/40 opacity-60 cursor-not-allowed'
+                        : country === c.value
                         ? 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary/20'
                         : 'border-border bg-card hover:border-primary/30 hover:shadow-sm'
                     }`}
@@ -186,10 +189,15 @@ export default function OnboardingFlow({
                     <div className="flex items-center gap-4">
                       <span className="text-3xl">{c.flag}</span>
                       <span className={`text-lg font-bold ${
-                        country === c.value ? 'text-primary' : 'text-foreground'
+                        c.comingSoon ? 'text-muted-foreground' : country === c.value ? 'text-primary' : 'text-foreground'
                       }`}>
                         {c.label}
                       </span>
+                      {c.comingSoon && (
+                        <span className="ml-auto text-xs font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                          Coming Soon
+                        </span>
+                      )}
                     </div>
                   </motion.button>
                 ))}
