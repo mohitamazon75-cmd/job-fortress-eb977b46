@@ -119,7 +119,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
       </motion.nav>
 
       {/* HERO */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 pb-8 sm:pb-16">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 pb-8 sm:pb-16">
         <div className="text-center max-w-5xl mx-auto w-full">
 
           {/* Eyebrow */}
