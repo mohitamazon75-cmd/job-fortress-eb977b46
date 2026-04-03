@@ -144,14 +144,21 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
   // biggest_concern reordering: applies ONLY to PRO_CORE_CARDS.
   // Free users always see the same 3 cards in fixed order.
 
+  // Concern-aware subtitle for doom clock
+  const doomSubtitle = biggest_concern === 'ai_replacement'
+    ? 'The AI tools targeting your exact skills — and their timeline'
+    : biggest_concern === 'skill_gaps'
+    ? 'Which skills are expiring fastest — and what replaces them'
+    : biggest_concern === 'salary_stagnation'
+    ? 'The skills dragging your earning power down — and when they expire'
+    : biggest_concern === 'job_market'
+    ? 'How fast AI is eating into demand for your specific skills'
+    : 'Which of your skills AI will replace first — and when';
+
   const FREE_CORE_CARDS: Array<{ id: string; title: string; subtitle: string; Icon: LucideIcon; iconColor: string }> = [
-    // 1. VIRAL HOOK — doom clock (fear + specificity). Computed, no API cost.
-    { id: 'doom-clock', title: 'Your Skill Doom Clock', subtitle: 'Which of your skills AI will replace first — and when', Icon: Clock, iconColor: 'text-destructive' },
-    // 2. HOPE — real jobs you can apply to right now (key differentiator)
+    { id: 'doom-clock', title: 'Your Skill Doom Clock', subtitle: doomSubtitle, Icon: Clock, iconColor: 'text-destructive' },
     { id: 'best-fit', title: 'Best-Fit Jobs for You', subtitle: 'Real openings you can apply to right now', Icon: Briefcase, iconColor: 'text-primary' },
-    // 3. GATE — emotional paywall at peak fear moment for max conversion.
-    { id: 'conversion-gate', title: 'Your Career Defense Package', subtitle: 'Everything we built for you — explore each tool', Icon: Shield, iconColor: 'text-primary' },
-    // 4. SHARE — score card after gate so users who didn't convert still share.
+    { id: 'conversion-gate', title: 'Your Career Defense Package', subtitle: biggest_concern === 'ai_replacement' ? 'Your complete AI-proofing toolkit' : biggest_concern === 'salary_stagnation' ? 'Tools to accelerate your earning power' : 'Everything we built for you — explore each tool', Icon: Shield, iconColor: 'text-primary' },
     { id: 'score-card', title: 'Challenge a Friend', subtitle: 'Share your score card and see who\'s more AI-proof', Icon: Trophy, iconColor: 'text-prophet-gold' },
   ];
 
