@@ -107,7 +107,7 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
   const tier = inferSeniorityTier(report.seniority_tier);
   const isExec = isExecutiveTier(tier);
 
-  // Live AI tool threats from Tavily + Gemini (last 30 days)
+  // Live AI tool threats from search + fine-tuned reasoning models (last 30 days)
   const allSkills = [...(report.moat_skills || []), ...(report.execution_skills_dead || []), ...(report.strategic_skills || [])].slice(0, 8);
   const enrichment = useLiveEnrichment(
     report.role, report.industry, allSkills, report.moat_skills || [],

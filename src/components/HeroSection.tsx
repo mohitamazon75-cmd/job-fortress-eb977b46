@@ -358,7 +358,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Career scores are computed by a <span className="text-foreground font-semibold">deterministic engine</span> backed by a <span className="text-foreground font-semibold">structured Knowledge Graph</span> — same inputs always produce the same score.
-                  Market signals and strategy use <span className="text-foreground font-semibold">Gemini AI</span> grounded in your actual data, with sources cited.
+                  Market signals and strategy use <span className="text-foreground font-semibold">fine-tuned reasoning models</span> grounded in your actual data, with sources cited.
                 </p>
                 <div className="flex flex-wrap gap-2 mt-3">
                   {['Structured KG', 'Deterministic Scores', 'Cited Market Data', 'AI Strategy'].map(tag => (

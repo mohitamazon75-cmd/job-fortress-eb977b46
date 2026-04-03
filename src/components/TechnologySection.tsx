@@ -57,7 +57,7 @@ const TECH_PILLARS = [
   {
     icon: Shield,
     title: 'Hybrid Architecture',
-    desc: 'Numbers come from deterministic algorithms (zero hallucination). Qualitative strategy comes from AI (Gemini 2.5 Flash) grounded in your actual profile data. Both are clearly labeled.',
+    desc: 'Numbers come from deterministic algorithms (zero hallucination). Qualitative strategy comes from fine-tuned reasoning models grounded in your actual profile data. Both are clearly labeled.',
     tags: ['Numbers: Algorithm', 'Strategy: AI-Assisted', 'Clearly Labeled'],
   },
 ];

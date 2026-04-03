@@ -135,7 +135,7 @@ export default function RiskIQLanding({ onStart }: Props) {
             </motion.p>
 
             <motion.p variants={fadeUp} className="text-xs text-muted-foreground/70 mb-10 max-w-md mx-auto">
-              Powered by a Knowledge Graph of 25 roles × 30 skills × 10 AI threats — enriched by Gemini 3.1 Pro narrative + Perplexity live market signals. Not a quiz. Not vibes. Math.
+              Powered by a Knowledge Graph of 25 roles × 30 skills × 10 AI threats — enriched by multi-model reasoning ensemble + live market signals. Not a quiz. Not vibes. Math.
             </motion.p>
 
             {/* Proof grid */}
