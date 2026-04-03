@@ -50,8 +50,13 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
   const isInView = useInView(ref, { once: true, margin: '-80px' });
 
   return (
-    <section ref={ref} className="relative py-14 md:py-20 overflow-hidden">
-      <div className="absolute inset-0 dot-pattern opacity-20" />
+    <section ref={ref} className="relative py-20 md:py-28 overflow-hidden">
+      {/* Alternating background */}
+      <div className="absolute inset-0 bg-muted/30" />
+      <div className="absolute inset-0 dot-pattern opacity-10" />
+      
+      {/* Top divider */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       
       <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8">
         {/* Header */}
@@ -59,19 +64,19 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
-          className="text-center mb-10"
+          className="text-center mb-14"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={isInView ? { opacity: 1, scale: 1 } : {}}
             transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-5"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-6"
           >
             <Zap className="w-4 h-4 text-primary" />
             <span className="text-xs font-black uppercase tracking-widest text-primary">What You Get</span>
           </motion.div>
 
-          <h2 className="text-3xl sm:text-5xl font-black tracking-tighter text-foreground mb-4">
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tighter text-foreground mb-5">
             Not Just a Score.{' '}
             <span style={{ background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
               A Complete Playbook.
@@ -84,7 +89,7 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
         </motion.div>
 
         {/* Deliverables Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {DELIVERABLES.map((item, i) => {
             const Icon = item.icon;
             return (
@@ -93,22 +98,22 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: 0.15 + i * 0.08 }}
-                className="group relative p-5 rounded-2xl border border-border bg-card hover:border-primary/20 hover:shadow-lg transition-all duration-300"
+                className="group relative p-6 rounded-2xl border border-border bg-card hover:border-primary/20 hover:shadow-lg transition-all duration-300"
               >
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--gradient-primary)' }}>
+                <div className="flex items-start gap-4 mb-3">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--gradient-primary)' }}>
                     <Icon className="w-5 h-5 text-primary-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-black text-foreground text-sm">{item.title}</h3>
-                      <span className={`text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-black text-foreground text-base">{item.title}</h3>
+                      <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
                         item.tag === 'Core' 
                           ? 'bg-primary/10 text-primary border border-primary/20' 
                           : 'bg-muted text-muted-foreground border border-border'
                       }`}>{item.tag}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                   </div>
                 </div>
               </motion.div>
@@ -122,13 +127,13 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.7 }}
-            className="text-center mt-10"
+            className="text-center mt-12"
           >
             <motion.button
               whileHover={{ scale: 1.03, y: -2 }}
               whileTap={{ scale: 0.97 }}
               onClick={onCTA}
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-primary-foreground font-bold text-base"
+              className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl text-primary-foreground font-black text-lg"
               style={{ background: 'var(--gradient-primary)', boxShadow: '0 10px 40px hsl(var(--primary) / 0.3)' }}
             >
               Get Your Career Playbook
@@ -137,6 +142,9 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
           </motion.div>
         )}
       </div>
+      
+      {/* Bottom divider */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
     </section>
   );
 }
