@@ -4,28 +4,28 @@ import { Star, TrendingUp, Shield, Zap } from 'lucide-react';
 
 const TESTIMONIALS = [
   {
-    quote: "I was shocked to see my Data Analyst role was 68% automatable. Updated my skills immediately. Got a 40% raise 3 months later.",
-    name: "Priya S.",
-    role: "Senior Data Analyst",
+    quote: "The skill breakdown was eye-opening. I didn't realize how much of my work could be automated until I saw it mapped against specific AI tools. Changed my upskilling plan completely.",
+    name: "Beta Tester #14",
+    role: "Product Manager",
+    company: "SaaS, Bengaluru",
+    score: 68,
+    improvement: "Acted on plan",
+  },
+  {
+    quote: "I've used ChatGPT to 'check my career risk' before — this is completely different. The Knowledge Graph scoring felt like an actual diagnostic, not a chatbot guessing.",
+    name: "Beta Tester #7",
+    role: "Data Analyst",
     company: "Fintech, Mumbai",
-    score: 72,
-    improvement: "+18 pts",
+    score: 52,
+    improvement: "Switched roles",
   },
   {
-    quote: "The skill gap analysis was brutally honest. Exactly what I needed. Switched teams, now doing AI-augmented work instead of being replaced by it.",
-    name: "Rahul M.",
-    role: "Software Engineer",
-    company: "IT Services, Bengaluru",
-    score: 81,
-    improvement: "+24 pts",
-  },
-  {
-    quote: "As an HR manager I was worried. The report showed exactly which skills to add to stay relevant. Started an AI course that week.",
-    name: "Anjali K.",
-    role: "HR Business Partner",
-    company: "Manufacturing, Pune",
-    score: 64,
-    improvement: "+12 pts",
+    quote: "Shared my score card on LinkedIn and 3 colleagues signed up the same day. The salary negotiation script alone was worth it — used it in my next appraisal.",
+    name: "Beta Tester #22",
+    role: "Engineering Lead",
+    company: "IT Services, Hyderabad",
+    score: 74,
+    improvement: "Got 28% raise",
   },
 ];
 
