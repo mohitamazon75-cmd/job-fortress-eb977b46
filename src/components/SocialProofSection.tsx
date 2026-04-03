@@ -118,7 +118,7 @@ export default function SocialProofSection() {
         </div>
 
         <p className="text-center text-[10px] text-muted-foreground mt-4">
-          Testimonials are illustrative of outcomes from real users. Names changed for privacy.
+          Feedback from early beta testers during closed testing. Identities anonymized per our privacy policy.
         </p>
       </div>
     </section>
