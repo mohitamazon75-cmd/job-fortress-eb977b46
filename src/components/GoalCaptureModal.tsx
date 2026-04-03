@@ -4,7 +4,6 @@ import { X, Target, TrendingUp, Compass, AlertCircle, ChevronRight } from 'lucid
 
 export interface ScanGoals {
   intent: 'actively_looking' | 'monitoring' | 'future_planning';
-  target_role: string;
   biggest_concern: 'ai_replacement' | 'skill_gaps' | 'salary_stagnation' | 'job_market';
 }
 
@@ -52,21 +51,9 @@ export default function GoalCaptureModal({ isOpen, onComplete, onSkip }: GoalCap
   };
 
   const handleConcern = (concern: ScanGoals['biggest_concern']) => {
-    const updated = { ...goals, biggest_concern: concern };
-    setGoals(updated);
-    setStep(2);
-  };
-
-  const handleRoleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const role = (form.elements.namedItem('role') as HTMLInputElement)?.value?.trim();
-    if (goals.intent && goals.biggest_concern) {
-      onComplete({
-        intent: goals.intent,
-        target_role: role || '',
-        biggest_concern: goals.biggest_concern,
-      });
+    const intent = goals.intent;
+    if (intent) {
+      onComplete({ intent, biggest_concern: concern });
     }
   };
 
@@ -97,7 +84,7 @@ export default function GoalCaptureModal({ isOpen, onComplete, onSkip }: GoalCap
             <div>
               <h2 className="text-sm font-black text-foreground">One quick question</h2>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Step {step + 1} of 3 — personalises your results
+                Step {step + 1} of 2 — personalises your results
               </p>
             </div>
             <button
@@ -112,7 +99,7 @@ export default function GoalCaptureModal({ isOpen, onComplete, onSkip }: GoalCap
           <div className="h-0.5 bg-border">
             <motion.div
               className="h-full bg-primary"
-              animate={{ width: `${((step + 1) / 3) * 100}%` }}
+              animate={{ width: `${((step + 1) / 2) * 100}%` }}
               transition={{ duration: 0.3 }}
             />
           </div>
@@ -170,39 +157,6 @@ export default function GoalCaptureModal({ isOpen, onComplete, onSkip }: GoalCap
                     <ChevronRight className="w-3.5 h-3.5 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 ))}
-              </motion.div>
-            )}
-
-            {step === 2 && (
-              <motion.div
-                initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
-                <p className="text-sm font-semibold text-foreground mb-4">
-                  What role are you targeting? <span className="text-muted-foreground font-normal">(optional)</span>
-                </p>
-                <form onSubmit={handleRoleSubmit} className="space-y-4">
-                  <input
-                    name="role"
-                    type="text"
-                    placeholder="e.g. Product Manager, Data Engineer, DevOps Lead"
-                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-0 transition-colors"
-                    autoFocus
-                  />
-                  <button
-                    type="submit"
-                    className="w-full rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-black py-3 transition-colors"
-                  >
-                    Start my scan →
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => goals.intent && goals.biggest_concern && onComplete({ intent: goals.intent, target_role: '', biggest_concern: goals.biggest_concern })}
-                    className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
-                  >
-                    Skip this step
-                  </button>
-                </form>
               </motion.div>
             )}
           </div>

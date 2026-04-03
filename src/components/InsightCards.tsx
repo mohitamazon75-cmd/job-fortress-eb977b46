@@ -144,35 +144,33 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
   // biggest_concern reordering: applies ONLY to PRO_CORE_CARDS.
   // Free users always see the same 3 cards in fixed order.
 
+  // Concern-aware subtitle for doom clock
+  const doomSubtitle = biggest_concern === 'ai_replacement'
+    ? 'The AI tools targeting your exact skills — and their timeline'
+    : biggest_concern === 'skill_gaps'
+    ? 'Which skills are expiring fastest — and what replaces them'
+    : biggest_concern === 'salary_stagnation'
+    ? 'The skills dragging your earning power down — and when they expire'
+    : biggest_concern === 'job_market'
+    ? 'How fast AI is eating into demand for your specific skills'
+    : 'Which of your skills AI will replace first — and when';
+
   const FREE_CORE_CARDS: Array<{ id: string; title: string; subtitle: string; Icon: LucideIcon; iconColor: string }> = [
-    // 1. VIRAL HOOK — doom clock (fear + specificity). Computed, no API cost.
-    { id: 'doom-clock', title: 'Your Skill Doom Clock', subtitle: 'Which of your skills AI will replace first — and when', Icon: Clock, iconColor: 'text-destructive' },
-    // 2. HOPE — real jobs you can apply to right now (key differentiator)
+    { id: 'doom-clock', title: 'Your Skill Doom Clock', subtitle: doomSubtitle, Icon: Clock, iconColor: 'text-destructive' },
     { id: 'best-fit', title: 'Best-Fit Jobs for You', subtitle: 'Real openings you can apply to right now', Icon: Briefcase, iconColor: 'text-primary' },
-    // 3. GATE — emotional paywall at peak fear moment for max conversion.
-    { id: 'conversion-gate', title: 'Your Career Defense Package', subtitle: 'Everything we built for you — explore each tool', Icon: Shield, iconColor: 'text-primary' },
-    // 4. SHARE — score card after gate so users who didn't convert still share.
+    { id: 'conversion-gate', title: 'Your Career Defense Package', subtitle: biggest_concern === 'ai_replacement' ? 'Your complete AI-proofing toolkit' : biggest_concern === 'salary_stagnation' ? 'Tools to accelerate your earning power' : 'Everything we built for you — explore each tool', Icon: Shield, iconColor: 'text-primary' },
     { id: 'score-card', title: 'Challenge a Friend', subtitle: 'Share your score card and see who\'s more AI-proof', Icon: Trophy, iconColor: 'text-prophet-gold' },
   ];
 
   const PRO_CORE_CARDS: Array<{ id: string; title: string; subtitle: string; Icon: LucideIcon; iconColor: string }> = [
-    // 1. VIRAL HOOK — doom clock (fear + specificity = immediate share trigger)
-    { id: 'doom-clock', title: 'Your Skill Doom Clock', subtitle: 'Which of your skills AI will replace first — and when', Icon: Clock, iconColor: 'text-destructive' },
-    // 2. HOPE — real jobs you can apply to right now
-    { id: 'best-fit', title: 'Best-Fit Jobs for You', subtitle: 'Real openings you can apply to right now', Icon: Briefcase, iconColor: 'text-primary' },
-    // 3. AGENCY — the antidote to the fear in card 1
-    { id: 'defense', title: 'Your 90-Day Defense Plan', subtitle: 'Immediate actions · unconventional pivots · career upgrade path', Icon: Shield, iconColor: 'text-prophet-green' },
-    // 4. SHARE — score card AFTER user has absorbed value (share-when-primed, not share-when-cold)
+    { id: 'doom-clock', title: 'Your Skill Doom Clock', subtitle: doomSubtitle, Icon: Clock, iconColor: 'text-destructive' },
+    { id: 'best-fit', title: 'Best-Fit Jobs for You', subtitle: biggest_concern === 'job_market' ? 'Live openings matching your exact profile — updated daily' : 'Real openings you can apply to right now', Icon: Briefcase, iconColor: 'text-primary' },
+    { id: 'defense', title: 'Your 90-Day Defense Plan', subtitle: biggest_concern === 'ai_replacement' ? 'Your AI-proofing roadmap — specific actions, not generic advice' : 'Immediate actions · unconventional pivots · career upgrade path', Icon: Shield, iconColor: 'text-prophet-green' },
     { id: 'score-card', title: 'Your Career Score Card', subtitle: 'Generate & share your AI-readiness score with your network', Icon: Trophy, iconColor: 'text-prophet-gold' },
-    // 5. TOOL — tangible resume improvement
     { id: 'resume', title: 'ATS Resume Rewrite', subtitle: 'AI rewrites your resume to pass ATS filters & highlight human moats', Icon: FileText, iconColor: 'text-prophet-cyan' },
-    // 6. WIN — financial leverage moment
-    { id: 'salary-negotiation', title: 'Salary Negotiation Leverage', subtitle: 'Market gap · leverage signals · copy-paste scripts', Icon: DollarSign, iconColor: 'text-prophet-green' },
-    // 7. CONVERT — free ongoing support BEFORE the Pro paywall (free before paid)
+    { id: 'salary-negotiation', title: 'Salary Negotiation Leverage', subtitle: biggest_concern === 'salary_stagnation' ? 'Exact market gaps you can leverage for your next raise' : 'Market gap · leverage signals · copy-paste scripts', Icon: DollarSign, iconColor: 'text-prophet-green' },
     { id: 'coach', title: 'AI Career Coach', subtitle: 'Free · 3 personalized nudges over 48 hours', Icon: Brain, iconColor: 'text-primary' },
-    // 8. TOOL — skill development path (Pro-gated; after Coach so free value precedes paywall)
-    { id: 'skill-upgrade', title: 'My Skill Upgrade Plan', subtitle: 'Tools to learn · concepts to master · weekend deep-dives', Icon: Rocket, iconColor: 'text-primary' },
-    // 9. GATE — transparency + unlock deep insights
+    { id: 'skill-upgrade', title: 'My Skill Upgrade Plan', subtitle: biggest_concern === 'skill_gaps' ? 'The exact skills to close your biggest gaps — with timelines' : 'Tools to learn · concepts to master · weekend deep-dives', Icon: Rocket, iconColor: 'text-primary' },
     { id: 'deep-gate', title: 'What We Ran On Your Profile', subtitle: "The data behind your score · what we tested · where we're confident", Icon: Search, iconColor: 'text-muted-foreground' },
   ];
 
@@ -186,15 +184,13 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
   // The concern-priority card bubbles to index 1 instead.
   const ORDERED_CORE_CARDS = (() => {
     const baseCards = isProUser ? PRO_CORE_CARDS : FREE_CORE_CARDS;
-    if (!isProUser || !biggest_concern) return baseCards;
+    if (!biggest_concern) return baseCards;
 
     const priorityMap: Record<string, string> = {
-      // salary_stagnation → show score-card first so the user can benchmark their leverage
-      // before jumping straight to negotiation tactics (which need context)
       salary_stagnation: 'score-card',
-      skill_gaps: 'skill-upgrade',
+      skill_gaps: isProUser ? 'skill-upgrade' : 'conversion-gate',
       job_market: 'best-fit',
-      ai_replacement: 'defense',
+      ai_replacement: isProUser ? 'defense' : 'conversion-gate',
     };
     const priorityId = priorityMap[biggest_concern];
     if (!priorityId) return baseCards;
