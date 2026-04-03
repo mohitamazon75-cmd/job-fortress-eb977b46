@@ -76,11 +76,8 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
 
     // Live increment: every 60-120s add 3-4 to the counter
     const interval = setInterval(() => {
-      const delay = 60_000 + Math.random() * 60_000; // 60-120s jitter
-      setTimeout(() => {
-        setScanCount(prev => (prev ?? BASE_COUNT) + Math.floor(3 + Math.random() * 2));
-      }, 0);
-    }, 90_000); // base interval ~90s, with jitter in the increment
+      setScanCount(prev => (prev ?? BASE_COUNT) + Math.floor(3 + Math.random() * 2));
+    }, 60_000 + Math.floor(Math.random() * 60_000)); // 60-120s
 
     return () => clearInterval(interval);
   }, []);
