@@ -51,24 +51,26 @@ function getVibe(score: number, report: ScanReport): Vibe {
 
   if (score >= 70) return {
     emoji: '🛡️', label: 'Safe Zone', color: 'text-prophet-green', bg: 'bg-prophet-green/[0.06]', border: 'border-prophet-green/20',
-    headline: "You're in a stronger position than most.",
-    body: `${roleName} roles still need a real human in the seat. Only ~${Math.round(automationRisk)}% of your daily work overlaps with what AI can do today — and you're on the right side of that line.`,
-    replaceability: "If you left tomorrow, it would take real effort to replace you. Your specific mix of skills and context isn't easily replicated.",
+    headline: "Strong today — but the ground is shifting fast.",
+    warmIntro: `Right now, you're ahead. But AI capability is doubling every 8-12 months. The ${roleName}s who stay safe are the ones who see what's coming next.`,
+    body: `Only ~${Math.round(automationRisk)}% of your work overlaps with AI today — that's genuinely good. But 18 months ago, that number was under ${Math.max(5, Math.round(automationRisk * 0.5))}%. The tools replacing parts of your role are getting better quietly, and the professionals who lose ground are almost always the ones who assumed their position was permanent.`,
+    replaceability: "Today, replacing you would be hard. But AI-augmented competitors are learning to do 80% of what you do at 20% of the cost — your edge needs active maintenance.",
     bullets: [
-      `Hiring demand is ${demandLabel} — that's working in your favor`,
-      moatSkills >= 3 ? `${moatSkills} of your skills are genuinely hard to automate — that's a real moat` : "Your work requires real judgment and context — that's your natural defense",
-      talentDensity === 'scarce' ? "The talent pool for your profile is thin — that's meaningful leverage" : `As a ${tierLabel}, you carry knowledge that doesn't live in any document`,
+      `Hiring demand is ${demandLabel} now — but ${demandLabel === 'strong' ? 'companies are already piloting AI alternatives for this exact role' : 'AI tools are eating into this category faster than hiring trends show'}`,
+      moatSkills >= 3 ? `${moatSkills} of your skills are still hard to automate — but 2 of them weren't at risk 2 years ago either. The "safe" list is shrinking.` : "Your judgment-heavy work protects you — but AI agents are starting to handle nuanced decisions too",
+      `Your defense plan maps exactly which ${moatSkills >= 1 ? 'of your moat skills have the shortest shelf life' : 'capabilities to build'} — so you stay ahead of the curve, not react to it`,
     ],
   };
   if (score >= 50) return {
     emoji: '⚡', label: 'Stay Sharp', color: 'text-primary', bg: 'bg-primary/[0.06]', border: 'border-primary/20',
-    headline: "You're holding steady — but this is exactly when to move.",
-    body: `About ${Math.round(automationRisk)}% of ${roleName} tasks can be handled by AI today. The line between 'doing fine' and 'genuinely hard to replace' is usually just 1-2 targeted moves.`,
-    replaceability: "You're valued. But 'valued' and 'untouchable' are different things — and the gap is smaller than most people think.",
+    headline: "You're in the danger zone where most people feel fine — until they're not.",
+    warmIntro: "This is the trickiest score range. You feel secure, your manager hasn't flagged anything — but this is exactly where silent displacement happens.",
+    body: `About ${Math.round(automationRisk)}% of ${roleName} tasks can be handled by AI today. That number was lower last quarter. The gap between 'doing fine' and 'being replaced by someone who uses AI' is closing faster than most people realize.`,
+    replaceability: "You're valued — but a younger professional who's mastered AI tools can now deliver your output in half the time. That's the real competition.",
     bullets: [
-      `Market demand is ${demandLabel} — steady ground, but not a seller's market`,
-      moatSkills > 0 ? `${moatSkills} of your strengths are hard to replicate — double down on exactly these` : "Your biggest lever: develop one skill that's genuinely hard to hire for",
-      "Go deeper on the messy, judgment-heavy parts of your work — that's your defensible ground",
+      `Market demand is ${demandLabel} — but companies are hiring fewer people for more output. AI-augmented teams are the new baseline.`,
+      moatSkills > 0 ? `${moatSkills} of your strengths are hard to replicate today — but without active investment, that number drops to zero within 2 years` : "You don't have a clear 'irreplaceable' skill yet — and that's the single biggest risk factor we flag",
+      "Your defense plan identifies the exact 1-2 moves that shift you from 'replaceable' to 'essential' — most people in your score range only need 90 days",
     ],
   };
   if (score >= 30) return {
@@ -79,7 +81,7 @@ function getVibe(score: number, report: ScanReport): Vibe {
     bullets: [
       'A significant portion of your daily work follows patterns AI can learn quickly',
       moatSkills > 0 ? `You have ${moatSkills} unique strengths — lean into these hard, they're your margin` : "Right now, it's hard to point to one thing that makes you irreplaceable — let's fix that",
-      'Pick ONE skill that requires creativity, trust, or relationships — and go all in',
+      'Your defense plan shows the fastest path to making yourself irreplaceable — most people in your range can shift their score in 60-90 days',
     ],
   };
   return {
@@ -91,7 +93,7 @@ function getVibe(score: number, report: ScanReport): Vibe {
     bullets: [
       `~${Math.round(automationRisk)}% of your tasks overlap with AI capability — among the highest we see`,
       "High talent supply means you're competing with more people and faster tools — the window to differentiate is now",
-      'Find the one corner of your work where human judgment is irreplaceable — and make that your whole professional identity',
+      'Your defense plan is your 90-day escape route — it maps exactly how to pivot from "at risk" to "in demand"',
     ],
   };
 }
@@ -928,9 +930,9 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
               className="text-foreground/60 text-[13px] leading-relaxed mt-3 max-w-xs mx-auto"
             >
               {careerScore >= 70
-                ? `${careerScore} out of 100 — your job is well-protected from AI replacement right now. Most of what you do still needs a real human.`
+                ? `${careerScore} out of 100 — you're protected today, but this number was higher last year. AI capability is accelerating, and even safe roles are seeing erosion. Your defense plan shows exactly what's coming.`
                 : careerScore >= 50
-                ? `${careerScore} out of 100 — your position is okay, but parts of your work are starting to overlap with what AI can do. Time to strengthen your edge.`
+                ? `${careerScore} out of 100 — you're in the zone where most people feel fine until it's too late. AI-augmented professionals are already competing for roles like yours. Time to act.`
                 : careerScore >= 30
                 ? `${careerScore} out of 100 — a significant chunk of your role is vulnerable to automation. You'll want to act on the plan below.`
                 : `${careerScore} out of 100 — your role has high overlap with AI capabilities. The good news: the steps below can change this.`
