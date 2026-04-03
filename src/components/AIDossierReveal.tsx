@@ -951,35 +951,37 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
         </div>
       </div>
 
-      {/* Bottom CTA — reveal flow should never be blocked by dossier stream state */}
-      <AnimatePresence>
-        {allowContinue && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-            className="flex-shrink-0 border-t border-border/50 bg-background/95 backdrop-blur-sm px-4 sm:px-6 py-4"
-          >
-            <div className="max-w-lg mx-auto">
-              <motion.button
-                onClick={onComplete}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl text-primary-foreground font-black text-base tracking-wide transition-all min-h-[52px]"
-                style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-primary)' }}
-              >
-                See Your Full Defense Plan
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-              <p className="text-[10px] text-muted-foreground text-center mt-2">
-                {streamComplete
-                  ? `${(report.score_breakdown?.skill_adjustments || []).length} skills analyzed · real market data`
-                  : 'Detailed dossier loading in background…'}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Bottom CTA — only shown for Pro users */}
+      {isProUser && (
+        <AnimatePresence>
+          {allowContinue && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+              className="flex-shrink-0 border-t border-border/50 bg-background/95 backdrop-blur-sm px-4 sm:px-6 py-4"
+            >
+              <div className="max-w-lg mx-auto">
+                <motion.button
+                  onClick={onComplete}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl text-primary-foreground font-black text-base tracking-wide transition-all min-h-[52px]"
+                  style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-primary)' }}
+                >
+                  See Your Full Defense Plan
+                  <ArrowRight className="w-5 h-5" />
+                </motion.button>
+                <p className="text-[10px] text-muted-foreground text-center mt-2">
+                  {streamComplete
+                    ? `${(report.score_breakdown?.skill_adjustments || []).length} skills analyzed · real market data`
+                    : 'Detailed dossier loading in background…'}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
     </div>
   );
 }
