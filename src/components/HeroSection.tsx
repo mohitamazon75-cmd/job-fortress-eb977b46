@@ -332,7 +332,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
         </div>
       </div>
 
-      {/* Below-fold sections — outside the hero centering container */}
+      {/* Below-fold sections — outside the overflow-hidden hero */}
       <div className="relative z-10 px-4">
           {/* What You Get — outcomes-focused section */}
           <WhatYouGetSection onCTA={onStart} />
