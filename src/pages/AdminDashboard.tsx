@@ -374,7 +374,7 @@ function OverviewTab({ data }: { data: AdminData }) {
             <p className="text-[10px] text-muted-foreground uppercase">LLM calls</p>
           </div>
         </div>
-        <p className="text-[10px] text-muted-foreground">Estimated at ~$0.15/scan avg across Gemini Pro + Flash models. Actual costs may vary.</p>
+        <p className="text-[10px] text-muted-foreground">Estimated at ~$0.15/scan avg across reasoning + inference models. Actual costs may vary.</p>
       </motion.div>
 
       {/* Function Usage */}

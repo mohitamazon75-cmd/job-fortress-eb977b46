@@ -10,7 +10,7 @@ function getSteps(report: ScanReport) {
   const moatCount = report.moat_skills?.length ?? 0;
   return [
     { icon: Database, label: 'Knowledge Graph Match', desc: kgMatched > 0 ? `Matched ${kgMatched} of your skills against 2,400+ role-skill entries` : 'Your role was matched against 2,400+ role-skill entries — fewer direct matches widen uncertainty ranges', color: 'text-prophet-cyan', detail: 'ISCO-08 taxonomy · O*NET cross-ref' },
-    { icon: Brain, label: 'AI Overlap Analysis', desc: toolsTracked > 0 ? `Compared your tasks against ${toolsTracked} AI tools currently tracked` : 'Compared each skill to current AI tool capabilities — no direct tool matches found for this role profile', color: 'text-prophet-gold', detail: 'GPT-4o · Claude · Gemini · 120+ tools tracked' },
+    { icon: Brain, label: 'AI Overlap Analysis', desc: toolsTracked > 0 ? `Compared your tasks against ${toolsTracked} AI tools currently tracked` : 'Compared each skill to current AI tool capabilities — no direct tool matches found for this role profile', color: 'text-prophet-gold', detail: 'Multi-model ensemble · 120+ tools tracked' },
     // Credibility: "Live" implies real-time; this data is from scan time, not a live feed.
     { icon: Globe, label: 'Fresh Market Scan', desc: 'Pulled hiring signals, salary trends & demand data from 6 sources at scan time', color: 'text-prophet-green', detail: 'Naukri · LinkedIn · Indeed · Glassdoor signals' },
     { icon: BarChart3, label: 'Score Computation', desc: `Computed Career Position Score across 5 weighted factors${detIdx ? ` (DI: ${detIdx})` : ''}`, color: 'text-primary', detail: 'Role risk · skill moats · market demand · AI overlap · seniority' },

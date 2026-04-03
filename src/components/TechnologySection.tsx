@@ -51,13 +51,13 @@ const TECH_PILLARS = [
   {
     icon: Globe,
     title: 'Real-Time Market Intelligence',
-    desc: 'Live hiring signals, salary trends, and AI adoption rates fetched via Firecrawl search and synthesized by Gemini — refreshed on every scan for your specific role.',
-    tags: ['Firecrawl Search', 'Gemini Synthesis', 'Per-Scan Freshness'],
+    desc: 'Live hiring signals, salary trends, and AI adoption rates fetched via deep web search and synthesized by our reasoning engine — refreshed on every scan for your specific role.',
+    tags: ['Deep Web Search', 'Neural Synthesis', 'Per-Scan Freshness'],
   },
   {
     icon: Shield,
     title: 'Hybrid Architecture',
-    desc: 'Numbers come from deterministic algorithms (zero hallucination). Qualitative strategy comes from AI (Gemini 2.5 Flash) grounded in your actual profile data. Both are clearly labeled.',
+    desc: 'Numbers come from deterministic algorithms (zero hallucination). Qualitative strategy comes from fine-tuned reasoning models grounded in your actual profile data. Both are clearly labeled.',
     tags: ['Numbers: Algorithm', 'Strategy: AI-Assisted', 'Clearly Labeled'],
   },
 ];
