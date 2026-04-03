@@ -401,5 +401,6 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
         </div>
       </motion.div>
     </div>
+    </div>
   );
 }
