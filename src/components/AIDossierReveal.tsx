@@ -930,9 +930,9 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
               className="text-foreground/60 text-[13px] leading-relaxed mt-3 max-w-xs mx-auto"
             >
               {careerScore >= 70
-                ? `${careerScore} out of 100 — your job is well-protected from AI replacement right now. Most of what you do still needs a real human.`
+                ? `${careerScore} out of 100 — you're protected today, but this number was higher last year. AI capability is accelerating, and even safe roles are seeing erosion. Your defense plan shows exactly what's coming.`
                 : careerScore >= 50
-                ? `${careerScore} out of 100 — your position is okay, but parts of your work are starting to overlap with what AI can do. Time to strengthen your edge.`
+                ? `${careerScore} out of 100 — you're in the zone where most people feel fine until it's too late. AI-augmented professionals are already competing for roles like yours. Time to act.`
                 : careerScore >= 30
                 ? `${careerScore} out of 100 — a significant chunk of your role is vulnerable to automation. You'll want to act on the plan below.`
                 : `${careerScore} out of 100 — your role has high overlap with AI capabilities. The good news: the steps below can change this.`
