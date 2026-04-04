@@ -244,26 +244,27 @@ export default function ResultsModelB() {
 
         {/* Streak bar */}
         {cardData && !loading && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "var(--mb-navy-tint)", border: "1px solid var(--mb-navy-tint2)", borderRadius: 10, marginBottom: 16 }}>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, fontWeight: 700, color: "var(--mb-navy)" }}>🔥 {streak}</span>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-navy)", flex: 1 }}>day streak</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--mb-navy-tint)", border: "1px solid var(--mb-navy-tint2)", borderRadius: 12, marginBottom: 18, boxShadow: "var(--mb-shadow-sm)" }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 700, color: "var(--mb-navy)" }}>🔥 {streak}</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--mb-navy)", flex: 1 }}>day streak</span>
             <button
               onClick={() => setStreakModal(true)}
-              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600, color: "var(--mb-navy)", background: "white", border: "1px solid var(--mb-navy-tint2)", borderRadius: 20, padding: "4px 12px", cursor: "pointer", minHeight: 44, minWidth: 44, display: "flex", alignItems: "center" }}
+              className="mb-btn-primary"
+              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: "var(--mb-navy)", background: "white", border: "1px solid var(--mb-navy-tint2)", borderRadius: 20, padding: "6px 16px", cursor: "pointer", minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", transition: "all 150ms" }}
             >Today's action</button>
           </div>
         )}
 
         {/* Progress bar */}
         {cardData && !loading && (
-          <div style={{ height: 3, background: "var(--mb-rule)", borderRadius: 1.5, marginBottom: 12, overflow: "hidden" }}>
-            <div style={{ height: 3, background: "var(--mb-navy)", borderRadius: 1.5, width: `${progressPct}%`, transition: "width 0.3s ease" }} />
+          <div style={{ height: 4, background: "var(--mb-rule)", borderRadius: 2, marginBottom: 14, overflow: "hidden" }}>
+            <div style={{ height: 4, background: "var(--mb-navy)", borderRadius: 2, width: `${progressPct}%`, transition: "width 0.4s ease" }} />
           </div>
         )}
 
         {/* Tabs */}
         {cardData && !loading && (
-          <div style={{ display: "flex", gap: 2, marginBottom: 20, overflowX: "auto" }}>
+          <div style={{ display: "flex", gap: 3, marginBottom: 22, overflowX: "auto" }}>
             {TAB_LABELS.map((label, i) => {
               const state = getTabState(i);
               const colors = tabColors[state];
@@ -276,21 +277,23 @@ export default function ResultsModelB() {
                     minWidth: 0,
                     padding: "10px 4px",
                     background: colors.bg,
-                    border: "none",
-                    borderRadius: 8,
+                    border: state === "active" ? "1px solid var(--mb-navy-tint2)" : "1px solid transparent",
+                    borderRadius: 10,
                     cursor: "pointer",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: 4,
+                    gap: 5,
                     position: "relative",
-                    minHeight: 44,
+                    minHeight: 48,
+                    transition: "all 150ms",
+                    boxShadow: state === "active" ? "var(--mb-shadow-sm)" : "none",
                   }}
                 >
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: colors.dot }} />
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 8, fontWeight: 600, color: colors.label, whiteSpace: "nowrap" }}>{label}</span>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: colors.dot, transition: "background 150ms" }} />
+                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 700, color: colors.label, whiteSpace: "nowrap", letterSpacing: "0.02em" }}>{label}</span>
                   {state === "done" && i !== currentCard && (
-                    <span style={{ position: "absolute", top: 2, right: 2, fontSize: 7, color: "#1A6B3C" }}>✓</span>
+                    <span style={{ position: "absolute", top: 3, right: 4, fontSize: 8, color: "#1A6B3C", fontWeight: 700 }}>✓</span>
                   )}
                 </button>
               );
