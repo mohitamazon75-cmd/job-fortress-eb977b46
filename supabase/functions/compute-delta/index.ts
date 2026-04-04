@@ -12,50 +12,45 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
-// Call Gemini Flash to generate a 1-sentence summary
+// Call AI via Lovable AI gateway to generate a 1-sentence summary
 async function generateDeltaSummary(
   currentDI: number,
   previousDI: number,
   scoreDelta: number
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
+  if (!LOVABLE_API_KEY) {
     return `Your score ${scoreDelta > 0 ? 'improved' : 'declined'} by ${Math.abs(scoreDelta)} points since your last scan.`;
   }
 
   try {
     const prompt = `You are a career AI analyst. In one short sentence (max 15 words), describe the career impact of someone whose automation risk determinism index changed from ${previousDI} to ${currentDI} (delta: ${scoreDelta > 0 ? '+' : ''}${scoreDelta}). Be encouraging if delta is positive, cautionary if negative. Respond with ONLY the sentence, no quotes.`;
 
-    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY,
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
+        model: "google/gemini-3-flash-preview",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+        max_tokens: 100,
       }),
     });
 
     if (!res.ok) {
-      console.warn(`[compute-delta] Gemini API failed ${res.status}`);
+      console.warn(`[compute-delta] AI gateway failed ${res.status}`);
       return `Your score ${scoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreDelta)} points since your last scan.`;
     }
 
     const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const text = data?.choices?.[0]?.message?.content || "";
     return text.trim() || `Your score ${scoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreDelta)} points since your last scan.`;
   } catch (err) {
-    console.warn("[compute-delta] Gemini generation failed:", err);
+    console.warn("[compute-delta] AI generation failed:", err);
     return `Your score ${scoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreDelta)} points since your last scan.`;
   }
 }
