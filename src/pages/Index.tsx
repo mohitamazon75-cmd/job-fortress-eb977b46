@@ -86,6 +86,7 @@ function AuthAutoAdvance({ onReady }: { onReady: () => void }) {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const { track } = useAnalytics();
   const { withMutex, isLocked } = useRequestMutex();
   const [phase, setPhase] = useState<AppPhase>('hero');
