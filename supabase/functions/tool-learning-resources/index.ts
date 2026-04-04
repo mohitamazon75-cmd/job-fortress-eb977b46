@@ -6,6 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const LOVABLE_API_URL = "https://ai-gateway.lovable.dev/v1/chat/completions";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -21,53 +23,65 @@ serve(async (req) => {
       );
     }
 
-    const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
-    if (!PERPLEXITY_API_KEY) {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "Perplexity API key not configured" }),
+        JSON.stringify({ error: "API key not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const response = await fetch("https://api.perplexity.ai/chat/completions", {
+    const prompt = `You are a career technology advisor for Indian professionals in 2026.
+
+For someone whose "${skill_name}" skill is being disrupted by "${tool_name}":
+
+Return ONLY a JSON object (no markdown, no explanation, no text before or after):
+{
+  "tool_description": "One sentence about what ${tool_name} is and why it matters RIGHT NOW in 2026",
+  "resources": [
+    {
+      "title": "Resource name",
+      "url": "https://actual-working-url.com",
+      "time_estimate": "e.g. 2-3 hours",
+      "type": "course"
+    }
+  ],
+  "top_credential": {
+    "name": "Credential name",
+    "url": "https://certification-url.com",
+    "value": "Why employers care about this"
+  },
+  "weekend_project": {
+    "title": "Project name",
+    "description": "What to build and why it proves competency"
+  }
+}
+
+CRITICAL RULES for resources:
+- Include exactly 3 FREE resources
+- URLs MUST be real, working URLs to official sites (e.g. coursera.org, youtube.com, docs.microsoft.com, cloud.google.com, freecodecamp.org)
+- Never invent URLs. Use well-known platform URLs you are confident exist.
+- type must be one of: "course", "video", "docs"
+- Focus on the LATEST 2025-2026 version of ${tool_name}`;
+
+    const response = await fetch(LOVABLE_API_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "sonar",
+        model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: "system",
-            content:
-              "You are a career technology advisor. Return ONLY valid JSON, no markdown. Be specific, current, and actionable. Focus on the most popular and current version of the tool.",
-          },
-          {
-            role: "user",
-            content: `For a professional whose "${skill_name}" skill is being disrupted by "${tool_name}":
-
-1. What is ${tool_name} exactly? (1 sentence)
-2. What are the top 3 FREE learning resources to learn ${tool_name} RIGHT NOW in 2026? Include title, URL, and estimated time.
-3. What is the #1 specific certification or credential for ${tool_name} that employers value?
-4. What is one weekend project someone can build with ${tool_name} to prove competency?
-
-Return as JSON:
-{
-  "tool_description": "...",
-  "resources": [{"title": "...", "url": "...", "time_estimate": "...", "type": "course|video|docs"}],
-  "top_credential": {"name": "...", "url": "...", "value": "..."},
-  "weekend_project": {"title": "...", "description": "..."}
-}`,
-          },
+          { role: "user", content: prompt },
         ],
-        search_recency_filter: "month",
+        temperature: 0.3,
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Perplexity error:", response.status, errText);
+      console.error("AI error:", response.status, errText);
       return new Response(
         JSON.stringify({ error: "Failed to fetch learning resources" }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -76,21 +90,38 @@ Return as JSON:
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
-    const citations = data.citations || [];
 
-    // Try to parse the JSON response
+    // Robust JSON extraction — find the JSON object in the response
     let parsed;
     try {
-      // Strip markdown code fences if present
-      const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      parsed = JSON.parse(cleaned);
+      // Try direct parse first
+      parsed = JSON.parse(content.trim());
     } catch {
-      // If JSON parsing fails, return raw content
-      parsed = { raw: content };
+      try {
+        // Strip markdown fences and any surrounding text
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error("No JSON found");
+        }
+      } catch {
+        console.error("Failed to parse AI response:", content.substring(0, 200));
+        // Return a helpful fallback
+        parsed = {
+          tool_description: `${tool_name} is an AI tool disrupting ${skill_name}. Learn it to stay ahead.`,
+          resources: [
+            { title: `${tool_name} Official Documentation`, url: `https://www.google.com/search?q=${encodeURIComponent(tool_name + " official documentation 2026")}`, time_estimate: "2-3 hours", type: "docs" },
+            { title: `Learn ${tool_name} - YouTube`, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(tool_name + " tutorial 2026")}`, time_estimate: "1-2 hours", type: "video" },
+            { title: `${tool_name} Courses - Coursera`, url: `https://www.coursera.org/search?query=${encodeURIComponent(tool_name)}`, time_estimate: "4-6 hours", type: "course" },
+          ],
+          weekend_project: { title: `Build a ${skill_name} workflow with ${tool_name}`, description: `Create a real project using ${tool_name} to automate part of your ${skill_name} workflow — proves you can operate the tool, not be replaced by it.` },
+        };
+      }
     }
 
     return new Response(
-      JSON.stringify({ ...parsed, citations, tool_name, skill_name }),
+      JSON.stringify({ ...parsed, tool_name, skill_name }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
