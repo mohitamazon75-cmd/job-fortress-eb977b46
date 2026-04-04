@@ -7,7 +7,7 @@
  */
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Share2, Download, AlertTriangle, Zap, MessageCircle, Shield, Target, Clock, ArrowRight, Bot, Brain, Building2, ChevronDown, ChevronUp, ExternalLink, BookOpen, Play, FileText, Award, Wrench, Loader2 } from 'lucide-react';
+import { Share2, Download, Zap, MessageCircle, Shield, Target, Clock, ArrowRight, Bot, Brain, Building2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { classifySkills, type ClassifiedSkill } from '@/lib/unified-skill-classifier';
 import CohortInsightBadge from '@/components/cards/CohortInsightBadge';
