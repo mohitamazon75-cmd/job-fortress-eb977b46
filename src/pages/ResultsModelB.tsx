@@ -46,13 +46,43 @@ function useStreak() {
   return streak;
 }
 
-const STREAK_ACTIONS = [
-  "Update your LinkedIn headline with your strongest credential.",
-  "Send one personalised outreach message today.",
-  "Add one missing ATS keyword to your resume.",
-  "Research one target company's Q1 2026 priorities.",
-  "Practice your salary negotiation anchor out loud.",
-];
+/** Build 5 daily streak actions dynamically from the user's analysis data */
+function buildStreakActions(cd: any): string[] {
+  if (!cd) return ["Review your resume for one improvement you can make today."];
+  const u = cd.user || {};
+  const topAdv = cd.card7_human?.advantages?.[0];
+  const topJob = cd.card5_jobs?.job_matches?.[0];
+  const pivot0 = cd.card4_pivot?.pivots?.[0];
+  const anchor = cd.card4_pivot?.negotiation?.open_with;
+  const blindSpot = cd.card6_blindspots?.blind_spots?.[0];
+  const missingKw = (cd.card1_risk?.ats_keywords || [])
+    .filter((k: any) => k.color === "red")
+    .map((k: any) => k.keyword)
+    .slice(0, 2)
+    .join(", ");
+
+  return [
+    topAdv
+      ? `Update your LinkedIn headline to: "${u.current_title || "Professional"} | ${topAdv.proof_label}". This is your strongest credential — make it the first thing recruiters see.`
+      : "Update your LinkedIn headline with your strongest credential.",
+
+    topJob
+      ? `Send a personalised message to someone at ${topJob.company}. Open with: "I noticed ${topJob.company} is ${(topJob.why_fit || "growing in this space").slice(0, 80)}. With my experience in ${topAdv?.proof_label || u.current_title || "this domain"}, I'd love to explore the ${topJob.role} opportunity."`
+      : "Send one personalised outreach message to a target company today.",
+
+    missingKw
+      ? `Open your resume and add these missing ATS keywords that are hurting your match rate: ${missingKw}. Place them in your summary and your most recent role's bullet points.`
+      : "Review your resume's top section — move your strongest metric into the first bullet point.",
+
+    pivot0
+      ? `Research ${topJob?.company || "your top target company"}'s recent news. Find one initiative where your ${pivot0.role} skills would add value. Save it — you'll use this in your cover letter tomorrow.`
+      : "Research one target company's latest product launch or quarterly priorities.",
+
+    anchor
+      ? `Practice saying this out loud 3 times: "Based on my ${u.years_experience || "several"}+ years and track record in ${topAdv?.proof_label || u.current_title || "my domain"}, I'm targeting ${anchor} as base compensation."${blindSpot ? ` Then prepare a 30-second answer for this blind spot: "${blindSpot.gap}".` : ""}`
+      : "Practice your salary negotiation anchor out loud — say your target number 3 times with confidence.",
+  ];
+}
 
 export default function ResultsModelB() {
   const [searchParams] = useSearchParams();
@@ -347,7 +377,7 @@ export default function ResultsModelB() {
           isOpen={true}
           onClose={() => setStreakModal(false)}
           title={`Day ${streak} Action`}
-          promptText={STREAK_ACTIONS[streak % 5]}
+          promptText={buildStreakActions(cardData)[streak % 5]}
         />
       )}
 
