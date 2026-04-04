@@ -86,6 +86,7 @@ const App = () => {
               <Route path="/diagnostic/:token" element={<DiagnosticShare />} />
               <Route path="/obituary" element={<ObituaryPage />} />
               <Route path="/results/choose" element={<ResultsChoose />} />
+              <Route path="/results/model-b" element={<ResultsModelB />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
