@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ab_test_events: {
+        Row: {
+          analysis_id: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       assessments: {
         Row: {
           agent_1_disruption: Json | null
@@ -1107,6 +1134,59 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "job_taxonomy"
             referencedColumns: ["job_family"]
+          },
+        ]
+      }
+      model_b_results: {
+        Row: {
+          analysis_id: string | null
+          ats_avg: number | null
+          card_data: Json | null
+          created_at: string | null
+          gemini_raw: Json | null
+          id: string
+          job_match_count: number | null
+          resume_filename: string | null
+          risk_score: number | null
+          shield_score: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          ats_avg?: number | null
+          card_data?: Json | null
+          created_at?: string | null
+          gemini_raw?: Json | null
+          id?: string
+          job_match_count?: number | null
+          resume_filename?: string | null
+          risk_score?: number | null
+          shield_score?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          analysis_id?: string | null
+          ats_avg?: number | null
+          card_data?: Json | null
+          created_at?: string | null
+          gemini_raw?: Json | null
+          id?: string
+          job_match_count?: number | null
+          resume_filename?: string | null
+          risk_score?: number | null
+          shield_score?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_b_results_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "scans"
+            referencedColumns: ["id"]
           },
         ]
       }
