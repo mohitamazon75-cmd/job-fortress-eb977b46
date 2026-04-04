@@ -341,7 +341,8 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
                             href={r.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-start gap-2 p-2 rounded-md bg-card border border-border hover:border-primary/30 hover:bg-primary/[0.02] transition-colors group"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-start gap-2 p-2 rounded-md bg-card border border-border hover:border-primary/30 hover:bg-primary/[0.02] transition-colors group cursor-pointer"
                           >
                             <span className="text-sm flex-shrink-0 mt-0.5">
                               {r.type === 'video' ? '▶️' : r.type === 'course' ? '🎓' : '📖'}
