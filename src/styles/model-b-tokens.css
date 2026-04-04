@@ -1,0 +1,21 @@
+/* ── Model B Design Tokens ── */
+:root {
+  --mb-ink: #0F0F0E;
+  --mb-ink2: #3A3A36;
+  --mb-ink3: #7A7870;
+  --mb-ink4: #B8B6AE;
+  --mb-paper: #FAF9F6;
+  --mb-rule: #E5E3DC;
+  --mb-rule2: #D0CEC5;
+  --mb-navy: #1B2F55;
+  --mb-navy-tint: #EEF1F8;
+  --mb-navy-tint2: #D8DFF0;
+  --mb-green: #1A6B3C;
+  --mb-green-tint: #EBF5EF;
+  --mb-amber: #8B5A00;
+  --mb-amber-tint: #FFF8EB;
+  --mb-red: #AE2828;
+  --mb-red-tint: #FDF0F0;
+  --mb-teal: #0E6655;
+  --mb-teal-tint: #ECF5F3;
+}
