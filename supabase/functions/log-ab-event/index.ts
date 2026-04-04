@@ -48,9 +48,10 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error("[log-ab-event] error:", e);
+    // D2 FIX: Never throw to caller — always return 200 with success: false
     return new Response(
       JSON.stringify({ success: false, error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

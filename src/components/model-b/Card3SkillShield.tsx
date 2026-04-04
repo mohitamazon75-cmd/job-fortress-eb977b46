@@ -4,6 +4,7 @@ interface Props {
   cardData: any;
   onBack: () => void;
   onNext: () => void;
+  onUpgradePlan?: () => void;
 }
 
 const skillBadgeMap: Record<string, { label: string; bg: string; color: string; border: string }> = {
@@ -13,7 +14,7 @@ const skillBadgeMap: Record<string, { label: string; bg: string; color: string; 
   "critical-gap": { label: "Critical gap", bg: "var(--mb-red-tint)", color: "var(--mb-red)", border: "rgba(174,40,40,0.2)" },
 };
 
-export default function Card3SkillShield({ cardData, onBack, onNext }: Props) {
+export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePlan }: Props) {
   const c3 = cardData.card3_shield;
   if (!c3) return null;
 
@@ -22,9 +23,8 @@ export default function Card3SkillShield({ cardData, onBack, onNext }: Props) {
   const greenPct = c3.green_arc_pct || 0;
   const amberPct = c3.amber_arc_pct || 0;
   const greenOffset = C * (1 - greenPct / 100);
-  // Amber arc starts where green ends
   const amberDash = C * amberPct / 100;
-  const amberOffset = greenOffset - amberDash;
+  const amberOffset = -(C * greenPct / 100);
 
   return (
     <CardShell>
@@ -53,7 +53,10 @@ export default function Card3SkillShield({ cardData, onBack, onNext }: Props) {
               )}
             </div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink3)", lineHeight: 1.55, marginTop: 4 }}>{c3.shield_body}</div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-navy)", fontWeight: 600, marginTop: 7, cursor: "pointer" }}>See 60-day upgrade plan ↗</div>
+            <div
+              onClick={onUpgradePlan}
+              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-navy)", fontWeight: 600, marginTop: 7, cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center" }}
+            >See 60-day upgrade plan ↗</div>
           </div>
         </div>
 
