@@ -9,7 +9,7 @@ const iconMap: Record<string, { emoji: string; bg: string; badgeBg: string; badg
   shield: { emoji: "🛡️", bg: "var(--mb-navy-tint)", badgeBg: "var(--mb-navy-tint)", badgeColor: "var(--mb-navy)" },
 };
 
-export default function Card7HumanAdvantage({ cardData, onBack, copyFallback }: { cardData: any; onBack: () => void; copyFallback?: (text: string) => void }) {
+export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, analysisId }: { cardData: any; onBack: () => void; copyFallback?: (text: string) => void; analysisId?: string | null }) {
   const d = cardData.card7_human;
   const [insightIndex, setInsightIndex] = useState(0);
   const [fading, setFading] = useState(false);
