@@ -57,7 +57,17 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
     <CardShell>
       <CardHead badges={<><Badge label="05 · Opportunity" variant="green" /><LivePill /></>} title={d?.headline || ""} sub={d?.subline || ""} />
       <CardBody>
-        <EmotionStrip bgColor="var(--mb-green-tint)" borderColor="rgba(26,107,60,0.15)" icon="🔥" textColor="var(--mb-green)" message={d?.emotion_message || ""} />
+        {/* Urgency emotional triggers */}
+        {d?.fear_hook && (
+          <div style={{ background: "var(--mb-amber-tint)", border: "2px solid rgba(139,90,0,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-amber)", lineHeight: 1.7, margin: 0 }}>⏰ {d.fear_hook}</p>
+          </div>
+        )}
+        {d?.hope_bridge && (
+          <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6, margin: 0 }}>🎯 {d.hope_bridge}</p>
+          </div>
+        )}
 
         {/* Stat grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 22 }}>
