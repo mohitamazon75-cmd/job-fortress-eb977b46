@@ -354,17 +354,18 @@ export default function ResultsModelB() {
             {currentCard === 6 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(5)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
 
             {/* Bottom action buttons */}
-            <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+            <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
               {buildActionPrompts().map((action, i) => (
                 <button
                   key={i}
+                  className="mb-btn-secondary"
                   onClick={() => {
                     logEvent("modal_opened", { source: action.label });
                     setActionModal({ title: action.title, promptText: action.promptText });
                   }}
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, padding: "11px 10px", borderRadius: 10, cursor: "pointer", border: "1px solid var(--mb-rule)", background: "white", color: "var(--mb-ink)", display: "flex", alignItems: "center", gap: 8, transition: "all 150ms", minHeight: 44 }}
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, padding: "14px 12px", borderRadius: 12, cursor: "pointer", border: "1px solid var(--mb-rule)", background: "white", color: "var(--mb-ink)", display: "flex", alignItems: "center", gap: 10, transition: "all 150ms", minHeight: 48, boxShadow: "var(--mb-shadow-sm)" }}
                 >
-                  <span style={{ fontSize: 14 }}>{action.icon}</span>
+                  <span style={{ fontSize: 16 }}>{action.icon}</span>
                   {action.label}
                 </button>
               ))}
