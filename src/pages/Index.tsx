@@ -295,12 +295,11 @@ const Index = () => {
       id,
       token,
       (report) => {
-        // H-3 FIX: Guard against state updates after component unmount
         if (!isMountedRef.current) return;
         setScanReport(report);
         setMoneyShotSeen(false);
         track('scan_complete', { scanId: id });
-        setPhase('reveal');
+        navigate(`/results/choose?id=${id}`);
 
         // Referral conversion: if user arrived via a referral link, log the conversion
         try {
