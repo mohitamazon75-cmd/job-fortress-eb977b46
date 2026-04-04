@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import HeroSection from '@/components/HeroSection';
 import SocialProofSection from '@/components/SocialProofSection';
 import InputMethodStep from '@/components/InputMethodStep';
@@ -85,6 +86,7 @@ function AuthAutoAdvance({ onReady }: { onReady: () => void }) {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const { track } = useAnalytics();
   const { withMutex, isLocked } = useRequestMutex();
   const [phase, setPhase] = useState<AppPhase>('hero');
@@ -293,12 +295,11 @@ const Index = () => {
       id,
       token,
       (report) => {
-        // H-3 FIX: Guard against state updates after component unmount
         if (!isMountedRef.current) return;
         setScanReport(report);
         setMoneyShotSeen(false);
         track('scan_complete', { scanId: id });
-        setPhase('reveal');
+        navigate(`/results/choose?id=${id}`);
 
         // Referral conversion: if user arrived via a referral link, log the conversion
         try {
@@ -343,7 +344,7 @@ const Index = () => {
       setPhase('error');
       return;
     }
-  }, [track]);
+  }, [track, navigate]);
 
   const _isManualPath = !linkedinUrl && !resumeFileRef.current;
 
