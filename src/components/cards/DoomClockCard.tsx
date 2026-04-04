@@ -129,6 +129,18 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
         body: { tool_name: toolName, skill_name: skill.name },
       });
       if (error) throw error;
+      // Handle case where raw field exists (JSON parse failed server-side)
+      if (data?.raw && !data?.resources) {
+        // Try to extract JSON from the raw response
+        const jsonMatch = data.raw.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            setLearningData({ ...parsed, tool_name: toolName, skill_name: skill.name });
+            return;
+          } catch { /* fall through */ }
+        }
+      }
       setLearningData(data);
     } catch {
       setLearningError(true);
@@ -329,7 +341,8 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
                             href={r.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-start gap-2 p-2 rounded-md bg-card border border-border hover:border-primary/30 hover:bg-primary/[0.02] transition-colors group"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-start gap-2 p-2 rounded-md bg-card border border-border hover:border-primary/30 hover:bg-primary/[0.02] transition-colors group cursor-pointer"
                           >
                             <span className="text-sm flex-shrink-0 mt-0.5">
                               {r.type === 'video' ? '▶️' : r.type === 'course' ? '🎓' : '📖'}
@@ -359,7 +372,8 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
                         href={learningData.top_credential.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-2 rounded-md border border-prophet-gold/20 bg-prophet-gold/[0.03] hover:bg-prophet-gold/[0.06] transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-2 p-2 rounded-md border border-prophet-gold/20 bg-prophet-gold/[0.03] hover:bg-prophet-gold/[0.06] transition-colors cursor-pointer"
                       >
                         <span className="text-sm">🏆</span>
                         <div className="flex-1 min-w-0">
