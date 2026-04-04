@@ -16,7 +16,7 @@ function useKanban() {
   return { state, addItem };
 }
 
-export default function Card5JobsTracker({ cardData, onBack, onNext }: { cardData: any; onBack: () => void; onNext: () => void }) {
+export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId }: { cardData: any; onBack: () => void; onNext: () => void; analysisId?: string | null }) {
   const d = cardData.card5_jobs;
   const [modal, setModal] = useState<{ title: string; promptText: string } | null>(null);
   const { state: kanban, addItem } = useKanban();
@@ -24,7 +24,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext }: { cardDat
   const logEvent = async (eventType: string, metadata?: Record<string, unknown>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      await supabase.functions.invoke("log-ab-event", { body: { user_id: user?.id, event_type: eventType, metadata } });
+      await supabase.functions.invoke("log-ab-event", { body: { analysis_id: analysisId, user_id: user?.id, event_type: eventType, metadata } });
     } catch {}
   };
 
