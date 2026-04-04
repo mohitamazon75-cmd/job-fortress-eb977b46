@@ -9,7 +9,7 @@ const iconMap: Record<string, { emoji: string; bg: string; badgeBg: string; badg
   shield: { emoji: "🛡️", bg: "var(--mb-navy-tint)", badgeBg: "var(--mb-navy-tint)", badgeColor: "var(--mb-navy)" },
 };
 
-export default function Card7HumanAdvantage({ cardData, onBack, copyFallback }: { cardData: any; onBack: () => void; copyFallback?: (text: string) => void }) {
+export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, analysisId }: { cardData: any; onBack: () => void; copyFallback?: (text: string) => void; analysisId?: string | null }) {
   const d = cardData.card7_human;
   const [insightIndex, setInsightIndex] = useState(0);
   const [fading, setFading] = useState(false);
@@ -18,13 +18,13 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback }: 
   const logEvent = async (platform: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      await supabase.functions.invoke("log-ab-event", { body: { user_id: user?.id, event_type: "share_clicked", metadata: { platform } } });
+      await supabase.functions.invoke("log-ab-event", { body: { analysis_id: analysisId, user_id: user?.id, event_type: "share_clicked", metadata: { platform } } });
     } catch {}
   };
 
   const refreshInsight = () => {
     setFading(true);
-    setTimeout(() => { setInsightIndex(p => (p + 1) % 5); setFading(false); }, 220);
+    setTimeout(() => { setInsightIndex(p => (p + 1) % Math.max(insights.length, 1)); setFading(false); }, 220);
   };
 
   const handleCopy = (text: string) => {
@@ -54,12 +54,12 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback }: 
               <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--mb-navy)", animation: "mbPulse 2.5s infinite" }} />
               Today's human edge · 4 Apr 2026
             </div>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700, color: "var(--mb-navy)" }}>{insightIndex + 1} / 5</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700, color: "var(--mb-navy)" }}>{insightIndex + 1} / {Math.max(insights.length, 1)}</span>
           </div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, color: "var(--mb-navy)", lineHeight: 1.75, fontStyle: "italic", minHeight: 56, opacity: fading ? 0 : 1, transition: "opacity 0.22s" }}>
             {insights[insightIndex] || ""}
           </div>
-          <button onClick={refreshInsight} disabled={fading} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: "var(--mb-navy)", cursor: fading ? "default" : "pointer", padding: "7px 14px", borderRadius: 20, border: "1px solid var(--mb-navy-tint2)", background: "white", marginTop: 12, minHeight: 44 }}>
+          <button onClick={refreshInsight} disabled={fading} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: "var(--mb-navy)", cursor: fading ? "not-allowed" : "pointer", opacity: fading ? 0.5 : 1, padding: "7px 14px", borderRadius: 20, border: "1px solid var(--mb-navy-tint2)", background: "white", marginTop: 12, minHeight: 44, transition: "opacity 0.15s" }}>
             ↻ Refresh insight
           </button>
         </div>
