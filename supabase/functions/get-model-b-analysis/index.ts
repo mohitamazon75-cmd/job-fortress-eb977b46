@@ -205,7 +205,8 @@ async function processAnalysis(
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
-          temperature: 0.25,
+          // GPT-5 only supports temperature=1
+          temperature: model.includes("gpt-5") ? 1 : 0.25,
           max_tokens: 10000,
           response_format: { type: "json_object" },
         }),
