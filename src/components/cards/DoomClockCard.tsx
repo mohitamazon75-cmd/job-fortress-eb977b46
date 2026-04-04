@@ -372,7 +372,8 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
                         href={learningData.top_credential.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-2 rounded-md border border-prophet-gold/20 bg-prophet-gold/[0.03] hover:bg-prophet-gold/[0.06] transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-2 p-2 rounded-md border border-prophet-gold/20 bg-prophet-gold/[0.03] hover:bg-prophet-gold/[0.06] transition-colors cursor-pointer"
                       >
                         <span className="text-sm">🏆</span>
                         <div className="flex-1 min-w-0">
