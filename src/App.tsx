@@ -20,6 +20,7 @@ import DiagnosticPage from "./pages/Diagnostic";
 import DiagnosticShare from "./pages/DiagnosticShare";
 import ObituaryPage from "./pages/Obituary";
 import ResultsChoose from "./pages/ResultsChoose";
+import ResultsModelB from "./pages/ResultsModelB";
 import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
