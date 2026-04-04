@@ -91,15 +91,29 @@ function ProximityGauge({ value }: { value: number }) {
   );
 }
 
-// ── Skill Threat Row — enriched with threat intel + expandable tool learning ─
+// ── Tool Learning Resource type ──────────────────────────────────────────────
+interface ToolResource {
+  title: string;
+  url: string;
+  time_estimate: string;
+  type: 'course' | 'video' | 'docs';
+}
+
+interface ToolLearningData {
+  tool_description?: string;
+  resources?: ToolResource[];
+  top_credential?: { name: string; url: string; value: string };
+  weekend_project?: { title: string; description: string };
+  citations?: string[];
+}
+
+// ── Skill Threat Row — enriched with threat intel + smart tool learning ──────
 function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const [toolExpanded, setToolExpanded] = useState(false);
-  const ml = monthsLabel(skill.estimatedMonths);
-  const uc = urgencyConfig(ml.urgency);
-  const intel = skill.threatIntel;
-  const hasIntel = !!intel;
-  const toolName = intel?.threat_tool || skill.replacedBy || null;
+  const [learningData, setLearningData] = useState<ToolLearningData | null>(null);
+  const [learningLoading, setLearningLoading] = useState(false);
+  const [learningError, setLearningError] = useState(false);
 
   return (
     <motion.div
