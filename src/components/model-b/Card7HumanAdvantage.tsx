@@ -24,7 +24,7 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
 
   const refreshInsight = () => {
     setFading(true);
-    setTimeout(() => { setInsightIndex(p => (p + 1) % 5); setFading(false); }, 220);
+    setTimeout(() => { setInsightIndex(p => (p + 1) % Math.max(insights.length, 1)); setFading(false); }, 220);
   };
 
   const handleCopy = (text: string) => {
