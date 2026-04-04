@@ -377,7 +377,7 @@ export default function ResultsModelB() {
           isOpen={true}
           onClose={() => setStreakModal(false)}
           title={`Day ${streak} Action`}
-          promptText={STREAK_ACTIONS[streak % 5]}
+          promptText={buildStreakActions(cardData)[streak % 5]}
         />
       )}
 
