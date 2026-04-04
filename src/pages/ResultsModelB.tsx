@@ -229,16 +229,16 @@ export default function ResultsModelB() {
   };
 
   return (
-    <div style={{ background: "var(--mb-bg)", minHeight: "100vh" }}>
+    <div className="mb-root" style={{ background: "var(--mb-bg)", minHeight: "100vh" }}>
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 16px 64px" }}>
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "var(--mb-ink)" }}>JobBachao</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 800, color: "var(--mb-ink)", letterSpacing: "-0.01em" }}>JobBachao</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             {cardData && (
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 700, color: "var(--mb-navy)" }}>{displayScore}</span>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 18, fontWeight: 700, color: "var(--mb-navy)" }}>{displayScore}</span>
             )}
-            <button onClick={() => navigate(`/results/choose?id=${analysisId}`)} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: "var(--mb-ink3)", background: "none", border: "1px solid var(--mb-rule)", borderRadius: 8, padding: "6px 14px", cursor: "pointer" }}>← Switch model</button>
+            <button onClick={() => navigate(`/results/choose?id=${analysisId}`)} className="mb-btn-secondary" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, color: "var(--mb-ink3)", background: "none", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "8px 16px", cursor: "pointer", transition: "all 150ms", minHeight: 40 }}>← Switch model</button>
           </div>
         </div>
 
