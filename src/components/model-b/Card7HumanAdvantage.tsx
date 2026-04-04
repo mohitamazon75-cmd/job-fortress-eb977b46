@@ -18,7 +18,7 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
   const logEvent = async (platform: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      await supabase.functions.invoke("log-ab-event", { body: { user_id: user?.id, event_type: "share_clicked", metadata: { platform } } });
+      await supabase.functions.invoke("log-ab-event", { body: { analysis_id: analysisId, user_id: user?.id, event_type: "share_clicked", metadata: { platform } } });
     } catch {}
   };
 
