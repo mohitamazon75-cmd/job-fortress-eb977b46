@@ -39,14 +39,31 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
           const sel = selectedPivot === i;
           const bc = sel ? variantColor(p.color) : "var(--mb-rule)";
           const bg = sel ? pivotBg(p.color) : "var(--mb-paper)";
+          const searchUrl = p.search_url || `https://www.naukri.com/${encodeURIComponent((p.role || "").toLowerCase().replace(/\s+/g, "-"))}-jobs?k=${encodeURIComponent(p.role)}`;
           return (
             <div key={i} onClick={() => setSelectedPivot(i)} style={{ background: bg, border: `1.5px solid ${bc}`, borderRadius: 12, padding: "13px 15px", marginBottom: 8, cursor: "pointer", transition: "border-color 150ms" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 3 }}>
                 <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--mb-ink)" }}>{p.role}</span>
                 <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, whiteSpace: "nowrap", background: pivotBg(p.color), color: variantColor(p.color), fontFamily: "'DM Sans', sans-serif" }}>{p.match_label}</span>
               </div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", fontWeight: 500, marginBottom: 7 }}>{p.salary_range} · {p.location}</div>
-              <div style={{ height: 2, borderRadius: 1, background: variantColor(p.color), width: `${p.match_pct}%` }} />
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", fontWeight: 500, marginBottom: 7 }}>{p.salary_range || p.salary} · {p.location}</div>
+              <div style={{ height: 2, borderRadius: 1, background: variantColor(p.color), width: `${p.match_pct}%`, marginBottom: 8 }} />
+              <div style={{ display: "flex", gap: 5 }}>
+                <a
+                  href={searchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ fontSize: 10, fontWeight: 700, padding: "4px 11px", borderRadius: 6, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}
+                >🔍 Search on Naukri</a>
+                <a
+                  href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(p.role)}&f_TPR=r604800`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ fontSize: 10, fontWeight: 700, padding: "4px 11px", borderRadius: 6, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}
+                >💼 LinkedIn</a>
+              </div>
             </div>
           );
         })}
