@@ -318,7 +318,7 @@ export default function ResultsModelB() {
             {currentCard === 3 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} />}
             {currentCard === 4 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} />}
             {currentCard === 5 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} />}
-            {currentCard === 6 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(5)} copyFallback={handleCopyFallback} />}
+            {currentCard === 6 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(5)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
 
             {/* Bottom action buttons */}
             <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>

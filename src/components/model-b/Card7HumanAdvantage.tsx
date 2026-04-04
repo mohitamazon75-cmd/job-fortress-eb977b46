@@ -59,7 +59,7 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, color: "var(--mb-navy)", lineHeight: 1.75, fontStyle: "italic", minHeight: 56, opacity: fading ? 0 : 1, transition: "opacity 0.22s" }}>
             {insights[insightIndex] || ""}
           </div>
-          <button onClick={refreshInsight} disabled={fading} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: "var(--mb-navy)", cursor: fading ? "default" : "pointer", padding: "7px 14px", borderRadius: 20, border: "1px solid var(--mb-navy-tint2)", background: "white", marginTop: 12, minHeight: 44 }}>
+          <button onClick={refreshInsight} disabled={fading} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: "var(--mb-navy)", cursor: fading ? "not-allowed" : "pointer", opacity: fading ? 0.5 : 1, padding: "7px 14px", borderRadius: 20, border: "1px solid var(--mb-navy-tint2)", background: "white", marginTop: 12, minHeight: 44, transition: "opacity 0.15s" }}>
             ↻ Refresh insight
           </button>
         </div>
