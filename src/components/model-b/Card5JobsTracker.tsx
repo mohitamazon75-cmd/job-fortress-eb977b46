@@ -148,8 +148,14 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--mb-green)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--mb-green)" }} />
                 Posted {job.days_posted} days ago · {job.applicant_count} applicants
-                {job.is_urgent && <span style={{ fontSize: 11, fontWeight: 800, background: "var(--mb-red-tint)", color: "var(--mb-red)", padding: "4px 10px", borderRadius: 10, marginLeft: 4, border: "1.5px solid rgba(174,40,40,0.25)" }}>Urgent</span>}
+                {job.is_urgent && <span style={{ fontSize: 11, fontWeight: 800, background: "var(--mb-red-tint)", color: "var(--mb-red)", padding: "4px 10px", borderRadius: 10, marginLeft: 4, border: "1.5px solid rgba(174,40,40,0.25)" }}>🔥 Urgent</span>}
               </div>
+              {/* Urgency narrative */}
+              {job.urgency_narrative && (
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-amber)", marginTop: 8, padding: "8px 12px", background: "var(--mb-amber-tint)", borderRadius: 8, border: "1px solid rgba(139,90,0,0.15)", lineHeight: 1.6 }}>
+                  ⚡ {job.urgency_narrative}
+                </div>
+              )}
             </div>
           );
         })}
