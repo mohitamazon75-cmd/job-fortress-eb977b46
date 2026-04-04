@@ -129,6 +129,18 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
         body: { tool_name: toolName, skill_name: skill.name },
       });
       if (error) throw error;
+      // Handle case where raw field exists (JSON parse failed server-side)
+      if (data?.raw && !data?.resources) {
+        // Try to extract JSON from the raw response
+        const jsonMatch = data.raw.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            setLearningData({ ...parsed, tool_name: toolName, skill_name: skill.name });
+            return;
+          } catch { /* fall through */ }
+        }
+      }
       setLearningData(data);
     } catch {
       setLearningError(true);
