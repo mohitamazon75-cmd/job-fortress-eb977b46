@@ -23,25 +23,25 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         <SectionLabel label="India salary benchmarks · Your role tier · 2025–26" />
 
         {(c2.salary_bands || []).map((band: any, i: number) => (
-          <div key={i} style={{ marginBottom: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 500, marginBottom: 4, fontFamily: "'DM Sans', sans-serif" }}>
-              <span style={{ color: "var(--mb-ink2)" }}>{band.role}</span>
-              <span style={{ fontFamily: "'DM Mono', monospace", color: variantColor(band.color) }}>{band.range}</span>
+          <div key={i} style={{ marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
+              <span style={{ color: "var(--mb-ink)" }}>{band.role}</span>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: 800, color: variantColor(band.color) }}>{band.range}</span>
             </div>
-            <div style={{ height: 4, background: "var(--mb-rule)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: 4, borderRadius: 2, width: `${band.bar_pct}%`, background: variantColor(band.color) }} />
+            <div style={{ height: 6, background: "var(--mb-rule)", borderRadius: 3, overflow: "hidden" }}>
+              <div style={{ height: 6, borderRadius: 3, width: `${band.bar_pct}%`, background: variantColor(band.color), transition: "width 0.6s ease" }} />
             </div>
           </div>
         ))}
 
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 18 }}>
           <InfoBox variant="green" title="The insight specific to your numbers" body={c2.key_insight || ""} />
         </div>
 
         {/* Quote box */}
-        <div style={{ borderLeft: "2px solid var(--mb-rule2)", borderRadius: "0 8px 8px 0", padding: "12px 16px", background: "var(--mb-navy-tint)", marginBottom: 14 }}>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", lineHeight: 1.75, fontStyle: "italic", marginBottom: 5 }}>{c2.market_quote}</div>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: "var(--mb-ink3)", fontWeight: 600 }}>{c2.market_quote_source}</div>
+        <div style={{ borderLeft: "3px solid var(--mb-navy)", borderRadius: "0 10px 10px 0", padding: "14px 18px", background: "var(--mb-navy-tint)", marginBottom: 16 }}>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink)", lineHeight: 1.75, fontStyle: "italic", marginBottom: 6, fontWeight: 500 }}>{c2.market_quote}</div>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", fontWeight: 700, letterSpacing: "0.02em" }}>{c2.market_quote_source}</div>
         </div>
 
         <CardNav onBack={onBack} onNext={onNext} />
