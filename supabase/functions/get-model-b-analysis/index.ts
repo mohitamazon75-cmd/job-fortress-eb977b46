@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     let modelUsed = PRIMARY_MODEL;
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      const model = attempt === 0 ? PRIMARY_MODEL : FALLBACK_MODEL;
+      const model = attempt === 0 ? PRIMARY_MODEL : attempt === 1 ? FALLBACK_MODEL : LAST_RESORT_MODEL;
       modelUsed = model;
 
       try {
