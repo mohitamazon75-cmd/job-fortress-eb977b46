@@ -7,8 +7,9 @@ const corsHeaders = {
 };
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const PRIMARY_MODEL = "google/gemini-2.5-pro";
-const FALLBACK_MODEL = "google/gemini-2.5-flash";
+const PRIMARY_MODEL = "openai/gpt-5";        // Tier 1: Deepest reasoning & nuance
+const SECONDARY_MODEL = "google/gemini-3.1-pro-preview"; // Tier 2: Strong analysis  
+const FALLBACK_MODEL = "google/gemini-2.5-pro"; // Tier 3: Reliable fallback
 const MAX_RETRIES = 3;
 const AI_TIMEOUT_MS = 90_000;
 
