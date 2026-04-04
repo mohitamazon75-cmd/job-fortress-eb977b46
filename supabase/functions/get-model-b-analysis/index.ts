@@ -7,9 +7,9 @@ const corsHeaders = {
 };
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const PRIMARY_MODEL = "openai/gpt-5";        // Tier 1: Deepest reasoning & nuance
-const SECONDARY_MODEL = "google/gemini-3.1-pro-preview"; // Tier 2: Strong analysis  
-const FALLBACK_MODEL = "google/gemini-2.5-pro"; // Tier 3: Reliable fallback
+const PRIMARY_MODEL = "openai/gpt-5";
+const SECONDARY_MODEL = "google/gemini-3.1-pro-preview";
+const FALLBACK_MODEL = "google/gemini-2.5-pro";
 const MAX_RETRIES = 3;
 const AI_TIMEOUT_MS = 90_000;
 
@@ -54,7 +54,6 @@ Deno.serve(async (req) => {
 
     // ─── If polling, check if processing is in progress ───
     if (poll) {
-      // Check if there's a pending row (card_data is null = still processing)
       const { data: pending } = await supabase
         .from("model_b_results")
         .select("id, card_data")
@@ -73,7 +72,6 @@ Deno.serve(async (req) => {
           { headers: jsonHeaders }
         );
       }
-      // No row exists yet — tell client to trigger the job
       return new Response(
         JSON.stringify({ success: true, status: "not_started" }),
         { headers: jsonHeaders }
@@ -134,7 +132,6 @@ Deno.serve(async (req) => {
       resume_filename, resumeText
     );
 
-    // Use EdgeRuntime.waitUntil if available (keeps function alive after response)
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
       (globalThis as any).EdgeRuntime.waitUntil(processPromise);
       console.log(`[model-b] Background processing started for ${analysis_id}`);
@@ -144,7 +141,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fallback: wait synchronously (less ideal but still works)
     const result = await processPromise;
     if (result) {
       return new Response(
@@ -167,7 +163,7 @@ Deno.serve(async (req) => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-// Background AI processing — runs after response is sent
+// Background AI processing
 // ═══════════════════════════════════════════════════════════════
 async function processAnalysis(
   supabase: any,
@@ -205,9 +201,8 @@ async function processAnalysis(
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
-          // GPT-5 only supports temperature=1
           temperature: model.includes("gpt-5") ? 1 : 0.25,
-          max_tokens: 10000,
+          max_tokens: 12000,
           response_format: { type: "json_object" },
         }),
         signal: controller.signal,
@@ -262,7 +257,6 @@ async function processAnalysis(
     return null;
   }
 
-  // ─── Save completed results ───
   const insertPayload = {
     analysis_id: analysisId,
     user_id: userId,
@@ -291,7 +285,6 @@ async function processAnalysis(
 
   if (updateErr) {
     console.error("[model-b] Update error:", updateErr);
-    // Try insert as fallback
     const { data: inserted } = await supabase
       .from("model_b_results")
       .insert(insertPayload)
@@ -305,7 +298,6 @@ async function processAnalysis(
 }
 
 async function updateError(supabase: any, analysisId: string, error: string) {
-  // Delete the placeholder so client knows it failed
   await supabase
     .from("model_b_results")
     .delete()
@@ -338,7 +330,7 @@ function extractResumeText(scan: Record<string, unknown>): string {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// AI Response parsing with multiple fallback strategies
+// AI Response parsing
 // ═══════════════════════════════════════════════════════════════
 function parseAIResponse(rawText: string): Record<string, unknown> {
   try { return JSON.parse(rawText); } catch { /* continue */ }
@@ -360,6 +352,11 @@ function validateCardData(data: Record<string, unknown>): { valid: boolean; issu
   for (const key of requiredKeys) {
     if (!data[key]) issues.push(`Missing ${key}`);
   }
+  const c1 = data.card1_risk as any;
+  if (c1 && !c1.fear_hook) issues.push("card1_risk missing fear_hook");
+  if (c1 && !c1.confrontation) issues.push("card1_risk missing confrontation");
+  if (c1 && !c1.cost_of_inaction) issues.push("card1_risk missing cost_of_inaction");
+  
   const c5 = data.card5_jobs as any;
   if (c5 && (!Array.isArray(c5.job_matches) || c5.job_matches.length < 3)) {
     issues.push("card5_jobs.job_matches must have at least 3 items");
@@ -380,143 +377,249 @@ function validateCardData(data: Record<string, unknown>): { valid: boolean; issu
 }
 
 // ═══════════════════════════════════════════════════════════════
-// System prompt
+// SYSTEM PROMPT — Psychology-Driven Career Intelligence Engine
 // ═══════════════════════════════════════════════════════════════
 function buildSystemPrompt(): string {
-  return `You are JobBachao's career intelligence engine — a senior career strategist with 20 years of experience in Indian B2B technology hiring, compensation benchmarking, and AI disruption forecasting.
+  return `You are JobBachao's Psychology-Driven Career Intelligence Engine — combining 20 years of Indian hiring expertise with deep knowledge of behavioral psychology, loss aversion, and dark persuasion patterns.
 
-ROLE: Produce a comprehensive, deeply personalised career analysis by extracting every quantifiable achievement, skill signal, and career pattern from the resume. Your output directly populates 7 interactive dashboard cards.
+YOUR DUAL ROLE:
+1. ANALYST: Extract every quantifiable achievement, skill signal, and career pattern from the resume
+2. PSYCHOLOGIST: Weaponize every insight using specific psychological triggers to MOVE the user to action
 
-THINKING PROCESS (follow this order):
-1. EXTRACT: Pull every number, metric, company, tool, certification, and time period from the resume
-2. CALIBRATE: Benchmark against Indian market data for their specific role + seniority + industry
-3. SCORE: Calculate risk and shield scores using the evidence framework below
-4. PERSONALISE: Every field must reference specific data from THIS resume — zero generic copy
+═══ PSYCHOLOGICAL FRAMEWORK (Apply to EVERY card) ═══
 
-SCORING FRAMEWORK:
-- risk_score: Weight automation exposure (40%) + market demand trajectory (25%) + skill moat depth (20%) + seniority protection (15%). India B2B marketing manager average is 61.
-- shield_score: Count of demonstrably AI-proof skills + leadership evidence + cross-functional scope + unique domain expertise
+Each card must follow the FEAR → TOUGH LOVE → HOPE emotional arc:
+
+CARD 1 (Risk Mirror) — PRIMARY TRIGGER: LOSS AVERSION
+- Make them FEEL what they're losing by doing nothing
+- Calculate exact ₹ cost of inaction (salary gap × months)
+- Use peer pressure: "X% of people at your level have already..."
+- Confrontation: One brutal honest sentence about their biggest weakness
+
+CARD 2 (Market Radar) — PRIMARY TRIGGER: SOCIAL COMPARISON + ANCHORING
+- Show them where they sit vs peers who are WINNING
+- Anchor high: show aspirational salaries FIRST, then their current position
+- Make the gap feel personal and urgent
+
+CARD 3 (Skill Shield) — PRIMARY TRIGGER: COMPETENCE AFFIRMATION + IDENTITY
+- After scaring them in Cards 1-2, NOW affirm their unique strengths
+- Make them feel: "I have rare abilities most people don't"
+- But IMMEDIATELY follow with: "...and here's the gap that could destroy it all"
+
+CARD 4 (Pivot Paths) — PRIMARY TRIGGER: FOMO + SCARCITY
+- "These roles are hiring NOW — windows close fast in Indian market"
+- Show salary jumps that create desire
+- Make inaction feel expensive
+
+CARD 5 (Jobs Tracker) — PRIMARY TRIGGER: URGENCY + SOCIAL PROOF
+- "Posted 3 days ago, 200+ applicants already"
+- "Your specific experience gives you an edge — but only if you act THIS WEEK"
+- Every job must feel like a narrowing window
+
+CARD 6 (Blind Spots) — PRIMARY TRIGGER: TOUGH LOVE + ACCOUNTABILITY
+- Be BRUTALLY honest. No sugarcoating.
+- "Here's what's actually holding you back, and you probably know it"
+- Severity levels: Mark each gap as CRITICAL / SERIOUS / MODERATE
+- Include: "X% of candidates at your level have this. You don't."
+
+CARD 7 (Human Advantage) — PRIMARY TRIGGER: HOPE ANCHORING + IDENTITY REINFORCEMENT
+- After the tough love, deliver powerful hope
+- "Here's why YOU specifically will survive what AI cannot touch"
+- End with a 24-hour mission — one specific action for TODAY
+
+═══ EMOTIONAL STRUCTURE (Required in EVERY card) ═══
+
+Replace generic "emotion_message" with this 3-part structure:
+- fear_hook: The uncomfortable truth they need to hear (2 sentences, specific to their resume)
+- tough_love: Direct, no-BS one-liner assessment 
+- hope_bridge: Their specific advantage that creates hope (1 sentence)
+
+Also include:
+- confrontation: One sentence that directly challenges them based on resume evidence
+  Example: "You've managed ₹2Cr budgets but never owned a P&L. That's the gap that keeps you at Manager level."
+
+═══ SCORING FRAMEWORK ═══
+- risk_score: Automation exposure (40%) + market demand trajectory (25%) + skill moat depth (20%) + seniority protection (15%)
+- shield_score: AI-proof skills + leadership evidence + cross-functional scope + domain expertise
 - ats_avg: Simulate keyword matching against 3 real senior India B2B SaaS job descriptions
-- jobbachao_score: Inverse of risk weighted by shield strength. Formula: 100 - (risk_score × (1 - shield_score/200))
+- jobbachao_score: 100 - (risk_score × (1 - shield_score/200))
 
-EVIDENCE RULES:
+═══ EVIDENCE RULES ═══
 - Every claim must trace to a specific resume line or quantified achievement
 - Salary figures always in ₹ LPA format
 - Job matches must use real Indian companies with realistic current openings
 - Interview answers must use STAR framework with the candidate's actual metrics
 - Never use phrases like "your resume shows" — state evidence directly
 
-IMPORTANT — LIVE LINKS: For every ATS score entry, every job match, and every pivot role, include a "search_url" field with a WORKING Naukri search URL. Use this exact format:
+═══ LIVE LINKS ═══
+For every ATS score entry, job match, and pivot role, include a "search_url" field:
 https://www.naukri.com/jobs-in-{city-lowercase}?k={role-keywords-plus-separated}&experience={years}
 Examples:
 - https://www.naukri.com/jobs-in-bangalore?k=head+demand+generation&experience=10
 - https://www.naukri.com/jobs-in-mumbai?k=marketing+director+saas&experience=12
-- https://www.naukri.com/jobs-in-all-india?k=vp+marketing+b2b&experience=15
-Do NOT use role slugs in the path (like /head-of-demand-gen-jobs). Use ONLY /jobs-in-{city}?k={keywords} format.
+Do NOT use role slugs in the path. Use ONLY /jobs-in-{city}?k={keywords} format.
 
-OUTPUT: Return ONLY a valid JSON object. No markdown fences, no commentary, no preamble. Start with {`;
+OUTPUT: Return ONLY a valid JSON object. No markdown fences. Start with {`;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// User prompt
+// USER PROMPT — Full Schema with Psychology Fields
 // ═══════════════════════════════════════════════════════════════
 function buildUserPrompt(resumeText: string): string {
-  return `Analyse this resume for the Indian job market in April 2026.
+  return `Analyse this resume for the Indian job market in April 2026. Apply the FULL psychological framework.
 
 RESUME:
 ${resumeText}
 
-INDIA MARKET CONTEXT (embed these in your analysis — cite specific numbers):
+INDIA MARKET CONTEXT (cite specific numbers in your analysis):
 - India B2B SaaS market: $16.5B (2026), growing 26% CAGR
-- AI automation risk average for Indian B2B marketing managers: 61%
+- AI automation risk average for Indian professionals: 61%
 - Average CPL India B2B: ₹800–₹2,000. Sub-₹100 CPL is exceptional (80x+ efficient)
 - Salary bands India 2026: Marketing Manager (10+ yrs) ₹18-28 LPA, Head of Demand Gen ₹22-35 LPA, VP Marketing ₹30-50 LPA, CMO ₹45-80 LPA
-- Top hiring B2B SaaS India 2026: Freshworks (Bangalore, 16% YoY, IPO), Chargebee (Bangalore, Series G), Zoho (Chennai/Remote, 100M+ users), BrowserStack (Mumbai, $200M+ ARR), Sarvam AI (Bangalore, Series B), Postman (Bangalore, 30M+ devs), Razorpay (Bangalore, profitable)
+- Top hiring B2B SaaS India 2026: Freshworks (Bangalore), Chargebee (Bangalore), Zoho (Chennai/Remote), BrowserStack (Mumbai), Sarvam AI (Bangalore), Postman (Bangalore), Razorpay (Bangalore)
 - WEF: 63 of every 100 Indian workers need retraining by 2030
-- Cloud9 Digital India 2026: 67% agencies hiring strategists over executors
 - LinkedIn India: 45% increase in "AI + Marketing" job postings YoY
+- Average Indian professional checks career tools after a bad performance review or layoff news
+
+PSYCHOLOGICAL CALIBRATION:
+- This person is likely feeling anxious about AI disruption — validate that anxiety, then channel it into action
+- Use loss aversion: frame everything as "what you lose" not "what you gain"
+- Be specific with confrontations — generic advice ("upskill") is useless and patronizing
+- The tone should feel like a brutally honest senior mentor who genuinely cares — not a corporate HR bot
 
 Return a JSON object with EXACTLY these top-level keys:
 user, risk_score, shield_score, ats_avg, jobbachao_score, card1_risk, card2_market, card3_shield, card4_pivot, card5_jobs, card6_blindspots, card7_human
 
 user: { name: string, current_title: string, years_experience: string, location: string, availability: string, education: string, companies: string[] }
 
-risk_score: integer 0-100 (calibrate relative to India average of 61)
+risk_score: integer 0-100
 shield_score: integer 0-100
-ats_avg: integer 0-100 (average ATS match against 3 senior India B2B SaaS JDs)
+ats_avg: integer 0-100
 jobbachao_score: integer 0-100
 
 card1_risk: {
-  headline: string (personalised with their actual job title and seniority — max 8 words),
-  subline: string (specific to their situation — reference a credential),
-  emotion_message: string (2-3 sentences, warm, references their specific years + company + one metric),
+  headline: string (max 8 words — personalised, provocative),
+  subline: string (reference a specific credential),
+  fear_hook: string (2 sentences — the uncomfortable truth about their position, using specific data),
+  tough_love: string (1 brutal honest sentence — their biggest career weakness),
+  hope_bridge: string (1 sentence — their specific advantage that others don't have),
+  confrontation: string (1 sentence directly challenging them based on resume evidence),
+  emotion_message: string (combine fear_hook + hope_bridge for backward compatibility),
   risk_score: integer,
   india_average: 61,
-  disruption_year: string (e.g. "2027-28"),
+  disruption_year: string,
   protective_skills_count: integer,
-  tasks_at_risk: string[] (exactly 5 specific tasks from their resume that AI tools like Jasper/Copy.ai/Midjourney can already do),
-  tasks_safe: string[] (exactly 5 specific tasks from their resume requiring human judgment, relationships, or strategic thinking),
+  cost_of_inaction: {
+    monthly_loss_lpa: string (₹ LPA they're leaving on table),
+    six_month_loss: string (₹ amount),
+    peer_gap_pct: string (e.g. "42% of peers have already upskilled"),
+    decay_narrative: string (2 sentences — what happens to their score in 6 months if they do nothing)
+  },
+  tasks_at_risk: string[] (exactly 5),
+  tasks_safe: string[] (exactly 5),
   ats_scores: [
-    { company: string (real Indian B2B SaaS), role: string (senior title matching their profile), score: integer 40-95, color: "green"|"amber"|"red", search_url: string (working Naukri search URL for this company+role+city) },
-    { company: string, role: string, score: integer, color: "green"|"amber"|"red", search_url: string },
-    { company: string, role: string, score: integer, color: "green"|"amber"|"red", search_url: string }
+    { company: string, role: string, score: integer 40-95, color: "green"|"amber"|"red", city: string, search_url: string },
+    { company: string, role: string, score: integer, color: string, city: string, search_url: string },
+    { company: string, role: string, score: integer, color: string, city: string, search_url: string }
   ],
-  ats_missing_keywords: string[] (exactly 5 high-value keywords missing from their resume — specific to their target roles),
-  india_data_insight: string (3 sentences combining WEF data + Cloud9 survey + their specific situation)
+  ats_missing_keywords: string[] (exactly 5),
+  india_data_insight: string (3 sentences using WEF + their situation)
 }
 
 card2_market: {
-  headline: string, subline: string, emotion_message: string,
+  headline: string, subline: string,
+  fear_hook: string, tough_love: string, hope_bridge: string, confrontation: string,
+  emotion_message: string,
   salary_bands: [
-    { role: string, range: string (₹ LPA format), color: "navy"|"green"|"amber"|"red", bar_pct: integer 20-100 }
-  ] (exactly 6 roles from their current level through aspirational — include their exact current role),
-  key_insight: string (3-4 sentences using their specific achievements to justify positioning),
-  market_quote: string (industry insight), market_quote_source: string
+    { role: string, range: string (₹ LPA), color: "navy"|"green"|"amber"|"red", bar_pct: integer 20-100 }
+  ] (exactly 6 — include their current role, show aspirational roles FIRST to anchor high),
+  key_insight: string (3-4 sentences using their achievements to justify positioning),
+  market_quote: string, market_quote_source: string
 }
 
 card3_shield: {
-  headline: string, subline: string, emotion_message: string,
+  headline: string, subline: string,
+  fear_hook: string, tough_love: string, hope_bridge: string, confrontation: string,
+  emotion_message: string,
   shield_score: integer, green_arc_pct: integer, amber_arc_pct: integer,
-  badge_text: string (e.g. "Top 15% for role"),
-  shield_body: string (2 sentences explaining their shield strength with evidence),
-  skills: [ { name: string, level: "best-in-class"|"strong"|"buildable"|"critical-gap", note: string } ] (8-12 skills extracted from resume),
-  upgrade_path: string (2 sentences — specific recommendation based on their actual skill gaps)
+  badge_text: string,
+  shield_body: string (2 sentences with evidence),
+  skills: [ { name: string, level: "best-in-class"|"strong"|"buildable"|"critical-gap", note: string } ] (8-12 skills),
+  upgrade_path: string (2 sentences — specific recommendation)
 }
 
 card4_pivot: {
-  headline: string, subline: string, emotion_message: string,
+  headline: string, subline: string,
+  fear_hook: string, tough_love: string, hope_bridge: string, confrontation: string,
+  emotion_message: string,
+  current_band: string, pivot_year1: string, director_band: string,
   pivots: [
-    { role: string, salary: string (₹ LPA), match_pct: integer 50-95, why_fit: string (reference their specific experience), search_url: string (working Naukri search URL) }
-  ] (exactly 4 pivot roles with ascending salary),
+    { role: string, salary: string, match_pct: integer, why_fit: string, color: "green"|"navy"|"teal", match_label: string, location: string, search_url: string,
+      fomo_signal: string (e.g. "3 people from your network moved here last quarter") }
+  ] (exactly 4),
   negotiation: {
-    open_with: string (₹ LPA anchor), pivot_phrase: string (one-liner referencing their metrics), walk_away: string (₹ LPA floor)
+    intro: string,
+    open_with: string, accept: string, walk_away: string, best_case: string,
+    pivot_phrase: string (one-liner referencing their metrics)
   }
 }
 
 card5_jobs: {
-  headline: string, subline: string, emotion_message: string,
+  headline: string, subline: string,
+  fear_hook: string, tough_love: string, hope_bridge: string,
+  emotion_message: string,
   active_count: integer, senior_count: integer, strong_match_count: integer,
   job_matches: [
     {
-      company: string (real Indian company), role: string, salary: string (₹ LPA), location: string,
+      company: string, role: string, salary: string, location: string,
       match_color: "green"|"navy"|"amber", match_label: string, why_fit: string,
-      tags: string[] (3-4 relevant tags), days_posted: integer 1-14, applicant_count: integer,
-      is_urgent: boolean, apply_evidence: string (2-3 bullet points from their resume proving fit),
-      company_context: string (1 sentence about the company's current situation),
-      search_url: string (working Naukri search URL for this role+company+city)
+      tags: string[], days_posted: integer 1-14, applicant_count: integer,
+      is_urgent: boolean, apply_evidence: string,
+      company_context: string,
+      urgency_narrative: string (2 sentences — why they must act NOW, referencing applicant count + their edge),
+      search_url: string
     }
-  ] (exactly 5 job matches — use real Indian companies)
+  ] (exactly 5)
 }
 
 card6_blindspots: {
-  headline: string, subline: string, emotion_message: string,
-  blind_spots: [ { gap: string, fix: string, resource_url: string (link to a real course/article on Coursera/LinkedIn Learning/UpGrad) } ] (exactly 4),
-  interview_prep: [ { question: string, star_answer: string (using their actual metrics in STAR format — 4-5 sentences) } ] (exactly 4)
+  headline: string, subline: string,
+  fear_hook: string, tough_love: string, hope_bridge: string, confrontation: string,
+  emotion_message: string,
+  blind_spots: [
+    { 
+      number: integer, title: string, body: string, fix: string,
+      severity: "CRITICAL"|"SERIOUS"|"MODERATE",
+      peer_benchmark: string (e.g. "78% of Senior Managers have this skill. You don't."),
+      resource_url: string
+    }
+  ] (exactly 4),
+  interview_prep: [
+    { 
+      question: string, framework: string,
+      answer: string (STAR format with their actual metrics, 4-5 sentences),
+      star_labels: string[],
+      psychological_hook: string (1 sentence — why interviewers ask this and how to psychologically frame the answer)
+    }
+  ] (exactly 5)
 }
 
 card7_human: {
-  headline: string, subline: string, emotion_message: string,
-  advantages: [ { label: string, proof_label: string (specific evidence from resume), score: integer 60-98 } ] (exactly 5 — these are skills AI cannot replicate),
-  manifesto: string (3 powerful sentences about why this person matters — reference their specific achievements, not generic)
+  headline: string, subline: string,
+  fear_hook: string, tough_love: string, hope_bridge: string,
+  emotion_message: string,
+  advantages: [
+    { title: string, body: string, proof_label: string, icon_type: "revenue"|"people"|"globe"|"shield", score: integer 60-98 }
+  ] (exactly 5),
+  insights: string[] (exactly 5 — daily human-edge insights, personal to their career),
+  score_tags: string[] (4 tags),
+  manifesto: string (3 powerful sentences — why THIS person matters, reference their specific achievements),
+  twenty_four_hour_mission: {
+    action: string (ONE specific action for TODAY — tied to their #1 advantage),
+    why: string (1 sentence — why this specific action matters NOW),
+    expected_result: string (what they'll gain from doing this)
+  },
+  whatsapp_message: string,
+  score_card_text: string
 }`;
 }

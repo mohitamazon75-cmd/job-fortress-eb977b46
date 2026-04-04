@@ -57,7 +57,17 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
     <CardShell>
       <CardHead badges={<><Badge label="05 · Opportunity" variant="green" /><LivePill /></>} title={d?.headline || ""} sub={d?.subline || ""} />
       <CardBody>
-        <EmotionStrip bgColor="var(--mb-green-tint)" borderColor="rgba(26,107,60,0.15)" icon="🔥" textColor="var(--mb-green)" message={d?.emotion_message || ""} />
+        {/* Urgency emotional triggers */}
+        {d?.fear_hook && (
+          <div style={{ background: "var(--mb-amber-tint)", border: "2px solid rgba(139,90,0,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-amber)", lineHeight: 1.7, margin: 0 }}>⏰ {d.fear_hook}</p>
+          </div>
+        )}
+        {d?.hope_bridge && (
+          <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6, margin: 0 }}>🎯 {d.hope_bridge}</p>
+          </div>
+        )}
 
         {/* Stat grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 22 }}>
@@ -138,8 +148,14 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--mb-green)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--mb-green)" }} />
                 Posted {job.days_posted} days ago · {job.applicant_count} applicants
-                {job.is_urgent && <span style={{ fontSize: 11, fontWeight: 800, background: "var(--mb-red-tint)", color: "var(--mb-red)", padding: "4px 10px", borderRadius: 10, marginLeft: 4, border: "1.5px solid rgba(174,40,40,0.25)" }}>Urgent</span>}
+                {job.is_urgent && <span style={{ fontSize: 11, fontWeight: 800, background: "var(--mb-red-tint)", color: "var(--mb-red)", padding: "4px 10px", borderRadius: 10, marginLeft: 4, border: "1.5px solid rgba(174,40,40,0.25)" }}>🔥 Urgent</span>}
               </div>
+              {/* Urgency narrative */}
+              {job.urgency_narrative && (
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-amber)", marginTop: 8, padding: "8px 12px", background: "var(--mb-amber-tint)", borderRadius: 8, border: "1px solid rgba(139,90,0,0.15)", lineHeight: 1.6 }}>
+                  ⚡ {job.urgency_narrative}
+                </div>
+              )}
             </div>
           );
         })}

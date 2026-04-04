@@ -18,7 +18,22 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         sub={c2.subline || ""}
       />
       <CardBody>
-        <EmotionStrip bgColor="var(--mb-amber-tint)" borderColor="rgba(139,90,0,0.15)" icon="🌏" textColor="var(--mb-amber)" message={c2.emotion_message || ""} />
+        {/* 3-part emotional structure */}
+        {c2.fear_hook && (
+          <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.7, margin: 0 }}>🚨 {c2.fear_hook}</p>
+          </div>
+        )}
+        {c2.confrontation && (
+          <div style={{ borderLeft: "4px solid var(--mb-amber)", background: "linear-gradient(90deg, var(--mb-amber-tint), transparent)", borderRadius: "0 12px 12px 0", padding: "12px 16px", marginBottom: 10 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0 }}>⚔️ {c2.confrontation}</p>
+          </div>
+        )}
+        {c2.hope_bridge && (
+          <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6, margin: 0 }}>✅ {c2.hope_bridge}</p>
+          </div>
+        )}
 
         <SectionLabel label="India salary benchmarks · Your role tier · 2025–26" />
 
@@ -41,7 +56,7 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         {/* Quote box */}
         <div style={{ borderLeft: "3px solid var(--mb-navy)", borderRadius: "0 10px 10px 0", padding: "14px 18px", background: "var(--mb-navy-tint)", marginBottom: 16 }}>
           <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink)", lineHeight: 1.75, fontStyle: "italic", marginBottom: 6, fontWeight: 500 }}>{c2.market_quote}</div>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", fontWeight: 700, letterSpacing: "0.02em" }}>{c2.market_quote_source}</div>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", fontWeight: 700 }}>{c2.market_quote_source}</div>
         </div>
 
         <CardNav onBack={onBack} onNext={onNext} />

@@ -1,4 +1,5 @@
-import { CardShell, CardHead, CardBody, Badge, EmotionStrip, SectionLabel, InfoBox, CardNav } from "./SharedUI";
+import { useState } from "react";
+import { CardShell, CardHead, CardBody, Badge, EmotionStrip, SectionLabel, InfoBox, CardNav, Badge as BadgeComp } from "./SharedUI";
 
 interface Props {
   cardData: any;
@@ -8,10 +9,10 @@ interface Props {
 }
 
 const skillBadgeMap: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  "best-in-class": { label: "Best-in-class", bg: "var(--mb-green-tint)", color: "var(--mb-green)", border: "rgba(26,107,60,0.25)" },
-  strong: { label: "Strong shield", bg: "var(--mb-green-tint)", color: "var(--mb-green)", border: "rgba(26,107,60,0.25)" },
-  buildable: { label: "Build in 30–45 days", bg: "var(--mb-amber-tint)", color: "var(--mb-amber)", border: "rgba(139,90,0,0.25)" },
-  "critical-gap": { label: "Critical gap", bg: "var(--mb-red-tint)", color: "var(--mb-red)", border: "rgba(174,40,40,0.25)" },
+  "best-in-class": { label: "🏆 Best-in-class", bg: "var(--mb-green-tint)", color: "var(--mb-green)", border: "rgba(26,107,60,0.25)" },
+  strong: { label: "💪 Strong shield", bg: "var(--mb-green-tint)", color: "var(--mb-green)", border: "rgba(26,107,60,0.25)" },
+  buildable: { label: "🔨 Build in 30–45 days", bg: "var(--mb-amber-tint)", color: "var(--mb-amber)", border: "rgba(139,90,0,0.25)" },
+  "critical-gap": { label: "🚨 Critical gap", bg: "var(--mb-red-tint)", color: "var(--mb-red)", border: "rgba(174,40,40,0.25)" },
 };
 
 export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePlan }: Props) {
@@ -34,7 +35,22 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
         sub={c3.subline || ""}
       />
       <CardBody>
-        <EmotionStrip bgColor="var(--mb-green-tint)" borderColor="rgba(26,107,60,0.15)" icon="✨" textColor="var(--mb-green)" message={c3.emotion_message || ""} />
+        {/* Emotional arc — Affirmation first, then the sting */}
+        {c3.hope_bridge && (
+          <div style={{ background: "var(--mb-green-tint)", border: "2px solid rgba(26,107,60,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.7, margin: 0 }}>🛡️ {c3.hope_bridge}</p>
+          </div>
+        )}
+        {c3.tough_love && (
+          <div style={{ borderLeft: "4px solid var(--mb-amber)", background: "linear-gradient(90deg, var(--mb-amber-tint), transparent)", borderRadius: "0 12px 12px 0", padding: "12px 16px", marginBottom: 10 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0 }}>⚠️ {c3.tough_love}</p>
+          </div>
+        )}
+        {c3.confrontation && (
+          <div style={{ background: "var(--mb-red-tint)", border: "1.5px solid rgba(174,40,40,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.6, margin: 0 }}>⚔️ {c3.confrontation}</p>
+          </div>
+        )}
 
         {/* Shield row */}
         <div style={{ display: "flex", gap: 16, alignItems: "center", padding: 18, background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, marginBottom: 18 }}>
@@ -47,7 +63,9 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
           </svg>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "var(--mb-ink)" }}>Strong shield</span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "var(--mb-ink)" }}>
+                {c3.shield_score >= 70 ? "Strong shield" : c3.shield_score >= 50 ? "Growing shield" : "Needs work"}
+              </span>
               {c3.badge_text && (
                 <span style={{ fontSize: 12, background: "var(--mb-green-tint)", color: "var(--mb-green)", border: "1.5px solid rgba(26,107,60,0.25)", padding: "3px 12px", borderRadius: 20, fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>{c3.badge_text}</span>
               )}
@@ -74,14 +92,9 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
           })}
         </div>
 
-        {/* Resources */}
-        <InfoBox variant="navy" title="Free resources for your skill gaps — India-verified">
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.8, fontWeight: 500 }}>
-            {(c3.free_resources || []).map((res: any, i: number) => (
-              <div key={i}><strong style={{ fontWeight: 700, color: "var(--mb-ink)" }}>{res.skill}</strong> → {res.resource} · {res.cost || "Free"}</div>
-            ))}
-          </div>
-        </InfoBox>
+        {c3.upgrade_path && (
+          <InfoBox variant="navy" title="🎯 Your specific upgrade path" body={c3.upgrade_path} />
+        )}
 
         <CardNav onBack={onBack} onNext={onNext} />
       </CardBody>

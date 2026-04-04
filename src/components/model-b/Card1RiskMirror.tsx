@@ -23,6 +23,8 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
     { initials: "VR", bg: "var(--mb-teal-tint)", color: "var(--mb-teal)" },
   ];
 
+  const cost = c1.cost_of_inaction;
+
   return (
     <CardShell>
       <CardHead
@@ -31,7 +33,34 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
         sub={c1.subline || ""}
       />
       <CardBody>
-        <EmotionStrip bgColor="var(--mb-amber-tint)" borderColor="rgba(139,90,0,0.15)" icon="⚡" textColor="var(--mb-amber)" message={c1.emotion_message || ""} />
+        {/* 3-part emotional structure */}
+        {c1.fear_hook && (
+          <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.2)", borderRadius: 14, padding: "16px 18px", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 18 }}>🚨</span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--mb-red)" }}>The uncomfortable truth</span>
+            </div>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.7, margin: 0 }}>{c1.fear_hook}</p>
+          </div>
+        )}
+        {c1.tough_love && (
+          <div style={{ background: "var(--mb-amber-tint)", border: "1.5px solid rgba(139,90,0,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 800, color: "var(--mb-amber)", lineHeight: 1.6, margin: 0, fontStyle: "italic" }}>💡 {c1.tough_love}</p>
+          </div>
+        )}
+        {c1.hope_bridge && (
+          <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6, margin: 0 }}>✅ {c1.hope_bridge}</p>
+          </div>
+        )}
+
+        {/* Confrontation banner */}
+        {c1.confrontation && (
+          <div style={{ borderLeft: "4px solid var(--mb-red)", background: "linear-gradient(90deg, var(--mb-red-tint), transparent)", borderRadius: "0 12px 12px 0", padding: "14px 18px", marginBottom: 20 }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--mb-red)", marginBottom: 6 }}>⚔️ DIRECT CHALLENGE</div>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0 }}>{c1.confrontation}</p>
+          </div>
+        )}
 
         {/* Gauge row */}
         <div style={{ display: "flex", gap: 20, alignItems: "center", padding: 20, background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 16, marginBottom: 22, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
@@ -42,30 +71,55 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
             <text x={50} y={66} textAnchor="middle" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, fill: "var(--mb-ink3)", textTransform: "uppercase", letterSpacing: "0.14em" }}>RISK</text>
           </svg>
           <div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8, lineHeight: 1.3, letterSpacing: "-0.01em" }}>
-              {c1.risk_score >= 70 ? "High risk — act now" : c1.risk_score >= 40 ? "Moderate — your framing costs you" : "Low risk — strong position"}
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8, lineHeight: 1.3 }}>
+              {c1.risk_score >= 70 ? "🔴 High risk — act now" : c1.risk_score >= 40 ? "🟡 Moderate — your framing costs you" : "🟢 Low risk — strong position"}
             </div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, fontWeight: 500 }}>Your automation risk is calibrated against <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{c1.india_average || 61}%</strong> India average for this role tier.</div>
           </div>
         </div>
 
+        {/* Cost of Inaction — Loss Aversion Trigger */}
+        {cost && (
+          <>
+            <SectionLabel label="💸 What doing nothing costs you — real numbers" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
+              <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.25)", borderRadius: 14, padding: 16, textAlign: "center" }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 26, fontWeight: 800, color: "var(--mb-red)", marginBottom: 4 }}>{cost.monthly_loss_lpa}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--mb-red)", fontFamily: "'DM Sans', sans-serif" }}>Left on table annually</div>
+              </div>
+              <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.25)", borderRadius: 14, padding: 16, textAlign: "center" }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 26, fontWeight: 800, color: "var(--mb-red)", marginBottom: 4 }}>{cost.six_month_loss}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--mb-red)", fontFamily: "'DM Sans', sans-serif" }}>6-month inaction cost</div>
+              </div>
+            </div>
+            {cost.peer_gap_pct && (
+              <div style={{ background: "var(--mb-amber-tint)", border: "1.5px solid rgba(139,90,0,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-amber)", margin: 0 }}>📊 {cost.peer_gap_pct}</p>
+              </div>
+            )}
+            {cost.decay_narrative && (
+              <div style={{ borderLeft: "3px solid var(--mb-red)", padding: "10px 16px", marginBottom: 20, borderRadius: "0 10px 10px 0", background: "rgba(174,40,40,0.03)" }}>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--mb-ink2)", lineHeight: 1.7, margin: 0 }}>{cost.decay_narrative}</p>
+              </div>
+            )}
+          </>
+        )}
+
         {/* ATS Section */}
         <SectionLabel label="ATS resume match · 3 target India JDs right now" />
         <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 16, overflow: "hidden", marginBottom: 22, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1.5px solid var(--mb-rule)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)", letterSpacing: "-0.01em" }}>ATS Resume Match · 3 Target India JDs</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)" }}>ATS Resume Match · 3 Target India JDs</span>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 24, fontWeight: 800, color: "var(--mb-amber)" }}>{cardData.ats_avg || c1.ats_scores?.[0]?.score || 60}%<span style={{ fontSize: 13, fontWeight: 600, color: "var(--mb-ink3)", marginLeft: 4 }}>avg</span></span>
           </div>
           <div style={{ padding: "18px 20px" }}>
             {(c1.ats_scores || []).map((s: any, i: number) => {
-              const city = (s.city || "all-india").toLowerCase().replace(/\s+/g, "-"); const searchUrl = s.search_url || `https://www.naukri.com/jobs-in-${city}?k=${encodeURIComponent(`${s.role} ${s.company}`).replace(/%20/g, "+")}`;
+              const city = (s.city || "all-india").toLowerCase().replace(/\s+/g, "-");
+              const searchUrl = s.search_url || `https://www.naukri.com/jobs-in-${city}?k=${encodeURIComponent(`${s.role} ${s.company}`).replace(/%20/g, "+")}`;
               return (
                 <div key={i} style={{ marginBottom: i < (c1.ats_scores?.length || 0) - 1 ? 16 : 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
-                    <a
-                      href={searchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <a href={searchUrl} target="_blank" rel="noopener noreferrer"
                       style={{ flex: 1, fontSize: 14, color: "var(--mb-navy)", fontWeight: 700, lineHeight: 1.3, fontFamily: "'DM Sans', sans-serif", textDecoration: "none", borderBottom: "1.5px dashed var(--mb-navy-tint2)" }}
                       title={`Search ${s.company} · ${s.role} on Naukri`}
                     >
@@ -77,17 +131,11 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
                     <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 800, minWidth: 40, textAlign: "right", color: variantColor(s.color) }}>{s.score}%</span>
                   </div>
                   <div style={{ display: "flex", gap: 6, paddingLeft: 2 }}>
-                    <a
-                      href={searchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: 11, fontWeight: 800, padding: "5px 14px", borderRadius: 8, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, letterSpacing: "0.02em" }}
+                    <a href={searchUrl} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: 11, fontWeight: 800, padding: "5px 14px", borderRadius: 8, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32 }}
                     >🔍 Naukri</a>
-                    <a
-                      href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(`${s.role} ${s.company}`)}&f_TPR=r604800`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: 11, fontWeight: 800, padding: "5px 14px", borderRadius: 8, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32, letterSpacing: "0.02em" }}
+                    <a href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(`${s.role} ${s.company}`)}&f_TPR=r604800`} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: 11, fontWeight: 800, padding: "5px 14px", borderRadius: 8, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 32 }}
                     >💼 LinkedIn</a>
                   </div>
                 </div>
@@ -95,7 +143,7 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
             })}
             {c1.ats_missing_keywords?.length > 0 && (
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1.5px solid var(--mb-rule)", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
-                <span style={{ fontWeight: 800, color: "var(--mb-ink)" }}>Missing keywords: </span>
+                <span style={{ fontWeight: 800, color: "var(--mb-ink)" }}>⚠️ Missing keywords: </span>
                 {c1.ats_missing_keywords.map((kw: string, i: number) => (
                   <span key={i}><strong style={{ color: "var(--mb-red)", fontWeight: 800 }}>{kw}</strong>{i < c1.ats_missing_keywords.length - 1 ? " · " : ""}</span>
                 ))}
@@ -108,10 +156,10 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
         <SectionLabel label="What AI is replacing in your role right now" />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 22 }}>
           {(c1.tasks_at_risk || []).map((t: string, i: number) => (
-            <span key={`r${i}`} style={{ fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 20, border: "1.5px solid rgba(174,40,40,0.25)", color: "var(--mb-red)", background: "var(--mb-red-tint)", fontFamily: "'DM Sans', sans-serif" }}>{t}</span>
+            <span key={`r${i}`} style={{ fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 20, border: "1.5px solid rgba(174,40,40,0.25)", color: "var(--mb-red)", background: "var(--mb-red-tint)", fontFamily: "'DM Sans', sans-serif" }}>❌ {t}</span>
           ))}
           {(c1.tasks_safe || []).map((t: string, i: number) => (
-            <span key={`s${i}`} style={{ fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 20, border: "1.5px solid rgba(26,107,60,0.25)", color: "var(--mb-green)", background: "var(--mb-green-tint)", fontFamily: "'DM Sans', sans-serif" }}>{t}</span>
+            <span key={`s${i}`} style={{ fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 20, border: "1.5px solid rgba(26,107,60,0.25)", color: "var(--mb-green)", background: "var(--mb-green-tint)", fontFamily: "'DM Sans', sans-serif" }}>✅ {t}</span>
           ))}
         </div>
 
@@ -124,7 +172,7 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
           ].map((s, i) => (
             <div key={i} style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
               <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 28, fontWeight: 800, color: s.color, marginBottom: 6 }}>{s.value}</div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, color: "var(--mb-ink3)", letterSpacing: "0.01em" }}>{s.label}</div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, color: "var(--mb-ink3)" }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -136,11 +184,11 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
               <div key={i} style={{ width: 26, height: 26, borderRadius: "50%", background: a.bg, color: a.color, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", fontSize: 9, fontWeight: 800, border: "2px solid white", marginLeft: i > 0 ? -6 : 0 }}>{a.initials}</div>
             ))}
           </div>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600 }}><strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>2,340</strong> B2B marketing managers checked this month · India average: <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>61%</strong></span>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600 }}><strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>2,340</strong> professionals checked this month · India avg: <strong style={{ fontWeight: 800, color: "var(--mb-red)" }}>61%</strong></span>
         </div>
 
         <InfoBox variant="amber" title="What India's live data says — April 2026" body={c1.india_data_insight || ""} />
-        <CardNav onNext={onNext} nextLabel="See India market →" />
+        <CardNav onNext={onNext} nextLabel="See salary reality →" />
       </CardBody>
     </CardShell>
   );

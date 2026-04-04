@@ -40,12 +40,23 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
   const insights = d?.insights || [];
   const advantages = d?.advantages || [];
   const scoreTags = d?.score_tags || [];
+  const mission = d?.twenty_four_hour_mission;
 
   return (
     <CardShell>
       <CardHead badges={<><Badge label="07 · Hope anchoring" variant="navy" /><Badge label="5 daily insights · refreshes" variant="navy" /></>} title={d?.headline || ""} sub={d?.subline || ""} />
       <CardBody>
-        <EmotionStrip bgColor="var(--mb-navy-tint)" borderColor="var(--mb-navy-tint2)" icon="🌱" textColor="var(--mb-navy)" message={d?.emotion_message || ""} />
+        {/* Hope emotional arc */}
+        {d?.hope_bridge && (
+          <div style={{ background: "var(--mb-green-tint)", border: "2px solid rgba(26,107,60,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.7, margin: 0 }}>🌟 {d.hope_bridge}</p>
+          </div>
+        )}
+        {d?.fear_hook && (
+          <div style={{ background: "var(--mb-amber-tint)", border: "1.5px solid rgba(139,90,0,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: "var(--mb-amber)", lineHeight: 1.6, margin: 0 }}>⚡ {d.fear_hook}</p>
+          </div>
+        )}
 
         {/* Insight rotator */}
         <div style={{ background: "var(--mb-navy-tint)", border: "1.5px solid var(--mb-navy-tint2)", borderRadius: 14, padding: 18, marginBottom: 18 }}>
@@ -72,13 +83,36 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
             <div key={i} style={{ display: "flex", gap: 14, padding: "15px 0", borderBottom: i < advantages.length - 1 ? "1.5px solid var(--mb-rule)" : "none", alignItems: "flex-start" }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: ic.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 18 }}>{ic.emoji}</div>
               <div>
-                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 5, letterSpacing: "-0.01em" }}>{a.title}</div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 5 }}>{a.title}</div>
                 <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, fontWeight: 500 }}>{a.body}</div>
                 <span style={{ display: "inline-block", marginTop: 8, fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "4px 12px", borderRadius: 20, background: ic.badgeBg, color: ic.badgeColor }}>{a.proof_label}</span>
               </div>
             </div>
           );
         })}
+
+        {/* Manifesto */}
+        {d?.manifesto && (
+          <div style={{ borderLeft: "4px solid var(--mb-navy)", background: "linear-gradient(90deg, var(--mb-navy-tint), transparent)", borderRadius: "0 14px 14px 0", padding: "18px 22px", marginTop: 20, marginBottom: 18 }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--mb-navy)", marginBottom: 8 }}>YOUR MANIFESTO</div>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.75, margin: 0, fontStyle: "italic" }}>{d.manifesto}</p>
+          </div>
+        )}
+
+        {/* 24-Hour Mission — Urgency CTA */}
+        {mission && (
+          <div style={{ background: "linear-gradient(135deg, var(--mb-green-tint), var(--mb-navy-tint))", border: "2px solid rgba(26,107,60,0.25)", borderRadius: 16, padding: 20, marginBottom: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 20 }}>🎯</span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--mb-green)" }}>YOUR 24-HOUR MISSION</span>
+            </div>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.6, marginBottom: 8, margin: 0 }}>{mission.action}</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: "var(--mb-ink2)", lineHeight: 1.6, marginBottom: 8, margin: "8px 0" }}>{mission.why}</p>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-green)", padding: "8px 12px", background: "rgba(26,107,60,0.08)", borderRadius: 8, border: "1px solid rgba(26,107,60,0.15)" }}>
+              ✅ Expected result: {mission.expected_result}
+            </div>
+          </div>
+        )}
 
         {/* Share card */}
         <div style={{ background: "var(--mb-navy)", borderRadius: 16, padding: 24, textAlign: "center", marginTop: 20, marginBottom: 18 }}>
@@ -90,8 +124,8 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
             ))}
           </div>
           <div className="mb-share-row" style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-            <button onClick={() => { logEvent("whatsapp"); window.open(`https://wa.me/?text=${encodeURIComponent(d?.whatsapp_message || "")}`, "_blank"); }} style={{ background: "#25D366", color: "white", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, padding: "10px 18px", borderRadius: 20, border: "none", cursor: "pointer", minHeight: 48, letterSpacing: "0.02em" }}>💬 WhatsApp</button>
-            <button onClick={() => { logEvent("linkedin"); window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://jobbachao.com")}`, "_blank"); }} style={{ background: "#0A66C2", color: "white", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, padding: "10px 18px", borderRadius: 20, border: "none", cursor: "pointer", minHeight: 48, letterSpacing: "0.02em" }}>💼 LinkedIn</button>
+            <button onClick={() => { logEvent("whatsapp"); window.open(`https://wa.me/?text=${encodeURIComponent(d?.whatsapp_message || "")}`, "_blank"); }} style={{ background: "#25D366", color: "white", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, padding: "10px 18px", borderRadius: 20, border: "none", cursor: "pointer", minHeight: 48 }}>💬 WhatsApp</button>
+            <button onClick={() => { logEvent("linkedin"); window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://jobbachao.com")}`, "_blank"); }} style={{ background: "#0A66C2", color: "white", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, padding: "10px 18px", borderRadius: 20, border: "none", cursor: "pointer", minHeight: 48 }}>💼 LinkedIn</button>
             <button onClick={() => { logEvent("copy"); handleCopy(d?.score_card_text || ""); }} style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, padding: "10px 18px", borderRadius: 20, border: "1.5px solid rgba(255,255,255,0.2)", cursor: "pointer", minHeight: 48 }}>{copied ? "✓ Copied!" : "Copy score card"}</button>
           </div>
         </div>
@@ -112,7 +146,6 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
         <CardNav onBack={onBack} nextLabel="Journey complete ✓" />
       </CardBody>
 
-      {/* Mobile share stack */}
       <style>{`
         @media (max-width: 640px) {
           .mb-share-row { flex-direction: column !important; }
