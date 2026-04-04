@@ -259,12 +259,16 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
           <div>
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); setToolExpanded(!toolExpanded); }}
+              onClick={handleToolExpand}
               className="flex items-center gap-2 w-full text-left group hover:opacity-80 transition-opacity"
             >
               <ArrowRight className="w-3 h-3 text-primary flex-shrink-0" />
               <p className="text-[11px] font-semibold text-primary">{skill.actionTag}</p>
-              <ChevronDown className={`w-3 h-3 text-primary ml-auto transition-transform ${toolExpanded ? 'rotate-180' : ''}`} />
+              {learningLoading ? (
+                <Loader2 className="w-3 h-3 text-primary ml-auto animate-spin" />
+              ) : (
+                <ChevronDown className={`w-3 h-3 text-primary ml-auto transition-transform ${toolExpanded ? 'rotate-180' : ''}`} />
+              )}
             </button>
 
             <AnimatePresence>
@@ -276,43 +280,101 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="mt-2 rounded-lg border border-primary/15 bg-primary/[0.03] p-3 space-y-2.5">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                      <p className="text-xs font-bold text-foreground">Learn: {toolName}</p>
+                  <div className="mt-2 rounded-lg border border-primary/15 bg-primary/[0.03] p-3 space-y-3">
+                    {/* Tool description */}
+                    <div className="flex items-start gap-2">
+                      <Zap className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-foreground">Learn: {toolName}</p>
+                        {learningData?.tool_description && (
+                          <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">{learningData.tool_description}</p>
+                        )}
+                        {!learningData && !learningLoading && (
+                          <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">
+                            {skill.risk >= 75
+                              ? `${toolName} is actively automating this skill. Learning it makes you the operator, not the replaced.`
+                              : `${toolName} augments this skill area. Fluency here makes you 2-3× more productive than peers who ignore it.`
+                            }
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      {skill.risk >= 75
-                        ? `${toolName} is actively automating this skill. Learning it makes you the operator, not the replaced.`
-                        : `${toolName} augments this skill area. Fluency here makes you 2-3× more productive than peers who ignore it.`
-                      }
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
+
+                    {/* Loading state */}
+                    {learningLoading && (
+                      <div className="flex items-center gap-2 py-2">
+                        <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                        <p className="text-[11px] text-muted-foreground">Finding latest resources for {toolName}...</p>
+                      </div>
+                    )}
+
+                    {/* Error state */}
+                    {learningError && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setLearningError(false); fetchLearningResources(); }}
+                        className="text-[11px] text-destructive hover:underline"
+                      >
+                        Failed to load resources. Tap to retry.
+                      </button>
+                    )}
+
+                    {/* Real-time resources from Perplexity */}
+                    {learningData?.resources && learningData.resources.length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">📚 Learn now — curated & current</p>
+                        {learningData.resources.map((r, i) => (
+                          <a
+                            key={i}
+                            href={r.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-start gap-2 p-2 rounded-md bg-card border border-border hover:border-primary/30 hover:bg-primary/[0.02] transition-colors group"
+                          >
+                            <span className="text-sm flex-shrink-0 mt-0.5">
+                              {r.type === 'video' ? '▶️' : r.type === 'course' ? '🎓' : '📖'}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{r.title}</p>
+                              <p className="text-[10px] text-muted-foreground">⏱ {r.time_estimate}</p>
+                            </div>
+                            <ArrowRight className="w-3 h-3 text-muted-foreground group-hover:text-primary flex-shrink-0 mt-1 transition-colors" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Weekend project */}
+                    {learningData?.weekend_project && (
+                      <div className="rounded-md border border-prophet-green/20 bg-prophet-green/[0.03] p-2.5">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-prophet-green/80 mb-1">🛠 Weekend project idea</p>
+                        <p className="text-[11px] font-semibold text-foreground">{learningData.weekend_project.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{learningData.weekend_project.description}</p>
+                      </div>
+                    )}
+
+                    {/* Credential */}
+                    {learningData?.top_credential && learningData.top_credential.url && (
                       <a
-                        href={`https://www.google.com/search?q=${encodeURIComponent(`${toolName} tutorial for ${skill.name} professionals 2026`)}`}
+                        href={learningData.top_credential.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                        className="flex items-center gap-2 p-2 rounded-md border border-prophet-gold/20 bg-prophet-gold/[0.03] hover:bg-prophet-gold/[0.06] transition-colors"
                       >
-                        🔍 Find tutorials
+                        <span className="text-sm">🏆</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-prophet-gold/80">Top credential</p>
+                          <p className="text-[11px] font-semibold text-foreground">{learningData.top_credential.name}</p>
+                        </div>
                       </a>
-                      <a
-                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${toolName} crash course ${skill.name}`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-md bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-colors"
-                      >
-                        ▶️ YouTube courses
-                      </a>
-                      <a
-                        href={`https://www.google.com/search?q=${encodeURIComponent(`${toolName} official documentation getting started`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-md bg-muted text-muted-foreground border border-border hover:bg-muted/80 transition-colors"
-                      >
-                        📖 Official docs
-                      </a>
-                    </div>
+                    )}
+
+                    {/* Citations */}
+                    {learningData?.citations && learningData.citations.length > 0 && (
+                      <p className="text-[9px] text-muted-foreground/50 pt-1 border-t border-border/30">
+                        Sourced live from {learningData.citations.length} web sources • Updated just now
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               )}
