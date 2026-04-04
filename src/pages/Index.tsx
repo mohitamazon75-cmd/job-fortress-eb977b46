@@ -8,10 +8,11 @@ import ReAuthModal from '@/components/ReAuthModal';
 import RescanDetector from '@/components/RescanDetector';
 import RateLimitUpsell from '@/components/RateLimitUpsell';
 import GoalCaptureModal, { type ScanGoals } from '@/components/GoalCaptureModal';
+import OnboardingFlow from '@/components/OnboardingFlow';
 import { useAuth } from '@/hooks/useAuth';
 
 // Sprint 8: Lazy-load heavy components with one-time retry for stale chunk errors
-// FIX 5 (LOW): Add guard to prevent infinite reload loop on persistent chunk errors
+// Keep the first-step onboarding screen in the main bundle to avoid critical-path lazy chunk failures.
 const lazyWithRetry = (importFn: () => Promise<any>) => lazy(async () => {
   try {
     const mod = await importFn();
@@ -26,14 +27,12 @@ const lazyWithRetry = (importFn: () => Promise<any>) => lazy(async () => {
 
     if (isChunkError && !hasRetried) {
       try { sessionStorage.setItem('jb_lazy_retry_once', '1'); } catch {}
-      // Only reload once to avoid infinite reload loop on persistent chunk errors
       const reloadKey = 'jb_chunk_error_reload';
       if (!sessionStorage.getItem(reloadKey)) {
         sessionStorage.setItem(reloadKey, '1');
         window.location.reload();
       } else {
         sessionStorage.removeItem(reloadKey);
-        // Don't reload again — let the error boundary handle it
         console.error('Chunk load failed after reload attempt', error);
       }
       return new Promise(() => {}) as Promise<any>;
@@ -42,7 +41,6 @@ const lazyWithRetry = (importFn: () => Promise<any>) => lazy(async () => {
   }
 });
 
-const OnboardingFlow = lazyWithRetry(() => import('@/components/OnboardingFlow'));
 const MatrixLoading = lazyWithRetry(() => import('@/components/MatrixLoading'));
 const AIDossierReveal = lazyWithRetry(() => import('@/components/AIDossierReveal'));
 const MoneyShotCard = lazyWithRetry(() => import('@/components/MoneyShotCard'));

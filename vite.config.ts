@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
     "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
       process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     ),
-    __BUILD_STAMP__: JSON.stringify("2026-03-15-diagnostic-white-screen-fix"),
+    __BUILD_STAMP__: JSON.stringify("2026-04-04-onboarding-critical-fix"),
   },
   build: {
     chunkSizeWarningLimit: 4000,
@@ -29,5 +29,6 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ["react", "react-dom"],
   },
 }));
