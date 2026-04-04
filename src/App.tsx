@@ -20,6 +20,7 @@ import DiagnosticPage from "./pages/Diagnostic";
 import DiagnosticShare from "./pages/DiagnosticShare";
 import ObituaryPage from "./pages/Obituary";
 import ResultsChoose from "./pages/ResultsChoose";
+import ResultsModelB from "./pages/ResultsModelB";
 import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
@@ -85,6 +86,7 @@ const App = () => {
               <Route path="/diagnostic/:token" element={<DiagnosticShare />} />
               <Route path="/obituary" element={<ObituaryPage />} />
               <Route path="/results/choose" element={<ResultsChoose />} />
+              <Route path="/results/model-b" element={<ResultsModelB />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
