@@ -186,7 +186,7 @@ async function processAnalysis(
   let modelUsed = PRIMARY_MODEL;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const model = attempt < 2 ? PRIMARY_MODEL : FALLBACK_MODEL;
+    const model = attempt === 0 ? PRIMARY_MODEL : attempt === 1 ? SECONDARY_MODEL : FALLBACK_MODEL;
     modelUsed = model;
 
     try {
