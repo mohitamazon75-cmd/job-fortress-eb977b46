@@ -189,22 +189,32 @@ async function processAnalysis(
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
 
+      const isGpt = model.includes("gpt-5");
+      const requestBody: Record<string, unknown> = {
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: isGpt ? 1 : 0.25,
+      };
+
+      // GPT-5 requires max_completion_tokens; Gemini uses max_tokens
+      if (isGpt) {
+        requestBody.max_completion_tokens = 12000;
+      } else {
+        requestBody.max_tokens = 12000;
+        requestBody.generationConfig = { responseMimeType: "application/json" };
+      }
+      requestBody.response_format = { type: "json_object" };
+
       const aiResponse = await fetch(AI_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: model.includes("gpt-5") ? 1 : 0.25,
-          max_tokens: 12000,
-          response_format: { type: "json_object" },
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
 
