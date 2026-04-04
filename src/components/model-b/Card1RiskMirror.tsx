@@ -57,15 +57,42 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 20, fontWeight: 700, color: "var(--mb-amber)" }}>{cardData.ats_avg || c1.ats_scores?.[0]?.score || 60}%<span style={{ fontSize: 12, fontWeight: 500, color: "var(--mb-ink4)", marginLeft: 4 }}>avg</span></span>
           </div>
           <div style={{ padding: "16px 18px" }}>
-            {(c1.ats_scores || []).map((s: any, i: number) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: i < (c1.ats_scores?.length || 0) - 1 ? 12 : 0 }}>
-                <span style={{ flex: 1, fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600, lineHeight: 1.3, fontFamily: "'DM Sans', sans-serif" }}>{s.company} · {s.role}</span>
-                <div style={{ width: 80, height: 4, background: "var(--mb-rule)", borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
-                  <div style={{ height: 4, background: variantColor(s.color), width: `${s.score}%`, borderRadius: 2, transition: "width 0.6s ease" }} />
+            {(c1.ats_scores || []).map((s: any, i: number) => {
+              const searchUrl = s.search_url || `https://www.naukri.com/${encodeURIComponent((s.role || "").toLowerCase().replace(/\s+/g, "-"))}-jobs?k=${encodeURIComponent(`${s.role} ${s.company}`)}`;
+              return (
+                <div key={i} style={{ marginBottom: i < (c1.ats_scores?.length || 0) - 1 ? 14 : 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+                    <a
+                      href={searchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ flex: 1, fontSize: 13, color: "var(--mb-navy)", fontWeight: 600, lineHeight: 1.3, fontFamily: "'DM Sans', sans-serif", textDecoration: "none", borderBottom: "1px dashed var(--mb-navy-tint2)" }}
+                      title={`Search ${s.company} · ${s.role} on Naukri`}
+                    >
+                      {s.company} · {s.role} ↗
+                    </a>
+                    <div style={{ width: 80, height: 4, background: "var(--mb-rule)", borderRadius: 2, overflow: "hidden", flexShrink: 0 }}>
+                      <div style={{ height: 4, background: variantColor(s.color), width: `${s.score}%`, borderRadius: 2, transition: "width 0.6s ease" }} />
+                    </div>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, minWidth: 36, textAlign: "right", color: variantColor(s.color) }}>{s.score}%</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 5, paddingLeft: 2 }}>
+                    <a
+                      href={searchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 6, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}
+                    >🔍 Naukri</a>
+                    <a
+                      href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(`${s.role} ${s.company}`)}&f_TPR=r604800`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 6, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}
+                    >💼 LinkedIn</a>
+                  </div>
                 </div>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, minWidth: 36, textAlign: "right", color: variantColor(s.color) }}>{s.score}%</span>
-              </div>
-            ))}
+              );
+            })}
             {c1.ats_missing_keywords?.length > 0 && (
               <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--mb-rule)", fontSize: 13, color: "var(--mb-ink3)", lineHeight: 1.65, fontFamily: "'DM Sans', sans-serif" }}>
                 <span style={{ fontWeight: 600 }}>Missing keywords: </span>

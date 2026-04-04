@@ -23,12 +23,22 @@ export default function Card6BlindSpots({ cardData, onBack, onNext }: { cardData
         {(d?.blind_spots || []).map((bs: any, i: number) => (
           <div key={i} style={{ display: "flex", gap: 13, padding: "13px 0", borderBottom: i < (d.blind_spots.length - 1) ? "1px solid var(--mb-rule)" : "none", alignItems: "flex-start" }}>
             <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--mb-red-tint)", border: "1.5px solid rgba(174,40,40,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, fontWeight: 700, color: "var(--mb-red)" }}>{bs.number}</span>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, fontWeight: 700, color: "var(--mb-red)" }}>{bs.number || i + 1}</span>
             </div>
             <div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--mb-red)", marginBottom: 4 }}>{bs.title}</div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink3)", lineHeight: 1.65 }}>{bs.body}</div>
-              <span style={{ display: "inline-block", marginTop: 6, fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: "var(--mb-green-tint)", color: "var(--mb-green)", border: "1px solid rgba(26,107,60,0.2)" }}>{bs.fix}</span>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--mb-red)", marginBottom: 4 }}>{bs.title || bs.gap}</div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink3)", lineHeight: 1.65 }}>{bs.body || bs.fix}</div>
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 6 }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: "var(--mb-green-tint)", color: "var(--mb-green)", border: "1px solid rgba(26,107,60,0.2)" }}>{bs.fix}</span>
+                {bs.resource_url && (
+                  <a
+                    href={bs.resource_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3 }}
+                  >📚 Learn this ↗</a>
+                )}
+              </div>
             </div>
           </div>
         ))}

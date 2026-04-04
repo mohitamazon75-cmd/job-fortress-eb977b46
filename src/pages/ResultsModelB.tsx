@@ -113,7 +113,7 @@ export default function ResultsModelB() {
     } catch {}
   }, [analysisId, userId]);
 
-  // Fetch data
+  // Fetch data with polling support
   const fetchAnalysis = useCallback(async () => {
     if (!analysisId) return;
     setLoading(true);
@@ -122,19 +122,95 @@ export default function ResultsModelB() {
       const { data: { user } } = await supabase.auth.getUser();
       const uid = user?.id || null;
       setUserId(uid);
+
+      // First call triggers the background job
       const { data, error: fnError } = await supabase.functions.invoke("get-model-b-analysis", {
         body: { analysis_id: analysisId, user_id: uid, resume_filename: "Your Resume" },
       });
+
       if (fnError) throw new Error(fnError.message || "Analysis failed");
       if (!data?.success) throw new Error(data?.error || "Analysis failed");
-      const cd = data.data.card_data;
-      setCardData(cd);
-      setDisplayScore(cd?.jobbachao_score || 0);
+
+      // If we got data immediately (cache hit), use it
+      if (data.data?.card_data) {
+        const cd = data.data.card_data;
+        setCardData(cd);
+        setDisplayScore(cd?.jobbachao_score || 0);
+        setLoading(false);
+        return;
+      }
+
+      // Background processing started — poll for completion
+      if (data.status === "processing") {
+        pollForResult(uid);
+        return;
+      }
+
+      // Unexpected state
+      throw new Error("Unexpected response state");
     } catch (e: any) {
       setError(e.message || "Something went wrong");
-    } finally {
       setLoading(false);
     }
+  }, [analysisId]);
+
+  // Poll every 3s until result is ready
+  const pollForResult = useCallback(async (uid: string | null) => {
+    const MAX_POLLS = 60; // 3 minutes max
+    let polls = 0;
+
+    const poll = async () => {
+      polls++;
+      if (polls > MAX_POLLS) {
+        setError("Analysis is taking longer than expected. Please refresh the page.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke("get-model-b-analysis", {
+          body: { analysis_id: analysisId, user_id: uid, poll: true },
+        });
+
+        if (fnError) throw new Error(fnError.message);
+
+        if (data?.data?.card_data) {
+          const cd = data.data.card_data;
+          setCardData(cd);
+          setDisplayScore(cd?.jobbachao_score || 0);
+          setLoading(false);
+          return;
+        }
+
+        if (data?.status === "processing") {
+          setTimeout(poll, 3000);
+          return;
+        }
+
+        // not_started or error — retry trigger
+        if (polls < 3) {
+          const { data: retrigger } = await supabase.functions.invoke("get-model-b-analysis", {
+            body: { analysis_id: analysisId, user_id: uid, resume_filename: "Your Resume" },
+          });
+          if (retrigger?.data?.card_data) {
+            const cd = retrigger.data.card_data;
+            setCardData(cd);
+            setDisplayScore(cd?.jobbachao_score || 0);
+            setLoading(false);
+            return;
+          }
+          setTimeout(poll, 3000);
+          return;
+        }
+
+        setError("Analysis failed. Please try again.");
+        setLoading(false);
+      } catch {
+        setTimeout(poll, 3000);
+      }
+    };
+
+    setTimeout(poll, 3000);
   }, [analysisId]);
 
   useEffect(() => {

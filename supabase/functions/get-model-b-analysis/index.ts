@@ -7,11 +7,10 @@ const corsHeaders = {
 };
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const PRIMARY_MODEL = "google/gemini-2.5-flash";
-const FALLBACK_MODEL = "google/gemini-3-flash-preview";
-const LAST_RESORT_MODEL = "google/gemini-2.5-pro";
+const PRIMARY_MODEL = "google/gemini-2.5-pro";
+const FALLBACK_MODEL = "google/gemini-2.5-flash";
 const MAX_RETRIES = 3;
-const AI_TIMEOUT_MS = 55_000;
+const AI_TIMEOUT_MS = 90_000;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -19,11 +18,10 @@ Deno.serve(async (req) => {
   }
 
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
-  const startTime = Date.now();
 
   try {
     const body = await req.json();
-    const { analysis_id, user_id, resume_filename } = body;
+    const { analysis_id, user_id, resume_filename, poll } = body;
 
     if (!analysis_id || !user_id) {
       return new Response(
@@ -37,7 +35,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // ─── Step 1: Check cache ───
+    // ─── Check cache / completed results ───
     const { data: cached } = await supabase
       .from("model_b_results")
       .select("*")
@@ -46,14 +44,42 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (cached?.card_data && Object.keys(cached.card_data as object).length > 5) {
-      console.log(`[model-b] Cache hit for ${analysis_id} (${Date.now() - startTime}ms)`);
+      console.log(`[model-b] Cache hit for ${analysis_id}`);
       return new Response(
         JSON.stringify({ success: true, data: cached }),
         { headers: jsonHeaders }
       );
     }
 
-    // ─── Step 2: Get resume text from scans table ───
+    // ─── If polling, check if processing is in progress ───
+    if (poll) {
+      // Check if there's a pending row (card_data is null = still processing)
+      const { data: pending } = await supabase
+        .from("model_b_results")
+        .select("id, card_data")
+        .eq("analysis_id", analysis_id)
+        .maybeSingle();
+
+      if (pending && !pending.card_data) {
+        return new Response(
+          JSON.stringify({ success: true, status: "processing" }),
+          { headers: jsonHeaders }
+        );
+      }
+      if (pending?.card_data) {
+        return new Response(
+          JSON.stringify({ success: true, data: pending }),
+          { headers: jsonHeaders }
+        );
+      }
+      // No row exists yet — tell client to trigger the job
+      return new Response(
+        JSON.stringify({ success: true, status: "not_started" }),
+        { headers: jsonHeaders }
+      );
+    }
+
+    // ─── Get resume text from scans table ───
     const { data: scan, error: scanError } = await supabase
       .from("scans")
       .select("*")
@@ -76,7 +102,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ─── Step 3: Call AI with retry + fallback ───
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(
@@ -85,132 +110,51 @@ Deno.serve(async (req) => {
       );
     }
 
-    const systemPrompt = buildSystemPrompt();
-    const userPrompt = buildUserPrompt(resumeText);
-
-    let cardData: Record<string, unknown> | null = null;
-    let geminiRaw: unknown = null;
-    let modelUsed = PRIMARY_MODEL;
-
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      const model = attempt === 0 ? PRIMARY_MODEL : attempt === 1 ? FALLBACK_MODEL : LAST_RESORT_MODEL;
-      modelUsed = model;
-
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
-
-        const aiResponse = await fetch(AI_URL, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt },
-            ],
-            temperature: 0.25,
-            max_tokens: 10000,
-            response_format: { type: "json_object" },
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeout);
-
-        if (aiResponse.status === 429) {
-          return new Response(
-            JSON.stringify({ success: false, error: "Rate limit reached. Please try again in a minute." }),
-            { status: 429, headers: jsonHeaders }
-          );
-        }
-        if (aiResponse.status === 402) {
-          return new Response(
-            JSON.stringify({ success: false, error: "AI credits exhausted. Please try again later." }),
-            { status: 402, headers: jsonHeaders }
-          );
-        }
-
-        if (!aiResponse.ok) {
-          const errText = await aiResponse.text();
-          console.error(`[model-b] AI ${model} error [${aiResponse.status}] attempt ${attempt + 1}:`, errText.slice(0, 200));
-          continue;
-        }
-
-        const data = await aiResponse.json();
-        geminiRaw = data;
-        const rawText = data?.choices?.[0]?.message?.content;
-
-        if (!rawText) {
-          console.error(`[model-b] Empty response from ${model} attempt ${attempt + 1}`);
-          continue;
-        }
-
-        cardData = parseAIResponse(rawText);
-
-        // Validate critical fields
-        const validation = validateCardData(cardData);
-        if (!validation.valid) {
-          console.error(`[model-b] Validation failed (${model} attempt ${attempt + 1}): ${validation.issues.join(", ")}`);
-          cardData = null;
-          continue;
-        }
-
-        console.log(`[model-b] Success with ${model} attempt ${attempt + 1} (${Date.now() - startTime}ms)`);
-        break;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("abort")) {
-          console.error(`[model-b] Timeout (${AI_TIMEOUT_MS}ms) on ${model} attempt ${attempt + 1}`);
-        } else {
-          console.error(`[model-b] Error on ${model} attempt ${attempt + 1}:`, msg);
-        }
-      }
-    }
-
-    if (!cardData) {
-      return new Response(
-        JSON.stringify({ success: false, error: "AI analysis failed after retries. Please try again." }),
-        { status: 500, headers: jsonHeaders }
-      );
-    }
-
-    // ─── Step 4: Insert into model_b_results ───
-    const insertPayload = {
-      analysis_id,
-      user_id,
-      gemini_raw: geminiRaw,
-      risk_score: (cardData.risk_score as number) ?? 55,
-      shield_score: (cardData.shield_score as number) ?? 60,
-      ats_avg: (cardData.ats_avg as number) ?? 60,
-      job_match_count: (cardData.card5_jobs as any)?.job_matches?.length ?? 5,
-      resume_filename: resume_filename ?? "Your Resume",
-      card_data: cardData,
-    };
-
-    const { data: inserted, error: insertError } = await supabase
+    // ─── Create placeholder row to signal "processing" ───
+    await supabase
       .from("model_b_results")
-      .insert(insertPayload)
-      .select("*")
+      .upsert({
+        analysis_id,
+        user_id,
+        resume_filename: resume_filename ?? "Your Resume",
+        card_data: null,
+        risk_score: null,
+        shield_score: null,
+        ats_avg: null,
+        job_match_count: null,
+        gemini_raw: null,
+      }, { onConflict: "analysis_id" })
+      .select()
       .single();
 
-    if (insertError) {
-      console.error("[model-b] Insert error:", insertError);
-      // Return data even if DB save fails
+    // ─── Launch background AI processing ───
+    const processPromise = processAnalysis(
+      supabase, LOVABLE_API_KEY, analysis_id, user_id,
+      resume_filename, resumeText
+    );
+
+    // Use EdgeRuntime.waitUntil if available (keeps function alive after response)
+    if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
+      (globalThis as any).EdgeRuntime.waitUntil(processPromise);
+      console.log(`[model-b] Background processing started for ${analysis_id}`);
       return new Response(
-        JSON.stringify({ success: true, data: { ...insertPayload, id: crypto.randomUUID() } }),
+        JSON.stringify({ success: true, status: "processing", message: "Analysis started" }),
         { headers: jsonHeaders }
       );
     }
 
-    console.log(`[model-b] Complete: ${analysis_id} model=${modelUsed} time=${Date.now() - startTime}ms`);
+    // Fallback: wait synchronously (less ideal but still works)
+    const result = await processPromise;
+    if (result) {
+      return new Response(
+        JSON.stringify({ success: true, data: result }),
+        { headers: jsonHeaders }
+      );
+    }
 
     return new Response(
-      JSON.stringify({ success: true, data: inserted }),
-      { headers: jsonHeaders }
+      JSON.stringify({ success: false, error: "AI analysis failed after retries. Please try again." }),
+      { status: 500, headers: jsonHeaders }
     );
   } catch (e) {
     console.error("[model-b] Unhandled error:", e);
@@ -220,6 +164,153 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// ═══════════════════════════════════════════════════════════════
+// Background AI processing — runs after response is sent
+// ═══════════════════════════════════════════════════════════════
+async function processAnalysis(
+  supabase: any,
+  apiKey: string,
+  analysisId: string,
+  userId: string,
+  resumeFilename: string,
+  resumeText: string,
+): Promise<any> {
+  const startTime = Date.now();
+  const systemPrompt = buildSystemPrompt();
+  const userPrompt = buildUserPrompt(resumeText);
+
+  let cardData: Record<string, unknown> | null = null;
+  let geminiRaw: unknown = null;
+  let modelUsed = PRIMARY_MODEL;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const model = attempt < 2 ? PRIMARY_MODEL : FALLBACK_MODEL;
+    modelUsed = model;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+
+      const aiResponse = await fetch(AI_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.25,
+          max_tokens: 10000,
+          response_format: { type: "json_object" },
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (aiResponse.status === 429 || aiResponse.status === 402) {
+        console.error(`[model-b] Rate limit/payment error ${aiResponse.status}`);
+        await updateError(supabase, analysisId, `Rate limited (${aiResponse.status})`);
+        return null;
+      }
+
+      if (!aiResponse.ok) {
+        const errText = await aiResponse.text();
+        console.error(`[model-b] AI ${model} error [${aiResponse.status}] attempt ${attempt + 1}:`, errText.slice(0, 200));
+        continue;
+      }
+
+      const data = await aiResponse.json();
+      geminiRaw = data;
+      const rawText = data?.choices?.[0]?.message?.content;
+
+      if (!rawText) {
+        console.error(`[model-b] Empty response from ${model} attempt ${attempt + 1}`);
+        continue;
+      }
+
+      cardData = parseAIResponse(rawText);
+
+      const validation = validateCardData(cardData);
+      if (!validation.valid) {
+        console.error(`[model-b] Validation failed (${model} attempt ${attempt + 1}): ${validation.issues.join(", ")}`);
+        cardData = null;
+        continue;
+      }
+
+      console.log(`[model-b] Success with ${model} attempt ${attempt + 1} (${Date.now() - startTime}ms)`);
+      break;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("abort")) {
+        console.error(`[model-b] Timeout (${AI_TIMEOUT_MS}ms) on ${model} attempt ${attempt + 1}`);
+      } else {
+        console.error(`[model-b] Error on ${model} attempt ${attempt + 1}:`, msg);
+      }
+    }
+  }
+
+  if (!cardData) {
+    await updateError(supabase, analysisId, "AI analysis failed after retries");
+    return null;
+  }
+
+  // ─── Save completed results ───
+  const insertPayload = {
+    analysis_id: analysisId,
+    user_id: userId,
+    gemini_raw: geminiRaw,
+    risk_score: (cardData.risk_score as number) ?? 55,
+    shield_score: (cardData.shield_score as number) ?? 60,
+    ats_avg: (cardData.ats_avg as number) ?? 60,
+    job_match_count: (cardData.card5_jobs as any)?.job_matches?.length ?? 5,
+    resume_filename: resumeFilename ?? "Your Resume",
+    card_data: cardData,
+  };
+
+  const { data: updated, error: updateErr } = await supabase
+    .from("model_b_results")
+    .update({
+      card_data: cardData,
+      gemini_raw: geminiRaw,
+      risk_score: insertPayload.risk_score,
+      shield_score: insertPayload.shield_score,
+      ats_avg: insertPayload.ats_avg,
+      job_match_count: insertPayload.job_match_count,
+    })
+    .eq("analysis_id", analysisId)
+    .select("*")
+    .single();
+
+  if (updateErr) {
+    console.error("[model-b] Update error:", updateErr);
+    // Try insert as fallback
+    const { data: inserted } = await supabase
+      .from("model_b_results")
+      .insert(insertPayload)
+      .select("*")
+      .single();
+    return inserted || { ...insertPayload, id: crypto.randomUUID() };
+  }
+
+  console.log(`[model-b] Complete: ${analysisId} model=${modelUsed} time=${Date.now() - startTime}ms`);
+  return updated;
+}
+
+async function updateError(supabase: any, analysisId: string, error: string) {
+  // Delete the placeholder so client knows it failed
+  await supabase
+    .from("model_b_results")
+    .delete()
+    .eq("analysis_id", analysisId)
+    .is("card_data", null);
+  console.error(`[model-b] ${error} for ${analysisId}`);
+}
 
 // ═══════════════════════════════════════════════════════════════
 // Resume text extraction
@@ -248,62 +339,46 @@ function extractResumeText(scan: Record<string, unknown>): string {
 // AI Response parsing with multiple fallback strategies
 // ═══════════════════════════════════════════════════════════════
 function parseAIResponse(rawText: string): Record<string, unknown> {
-  // Strategy 1: Direct parse
   try { return JSON.parse(rawText); } catch { /* continue */ }
-
-  // Strategy 2: Strip markdown fences
   const stripped = rawText.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "");
   try { return JSON.parse(stripped); } catch { /* continue */ }
-
-  // Strategy 3: Extract first complete JSON object
   const match = rawText.match(/\{[\s\S]*\}/);
   if (match) {
     try { return JSON.parse(match[0]); } catch { /* continue */ }
   }
-
   throw new Error("Could not parse AI response as JSON");
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Output validation — ensures critical card data is present
+// Output validation
 // ═══════════════════════════════════════════════════════════════
 function validateCardData(data: Record<string, unknown>): { valid: boolean; issues: string[] } {
   const issues: string[] = [];
-
   const requiredKeys = ["card1_risk", "card2_market", "card3_shield", "card4_pivot", "card5_jobs", "card6_blindspots", "card7_human"];
   for (const key of requiredKeys) {
     if (!data[key]) issues.push(`Missing ${key}`);
   }
-
-  // Validate card5 has job_matches array
   const c5 = data.card5_jobs as any;
   if (c5 && (!Array.isArray(c5.job_matches) || c5.job_matches.length < 3)) {
     issues.push("card5_jobs.job_matches must have at least 3 items");
   }
-
-  // Validate card6 has interview_prep
   const c6 = data.card6_blindspots as any;
   if (c6 && (!Array.isArray(c6.interview_prep) || c6.interview_prep.length < 3)) {
     issues.push("card6_blindspots.interview_prep must have at least 3 items");
   }
-
-  // Validate card7 has advantages
   const c7 = data.card7_human as any;
   if (c7 && (!Array.isArray(c7.advantages) || c7.advantages.length < 3)) {
     issues.push("card7_human.advantages must have at least 3 items");
   }
-
-  // Validate scores are reasonable numbers
   const riskScore = Number(data.risk_score);
   if (isNaN(riskScore) || riskScore < 0 || riskScore > 100) {
     issues.push(`Invalid risk_score: ${data.risk_score}`);
   }
-
   return { valid: issues.length === 0, issues };
 }
 
 // ═══════════════════════════════════════════════════════════════
-// System prompt — expert-grade persona with guardrails
+// System prompt
 // ═══════════════════════════════════════════════════════════════
 function buildSystemPrompt(): string {
   return `You are JobBachao's career intelligence engine — a senior career strategist with 20 years of experience in Indian B2B technology hiring, compensation benchmarking, and AI disruption forecasting.
@@ -329,11 +404,15 @@ EVIDENCE RULES:
 - Interview answers must use STAR framework with the candidate's actual metrics
 - Never use phrases like "your resume shows" — state evidence directly
 
+IMPORTANT — LIVE LINKS: For every ATS score entry and every job match, include a "search_url" field with a working Naukri search URL in this format:
+https://www.naukri.com/{role-slug}-jobs-in-{city}?k={role}+{company}
+Example: https://www.naukri.com/head-of-demand-gen-jobs-in-bangalore?k=Head+of+Demand+Gen+Freshworks
+
 OUTPUT: Return ONLY a valid JSON object. No markdown fences, no commentary, no preamble. Start with {`;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// User prompt — structured analysis request with schema
+// User prompt
 // ═══════════════════════════════════════════════════════════════
 function buildUserPrompt(resumeText: string): string {
   return `Analyse this resume for the Indian job market in April 2026.
@@ -372,9 +451,9 @@ card1_risk: {
   tasks_at_risk: string[] (exactly 5 specific tasks from their resume that AI tools like Jasper/Copy.ai/Midjourney can already do),
   tasks_safe: string[] (exactly 5 specific tasks from their resume requiring human judgment, relationships, or strategic thinking),
   ats_scores: [
-    { company: string (real Indian B2B SaaS), role: string (senior title matching their profile), score: integer 40-95, color: "green"|"amber"|"red" },
-    { company: string, role: string, score: integer, color: "green"|"amber"|"red" },
-    { company: string, role: string, score: integer, color: "green"|"amber"|"red" }
+    { company: string (real Indian B2B SaaS), role: string (senior title matching their profile), score: integer 40-95, color: "green"|"amber"|"red", search_url: string (working Naukri search URL for this company+role+city) },
+    { company: string, role: string, score: integer, color: "green"|"amber"|"red", search_url: string },
+    { company: string, role: string, score: integer, color: "green"|"amber"|"red", search_url: string }
   ],
   ats_missing_keywords: string[] (exactly 5 high-value keywords missing from their resume — specific to their target roles),
   india_data_insight: string (3 sentences combining WEF data + Cloud9 survey + their specific situation)
@@ -395,79 +474,43 @@ card3_shield: {
   badge_text: string (e.g. "Top 15% for role"),
   shield_body: string (2 sentences explaining their shield strength with evidence),
   skills: [ { name: string, level: "best-in-class"|"strong"|"buildable"|"critical-gap", note: string } ] (8-12 skills extracted from resume),
-  free_resources: [ { skill: string, resource: string, url: string, cost: "Free" } ] (3-5 India-accessible resources for their gaps)
+  upgrade_path: string (2 sentences — specific recommendation based on their actual skill gaps)
 }
 
 card4_pivot: {
   headline: string, subline: string, emotion_message: string,
-  current_band: string (₹ LPA), pivot_year1: string (₹ LPA), director_band: string (₹ LPA),
   pivots: [
-    { role: string, match_pct: integer, salary_range: string, location: string, color: "navy"|"green"|"teal", match_label: string (e.g. "92% match"), is_recommended: boolean }
-  ] (exactly 3 pivot roles with realistic skill overlap),
-  pivot_explanations: [ { title: string, body: string (3-4 sentences with evidence) } ] (exactly 3 — one per pivot),
+    { role: string, salary: string (₹ LPA), match_pct: integer 50-95, why_fit: string (reference their specific experience), search_url: string (working Naukri search URL) }
+  ] (exactly 4 pivot roles with ascending salary),
   negotiation: {
-    intro: string (personalised to their profile),
-    walk_away: string (₹ LPA), accept: string (₹ LPA), open_with: string (₹ LPA), best_case: string (₹ LPA)
-  },
-  community_quote: string (relevant industry wisdom), community_quote_source: string
+    open_with: string (₹ LPA anchor), pivot_phrase: string (one-liner referencing their metrics), walk_away: string (₹ LPA floor)
+  }
 }
 
 card5_jobs: {
   headline: string, subline: string, emotion_message: string,
-  active_count: integer (realistic number 20-80), senior_count: integer, strong_match_count: integer,
+  active_count: integer, senior_count: integer, strong_match_count: integer,
   job_matches: [
     {
-      company: string (real Indian company actively hiring), role: string, location: string,
-      match_pct: integer 60-95, match_label: string (e.g. "Strong match"), match_color: "green"|"navy"|"amber",
-      salary: string (₹ LPA), company_context: string (1 sentence — why this company is relevant to their profile),
-      tags: string[] (exactly 4 skill/industry tags),
-      days_posted: integer 1-14, applicant_count: integer 20-200, is_urgent: boolean,
-      why_fit: string (1 sentence — why their specific experience makes them a strong candidate),
-      apply_evidence: string (detailed paragraph using their specific metrics and achievements that they should lead with in an application to this company)
+      company: string (real Indian company), role: string, salary: string (₹ LPA), location: string,
+      match_color: "green"|"navy"|"amber", match_label: string, why_fit: string,
+      tags: string[] (3-4 relevant tags), days_posted: integer 1-14, applicant_count: integer,
+      is_urgent: boolean, apply_evidence: string (2-3 bullet points from their resume proving fit),
+      company_context: string (1 sentence about the company's current situation),
+      search_url: string (working Naukri search URL for this role+company+city)
     }
-  ] (EXACTLY 5 items using real Indian B2B SaaS or tech companies currently hiring),
-  remote_insight: string
+  ] (exactly 5 job matches — use real Indian companies)
 }
 
 card6_blindspots: {
   headline: string, subline: string, emotion_message: string,
-  blind_spots: [
-    { number: 1, title: string, body: string (specific to their resume — what's missing and why it matters), fix: string (actionable fix in under 10 words) },
-    { number: 2, title: string, body: string, fix: string },
-    { number: 3, title: string, body: string, fix: string }
-  ],
-  interview_prep: [
-    { question: string (role-specific behavioral question), framework: string (e.g. "STAR Method"), answer: string (full answer using their actual resume achievements — 150+ words), star_labels: string[] (4 labels: Situation, Task, Action, Result) },
-    { question: string, framework: string, answer: string, star_labels: string[] },
-    { question: "What is your salary expectation?", framework: "Negotiation script — state it and stop talking", answer: string (using their calculated salary anchor), star_labels: [] },
-    { question: string, framework: string, answer: string, star_labels: string[] },
-    { question: string, framework: "Thought leadership answer", answer: string (demonstrating industry expertise), star_labels: [] }
-  ] (EXACTLY 5 items)
+  blind_spots: [ { gap: string, fix: string, resource_url: string (link to a real course/article on Coursera/LinkedIn Learning/UpGrad) } ] (exactly 4),
+  interview_prep: [ { question: string, star_answer: string (using their actual metrics in STAR format — 4-5 sentences) } ] (exactly 4)
 }
 
 card7_human: {
   headline: string, subline: string, emotion_message: string,
-  insights: string[] (EXACTLY 5 strings, each 2-3 sentences using specific resume data — not generic career advice),
-  advantages: [
-    { title: string, body: string (2-3 sentences with specific evidence), proof_label: string (one-line credential e.g. "₹3 CPL across 50L+ spend"), icon_type: "revenue"|"people"|"globe"|"shield" },
-    { title: string, body: string, proof_label: string, icon_type: string },
-    { title: string, body: string, proof_label: string, icon_type: string },
-    { title: string, body: string, proof_label: string, icon_type: string }
-  ] (EXACTLY 4 items — each must reference a quantified achievement from the resume),
-  score_tags: string[] (EXACTLY 3 short tags summarising their strengths),
-  whatsapp_message: string (Hinglish, starts with "Maine JobBachao pe apna career check kiya..."),
-  linkedin_message: string (professional English, under 200 words, references their top 2 credentials),
-  score_card_text: string (4 lines: name + score, top 2 credentials, jobbachao.com)
-}
-
-ABSOLUTE RULES:
-1. Every field must use specific data from the resume — NEVER generic copy. If the resume says "reduced CPL to ₹3", use "₹3 CPL" in multiple cards.
-2. All salary figures in ₹ LPA format
-3. job_matches must contain EXACTLY 5 items using real Indian companies
-4. interview_prep must contain EXACTLY 5 items
-5. advantages must contain EXACTLY 4 items
-6. insights must contain EXACTLY 5 strings
-7. Return ONLY the JSON object — start with { and end with }
-8. Score calibration: risk_score should be relative to 61 (India average). A senior strategist with proven metrics should be 45-55. An execution-heavy role should be 65-75.
-9. The why_fit field in job_matches is REQUIRED — it powers the clickable job links`;
+  advantages: [ { label: string, proof_label: string (specific evidence from resume), score: integer 60-98 } ] (exactly 5 — these are skills AI cannot replicate),
+  manifesto: string (3 powerful sentences about why this person matters — reference their specific achievements, not generic)
+}`;
 }
