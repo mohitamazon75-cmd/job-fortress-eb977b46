@@ -90,13 +90,15 @@ function ProximityGauge({ value }: { value: number }) {
   );
 }
 
-// ── Skill Threat Row — enriched with threat intel ────────────────────────────
+// ── Skill Threat Row — enriched with threat intel + expandable tool learning ─
 function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: number }) {
   const [expanded, setExpanded] = useState(false);
+  const [toolExpanded, setToolExpanded] = useState(false);
   const ml = monthsLabel(skill.estimatedMonths);
   const uc = urgencyConfig(ml.urgency);
   const intel = skill.threatIntel;
   const hasIntel = !!intel;
+  const toolName = intel?.threat_tool || skill.replacedBy || null;
 
   return (
     <motion.div
@@ -205,14 +207,79 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
         )}
       </AnimatePresence>
 
-      {/* Action tag - always visible */}
-      {!expanded && (
-        <div className="flex items-center gap-2 px-4 pb-3">
-          <ArrowRight className="w-3 h-3 text-primary flex-shrink-0" />
-          <p className="text-[11px] font-semibold text-primary">{skill.actionTag}</p>
-          {hasIntel && <span className="text-[9px] text-muted-foreground ml-auto">tap for details</span>}
-        </div>
-      )}
+      {/* Action tag — clickable expandable tool learning section */}
+      <div className="px-4 pb-3">
+        {toolName && skill.risk >= 40 ? (
+          <div>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setToolExpanded(!toolExpanded); }}
+              className="flex items-center gap-2 w-full text-left group hover:opacity-80 transition-opacity"
+            >
+              <ArrowRight className="w-3 h-3 text-primary flex-shrink-0" />
+              <p className="text-[11px] font-semibold text-primary">{skill.actionTag}</p>
+              <ChevronDown className={`w-3 h-3 text-primary ml-auto transition-transform ${toolExpanded ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {toolExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2 rounded-lg border border-primary/15 bg-primary/[0.03] p-3 space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                      <p className="text-xs font-bold text-foreground">Learn: {toolName}</p>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      {skill.risk >= 75
+                        ? `${toolName} is actively automating this skill. Learning it makes you the operator, not the replaced.`
+                        : `${toolName} augments this skill area. Fluency here makes you 2-3× more productive than peers who ignore it.`
+                      }
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <a
+                        href={`https://www.google.com/search?q=${encodeURIComponent(`${toolName} tutorial for ${skill.name} professionals 2026`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                      >
+                        🔍 Find tutorials
+                      </a>
+                      <a
+                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${toolName} crash course ${skill.name}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-md bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-colors"
+                      >
+                        ▶️ YouTube courses
+                      </a>
+                      <a
+                        href={`https://www.google.com/search?q=${encodeURIComponent(`${toolName} official documentation getting started`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-md bg-muted text-muted-foreground border border-border hover:bg-muted/80 transition-colors"
+                      >
+                        📖 Official docs
+                      </a>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <ArrowRight className="w-3 h-3 text-primary flex-shrink-0" />
+            <p className="text-[11px] font-semibold text-primary">{skill.actionTag}</p>
+            {hasIntel && !expanded && <span className="text-[9px] text-muted-foreground ml-auto">tap for details</span>}
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }
