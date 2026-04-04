@@ -9,7 +9,7 @@ const iconMap: Record<string, { emoji: string; bg: string; badgeBg: string; badg
   shield: { emoji: "🛡️", bg: "var(--mb-navy-tint)", badgeBg: "var(--mb-navy-tint)", badgeColor: "var(--mb-navy)" },
 };
 
-export default function Card7HumanAdvantage({ cardData, onBack }: { cardData: any; onBack: () => void }) {
+export default function Card7HumanAdvantage({ cardData, onBack, copyFallback }: { cardData: any; onBack: () => void; copyFallback?: (text: string) => void }) {
   const d = cardData.card7_human;
   const [insightIndex, setInsightIndex] = useState(0);
   const [fading, setFading] = useState(false);
@@ -25,6 +25,16 @@ export default function Card7HumanAdvantage({ cardData, onBack }: { cardData: an
   const refreshInsight = () => {
     setFading(true);
     setTimeout(() => { setInsightIndex(p => (p + 1) % 5); setFading(false); }, 220);
+  };
+
+  const handleCopy = (text: string) => {
+    if (copyFallback) {
+      copyFallback(text);
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const insights = d?.insights || [];
@@ -49,7 +59,7 @@ export default function Card7HumanAdvantage({ cardData, onBack }: { cardData: an
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, color: "var(--mb-navy)", lineHeight: 1.75, fontStyle: "italic", minHeight: 56, opacity: fading ? 0 : 1, transition: "opacity 0.22s" }}>
             {insights[insightIndex] || ""}
           </div>
-          <button onClick={refreshInsight} disabled={fading} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: "var(--mb-navy)", cursor: fading ? "default" : "pointer", padding: "7px 14px", borderRadius: 20, border: "1px solid var(--mb-navy-tint2)", background: "white", marginTop: 12 }}>
+          <button onClick={refreshInsight} disabled={fading} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, color: "var(--mb-navy)", cursor: fading ? "default" : "pointer", padding: "7px 14px", borderRadius: 20, border: "1px solid var(--mb-navy-tint2)", background: "white", marginTop: 12, minHeight: 44 }}>
             ↻ Refresh insight
           </button>
         </div>
@@ -79,10 +89,10 @@ export default function Card7HumanAdvantage({ cardData, onBack }: { cardData: an
               <span key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 20, background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}>{t}</span>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 7, justifyContent: "center", flexWrap: "wrap" }}>
-            <button onClick={() => { logEvent("whatsapp"); window.open(`https://wa.me/?text=${encodeURIComponent(d?.whatsapp_message || "")}`, "_blank"); }} style={{ background: "#25D366", color: "white", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, padding: "9px 16px", borderRadius: 20, border: "none", cursor: "pointer" }}>💬 WhatsApp</button>
-            <button onClick={() => { logEvent("linkedin"); window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://jobbachao.com")}`, "_blank"); }} style={{ background: "#0A66C2", color: "white", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, padding: "9px 16px", borderRadius: 20, border: "none", cursor: "pointer" }}>💼 LinkedIn</button>
-            <button onClick={() => { logEvent("copy"); navigator.clipboard.writeText(d?.score_card_text || ""); setCopied(true); setTimeout(() => setCopied(false), 2500); }} style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, padding: "9px 16px", borderRadius: 20, border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer" }}>{copied ? "✓ Copied!" : "Copy score card"}</button>
+          <div className="mb-share-row" style={{ display: "flex", gap: 7, justifyContent: "center", flexWrap: "wrap" }}>
+            <button onClick={() => { logEvent("whatsapp"); window.open(`https://wa.me/?text=${encodeURIComponent(d?.whatsapp_message || "")}`, "_blank"); }} style={{ background: "#25D366", color: "white", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, padding: "9px 16px", borderRadius: 20, border: "none", cursor: "pointer", minHeight: 44 }}>💬 WhatsApp</button>
+            <button onClick={() => { logEvent("linkedin"); window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://jobbachao.com")}`, "_blank"); }} style={{ background: "#0A66C2", color: "white", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, padding: "9px 16px", borderRadius: 20, border: "none", cursor: "pointer", minHeight: 44 }}>💼 LinkedIn</button>
+            <button onClick={() => { logEvent("copy"); handleCopy(d?.score_card_text || ""); }} style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, padding: "9px 16px", borderRadius: 20, border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer", minHeight: 44 }}>{copied ? "✓ Copied!" : "Copy score card"}</button>
           </div>
         </div>
 
@@ -101,6 +111,14 @@ export default function Card7HumanAdvantage({ cardData, onBack }: { cardData: an
 
         <CardNav onBack={onBack} nextLabel="Journey complete ✓" />
       </CardBody>
+
+      {/* Mobile share stack */}
+      <style>{`
+        @media (max-width: 640px) {
+          .mb-share-row { flex-direction: column !important; }
+          .mb-share-row button { width: 100% !important; justify-content: center !important; }
+        }
+      `}</style>
     </CardShell>
   );
 }
