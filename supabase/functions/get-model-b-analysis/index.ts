@@ -7,8 +7,9 @@ const corsHeaders = {
 };
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const PRIMARY_MODEL = "google/gemini-2.5-pro";
-const FALLBACK_MODEL = "google/gemini-2.5-flash";
+const PRIMARY_MODEL = "openai/gpt-5";        // Tier 1: Deepest reasoning & nuance
+const SECONDARY_MODEL = "google/gemini-3.1-pro-preview"; // Tier 2: Strong analysis  
+const FALLBACK_MODEL = "google/gemini-2.5-pro"; // Tier 3: Reliable fallback
 const MAX_RETRIES = 3;
 const AI_TIMEOUT_MS = 90_000;
 
@@ -185,7 +186,7 @@ async function processAnalysis(
   let modelUsed = PRIMARY_MODEL;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const model = attempt < 2 ? PRIMARY_MODEL : FALLBACK_MODEL;
+    const model = attempt === 0 ? PRIMARY_MODEL : attempt === 1 ? SECONDARY_MODEL : FALLBACK_MODEL;
     modelUsed = model;
 
     try {
@@ -204,7 +205,8 @@ async function processAnalysis(
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
-          temperature: 0.25,
+          // GPT-5 only supports temperature=1
+          temperature: model.includes("gpt-5") ? 1 : 0.25,
           max_tokens: 10000,
           response_format: { type: "json_object" },
         }),
@@ -404,9 +406,13 @@ EVIDENCE RULES:
 - Interview answers must use STAR framework with the candidate's actual metrics
 - Never use phrases like "your resume shows" — state evidence directly
 
-IMPORTANT — LIVE LINKS: For every ATS score entry and every job match, include a "search_url" field with a working Naukri search URL in this format:
-https://www.naukri.com/{role-slug}-jobs-in-{city}?k={role}+{company}
-Example: https://www.naukri.com/head-of-demand-gen-jobs-in-bangalore?k=Head+of+Demand+Gen+Freshworks
+IMPORTANT — LIVE LINKS: For every ATS score entry, every job match, and every pivot role, include a "search_url" field with a WORKING Naukri search URL. Use this exact format:
+https://www.naukri.com/jobs-in-{city-lowercase}?k={role-keywords-plus-separated}&experience={years}
+Examples:
+- https://www.naukri.com/jobs-in-bangalore?k=head+demand+generation&experience=10
+- https://www.naukri.com/jobs-in-mumbai?k=marketing+director+saas&experience=12
+- https://www.naukri.com/jobs-in-all-india?k=vp+marketing+b2b&experience=15
+Do NOT use role slugs in the path (like /head-of-demand-gen-jobs). Use ONLY /jobs-in-{city}?k={keywords} format.
 
 OUTPUT: Return ONLY a valid JSON object. No markdown fences, no commentary, no preamble. Start with {`;
 }

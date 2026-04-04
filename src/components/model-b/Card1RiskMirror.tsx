@@ -58,7 +58,7 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
           </div>
           <div style={{ padding: "16px 18px" }}>
             {(c1.ats_scores || []).map((s: any, i: number) => {
-              const searchUrl = s.search_url || `https://www.naukri.com/${encodeURIComponent((s.role || "").toLowerCase().replace(/\s+/g, "-"))}-jobs?k=${encodeURIComponent(`${s.role} ${s.company}`)}`;
+              const city = (s.city || "all-india").toLowerCase().replace(/\s+/g, "-"); const searchUrl = s.search_url || `https://www.naukri.com/jobs-in-${city}?k=${encodeURIComponent(`${s.role} ${s.company}`).replace(/%20/g, "+")}`;
               return (
                 <div key={i} style={{ marginBottom: i < (c1.ats_scores?.length || 0) - 1 ? 14 : 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
