@@ -54,7 +54,7 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
               <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--mb-navy)", animation: "mbPulse 2.5s infinite" }} />
               Today's human edge · 4 Apr 2026
             </div>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700, color: "var(--mb-navy)" }}>{insightIndex + 1} / 5</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700, color: "var(--mb-navy)" }}>{insightIndex + 1} / {Math.max(insights.length, 1)}</span>
           </div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, color: "var(--mb-navy)", lineHeight: 1.75, fontStyle: "italic", minHeight: 56, opacity: fading ? 0 : 1, transition: "opacity 0.22s" }}>
             {insights[insightIndex] || ""}
