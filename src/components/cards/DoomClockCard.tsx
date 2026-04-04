@@ -114,6 +114,37 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
   const [learningData, setLearningData] = useState<ToolLearningData | null>(null);
   const [learningLoading, setLearningLoading] = useState(false);
   const [learningError, setLearningError] = useState(false);
+  const ml = monthsLabel(skill.estimatedMonths);
+  const uc = urgencyConfig(ml.urgency);
+  const intel = skill.threatIntel;
+  const hasIntel = !!intel;
+  const toolName = intel?.threat_tool || skill.replacedBy || null;
+
+  const fetchLearningResources = useCallback(async () => {
+    if (!toolName || learningData) return;
+    setLearningLoading(true);
+    setLearningError(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('tool-learning-resources', {
+        body: { tool_name: toolName, skill_name: skill.name },
+      });
+      if (error) throw error;
+      setLearningData(data);
+    } catch {
+      setLearningError(true);
+    } finally {
+      setLearningLoading(false);
+    }
+  }, [toolName, skill.name, learningData]);
+
+  const handleToolExpand = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextState = !toolExpanded;
+    setToolExpanded(nextState);
+    if (nextState && !learningData && !learningLoading) {
+      fetchLearningResources();
+    }
+  }, [toolExpanded, learningData, learningLoading, fetchLearningResources]);
 
   return (
     <motion.div
