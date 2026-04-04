@@ -406,9 +406,13 @@ EVIDENCE RULES:
 - Interview answers must use STAR framework with the candidate's actual metrics
 - Never use phrases like "your resume shows" — state evidence directly
 
-IMPORTANT — LIVE LINKS: For every ATS score entry and every job match, include a "search_url" field with a working Naukri search URL in this format:
-https://www.naukri.com/{role-slug}-jobs-in-{city}?k={role}+{company}
-Example: https://www.naukri.com/head-of-demand-gen-jobs-in-bangalore?k=Head+of+Demand+Gen+Freshworks
+IMPORTANT — LIVE LINKS: For every ATS score entry, every job match, and every pivot role, include a "search_url" field with a WORKING Naukri search URL. Use this exact format:
+https://www.naukri.com/jobs-in-{city-lowercase}?k={role-keywords-plus-separated}&experience={years}
+Examples:
+- https://www.naukri.com/jobs-in-bangalore?k=head+demand+generation&experience=10
+- https://www.naukri.com/jobs-in-mumbai?k=marketing+director+saas&experience=12
+- https://www.naukri.com/jobs-in-all-india?k=vp+marketing+b2b&experience=15
+Do NOT use role slugs in the path (like /head-of-demand-gen-jobs). Use ONLY /jobs-in-{city}?k={keywords} format.
 
 OUTPUT: Return ONLY a valid JSON object. No markdown fences, no commentary, no preamble. Start with {`;
 }
