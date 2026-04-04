@@ -14,6 +14,7 @@ export const PROMPT_VERSIONS: Record<string, string> = {
   "RiskIQ:Narrative": "v1.0.0",
   "RiskIQ:SkillExtract": "v1.0.0",
   "HindiTranslate": "v1.0.0",
+  "ModelB:Analysis": "v2.0.0",
 };
 
 /**
