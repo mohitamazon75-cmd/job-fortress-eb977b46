@@ -39,7 +39,7 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
           const sel = selectedPivot === i;
           const bc = sel ? variantColor(p.color) : "var(--mb-rule)";
           const bg = sel ? pivotBg(p.color) : "var(--mb-paper)";
-          const searchUrl = p.search_url || `https://www.naukri.com/${encodeURIComponent((p.role || "").toLowerCase().replace(/\s+/g, "-"))}-jobs?k=${encodeURIComponent(p.role)}`;
+          const city = (p.location || "all-india").split(",")[0].trim().toLowerCase().replace(/\s+/g, "-"); const searchUrl = p.search_url || `https://www.naukri.com/jobs-in-${city}?k=${encodeURIComponent(p.role).replace(/%20/g, "+")}`;
           return (
             <div key={i} onClick={() => setSelectedPivot(i)} style={{ background: bg, border: `1.5px solid ${bc}`, borderRadius: 12, padding: "13px 15px", marginBottom: 8, cursor: "pointer", transition: "border-color 150ms" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 3 }}>
