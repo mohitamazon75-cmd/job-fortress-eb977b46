@@ -19,8 +19,9 @@ function useKanban() {
 /** Build a live job search URL for Naukri/LinkedIn */
 function buildJobSearchUrl(role: string, company: string, location: string, platform: "naukri" | "linkedin"): string {
   const query = `${role} ${company}`.trim();
+  const city = (location || "all-india").split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
   if (platform === "naukri") {
-    return `https://www.naukri.com/${encodeURIComponent(role.toLowerCase().replace(/\s+/g, "-"))}-jobs-in-${encodeURIComponent(location.split(",")[0].trim().toLowerCase())}?k=${encodeURIComponent(query)}`;
+    return `https://www.naukri.com/jobs-in-${city}?k=${encodeURIComponent(query).replace(/%20/g, "+")}`;
   }
   return `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}&f_TPR=r604800`;
 }
