@@ -1,11 +1,11 @@
-/* ── Model B Design Tokens ── */
+/* ── Model B Design Tokens — v2 Premium Upgrade ── */
 :root {
   --mb-ink: #0F0F0E;
-  --mb-ink2: #3A3A36;
-  --mb-ink3: #7A7870;
-  --mb-ink4: #B8B6AE;
+  --mb-ink2: #2E2E2A;
+  --mb-ink3: #6B6960;
+  --mb-ink4: #A8A69E;
   --mb-paper: #FAF9F6;
-  --mb-rule: #E5E3DC;
+  --mb-rule: #E8E6DF;
   --mb-rule2: #D0CEC5;
   --mb-navy: #1B2F55;
   --mb-navy-tint: #EEF1F8;
@@ -19,4 +19,45 @@
   --mb-teal: #0E6655;
   --mb-teal-tint: #ECF5F3;
   --mb-bg: #FAF9F6;
+
+  /* Shadows */
+  --mb-shadow-sm: 0 1px 3px rgba(15,15,14,0.04), 0 1px 2px rgba(15,15,14,0.06);
+  --mb-shadow-md: 0 4px 12px rgba(15,15,14,0.06), 0 1px 4px rgba(15,15,14,0.04);
+  --mb-shadow-lg: 0 8px 24px rgba(15,15,14,0.08), 0 2px 8px rgba(15,15,14,0.04);
+  --mb-shadow-card: 0 2px 8px rgba(15,15,14,0.05), 0 0 0 1px rgba(15,15,14,0.03);
 }
+
+/* Better font rendering */
+.mb-root {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+@keyframes mbPulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+@keyframes mbLoadBar { from { width: 0% } to { width: 100% } }
+@keyframes mbFadeIn { from { opacity:0; transform: translateY(6px) } to { opacity:1; transform: translateY(0) } }
+@keyframes mbScaleIn { from { opacity:0; transform: scale(0.96) } to { opacity:1; transform: scale(1) } }
+
+/* Card hover lift */
+.mb-card-shell {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.mb-card-shell:hover {
+  box-shadow: var(--mb-shadow-lg);
+}
+
+/* Button hover states */
+.mb-btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+.mb-btn-secondary:hover {
+  background: var(--mb-paper) !important;
+  border-color: var(--mb-rule2) !important;
+}
+
+/* Scrollbar styling */
+.mb-root ::-webkit-scrollbar { width: 4px; height: 4px; }
+.mb-root ::-webkit-scrollbar-track { background: transparent; }
+.mb-root ::-webkit-scrollbar-thumb { background: var(--mb-rule2); border-radius: 2px; }
