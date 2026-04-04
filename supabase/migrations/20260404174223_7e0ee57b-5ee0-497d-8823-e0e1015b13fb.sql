@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS model_b_results_analysis_id_unique ON public.model_b_results (analysis_id);
