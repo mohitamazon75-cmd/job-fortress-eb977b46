@@ -763,8 +763,12 @@ Deno.serve(async (req) => {
     }
 
     if (!agent1) {
-      agent1 = await callAgent(LOVABLE_API_KEY, "Agent1:Profiler", AGENT_1_PROFILER,
+      const profilerResult = await callAgentWithFallback(LOVABLE_API_KEY, "Agent1:Profiler", AGENT_1_PROFILER,
         agent1UserPrompt, PRO_MODEL, 0.1, 30_000);
+      agent1 = profilerResult.data;
+      if (profilerResult.model_used !== "none") {
+        console.log(`[Agent1:Profiler] Completed on ${profilerResult.model_used.split("/").pop()} (${profilerResult.latency_ms}ms, chain: ${profilerResult.fallback_chain.map(m => m.split("/").pop()).join(" → ")})`);
+      }
       if (!agent1) {
         console.error("[Agent1:Profiler] Profiler failed — cannot produce reliable report");
         await updateScan(supabase, scanId, null, null, null);
