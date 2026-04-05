@@ -391,9 +391,9 @@ export default function ResultsModelB() {
             </div>
             {/* Progress bar */}
             <div style={{ maxWidth: 320, margin: "0 auto", height: 4, background: "var(--mb-rule)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: 4, background: "var(--mb-navy)", borderRadius: 2, width: "0%", animation: "mbLoadBar 4s ease-out forwards" }} />
+              <div style={{ height: 4, background: "var(--mb-navy)", borderRadius: 2, width: "0%", animation: "mbLoadBar 45s cubic-bezier(0.1, 0.6, 0.3, 1) forwards" }} />
             </div>
-            <style>{`@keyframes mbLoadBar { from { width: 0% } to { width: 100% } }`}</style>
+            <style>{`@keyframes mbLoadBar { from { width: 0% } 50% { width: 65% } 80% { width: 85% } to { width: 96% } }`}</style>
           </div>
         )}
 
