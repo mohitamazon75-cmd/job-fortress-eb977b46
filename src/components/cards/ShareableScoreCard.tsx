@@ -126,7 +126,7 @@ function CaptureTarget({
       ref={innerRef as React.RefObject<HTMLDivElement>}
       style={{
         position: 'absolute', left: -9999, top: -9999,
-        width: 500,
+        width: 560,
         background: C.bg,
         fontFamily: FONT_BODY,
         boxSizing: 'border-box',
@@ -136,22 +136,22 @@ function CaptureTarget({
     >
       {/* ── 1. Top strip ── */}
       <div style={{
-        background: C.dark, padding: '10px 20px',
+        background: C.dark, padding: '12px 24px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <span style={{
-          fontFamily: FONT_MONO, fontSize: 10, fontWeight: 500,
+          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500,
           color: '#888', textTransform: 'uppercase', letterSpacing: '0.15em',
         }}>
           JobBachao · Career Risk Report
         </span>
         <span style={{
-          fontFamily: FONT_MONO, fontSize: 10, fontWeight: 500,
+          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500,
           color: C.danger, textTransform: 'uppercase', letterSpacing: '0.1em',
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
           <span style={{
-            width: 6, height: 6, borderRadius: '50%',
+            width: 7, height: 7, borderRadius: '50%',
             background: C.danger, display: 'inline-block',
             boxShadow: `0 0 6px ${C.danger}`,
           }} />
@@ -161,25 +161,25 @@ function CaptureTarget({
 
       {/* ── 2. Headline block ── */}
       <div style={{
-        background: C.dark, padding: '20px 20px 22px',
+        background: C.dark, padding: '24px 24px 26px',
         borderBottom: `3px solid ${C.danger}`,
       }}>
         <p style={{
-          fontFamily: FONT_MONO, fontSize: 9, fontWeight: 500,
+          fontFamily: FONT_MONO, fontSize: 10, fontWeight: 500,
           color: '#666', textTransform: 'uppercase', letterSpacing: '0.2em',
-          margin: '0 0 10px',
+          margin: '0 0 12px',
         }}>
           AI Displacement Alert
         </p>
         <p style={{
-          fontFamily: FONT_HEADLINE, fontSize: 26, fontWeight: 900,
-          color: C.white, lineHeight: 1.25, margin: '0 0 4px',
+          fontFamily: FONT_HEADLINE, fontSize: 28, fontWeight: 900,
+          color: C.white, lineHeight: 1.3, margin: '0 0 4px',
         }}>
           Your boss already knows<br />your job is disappearing.<br />
           <span style={{ fontStyle: 'italic', color: C.danger }}>Do you?</span>
         </p>
         <p style={{
-          fontSize: 12.5, color: '#999', margin: '12px 0 0', lineHeight: 1.5,
+          fontSize: 13, color: '#999', margin: '14px 0 0', lineHeight: 1.5,
         }}>
           I just scanned my resume.{' '}
           <span style={{ color: C.white, fontWeight: 700 }}>
@@ -191,40 +191,42 @@ function CaptureTarget({
 
       {/* ── 3. Job title row ── */}
       <div style={{
-        background: C.white, padding: '20px',
+        background: C.white, padding: '20px 24px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        gap: 16,
       }}>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
-            fontFamily: FONT_HEADLINE, fontSize: 20, fontWeight: 900,
-            color: C.text, margin: 0, lineHeight: 1.3,
+            fontFamily: FONT_HEADLINE, fontSize: 19, fontWeight: 900,
+            color: C.text, margin: 0, lineHeight: 1.35,
+            wordBreak: 'break-word',
           }}>
             {role}
           </p>
           <p style={{
-            fontSize: 12, color: C.muted, margin: '3px 0 0',
+            fontSize: 13, color: C.muted, margin: '4px 0 0',
           }}>
             {industry}{yearsExp ? ` · ${yearsExp}` : ''}
           </p>
         </div>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', flexShrink: 0 }}>
           <div style={{
-            width: 68, height: 68, borderRadius: '50%',
-            border: `3px solid ${C.danger}`,
+            width: 72, height: 72, borderRadius: '50%',
+            border: `3px solid ${scoreColor}`,
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{
-              fontFamily: FONT_HEADLINE, fontSize: 28, fontWeight: 900,
-              color: C.danger, lineHeight: 1,
+              fontFamily: FONT_HEADLINE, fontSize: 30, fontWeight: 900,
+              color: scoreColor, lineHeight: 1,
             }}>{score}</span>
-            <span style={{ fontSize: 9, color: C.muted, marginTop: 1 }}>/100</span>
+            <span style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>/100</span>
           </div>
           <div style={{
-            marginTop: 5, fontFamily: FONT_MONO, fontSize: 8,
-            color: C.danger, fontWeight: 500, letterSpacing: '0.1em',
-            background: `${C.danger}15`, padding: '2px 8px', borderRadius: 4,
-            textTransform: 'uppercase',
+            marginTop: 6, fontFamily: FONT_MONO, fontSize: 9,
+            color: scoreColor, fontWeight: 600, letterSpacing: '0.08em',
+            background: `${scoreColor}15`, padding: '3px 10px', borderRadius: 4,
+            textTransform: 'uppercase', whiteSpace: 'nowrap',
           }}>
             {scoreBadge}
           </div>
@@ -233,12 +235,12 @@ function CaptureTarget({
 
       {/* ── 4. Verdict box ── */}
       <div style={{
-        margin: '0 20px', padding: '14px 16px',
+        margin: '0 24px', padding: '16px 18px',
         background: C.verdictBg, borderLeft: `3px solid ${C.danger}`,
         borderRadius: '0 8px 8px 0',
       }}>
         <p style={{
-          fontSize: 12.5, color: C.text, lineHeight: 1.55, margin: 0,
+          fontSize: 13.5, color: C.text, lineHeight: 1.6, margin: 0,
         }}>
           <strong>{automatedTasks} of your {totalTasks || 5} core tasks will be fully automated by {automationYear}.</strong>{' '}
           The skills keeping you employed right now are the exact ones AI will master first.
@@ -247,7 +249,7 @@ function CaptureTarget({
 
       {/* ── 5. Stats row ── */}
       <div style={{
-        display: 'flex', gap: 0, margin: '16px 20px',
+        display: 'flex', gap: 0, margin: '18px 24px',
         background: C.warmGrey, borderRadius: 10, overflow: 'hidden',
         border: `1px solid ${C.border}`,
       }}>
@@ -257,22 +259,22 @@ function CaptureTarget({
           { label: 'SALARY RISK', value: salaryRiskLPA, sub: 'IMPACT ANNUALLY', color: C.warning },
         ].map((stat, i) => (
           <div key={i} style={{
-            flex: 1, padding: '14px 12px', textAlign: 'center',
+            flex: 1, padding: '16px 10px', textAlign: 'center',
             borderRight: i < 2 ? `1px solid ${C.border}` : 'none',
           }}>
             <p style={{
-              fontFamily: FONT_MONO, fontSize: 8, fontWeight: 500,
-              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.15em',
-              margin: '0 0 6px',
+              fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
+              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em',
+              margin: '0 0 8px',
             }}>{stat.label}</p>
             <p style={{
-              fontFamily: FONT_HEADLINE, fontSize: 24, fontWeight: 900,
+              fontFamily: FONT_HEADLINE, fontSize: 26, fontWeight: 900,
               color: stat.color, margin: 0, lineHeight: 1,
             }}>{stat.value}</p>
             <p style={{
-              fontFamily: FONT_MONO, fontSize: 7, fontWeight: 500,
-              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em',
-              margin: '4px 0 0',
+              fontFamily: FONT_MONO, fontSize: 8, fontWeight: 500,
+              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em',
+              margin: '6px 0 0',
             }}>{stat.sub}</p>
           </div>
         ))}
@@ -280,34 +282,34 @@ function CaptureTarget({
 
       {/* ── 6. Tasks AI is eating ── */}
       {taskRows.length > 0 && (
-        <div style={{ padding: '0 20px 12px' }}>
+        <div style={{ padding: '0 24px 14px' }}>
           <p style={{
-            fontFamily: FONT_MONO, fontSize: 9, fontWeight: 500,
+            fontFamily: FONT_MONO, fontSize: 10, fontWeight: 600,
             color: C.muted, textTransform: 'uppercase', letterSpacing: '0.18em',
-            margin: '0 0 10px',
+            margin: '0 0 12px',
           }}>
             Tasks AI is eating right now
           </p>
           {taskRows.map((task, i) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: 8,
+              marginBottom: 10, gap: 12,
             }}>
-              <span style={{ fontSize: 12, color: C.text, fontWeight: 500, flex: 1 }}>
+              <span style={{ fontSize: 13, color: C.text, fontWeight: 500, flex: 1, minWidth: 0 }}>
                 {task.name}
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                 <div style={{
-                  width: 56, height: 6, background: '#E8E4DD', borderRadius: 3, overflow: 'hidden',
+                  width: 64, height: 7, background: '#E8E4DD', borderRadius: 4, overflow: 'hidden',
                 }}>
                   <div style={{
                     width: `${task.pct}%`, height: '100%',
-                    background: C.danger, borderRadius: 3,
+                    background: C.danger, borderRadius: 4,
                   }} />
                 </div>
                 <span style={{
-                  fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500,
-                  color: C.danger, minWidth: 30, textAlign: 'right',
+                  fontFamily: FONT_MONO, fontSize: 12, fontWeight: 600,
+                  color: C.danger, minWidth: 34, textAlign: 'right',
                 }}>{task.pct}%</span>
               </div>
             </div>
@@ -317,53 +319,53 @@ function CaptureTarget({
 
       {/* ── 7. Countdown block ── */}
       <div style={{
-        background: C.dark, margin: '4px 20px 16px', borderRadius: 10,
-        padding: '16px 20px',
+        background: C.dark, margin: '4px 24px 18px', borderRadius: 10,
+        padding: '18px 24px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div>
           <p style={{
-            fontFamily: FONT_MONO, fontSize: 8, fontWeight: 500,
+            fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
             color: '#666', textTransform: 'uppercase', letterSpacing: '0.15em',
-            margin: '0 0 4px',
+            margin: '0 0 6px',
           }}>Disruption Window</p>
           <p style={{
-            fontSize: 12, color: '#aaa', margin: 0, lineHeight: 1.4,
-            maxWidth: 240,
+            fontSize: 13, color: '#aaa', margin: 0, lineHeight: 1.5,
+            maxWidth: 260,
           }}>
             Before mass displacement<br />hits this role in India
           </p>
         </div>
         <div style={{ textAlign: 'center' }}>
           <span style={{
-            fontFamily: FONT_HEADLINE, fontSize: 44, fontWeight: 900,
+            fontFamily: FONT_HEADLINE, fontSize: 48, fontWeight: 900,
             color: C.countdown, lineHeight: 1,
           }}>{monthsRemaining}</span>
           <p style={{
-            fontFamily: FONT_MONO, fontSize: 8, fontWeight: 500,
+            fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
             color: C.countdown, textTransform: 'uppercase', letterSpacing: '0.15em',
-            margin: '2px 0 0', opacity: 0.8,
+            margin: '4px 0 0', opacity: 0.8,
           }}>Months Left</p>
         </div>
       </div>
 
       {/* ── 8. Skill sections ── */}
       <div style={{
-        display: 'flex', gap: 16, padding: '0 20px 14px',
+        display: 'flex', gap: 20, padding: '0 24px 16px',
       }}>
         {moatSkills.length > 0 && (
           <div style={{ flex: 1 }}>
             <p style={{
-              fontFamily: FONT_MONO, fontSize: 8, fontWeight: 500,
+              fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
               color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em',
-              margin: '0 0 8px',
+              margin: '0 0 10px',
             }}>Your moat — what AI can't replace</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
               {moatSkills.map(s => (
                 <span key={s} style={{
                   background: `${C.safe}15`, border: `1px solid ${C.safe}40`,
-                  color: C.safe, borderRadius: 6, padding: '3px 10px',
-                  fontSize: 10, fontWeight: 600,
+                  color: C.safe, borderRadius: 6, padding: '4px 12px',
+                  fontSize: 11, fontWeight: 600,
                 }}>{s}</span>
               ))}
             </div>
@@ -372,16 +374,16 @@ function CaptureTarget({
         {buildSkills.length > 0 && (
           <div style={{ flex: 1 }}>
             <p style={{
-              fontFamily: FONT_MONO, fontSize: 8, fontWeight: 500,
+              fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
               color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em',
-              margin: '0 0 8px',
+              margin: '0 0 10px',
             }}>Build these before it's too late</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
               {buildSkills.map(s => (
                 <span key={s} style={{
                   background: `${C.warning}15`, border: `1px solid ${C.warning}40`,
-                  color: C.warning, borderRadius: 6, padding: '3px 10px',
-                  fontSize: 10, fontWeight: 600,
+                  color: C.warning, borderRadius: 6, padding: '4px 12px',
+                  fontSize: 11, fontWeight: 600,
                 }}>{s}</span>
               ))}
             </div>
@@ -391,12 +393,12 @@ function CaptureTarget({
 
       {/* ── 9. Percentile bar ── */}
       <div style={{
-        margin: '0 20px 14px', padding: '12px 16px',
+        margin: '0 24px 16px', padding: '14px 18px',
         background: `${C.safe}12`, borderRadius: 8,
         border: `1px solid ${C.safe}30`,
       }}>
         <p style={{
-          fontSize: 12, color: C.text, lineHeight: 1.5, margin: 0,
+          fontSize: 13, color: C.text, lineHeight: 1.6, margin: 0,
         }}>
           <strong style={{ color: C.safe }}>You're safer than {peerPercentile}% of Indian {role.toLowerCase()} professionals.</strong>{' '}
           <span style={{ color: C.muted }}>But peers who've upskilled in AI are pulling ahead — fast.</span>
@@ -405,16 +407,16 @@ function CaptureTarget({
 
       {/* ── 10. Footer ── */}
       <div style={{
-        padding: '12px 20px', borderTop: `1px solid ${C.border}`,
+        padding: '14px 24px', borderTop: `1px solid ${C.border}`,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <span style={{
-          fontFamily: FONT_MONO, fontSize: 10, color: C.muted,
+          fontFamily: FONT_MONO, fontSize: 11, color: C.muted,
         }}>
           jobbachao.com · {date}
         </span>
         <span style={{
-          fontSize: 11, color: C.danger, fontStyle: 'italic', fontWeight: 600,
+          fontSize: 12, color: C.danger, fontStyle: 'italic', fontWeight: 600,
         }}>
           Can your friends beat your score?
         </span>
