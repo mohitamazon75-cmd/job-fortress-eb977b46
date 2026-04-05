@@ -37,8 +37,8 @@ export interface TavilyResponse {
  */
 export async function tavilySearch(
   options: TavilySearchOptions,
-  timeoutMs = 30000,
-  maxRetries = 3
+  timeoutMs = 20000,
+  maxRetries = 2
 ): Promise<TavilyResponse | null> {
   const TAVILY_API_KEY = Deno.env.get("TAVILY_API_KEY");
   if (!TAVILY_API_KEY) {
