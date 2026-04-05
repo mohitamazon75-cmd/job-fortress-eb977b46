@@ -445,6 +445,21 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
                   <Users className="w-3 h-3" />
                   2,847 professionals scanned their careers this week
                 </motion.p>
+
+                {/* Continue CTA */}
+                {onComplete && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 2 }}
+                    className="pt-4"
+                  >
+                    <Button onClick={onComplete} size="lg" className="w-full gap-2 text-base font-bold">
+                      Complete Your Report
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </motion.div>
+                )}
               </div>
             </CardContent>
           </Card>
