@@ -670,7 +670,7 @@ const Index = () => {
               <MarketRadarWidget
                 role={scanReport.role || 'Professional'}
                 industry={scanReport.industry || 'Technology'}
-                skills={(scanReport.survivability?.top_skills || scanReport.moat?.human_edge_skills || []).slice(0, 8)}
+                skills={(scanReport.all_skills || scanReport.moat_skills || []).slice(0, 8)}
                 country={country || 'India'}
                 onComplete={handleMarketRadarComplete}
               />
