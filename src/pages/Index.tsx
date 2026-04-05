@@ -46,6 +46,7 @@ const AIDossierReveal = lazyWithRetry(() => import('@/components/AIDossierReveal
 const MoneyShotCard = lazyWithRetry(() => import('@/components/MoneyShotCard'));
 const InsightCards = lazyWithRetry(() => import('@/components/InsightCards'));
 const SideHustleGenerator = lazyWithRetry(() => import('@/components/SideHustleGenerator'));
+const StartupAutopsyPage = lazyWithRetry(() => import('@/components/StartupAutopsyPage'));
 const ThankYouFooter = lazyWithRetry(() => import('@/components/ThankYouFooter'));
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport, createScan, uploadResume, triggerProcessScan, subscribeScanStatus } from '@/lib/scan-engine';
@@ -62,7 +63,7 @@ function createScanCheckClient(accessToken: string) {
   });
 }
 
-type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'thank-you' | 'error';
+type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'thank-you' | 'error';
 
 // FIX 4 (LOW): Named interface for ScanRow instead of inline type
 interface ScanRow {
@@ -522,7 +523,8 @@ const Index = () => {
     setPhase('insight-cards');
   }, []);
   const handleInsightCardsComplete = useCallback(() => { setPhase('crisis-center'); }, []);
-  const handleCrisisCenterComplete = useCallback(() => { setPhase('thank-you'); }, []);
+  const handleCrisisCenterComplete = useCallback(() => { setPhase('startup-autopsy'); }, []);
+  const handleAutopsyComplete = useCallback(() => { setPhase('thank-you'); }, []);
 
   const handleReset = () => {
     cleanupRef.current?.();
@@ -647,6 +649,13 @@ const Index = () => {
       ))}
       {phase === 'crisis-center' && (scanReport ? (
         <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><SideHustleGenerator report={scanReport} onComplete={handleCrisisCenterComplete} country={country} /></Suspense>
+      ) : (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <p className="text-muted-foreground">Loading results...</p>
+        </div>
+      ))}
+      {phase === 'startup-autopsy' && (scanReport ? (
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><StartupAutopsyPage report={scanReport} onComplete={handleAutopsyComplete} country={country} /></Suspense>
       ) : (
         <div className="min-h-screen bg-background flex items-center justify-center">
           <p className="text-muted-foreground">Loading results...</p>

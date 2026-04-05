@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ChevronLeft, ChevronRight, Shield, Rocket, FileText, Briefcase, DollarSign, Brain, Search, Clock, Network, Shuffle, Target, Calendar, Users, Swords, Skull, Flame, Trophy, TrendingUp, type LucideIcon } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Shield, Rocket, FileText, Briefcase, DollarSign, Brain, Search, Clock, Network, Shuffle, Target, Calendar, Users, Swords, Skull, Flame, Trophy, TrendingUp, Radar, type LucideIcon } from 'lucide-react';
 import { type ScanReport, normalizeTools } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
 import { inferSeniorityTier, isExecutiveTier } from '@/lib/seniority-utils';
@@ -30,6 +30,7 @@ import ProUpgradeModal from '@/components/ProUpgradeModal';
 // DiagnosticLaunchCard removed — replaced with DefensePlanCard to keep users in-flow
 
 const CareerGenomeDebate = React.lazy(() => import('@/components/dashboard/CareerGenomeDebate'));
+const MarketRadarWidget = React.lazy(() => import('@/components/MarketRadarWidget'));
 
 interface InsightCardsProps {
   report: ScanReport;
@@ -236,6 +237,8 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
     ...(!isSafeZone ? [{ id: 'obituary', title: 'Career Obituary', subtitle: "Your role's darkly funny newspaper death notice", Icon: Skull, iconColor: 'text-muted-foreground' }] : []),
     // 10. Technical appendix — Knowledge Graph peer map (last; dense/technical, rewards curious users)
     { id: 'kg-peer', title: 'Your Intelligence Map', subtitle: `${report.computation_method?.kg_skills_matched ?? 'N'} skills mapped in our Knowledge Graph`, Icon: Network, iconColor: 'text-prophet-cyan' },
+    // 11. Market Radar — live personalized market intelligence digest
+    { id: 'market-radar', title: 'Live Market Radar', subtitle: 'AI tools, hiring shifts & salary trends — personalized to your role', Icon: Radar, iconColor: 'text-primary' },
   ];
 
   const CARDS = deepMode ? [...ORDERED_CORE_CARDS, ...DEEP_CARDS] : ORDERED_CORE_CARDS;
@@ -434,6 +437,18 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
                     report={report}
                     onUpgrade={(tier) => { setProModalDefaultTier(tier ?? 'year'); setShowProModal(true); }}
                   />
+                </ErrorBoundary>
+               )}
+              {card.id === 'market-radar' && (
+                <ErrorBoundary>
+                  <React.Suspense fallback={<div className="animate-pulse h-40 rounded-xl bg-muted" />}>
+                    <MarketRadarWidget
+                      role={report.role || 'Professional'}
+                      industry={report.industry || 'Technology'}
+                      skills={[...(report.all_skills || []), ...(report.moat_skills || [])].filter(Boolean)}
+                      country={report.country}
+                    />
+                  </React.Suspense>
                 </ErrorBoundary>
               )}
             </motion.div>
