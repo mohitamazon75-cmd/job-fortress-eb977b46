@@ -663,6 +663,21 @@ const Index = () => {
           <p className="text-muted-foreground">Loading results...</p>
         </div>
       ))}
+      {phase === 'market-radar' && scanReport && (
+        <div className="min-h-screen bg-background">
+          <div className="max-w-3xl mx-auto px-4 py-12 space-y-6">
+            <Suspense fallback={<div className="animate-pulse h-40 rounded-xl bg-muted" />}>
+              <MarketRadarWidget
+                role={scanReport.role || 'Professional'}
+                industry={scanReport.industry || 'Technology'}
+                skills={(scanReport.survivability?.top_skills || scanReport.moat?.human_edge_skills || []).slice(0, 8)}
+                country={country || 'India'}
+                onComplete={handleMarketRadarComplete}
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
       {phase === 'thank-you' && (
         <div className="min-h-screen bg-background">
           <div className="max-w-lg mx-auto px-4 py-12">
