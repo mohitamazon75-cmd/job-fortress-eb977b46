@@ -9,6 +9,9 @@ import RescanDetector from '@/components/RescanDetector';
 import RateLimitUpsell from '@/components/RateLimitUpsell';
 import GoalCaptureModal, { type ScanGoals } from '@/components/GoalCaptureModal';
 import OnboardingFlow from '@/components/OnboardingFlow';
+import StartupAutopsyPage from '@/components/StartupAutopsyPage';
+import MarketRadarWidget from '@/components/MarketRadarWidget';
+import ThankYouFooter from '@/components/ThankYouFooter';
 import { useAuth } from '@/hooks/useAuth';
 
 // Sprint 8: Lazy-load heavy components with one-time retry for stale chunk errors
@@ -46,9 +49,6 @@ const AIDossierReveal = lazyWithRetry(() => import('@/components/AIDossierReveal
 const MoneyShotCard = lazyWithRetry(() => import('@/components/MoneyShotCard'));
 const InsightCards = lazyWithRetry(() => import('@/components/InsightCards'));
 const SideHustleGenerator = lazyWithRetry(() => import('@/components/SideHustleGenerator'));
-const StartupAutopsyPage = lazyWithRetry(() => import('@/components/StartupAutopsyPage'));
-const MarketRadarWidget = lazyWithRetry(() => import('@/components/MarketRadarWidget'));
-const ThankYouFooter = lazyWithRetry(() => import('@/components/ThankYouFooter'));
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport, createScan, uploadResume, triggerProcessScan, subscribeScanStatus } from '@/lib/scan-engine';
 import { createClient } from '@supabase/supabase-js';
