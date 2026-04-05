@@ -156,7 +156,7 @@ export default function ResultsModelB() {
 
   // Poll every 3s until result is ready
   const pollForResult = useCallback(async (uid: string | null) => {
-    const MAX_POLLS = 60; // 3 minutes max
+    const MAX_POLLS = 40; // ~2 minutes max
     let polls = 0;
 
     const poll = async () => {

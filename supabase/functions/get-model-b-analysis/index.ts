@@ -7,11 +7,11 @@ const corsHeaders = {
 };
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const PRIMARY_MODEL = "openai/gpt-5";
-const SECONDARY_MODEL = "google/gemini-3.1-pro-preview";
+const PRIMARY_MODEL = "google/gemini-3-flash-preview";
+const SECONDARY_MODEL = "google/gemini-2.5-flash";
 const FALLBACK_MODEL = "google/gemini-2.5-pro";
 const MAX_RETRIES = 3;
-const AI_TIMEOUT_MS = 90_000;
+const AI_TIMEOUT_MS = 45_000;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -196,15 +196,14 @@ async function processAnalysis(
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: isGpt ? 1 : 0.25,
+        temperature: 0.25,
+        max_tokens: 12000,
       };
 
-      // GPT-5 requires max_completion_tokens; Gemini uses max_tokens
       if (isGpt) {
+        delete requestBody.max_tokens;
         requestBody.max_completion_tokens = 12000;
-      } else {
-        requestBody.max_tokens = 12000;
-        requestBody.generationConfig = { responseMimeType: "application/json" };
+        requestBody.temperature = 1;
       }
       requestBody.response_format = { type: "json_object" };
 
