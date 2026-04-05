@@ -226,7 +226,7 @@ export default function ResultsModelB() {
     }
     loadingIntervalRef.current = setInterval(() => {
       setLoadingMsg(p => (p + 1) % LOADING_MESSAGES.length);
-    }, 500);
+    }, 3500);
     return () => { if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current); };
   }, [loading]);
 
