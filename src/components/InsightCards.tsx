@@ -438,6 +438,18 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
                     onUpgrade={(tier) => { setProModalDefaultTier(tier ?? 'year'); setShowProModal(true); }}
                   />
                 </ErrorBoundary>
+               )}
+              {card.id === 'market-radar' && (
+                <ErrorBoundary>
+                  <React.Suspense fallback={<div className="animate-pulse h-40 rounded-xl bg-muted" />}>
+                    <MarketRadarWidget
+                      role={report.role || 'Professional'}
+                      industry={report.industry || 'Technology'}
+                      skills={(report.skills || []).map((s: any) => typeof s === 'string' ? s : s.name || '').filter(Boolean)}
+                      country={report.country}
+                    />
+                  </React.Suspense>
+                </ErrorBoundary>
               )}
             </motion.div>
           </AnimatePresence>
