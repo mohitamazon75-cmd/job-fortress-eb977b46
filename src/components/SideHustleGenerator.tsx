@@ -254,428 +254,479 @@ function IdeaCard({ idea, index }: { idea: SideHustleIdea; index: number }) {
 
   const confidenceColor = idea.confidenceScore >= 80 ? 'text-emerald-600' : idea.confidenceScore >= 65 ? 'text-amber-600' : 'text-rose-600';
 
+  const isMindBending = (idea as any)._isMindBending;
+  const isWildcard = (idea as any)._isWildcard;
+
+  const cardAccent = isMindBending
+    ? 'from-violet-500 via-fuchsia-500 to-purple-600'
+    : isWildcard
+    ? 'from-amber-400 via-orange-500 to-amber-600'
+    : index === 0
+    ? 'from-primary via-blue-500 to-indigo-600'
+    : 'from-slate-400 via-slate-500 to-slate-600';
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.15 }}
+      initial={{ opacity: 0, y: 30, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: index * 0.18, type: 'spring', stiffness: 100 }}
     >
-      <Card className={`border shadow-sm hover:shadow-md transition-shadow overflow-hidden ${
-        (idea as any)._isMindBending ? 'border-violet-400/60 bg-gradient-to-br from-violet-50/40 via-fuchsia-50/20 to-background' :
-        (idea as any)._isWildcard ? 'border-amber-300/60 bg-gradient-to-br from-amber-50/30 to-background' : 'border-border/60'
-      }`}>
-        {/* Header */}
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1">
-              <span className="text-3xl flex-shrink-0">{idea.emoji}</span>
-              <div className="min-w-0">
-                <CardTitle className="text-lg leading-tight">{idea.ideaName}</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">{idea.oneLineThesis}</p>
+      <div className="relative group">
+        {/* Glow effect on hover */}
+        <div className={`absolute -inset-0.5 bg-gradient-to-r ${cardAccent} rounded-2xl blur-sm opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
+        
+        <Card className={`relative border-0 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden bg-card ${
+          isMindBending ? 'ring-1 ring-violet-300/40' :
+          isWildcard ? 'ring-1 ring-amber-300/40' : 'ring-1 ring-border/40'
+        }`}>
+          {/* Top accent gradient bar */}
+          <div className={`h-1 bg-gradient-to-r ${cardAccent}`} />
+
+          {/* Header */}
+          <CardHeader className="pb-2 pt-5 px-5 sm:px-6">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3.5 flex-1">
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cardAccent} flex items-center justify-center text-white text-2xl flex-shrink-0 shadow-md`}>
+                  {idea.emoji}
+                </div>
+                <div className="min-w-0 pt-0.5">
+                  <CardTitle className="text-lg sm:text-xl font-bold leading-tight tracking-tight">{idea.ideaName}</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{idea.oneLineThesis}</p>
+                </div>
+              </div>
+              {isMindBending ? (
+                <Badge className="flex-shrink-0 text-xs bg-gradient-to-r from-violet-100 to-fuchsia-100 text-violet-800 border-violet-300/50 hover:bg-violet-200 shadow-sm">
+                  🧠 Mind-Bending
+                </Badge>
+              ) : isWildcard ? (
+                <Badge className="flex-shrink-0 text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 border-amber-300/50 hover:bg-amber-200 shadow-sm">
+                  🎲 Lateral Play
+                </Badge>
+              ) : (
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br ${cardAccent} flex items-center justify-center text-white text-xs font-bold shadow-sm`}>
+                  #{index + 1}
+                </div>
+              )}
+            </div>
+
+            {/* Quick Stats Row */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Badge className="text-xs font-semibold bg-secondary/80 text-secondary-foreground border-0 shadow-sm">
+                {modelLabels[idea.businessModel] || idea.businessModel}
+              </Badge>
+              <Badge className={`text-xs font-medium border-0 shadow-sm ${diff.color}`}>
+                {diff.label}
+              </Badge>
+              <Badge className={`text-xs font-bold border-0 shadow-sm bg-white/80 ${confidenceColor}`}>
+                {idea.confidenceScore}% match
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-5 pt-2 px-5 sm:px-6 pb-5">
+            {/* Earnings Highlight — Hero Section */}
+            <div className="relative overflow-hidden rounded-xl border border-primary/15 bg-gradient-to-br from-primary/[0.06] via-accent/[0.04] to-primary/[0.02]">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
+              <div className="relative p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center">
+                    <DollarSign className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Monthly Earnings Potential</span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
+                    {formatCurrency(idea.monthlyEarnings.realistic, idea.monthlyEarnings.currency)}
+                  </span>
+                  <span className="text-sm text-muted-foreground font-medium">/month realistic</span>
+                </div>
+                <div className="flex gap-6 mt-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    Conservative: {formatCurrency(idea.monthlyEarnings.conservative, idea.monthlyEarnings.currency)}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    Upside: {formatCurrency(idea.monthlyEarnings.upside, idea.monthlyEarnings.currency)}
+                  </span>
+                </div>
               </div>
             </div>
-            {(idea as any)._isMindBending ? (
-              <Badge className="flex-shrink-0 text-xs bg-violet-100 text-violet-800 border-violet-300 hover:bg-violet-200">
-                🧠 Mind-Bending
-              </Badge>
-            ) : (idea as any)._isWildcard ? (
-              <Badge className="flex-shrink-0 text-xs bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200">
-                🎲 Lateral Play
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="flex-shrink-0 text-xs">
-                #{index + 1}
-              </Badge>
-            )}
-          </div>
 
-          {/* Quick Stats Row */}
-          <div className="flex flex-wrap gap-2 mt-3">
-            <Badge variant="secondary" className="text-xs font-medium">
-              {modelLabels[idea.businessModel] || idea.businessModel}
-            </Badge>
-            <Badge variant="outline" className={`text-xs ${diff.color}`}>
-              {diff.label}
-            </Badge>
-            <Badge variant="outline" className={`text-xs ${confidenceColor} border-current/20`}>
-              {idea.confidenceScore}% match
-            </Badge>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4 pt-0">
-          {/* Earnings Highlight */}
-          <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl p-4 border border-primary/10">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="w-4 h-4 text-primary" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Monthly Earnings Potential</span>
-            </div>
-            <div className="flex items-baseline gap-3">
-              <span className="text-2xl font-bold text-foreground">
-                {formatCurrency(idea.monthlyEarnings.realistic, idea.monthlyEarnings.currency)}
-              </span>
-              <span className="text-sm text-muted-foreground">/month realistic</span>
-            </div>
-            <div className="flex gap-4 mt-1.5 text-xs text-muted-foreground">
-              <span>Conservative: {formatCurrency(idea.monthlyEarnings.conservative, idea.monthlyEarnings.currency)}</span>
-              <span>Upside: {formatCurrency(idea.monthlyEarnings.upside, idea.monthlyEarnings.currency)}</span>
-            </div>
-          </div>
-
-          {/* Quick Info Grid */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-2.5 rounded-lg bg-secondary/50">
-              <Clock className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
-              <p className="text-xs font-medium text-foreground">{idea.timeToFirstRevenue}</p>
-              <p className="text-[10px] text-muted-foreground">First Revenue</p>
-            </div>
-            <div className="text-center p-2.5 rounded-lg bg-secondary/50">
-              <DollarSign className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
-              <p className="text-xs font-medium text-foreground">{idea.startupCost}</p>
-              <p className="text-[10px] text-muted-foreground">Startup Cost</p>
-            </div>
-            <div className="text-center p-2.5 rounded-lg bg-secondary/50">
-              <Target className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
-              <p className="text-xs font-medium text-foreground">
-                {formatCurrency(idea.pricing.min, idea.pricing.currency)} – {formatCurrency(idea.pricing.max, idea.pricing.currency)}
-              </p>
-              <p className="text-[10px] text-muted-foreground">{idea.pricing.model}</p>
-            </div>
-          </div>
-
-          {/* Why This Fits You */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <h4 className="text-sm font-semibold">Why This Fits You</h4>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">{idea.whyThisFits}</p>
-            <div className="flex flex-wrap gap-1.5 mt-1">
-              {idea.profileSignalsUsed.map((signal, i) => (
-                <Badge key={i} variant="outline" className="text-[10px] bg-primary/5 border-primary/15 text-primary">
-                  {signal}
-                </Badge>
+            {/* Quick Info Grid */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { icon: Clock, value: idea.timeToFirstRevenue, label: 'First Revenue', color: 'from-blue-50 to-indigo-50 border-blue-100' },
+                { icon: DollarSign, value: idea.startupCost, label: 'Startup Cost', color: 'from-emerald-50 to-teal-50 border-emerald-100' },
+                { icon: Target, value: `${formatCurrency(idea.pricing.min, idea.pricing.currency)} – ${formatCurrency(idea.pricing.max, idea.pricing.currency)}`, label: idea.pricing.model, color: 'from-purple-50 to-violet-50 border-purple-100' },
+              ].map((item, i) => (
+                <div key={i} className={`text-center p-3 rounded-xl bg-gradient-to-br ${item.color} border`}>
+                  <item.icon className="w-4 h-4 text-muted-foreground mx-auto mb-1.5" />
+                  <p className="text-xs font-bold text-foreground leading-tight">{item.value}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{item.label}</p>
+                </div>
               ))}
             </div>
-          </div>
 
-          {/* Why Now */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
-              <h4 className="text-sm font-semibold">Why Now</h4>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">{idea.whyNow}</p>
-          </div>
-
-          {/* Target Buyer */}
-          <div className="p-3 rounded-lg border border-border bg-card">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Users className="w-4 h-4 text-primary" />
-              <h4 className="text-sm font-semibold">Target Buyer</h4>
-            </div>
-            <p className="text-sm text-muted-foreground">{idea.targetBuyer}</p>
-            {idea.target_client && (
-              <p className="text-xs text-foreground/70 mt-2 pt-2 border-t border-border">{idea.target_client}</p>
-            )}
-            <p className="text-sm text-foreground mt-1.5 font-medium">{idea.coreOffer}</p>
-          </div>
-
-          {/* Pricing & Timeline (India-specific) */}
-          {(idea.pricing_inr || idea.time_to_first_10k_inr) && (
-            <div className="grid grid-cols-2 gap-3">
-              {idea.pricing_inr && (
-                <div className="p-3 rounded-lg border border-primary/20 bg-primary/[0.03]">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1">Pricing (INR)</p>
-                  <p className="text-sm font-bold text-foreground">{idea.pricing_inr}</p>
+            {/* Why This Fits You */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="w-3 h-3 text-primary" />
                 </div>
-              )}
-              {idea.time_to_first_10k_inr && (
-                <div className="p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.03]">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-1">₹10K Timeline</p>
-                  <p className="text-sm font-bold text-foreground">{idea.time_to_first_10k_inr}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* First Client Channels */}
-          {idea.first_client_channels && idea.first_client_channels.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">First Client Channels</p>
-              <div className="flex flex-wrap gap-1.5">
-                {idea.first_client_channels.map((ch, i) => (
-                  <Badge key={i} variant="outline" className="text-xs bg-accent/50 border-accent/30">
-                    {ch}
+                <h4 className="text-sm font-bold tracking-tight">Why This Fits You</h4>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed pl-7">{idea.whyThisFits}</p>
+              <div className="flex flex-wrap gap-1.5 pl-7">
+                {idea.profileSignalsUsed.map((signal, i) => (
+                  <Badge key={i} variant="outline" className="text-[10px] bg-primary/5 border-primary/20 text-primary font-medium">
+                    {signal}
                   </Badge>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Expand/Collapse */}
-          <Button
-            variant="ghost"
-            className="w-full justify-between text-sm text-muted-foreground hover:text-foreground"
-            onClick={() => setExpanded(!expanded)}
-          >
-            {expanded ? 'Hide Full Strategy' : 'View Full Strategy & Cheat Sheet'}
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </Button>
-
-          <AnimatePresence>
-            {expanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="overflow-hidden space-y-4"
-              >
-                {/* 14-Day Launch Sprint */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Rocket className="w-4 h-4 text-primary" />
-                    <h4 className="text-sm font-semibold">14-Day Launch Sprint</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {idea.launchSprint.map((step, i) => (
-                      <div key={i} className="flex gap-3 items-start">
-                        <Badge variant="outline" className="text-[10px] flex-shrink-0 mt-0.5 min-w-[60px] justify-center">
-                          {step.day}
-                        </Badge>
-                        <p className="text-sm text-muted-foreground">{step.action}</p>
-                      </div>
-                    ))}
-                  </div>
+            {/* Why Now */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-md bg-emerald-500/10 flex items-center justify-center">
+                  <TrendingUp className="w-3 h-3 text-emerald-600" />
                 </div>
+                <h4 className="text-sm font-bold tracking-tight">Why Now</h4>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed pl-7">{idea.whyNow}</p>
+            </div>
 
-                {/* Tool Stack */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Wrench className="w-4 h-4 text-primary" />
-                    <h4 className="text-sm font-semibold">Tool Stack</h4>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {idea.toolStack.map((tool, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">{tool}</Badge>
-                    ))}
-                  </div>
+            {/* Target Buyer */}
+            <div className="p-4 rounded-xl border border-border/60 bg-gradient-to-br from-muted/30 to-background">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+                  <Users className="w-3 h-3 text-primary" />
                 </div>
+                <h4 className="text-sm font-bold tracking-tight">Target Buyer</h4>
+              </div>
+              <p className="text-sm text-muted-foreground pl-7">{idea.targetBuyer}</p>
+              {idea.target_client && (
+                <p className="text-xs text-foreground/70 mt-2.5 pt-2.5 border-t border-border/50 pl-7">{idea.target_client}</p>
+              )}
+              <p className="text-sm text-foreground mt-2 font-semibold pl-7">{idea.coreOffer}</p>
+            </div>
 
-                {/* Customer Channels */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <h4 className="text-sm font-semibold">Customer Channels</h4>
+            {/* Pricing & Timeline (India-specific) */}
+            {(idea.pricing_inr || idea.time_to_first_10k_inr) && (
+              <div className="grid grid-cols-2 gap-3">
+                {idea.pricing_inr && (
+                  <div className="p-3.5 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/[0.05] to-transparent">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1.5">Pricing (INR)</p>
+                    <p className="text-sm font-bold text-foreground">{idea.pricing_inr}</p>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {idea.customerChannels.map((ch, i) => (
-                      <Badge key={i} variant="outline" className="text-xs">{ch}</Badge>
-                    ))}
+                )}
+                {idea.time_to_first_10k_inr && (
+                  <div className="p-3.5 rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.05] to-transparent">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-1.5">₹10K Timeline</p>
+                    <p className="text-sm font-bold text-foreground">{idea.time_to_first_10k_inr}</p>
                   </div>
-                </div>
-
-                {/* AI Leverage */}
-                <div className="p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-primary/10">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Zap className="w-4 h-4 text-primary" />
-                    <h4 className="text-sm font-semibold">AI Leverage</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{idea.aiLeverage}</p>
-                </div>
-
-                {/* Moat + Risks */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Shield className="w-4 h-4 text-emerald-600" />
-                      <h4 className="text-sm font-semibold text-emerald-800">Your Moat</h4>
-                    </div>
-                    <p className="text-xs text-emerald-700">{idea.moat}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-amber-50 border border-amber-100">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                      <h4 className="text-sm font-semibold text-amber-800">Risks</h4>
-                    </div>
-                    <ul className="text-xs text-amber-700 space-y-0.5">
-                      {idea.risks.map((r, i) => <li key={i}>• {r}</li>)}
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Expansion Path */}
-                <div className="p-3 rounded-lg border border-border">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                    <h4 className="text-sm font-semibold">Scale-Up Path</h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{idea.expansionPath}</p>
-                </div>
-
-                {/* ═══ CHEAT SHEET ═══ */}
-                <div className="border-t border-border pt-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Star className="w-4 h-4 text-primary fill-primary" />
-                    <h4 className="text-base font-bold">Launch Cheat Sheet</h4>
-                  </div>
-
-                  <Accordion type="multiple" className="space-y-1">
-                    {/* Offer Statement */}
-                    <AccordionItem value="offer" className="border rounded-lg px-3">
-                      <AccordionTrigger className="text-sm py-2.5 hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="w-3.5 h-3.5 text-primary" />
-                          Offer Statement
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="relative">
-                          <p className="text-sm text-foreground font-medium bg-secondary/50 rounded-lg p-3 pr-10">
-                            {idea.cheatSheet.offerStatement}
-                          </p>
-                          <button
-                            onClick={() => copyToClipboard(idea.cheatSheet.offerStatement, 'offer')}
-                            className="absolute top-2 right-2 p-1.5 rounded hover:bg-muted transition-colors"
-                          >
-                            {copiedField === 'offer' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
-                          </button>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    {/* Outreach Script */}
-                    <AccordionItem value="outreach" className="border rounded-lg px-3">
-                      <AccordionTrigger className="text-sm py-2.5 hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          <ExternalLink className="w-3.5 h-3.5 text-primary" />
-                          Outreach Script
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="relative">
-                          <p className="text-sm text-foreground bg-secondary/50 rounded-lg p-3 pr-10 whitespace-pre-line">
-                            {idea.cheatSheet.outreachScript}
-                          </p>
-                          <button
-                            onClick={() => copyToClipboard(idea.cheatSheet.outreachScript, 'outreach')}
-                            className="absolute top-2 right-2 p-1.5 rounded hover:bg-muted transition-colors"
-                          >
-                            {copiedField === 'outreach' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
-                          </button>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    {/* Landing Page Headline */}
-                    <AccordionItem value="headline" className="border rounded-lg px-3">
-                      <AccordionTrigger className="text-sm py-2.5 hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          <Layout className="w-3.5 h-3.5 text-primary" />
-                          Landing Page Headline
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <p className="text-lg font-bold text-foreground text-center py-2">
-                          "{idea.cheatSheet.landingPageHeadline}"
-                        </p>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    {/* Proof Assets */}
-                    <AccordionItem value="proof" className="border rounded-lg px-3">
-                      <AccordionTrigger className="text-sm py-2.5 hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          <Lightbulb className="w-3.5 h-3.5 text-primary" />
-                          First 3 Proof Assets
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <ol className="space-y-1.5 text-sm text-muted-foreground">
-                          {idea.cheatSheet.firstThreeProofAssets.map((a, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <span className="font-bold text-primary text-xs mt-0.5">{i + 1}.</span>
-                              {a}
-                            </li>
-                          ))}
-                        </ol>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    {/* Where to Find Customers */}
-                    <AccordionItem value="channels" className="border rounded-lg px-3">
-                      <AccordionTrigger className="text-sm py-2.5 hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          <Users className="w-3.5 h-3.5 text-primary" />
-                          5 Places to Find Customers
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <ol className="space-y-1.5 text-sm text-muted-foreground">
-                          {idea.cheatSheet.fivePlacesToFindCustomers.map((p, i) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <span className="font-bold text-primary text-xs mt-0.5">{i + 1}.</span>
-                              {p}
-                            </li>
-                          ))}
-                        </ol>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    {/* Weekly Routine */}
-                    <AccordionItem value="routine" className="border rounded-lg px-3">
-                      <AccordionTrigger className="text-sm py-2.5 hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-3.5 h-3.5 text-primary" />
-                          Weekly Routine
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
-                          {idea.cheatSheet.weeklyRoutine.map((r, i) => (
-                            <li key={i}>• {r}</li>
-                          ))}
-                        </ul>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    {/* Metrics */}
-                    <AccordionItem value="metrics" className="border rounded-lg px-3">
-                      <AccordionTrigger className="text-sm py-2.5 hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          <BarChart3 className="w-3.5 h-3.5 text-primary" />
-                          Metrics to Track
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="flex flex-wrap gap-1.5">
-                          {idea.cheatSheet.metricsToTrack.map((m, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs">{m}</Badge>
-                          ))}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    {/* No-Response Plan */}
-                    <AccordionItem value="fallback" className="border rounded-lg px-3">
-                      <AccordionTrigger className="text-sm py-2.5 hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          <RefreshCw className="w-3.5 h-3.5 text-primary" />
-                          Plan B (No Customers in 14 Days)
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <p className="text-sm text-muted-foreground">{idea.cheatSheet.noResponsePlan}</p>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                </div>
-              </motion.div>
+                )}
+              </div>
             )}
-          </AnimatePresence>
-        </CardContent>
-      </Card>
+
+            {/* First Client Channels */}
+            {idea.first_client_channels && idea.first_client_channels.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">First Client Channels</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {idea.first_client_channels.map((ch, i) => (
+                    <Badge key={i} variant="outline" className="text-xs bg-accent/30 border-accent/20 font-medium">
+                      {ch}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Expand/Collapse */}
+            <Button
+              variant="outline"
+              className={`w-full justify-between text-sm font-semibold rounded-xl h-11 transition-all duration-200 ${
+                expanded
+                  ? 'bg-primary/5 border-primary/20 text-primary hover:bg-primary/10'
+                  : 'hover:bg-secondary/80 border-border/60'
+              }`}
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? 'Hide Full Strategy' : '📋 View Full Strategy & Cheat Sheet'}
+              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+
+            <AnimatePresence>
+              {expanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden space-y-4"
+                >
+                  {/* 14-Day Launch Sprint */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+                        <Rocket className="w-3 h-3 text-primary" />
+                      </div>
+                      <h4 className="text-sm font-bold tracking-tight">14-Day Launch Sprint</h4>
+                    </div>
+                    <div className="space-y-2 pl-7">
+                      {idea.launchSprint.map((step, i) => (
+                        <div key={i} className="flex gap-3 items-start">
+                          <Badge className="text-[10px] flex-shrink-0 mt-0.5 min-w-[60px] justify-center bg-primary/10 text-primary border-primary/20 font-bold">
+                            {step.day}
+                          </Badge>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{step.action}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tool Stack */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+                        <Wrench className="w-3 h-3 text-primary" />
+                      </div>
+                      <h4 className="text-sm font-bold tracking-tight">Tool Stack</h4>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pl-7">
+                      {idea.toolStack.map((tool, i) => (
+                        <Badge key={i} className="text-xs bg-secondary/80 text-secondary-foreground border-0">{tool}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Customer Channels */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+                        <MapPin className="w-3 h-3 text-primary" />
+                      </div>
+                      <h4 className="text-sm font-bold tracking-tight">Customer Channels</h4>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pl-7">
+                      {idea.customerChannels.map((ch, i) => (
+                        <Badge key={i} variant="outline" className="text-xs font-medium">{ch}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AI Leverage */}
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-primary/[0.06] via-accent/[0.03] to-transparent border border-primary/15">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+                        <Zap className="w-3 h-3 text-primary" />
+                      </div>
+                      <h4 className="text-sm font-bold tracking-tight">AI Leverage</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed pl-7">{idea.aiLeverage}</p>
+                  </div>
+
+                  {/* Moat + Risks */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-200/60">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="w-4 h-4 text-emerald-600" />
+                        <h4 className="text-sm font-bold text-emerald-800">Your Moat</h4>
+                      </div>
+                      <p className="text-xs text-emerald-700 leading-relaxed">{idea.moat}</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50/50 border border-amber-200/60">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        <h4 className="text-sm font-bold text-amber-800">Risks</h4>
+                      </div>
+                      <ul className="text-xs text-amber-700 space-y-1 leading-relaxed">
+                        {idea.risks.map((r, i) => <li key={i}>• {r}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Expansion Path */}
+                  <div className="p-4 rounded-xl border border-border/60 bg-gradient-to-br from-muted/20 to-background">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
+                        <TrendingUp className="w-3 h-3 text-primary" />
+                      </div>
+                      <h4 className="text-sm font-bold tracking-tight">Scale-Up Path</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed pl-7">{idea.expansionPath}</p>
+                  </div>
+
+                  {/* ═══ CHEAT SHEET ═══ */}
+                  <div className="border-t-2 border-dashed border-border/50 pt-5">
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-sm">
+                        <Star className="w-4 h-4 text-white fill-white" />
+                      </div>
+                      <h4 className="text-base font-black tracking-tight">Launch Cheat Sheet</h4>
+                    </div>
+
+                    <Accordion type="multiple" className="space-y-1.5">
+                      {/* Offer Statement */}
+                      <AccordionItem value="offer" className="border rounded-xl px-3.5 border-border/50 bg-muted/20">
+                        <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <MessageSquare className="w-3.5 h-3.5 text-primary" />
+                            Offer Statement
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="relative">
+                            <p className="text-sm text-foreground font-medium bg-background rounded-lg p-3.5 pr-10 border border-border/40 shadow-sm">
+                              {idea.cheatSheet.offerStatement}
+                            </p>
+                            <button
+                              onClick={() => copyToClipboard(idea.cheatSheet.offerStatement, 'offer')}
+                              className="absolute top-2.5 right-2.5 p-1.5 rounded-md hover:bg-muted transition-colors"
+                            >
+                              {copiedField === 'offer' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
+                            </button>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Outreach Script */}
+                      <AccordionItem value="outreach" className="border rounded-xl px-3.5 border-border/50 bg-muted/20">
+                        <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                            Outreach Script
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="relative">
+                            <p className="text-sm text-foreground bg-background rounded-lg p-3.5 pr-10 whitespace-pre-line border border-border/40 shadow-sm">
+                              {idea.cheatSheet.outreachScript}
+                            </p>
+                            <button
+                              onClick={() => copyToClipboard(idea.cheatSheet.outreachScript, 'outreach')}
+                              className="absolute top-2.5 right-2.5 p-1.5 rounded-md hover:bg-muted transition-colors"
+                            >
+                              {copiedField === 'outreach' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
+                            </button>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Landing Page Headline */}
+                      <AccordionItem value="headline" className="border rounded-xl px-3.5 border-border/50 bg-muted/20">
+                        <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Layout className="w-3.5 h-3.5 text-primary" />
+                            Landing Page Headline
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <p className="text-lg font-black text-foreground text-center py-3 tracking-tight">
+                            "{idea.cheatSheet.landingPageHeadline}"
+                          </p>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Proof Assets */}
+                      <AccordionItem value="proof" className="border rounded-xl px-3.5 border-border/50 bg-muted/20">
+                        <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Lightbulb className="w-3.5 h-3.5 text-primary" />
+                            First 3 Proof Assets
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <ol className="space-y-2 text-sm text-muted-foreground">
+                            {idea.cheatSheet.firstThreeProofAssets.map((a, i) => (
+                              <li key={i} className="flex items-start gap-2.5">
+                                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                                <span className="leading-relaxed">{a}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Where to Find Customers */}
+                      <AccordionItem value="channels" className="border rounded-xl px-3.5 border-border/50 bg-muted/20">
+                        <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-3.5 h-3.5 text-primary" />
+                            5 Places to Find Customers
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <ol className="space-y-2 text-sm text-muted-foreground">
+                            {idea.cheatSheet.fivePlacesToFindCustomers.map((p, i) => (
+                              <li key={i} className="flex items-start gap-2.5">
+                                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                                <span className="leading-relaxed">{p}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Weekly Routine */}
+                      <AccordionItem value="routine" className="border rounded-xl px-3.5 border-border/50 bg-muted/20">
+                        <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5 text-primary" />
+                            Weekly Routine
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <ul className="space-y-1.5 text-sm text-muted-foreground">
+                            {idea.cheatSheet.weeklyRoutine.map((r, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary/40 flex-shrink-0 mt-2" />
+                                <span className="leading-relaxed">{r}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* Metrics */}
+                      <AccordionItem value="metrics" className="border rounded-xl px-3.5 border-border/50 bg-muted/20">
+                        <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                            Metrics to Track
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="flex flex-wrap gap-1.5">
+                            {idea.cheatSheet.metricsToTrack.map((m, i) => (
+                              <Badge key={i} className="text-xs bg-secondary/80 text-secondary-foreground border-0">{m}</Badge>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+
+                      {/* No-Response Plan */}
+                      <AccordionItem value="fallback" className="border rounded-xl px-3.5 border-border/50 bg-muted/20">
+                        <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <RefreshCw className="w-3.5 h-3.5 text-primary" />
+                            Plan B (No Customers in 14 Days)
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{idea.cheatSheet.noResponsePlan}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </CardContent>
+        </Card>
+      </div>
     </motion.div>
   );
 }
