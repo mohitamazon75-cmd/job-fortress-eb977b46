@@ -132,6 +132,7 @@ const Index = () => {
   const cleanupRef = useRef<(() => void) | null>(null);
   // H-3 FIX: isMounted guard prevents state updates after component unmount
   const isMountedRef = useRef(true);
+  const hydrationAttemptedRef = useRef<string | null>(null);
   useEffect(() => {
     isMountedRef.current = true;
     return () => { isMountedRef.current = false; };
@@ -155,6 +156,8 @@ const Index = () => {
   // On mount: restore input context if returning from OAuth redirect
   // FIX 2 (MEDIUM): Add proper try-catch around JSON.parse to handle malformed data
   useEffect(() => {
+    if (routedScanId) return;
+
     let pendingInput: any = null;
     try {
       const pending = sessionStorage.getItem('jb_pending_input');
@@ -184,19 +187,23 @@ const Index = () => {
         setPhase('auth-gate');
       } catch {}
     }
-  }, []);
+  }, [routedScanId]);
 
   useEffect(() => {
-    if (!routedScanId || phase !== 'hero' || scanReport || scanId) return;
+    if (!routedScanId || scanReport) return;
+    if (hydrationAttemptedRef.current === routedScanId) return;
+
+    hydrationAttemptedRef.current = routedScanId;
 
     let cancelled = false;
     const ACTIVE_STATUSES = new Set(['processing', 'running']);
 
     const hydrateExistingScan = async () => {
       setPhase('processing');
-      setScanId(routedScanId);
 
       try {
+        try { sessionStorage.removeItem('jb_pending_input'); } catch {}
+
         const { data, error } = await supabase
           .from('scans')
           .select('id, scan_status, final_json_report, access_token, country, industry, years_experience, metro_tier, linkedin_url')
@@ -215,6 +222,7 @@ const Index = () => {
 
         const existingScan = data as ExistingScanHydrationRow;
 
+        setScanId(existingScan.id);
         setAccessToken(existingScan.access_token || '');
         if (existingScan.country) setCountry(existingScan.country);
         if (existingScan.industry) setIndustry(existingScan.industry);
@@ -266,7 +274,7 @@ const Index = () => {
     return () => {
       cancelled = true;
     };
-  }, [routedScanId, phase, scanReport, scanId]);
+  }, [routedScanId, scanReport]);
 
   useEffect(() => {
     return () => { cleanupRef.current?.(); };
