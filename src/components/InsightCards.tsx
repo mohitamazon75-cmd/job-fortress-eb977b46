@@ -237,6 +237,8 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
     ...(!isSafeZone ? [{ id: 'obituary', title: 'Career Obituary', subtitle: "Your role's darkly funny newspaper death notice", Icon: Skull, iconColor: 'text-muted-foreground' }] : []),
     // 10. Technical appendix — Knowledge Graph peer map (last; dense/technical, rewards curious users)
     { id: 'kg-peer', title: 'Your Intelligence Map', subtitle: `${report.computation_method?.kg_skills_matched ?? 'N'} skills mapped in our Knowledge Graph`, Icon: Network, iconColor: 'text-prophet-cyan' },
+    // 11. Market Radar — live personalized market intelligence digest
+    { id: 'market-radar', title: 'Live Market Radar', subtitle: 'AI tools, hiring shifts & salary trends — personalized to your role', Icon: Radar, iconColor: 'text-primary' },
   ];
 
   const CARDS = deepMode ? [...ORDERED_CORE_CARDS, ...DEEP_CARDS] : ORDERED_CORE_CARDS;
