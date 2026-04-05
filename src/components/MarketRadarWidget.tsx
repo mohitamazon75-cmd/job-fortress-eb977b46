@@ -57,6 +57,7 @@ interface Props {
   industry: string;
   skills: string[];
   country?: string;
+  onComplete?: () => void;
 }
 
 const CACHE_KEY = 'jb_market_radar';
