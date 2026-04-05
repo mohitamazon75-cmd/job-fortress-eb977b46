@@ -47,6 +47,7 @@ const MoneyShotCard = lazyWithRetry(() => import('@/components/MoneyShotCard'));
 const InsightCards = lazyWithRetry(() => import('@/components/InsightCards'));
 const SideHustleGenerator = lazyWithRetry(() => import('@/components/SideHustleGenerator'));
 const StartupAutopsyPage = lazyWithRetry(() => import('@/components/StartupAutopsyPage'));
+const MarketRadarWidget = lazyWithRetry(() => import('@/components/MarketRadarWidget'));
 const ThankYouFooter = lazyWithRetry(() => import('@/components/ThankYouFooter'));
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport, createScan, uploadResume, triggerProcessScan, subscribeScanStatus } from '@/lib/scan-engine';
