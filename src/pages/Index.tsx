@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import HeroSection from '@/components/HeroSection';
 import SocialProofSection from '@/components/SocialProofSection';
 import InputMethodStep from '@/components/InputMethodStep';
@@ -70,6 +70,18 @@ interface ScanRow {
   final_json_report: ScanReport | null;
 }
 
+interface ExistingScanHydrationRow {
+  id: string;
+  scan_status: string | null;
+  final_json_report: ScanReport | null;
+  access_token: string | null;
+  country: string | null;
+  industry: string | null;
+  years_experience: string | null;
+  metro_tier: string | null;
+  linkedin_url: string | null;
+}
+
 // Tiny component that fires onReady once on mount (avoids render-loop in AuthGuard children)
 function AuthAutoAdvance({ onReady }: { onReady: () => void }) {
   const fired = useRef(false);
@@ -85,6 +97,8 @@ function AuthAutoAdvance({ onReady }: { onReady: () => void }) {
 
 const Index = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const routedScanId = searchParams.get('id');
   const { track } = useAnalytics();
   const { withMutex, isLocked } = useRequestMutex();
   const [phase, setPhase] = useState<AppPhase>('hero');
@@ -171,6 +185,88 @@ const Index = () => {
       } catch {}
     }
   }, []);
+
+  useEffect(() => {
+    if (!routedScanId || phase !== 'hero' || scanReport || scanId) return;
+
+    let cancelled = false;
+    const ACTIVE_STATUSES = new Set(['processing', 'running']);
+
+    const hydrateExistingScan = async () => {
+      setPhase('processing');
+      setScanId(routedScanId);
+
+      try {
+        const { data, error } = await supabase
+          .from('scans')
+          .select('id, scan_status, final_json_report, access_token, country, industry, years_experience, metro_tier, linkedin_url')
+          .eq('id', routedScanId)
+          .single();
+
+        if (cancelled) return;
+
+        if (error || !data) {
+          console.warn('[Index] Failed to restore scan from URL', error);
+          setScanId('');
+          setAccessToken('');
+          setPhase('hero');
+          return;
+        }
+
+        const existingScan = data as ExistingScanHydrationRow;
+
+        setAccessToken(existingScan.access_token || '');
+        if (existingScan.country) setCountry(existingScan.country);
+        if (existingScan.industry) setIndustry(existingScan.industry);
+        if (existingScan.years_experience) setYearsExperience(existingScan.years_experience);
+        if (existingScan.metro_tier) setMetroTier(existingScan.metro_tier);
+        if (existingScan.linkedin_url) setLinkedinUrl(existingScan.linkedin_url);
+
+        if (existingScan.scan_status === 'complete' && existingScan.final_json_report) {
+          setScanReport(existingScan.final_json_report);
+          setMoneyShotSeen(false);
+          setPhase('reveal');
+          return;
+        }
+
+        if (ACTIVE_STATUSES.has(existingScan.scan_status || '') && existingScan.access_token) {
+          cleanupRef.current?.();
+          cleanupRef.current = subscribeScanStatus(
+            routedScanId,
+            existingScan.access_token,
+            (report) => {
+              if (!isMountedRef.current || cancelled) return;
+              setScanReport(report);
+              setMoneyShotSeen(false);
+              setPhase('reveal');
+            },
+            () => {
+              if (!isMountedRef.current || cancelled) return;
+              setPhase('error');
+            }
+          );
+          return;
+        }
+
+        console.warn('[Index] Scan restore unavailable for status', existingScan.scan_status);
+        setScanId('');
+        setAccessToken('');
+        setPhase('hero');
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[Index] Unexpected scan restore failure', error);
+        setScanId('');
+        setAccessToken('');
+        setPhase('hero');
+      }
+    };
+
+    void hydrateExistingScan();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routedScanId, phase, scanReport, scanId]);
 
   useEffect(() => {
     return () => { cleanupRef.current?.(); };
@@ -423,6 +519,7 @@ const Index = () => {
   const handleReset = () => {
     cleanupRef.current?.();
     cleanupRef.current = null;
+    navigate('/', { replace: true });
     setPhase('hero');
     setStep(1);
     setCountry(detectCountry());
