@@ -563,6 +563,57 @@ export type Database = {
         }
         Relationships: []
       }
+      cohort_percentiles: {
+        Row: {
+          city_percentile: number | null
+          cohort_size: number | null
+          computed_at: string
+          country: string | null
+          determinism_index: number | null
+          id: string
+          metro_tier: string | null
+          national_percentile: number | null
+          p25: number | null
+          p50: number | null
+          p75: number | null
+          p90: number | null
+          role_detected: string
+          sample_size: number | null
+        }
+        Insert: {
+          city_percentile?: number | null
+          cohort_size?: number | null
+          computed_at?: string
+          country?: string | null
+          determinism_index?: number | null
+          id?: string
+          metro_tier?: string | null
+          national_percentile?: number | null
+          p25?: number | null
+          p50?: number | null
+          p75?: number | null
+          p90?: number | null
+          role_detected: string
+          sample_size?: number | null
+        }
+        Update: {
+          city_percentile?: number | null
+          cohort_size?: number | null
+          computed_at?: string
+          country?: string | null
+          determinism_index?: number | null
+          id?: string
+          metro_tier?: string | null
+          national_percentile?: number | null
+          p25?: number | null
+          p50?: number | null
+          p75?: number | null
+          p90?: number | null
+          role_detected?: string
+          sample_size?: number | null
+        }
+        Relationships: []
+      }
       company_benchmarks: {
         Row: {
           assessment_count: number
