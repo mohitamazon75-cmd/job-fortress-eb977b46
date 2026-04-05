@@ -54,8 +54,10 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
           const sel = selectedPivot === i;
           const bc = sel ? variantColor(p.color) : "var(--mb-rule)";
           const bg = sel ? pivotBg(p.color) : "var(--mb-paper)";
-          const city = (p.location || "all-india").split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
-          const searchUrl = p.search_url || `https://www.naukri.com/jobs-in-${city}?k=${encodeURIComponent(p.role).replace(/%20/g, "+")}`;
+          const city = (p.location || "India").split(",")[0].trim();
+          const naukriSlug = p.role.replace(/[^\w\s]/g, "").trim().toLowerCase().replace(/\s+/g, "-");
+          const citySlug = city.toLowerCase().replace(/\s+/g, "-");
+          const searchUrl = p.search_url || `https://www.naukri.com/${naukriSlug}-jobs-in-${citySlug}`;
           return (
             <div key={i} onClick={() => setSelectedPivot(i)} style={{ background: bg, border: `2px solid ${bc}`, borderRadius: 14, padding: "16px 18px", marginBottom: 10, cursor: "pointer", transition: "border-color 150ms" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 5 }}>
