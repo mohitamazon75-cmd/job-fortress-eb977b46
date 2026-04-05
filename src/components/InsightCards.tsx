@@ -30,6 +30,7 @@ import ProUpgradeModal from '@/components/ProUpgradeModal';
 // DiagnosticLaunchCard removed — replaced with DefensePlanCard to keep users in-flow
 
 const CareerGenomeDebate = React.lazy(() => import('@/components/dashboard/CareerGenomeDebate'));
+const MarketRadarWidget = React.lazy(() => import('@/components/MarketRadarWidget'));
 
 interface InsightCardsProps {
   report: ScanReport;
