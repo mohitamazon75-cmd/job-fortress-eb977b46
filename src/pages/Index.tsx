@@ -192,7 +192,7 @@ const Index = () => {
           console.debug('[AutoRecover] Scan completed in backend, recovering result');
           setScanReport(row.final_json_report as ScanReport);
           setMoneyShotSeen(false);
-          setPhase('reveal');
+            navigate(`/results/choose?id=${scanId}`);
         } else {
           setErrorScanStatus(row?.scan_status ?? 'unknown');
         }
@@ -200,7 +200,7 @@ const Index = () => {
       .then(undefined, () => {
         if (isMountedRef.current) setErrorScanStatus('unknown');
       });
-  }, [phase, scanId, accessToken]);
+  }, [phase, scanId, accessToken, navigate]);
 
   // Scroll to top on phase change + track phase
   useEffect(() => {
@@ -600,7 +600,7 @@ const Index = () => {
                         if (row?.scan_status === 'complete' && row?.final_json_report) {
                           setScanReport(row.final_json_report as ScanReport);
                           setMoneyShotSeen(false);
-                          setPhase('reveal');
+                          navigate(`/results/choose?id=${scanId}`);
                         } else {
                           setErrorScanStatus(row?.scan_status ?? 'unknown');
                         }

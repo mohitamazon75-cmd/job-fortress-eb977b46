@@ -160,6 +160,13 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Scan not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (scan.scan_status === "complete" && scan.final_json_report) {
+      console.log(`[Orchestrator] Duplicate trigger ignored for completed scan ${scanId}`);
+      return new Response(JSON.stringify({ status: "complete", duplicate: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const scanAccessToken = req.headers.get("x-scan-access-token")?.trim() || null;
     const hasValidScanAccess = !!scanAccessToken && !!scan.access_token && await timingSafeEqual(scanAccessToken, scan.access_token);
 
@@ -1345,7 +1352,12 @@ ${kgContext}`;
     try {
       const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
       const body = await req.clone().json().catch(() => ({}));
-      if (body.scanId) await supabase.from("scans").update({ scan_status: "failed" }).eq("id", body.scanId);
+      if (body.scanId) {
+        const { data: current } = await supabase.from("scans").select("scan_status").eq("id", body.scanId).single();
+        if (current?.scan_status !== "complete") {
+          await supabase.from("scans").update({ scan_status: "failed" }).eq("id", body.scanId);
+        }
+      }
     } catch {}
 
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

@@ -80,24 +80,6 @@ Deno.serve(async (req: Request) => {
     if (error) throw error;
     if (!data?.id) throw new Error("Scan creation returned no ID");
 
-    // Fire-and-forget server-side trigger is best-effort only.
-    // We do NOT promise the client that processing definitely started here,
-    // because the request can still be dropped during teardown.
-    const processUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/process-scan`;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const triggerFetch = fetch(processUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${serviceKey}`,
-      },
-      body: JSON.stringify({ scanId: data.id }),
-    }).catch((err) => console.warn("[create-scan] Failed to trigger process-scan:", err));
-
-    if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
-      (EdgeRuntime as any).waitUntil(triggerFetch);
-    }
-
     return new Response(
       JSON.stringify({ id: data.id, accessToken: data.access_token, triggered: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -574,6 +574,8 @@ export function subscribeScanStatus(
 ) {
   // Use scan-specific client with x-scan-access-token header so RLS allows reading
   const scanClient = createScanClient(accessToken);
+  const ACTIVE_SCAN_STATUSES = new Set(['processing', 'running']);
+  const TERMINAL_SCAN_STATUSES = new Set(['failed', 'invalid_input', 'error']);
 
   let resolved = false;
   let pollTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -601,6 +603,42 @@ export function subscribeScanStatus(
     onError?.();
   };
 
+  const verifyTerminalState = async (source: string) => {
+    if (resolved) return;
+
+    try {
+      const { data } = await scanClient
+        .from('scans')
+        .select('scan_status, final_json_report, industry')
+        .eq('id', scanId)
+        .single();
+
+      const row = data as Record<string, unknown> | null;
+      const status = String(row?.scan_status || '');
+
+      if (status === 'complete' && row?.final_json_report) {
+        console.debug(`[Scan] ${source} recovered completed scan after terminal signal`);
+        const parsed = parseScanReport(row.final_json_report);
+        if (parsed) {
+          resolve(parsed);
+          return;
+        }
+      }
+
+      if (ACTIVE_SCAN_STATUSES.has(status)) {
+        console.warn(`[Scan] ${source} saw transient terminal signal while scan is still active; continuing to poll`);
+        startPolling();
+        return;
+      }
+    } catch (error) {
+      console.warn(`[Scan] ${source} terminal-state verification failed; continuing to poll`, error);
+      startPolling();
+      return;
+    }
+
+    reject();
+  };
+
   // Immediate check: the scan may already be complete before we subscribe
   const immediateCheck = async () => {
     if (resolved) return;
@@ -617,8 +655,8 @@ export function subscribeScanStatus(
         if (parsed) {
           resolve(parsed);
         }
-      } else if (row?.scan_status === 'failed' || row?.scan_status === 'invalid_input' || row?.scan_status === 'error') {
-        reject();
+      } else if (TERMINAL_SCAN_STATUSES.has(String(row?.scan_status || ''))) {
+        await verifyTerminalState('Immediate check');
       }
     } catch (e) {
       console.warn('[Scan] Immediate check error:', e);
@@ -643,8 +681,8 @@ export function subscribeScanStatus(
           if (parsed) {
             resolve(parsed);
           }
-        } else if (row.scan_status === 'failed' || row.scan_status === 'invalid_input' || row.scan_status === 'error') {
-          reject();
+        } else if (TERMINAL_SCAN_STATUSES.has(String(row.scan_status || ''))) {
+          void verifyTerminalState('Realtime update');
         }
       }
     )
@@ -685,8 +723,8 @@ export function subscribeScanStatus(
         }
         return;
       }
-      if (row?.scan_status === 'failed' || row?.scan_status === 'invalid_input' || row?.scan_status === 'error') {
-        reject();
+      if (TERMINAL_SCAN_STATUSES.has(String(row?.scan_status || ''))) {
+        await verifyTerminalState('Polling');
         return;
       }
     } catch (error) {
