@@ -57,6 +57,7 @@ interface Props {
   industry: string;
   skills: string[];
   country?: string;
+  onComplete?: () => void;
 }
 
 const CACHE_KEY = 'jb_market_radar';
@@ -84,7 +85,7 @@ const verdictColors: Record<string, { bg: string; border: string; text: string; 
   AT_RISK: { bg: 'from-amber-500/10 to-orange-500/5', border: 'border-amber-500/20', text: 'text-amber-700', emoji: '⚠️' },
 };
 
-const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country }) => {
+const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, onComplete }) => {
   const [data, setData] = useState<RadarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -444,6 +445,21 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
                   <Users className="w-3 h-3" />
                   2,847 professionals scanned their careers this week
                 </motion.p>
+
+                {/* Continue CTA */}
+                {onComplete && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 2 }}
+                    className="pt-4"
+                  >
+                    <Button onClick={onComplete} size="lg" className="w-full gap-2 text-base font-bold">
+                      Complete Your Report
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </motion.div>
+                )}
               </div>
             </CardContent>
           </Card>

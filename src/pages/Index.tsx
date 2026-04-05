@@ -47,6 +47,7 @@ const MoneyShotCard = lazyWithRetry(() => import('@/components/MoneyShotCard'));
 const InsightCards = lazyWithRetry(() => import('@/components/InsightCards'));
 const SideHustleGenerator = lazyWithRetry(() => import('@/components/SideHustleGenerator'));
 const StartupAutopsyPage = lazyWithRetry(() => import('@/components/StartupAutopsyPage'));
+const MarketRadarWidget = lazyWithRetry(() => import('@/components/MarketRadarWidget'));
 const ThankYouFooter = lazyWithRetry(() => import('@/components/ThankYouFooter'));
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport, createScan, uploadResume, triggerProcessScan, subscribeScanStatus } from '@/lib/scan-engine';
@@ -63,7 +64,7 @@ function createScanCheckClient(accessToken: string) {
   });
 }
 
-type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'thank-you' | 'error';
+type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' | 'thank-you' | 'error';
 
 // FIX 4 (LOW): Named interface for ScanRow instead of inline type
 interface ScanRow {
@@ -524,7 +525,8 @@ const Index = () => {
   }, []);
   const handleInsightCardsComplete = useCallback(() => { setPhase('crisis-center'); }, []);
   const handleCrisisCenterComplete = useCallback(() => { setPhase('startup-autopsy'); }, []);
-  const handleAutopsyComplete = useCallback(() => { setPhase('thank-you'); }, []);
+  const handleAutopsyComplete = useCallback(() => { setPhase('market-radar'); }, []);
+  const handleMarketRadarComplete = useCallback(() => { setPhase('thank-you'); }, []);
 
   const handleReset = () => {
     cleanupRef.current?.();
@@ -661,6 +663,21 @@ const Index = () => {
           <p className="text-muted-foreground">Loading results...</p>
         </div>
       ))}
+      {phase === 'market-radar' && scanReport && (
+        <div className="min-h-screen bg-background">
+          <div className="max-w-3xl mx-auto px-4 py-12 space-y-6">
+            <Suspense fallback={<div className="animate-pulse h-40 rounded-xl bg-muted" />}>
+              <MarketRadarWidget
+                role={scanReport.role || 'Professional'}
+                industry={scanReport.industry || 'Technology'}
+                skills={(scanReport.all_skills || scanReport.moat_skills || []).slice(0, 8)}
+                country={country || 'India'}
+                onComplete={handleMarketRadarComplete}
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
       {phase === 'thank-you' && (
         <div className="min-h-screen bg-background">
           <div className="max-w-lg mx-auto px-4 py-12">
