@@ -460,7 +460,7 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
                 style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-primary)' }}
               >
                 {isLast ? (
-                  <>Finish <ArrowRight className="w-5 h-5" /></>
+                  <>Explore More Insights <ArrowRight className="w-5 h-5" /></>
                 ) : (
                   <>Next <ChevronRight className="w-5 h-5" /></>
                 )}
