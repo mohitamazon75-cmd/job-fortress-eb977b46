@@ -18,12 +18,16 @@ function useKanban() {
 
 /** Build a live job search URL for Naukri/LinkedIn */
 function buildJobSearchUrl(role: string, company: string, location: string, platform: "naukri" | "linkedin"): string {
-  const query = `${role} ${company}`.trim();
-  const city = (location || "all-india").split(",")[0].trim().toLowerCase().replace(/\s+/g, "-");
+  const roleKeywords = role.replace(/[^\w\s]/g, "").trim();
+  const city = (location || "India").split(",")[0].trim();
   if (platform === "naukri") {
-    return `https://www.naukri.com/jobs-in-${city}?k=${encodeURIComponent(query).replace(/%20/g, "+")}`;
+    // Naukri: use /keyword-jobs-in-city format for direct results
+    const keywords = roleKeywords.toLowerCase().replace(/\s+/g, "-");
+    const citySlug = city.toLowerCase().replace(/\s+/g, "-");
+    return `https://www.naukri.com/${keywords}-jobs-in-${citySlug}`;
   }
-  return `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}&f_TPR=r604800`;
+  // LinkedIn: use keywords + location for targeted search, past week filter
+  return `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(roleKeywords)}&location=${encodeURIComponent(city + ", India")}&f_TPR=r604800&sortBy=DD`;
 }
 
 export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId }: { cardData: any; onBack: () => void; onNext: () => void; analysisId?: string | null }) {
