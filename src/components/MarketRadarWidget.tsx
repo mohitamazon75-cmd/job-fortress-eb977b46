@@ -85,7 +85,7 @@ const verdictColors: Record<string, { bg: string; border: string; text: string; 
   AT_RISK: { bg: 'from-amber-500/10 to-orange-500/5', border: 'border-amber-500/20', text: 'text-amber-700', emoji: '⚠️' },
 };
 
-const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country }) => {
+const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, onComplete }) => {
   const [data, setData] = useState<RadarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
