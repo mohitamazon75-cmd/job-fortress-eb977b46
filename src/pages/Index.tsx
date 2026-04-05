@@ -524,7 +524,8 @@ const Index = () => {
   }, []);
   const handleInsightCardsComplete = useCallback(() => { setPhase('crisis-center'); }, []);
   const handleCrisisCenterComplete = useCallback(() => { setPhase('startup-autopsy'); }, []);
-  const handleAutopsyComplete = useCallback(() => { setPhase('thank-you'); }, []);
+  const handleAutopsyComplete = useCallback(() => { setPhase('market-radar'); }, []);
+  const handleMarketRadarComplete = useCallback(() => { setPhase('thank-you'); }, []);
 
   const handleReset = () => {
     cleanupRef.current?.();
