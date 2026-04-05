@@ -313,10 +313,21 @@ Deno.serve(async (req: Request) => {
     const scoreSys = "You are an objective startup advisor who evaluates ideas fairly — weighing both strengths and risks. You calibrate survival probability realistically: most reasonable ideas from skilled founders score 45-75%. Respond ONLY with valid JSON, no markdown, no backticks.";
     const altSys = "You are an elite startup ideation engine. Generate 3 better startup alternatives: 1 safer version, 1 adjacent pivot, and 1 lateral wildcard from a completely different domain. Each must be specific, actionable, and use 2026-era tools. Respond ONLY with valid JSON.";
 
-    const [playbook, alternatives] = await Promise.all([
-      callAgent(apiKey, "Autopsy-Score", scoreSys, buildScorePrompt(dna, deadData), PRO_MODEL, 0.3, 60_000),
-      callAgent(apiKey, "Autopsy-Alternatives", altSys, buildAlternativesPrompt(dna, deadData, founderCtx), PRO_MODEL, 0.5, 60_000),
-    ]);
+    let playbook: any = null;
+    let alternatives: any = null;
+
+    try {
+      [playbook, alternatives] = await Promise.all([
+        callAgent(apiKey, "Autopsy-Score", scoreSys, buildScorePrompt(dna, deadData), PRO_MODEL, 0.3, 90_000),
+        callAgent(apiKey, "Autopsy-Alternatives", altSys, buildAlternativesPrompt(dna, deadData, founderCtx), PRO_MODEL, 0.5, 90_000),
+      ]);
+    } catch (e: any) {
+      console.warn(`[StartupAutopsy] Stage 3 primary failed: ${e.message}, retrying with Flash...`);
+      [playbook, alternatives] = await Promise.all([
+        callAgent(apiKey, "Autopsy-Score", scoreSys, buildScorePrompt(dna, deadData), FLASH_MODEL, 0.3, 60_000),
+        callAgent(apiKey, "Autopsy-Alternatives", altSys, buildAlternativesPrompt(dna, deadData, founderCtx), FLASH_MODEL, 0.5, 60_000),
+      ]);
+    }
 
     if (!playbook) {
       return new Response(JSON.stringify({ error: "Failed to generate playbook. Please retry." }), {
