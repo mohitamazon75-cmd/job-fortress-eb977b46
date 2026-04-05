@@ -76,7 +76,7 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
                 <a href={searchUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                   style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
                 >🔍 Search on Naukri</a>
-                <a href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(p.role)}&f_TPR=r604800`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                <a href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(p.role)}&location=${encodeURIComponent(city + ", India")}&f_TPR=r604800&sortBy=DD`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                   style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
                 >💼 LinkedIn</a>
               </div>
