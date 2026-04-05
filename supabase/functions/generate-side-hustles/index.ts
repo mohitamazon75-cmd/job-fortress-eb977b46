@@ -223,9 +223,9 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
   const cors = getCorsHeaders(req);
 
-  // Server-side Pro subscription check
-  const subGuard = await requirePro(req);
-  if (subGuard) return subGuard;
+  // Pro subscription check — disabled during waitlist phase
+  // const subGuard = await requirePro(req);
+  // if (subGuard) return subGuard;
 
   try {
     const blocked = guardRequest(req, cors);
