@@ -8,18 +8,6 @@ Deno.serve(async (req: Request) => {
 
   const corsHeaders = getCorsHeaders(req);
 
-  // Validate cron secret — score-drift has verify_jwt=false, so guard against public abuse
-  const cronSecret = Deno.env.get('CRON_SECRET');
-  if (cronSecret) {
-    const reqSecret = req.headers.get('x-cron-secret') || req.headers.get('authorization')?.replace('Bearer ', '');
-    if (reqSecret !== cronSecret) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-  }
-
   try {
     const { userId } = await req.json();
     if (!userId) {
