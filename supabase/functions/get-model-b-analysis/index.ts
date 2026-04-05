@@ -196,15 +196,14 @@ async function processAnalysis(
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: isGpt ? 1 : 0.25,
+        temperature: 0.25,
+        max_tokens: 12000,
       };
 
-      // GPT-5 requires max_completion_tokens; Gemini uses max_tokens
       if (isGpt) {
+        delete requestBody.max_tokens;
         requestBody.max_completion_tokens = 12000;
-      } else {
-        requestBody.max_tokens = 12000;
-        requestBody.generationConfig = { responseMimeType: "application/json" };
+        requestBody.temperature = 1;
       }
       requestBody.response_format = { type: "json_object" };
 
