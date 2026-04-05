@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Radar, Zap, TrendingUp, TrendingDown, AlertTriangle, Briefcase,
+  Radar, AlertTriangle, Briefcase,
   Cpu, Newspaper, DollarSign, Flame, ChevronRight, RefreshCw,
-  Sparkles, Shield, ArrowUpRight, Clock, Target
+  Sparkles, Target, TrendingUp, Share2, Copy, Check, Users
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Signal {
   category: string;
@@ -34,6 +35,12 @@ interface MarketPulse {
   emerging_role: string;
 }
 
+interface ClosingVerdict {
+  status: string;
+  message: string;
+  share_hook: string;
+}
+
 interface RadarData {
   briefing_date: string;
   threat_level: string;
@@ -41,6 +48,7 @@ interface RadarData {
   signals: Signal[];
   hot_skill_of_the_week: HotSkill;
   market_pulse: MarketPulse;
+  closing_verdict?: ClosingVerdict;
   one_liner: string;
 }
 
@@ -52,7 +60,7 @@ interface Props {
 }
 
 const CACHE_KEY = 'jb_market_radar';
-const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 hours
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 const categoryConfig: Record<string, { icon: React.ElementType; gradient: string; label: string }> = {
   AI_TOOL: { icon: Cpu, gradient: 'from-violet-500 to-purple-600', label: 'AI Tool' },
@@ -70,8 +78,10 @@ const threatColors: Record<string, string> = {
   CRITICAL: 'bg-red-500/10 text-red-600 border-red-500/20',
 };
 
-const threatEmoji: Record<string, string> = {
-  LOW: '🟢', MEDIUM: '🟡', HIGH: '🟠', CRITICAL: '🔴',
+const verdictColors: Record<string, { bg: string; border: string; text: string; emoji: string }> = {
+  AHEAD: { bg: 'from-emerald-500/10 to-green-500/5', border: 'border-emerald-500/20', text: 'text-emerald-700', emoji: '🏆' },
+  ON_TRACK: { bg: 'from-blue-500/10 to-indigo-500/5', border: 'border-blue-500/20', text: 'text-blue-700', emoji: '✅' },
+  AT_RISK: { bg: 'from-amber-500/10 to-orange-500/5', border: 'border-amber-500/20', text: 'text-amber-700', emoji: '⚠️' },
 };
 
 const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country }) => {
@@ -79,12 +89,12 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSignal, setExpandedSignal] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const fetchRadar = async (force = false) => {
+  const fetchRadar = useCallback(async (force = false) => {
     setLoading(true);
     setError(null);
 
-    // Check cache
     if (!force) {
       try {
         const cached = sessionStorage.getItem(CACHE_KEY);
@@ -117,26 +127,63 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
     } finally {
       setLoading(false);
     }
-  };
+  }, [role, industry, skills, country]);
 
   useEffect(() => {
     if (role) fetchRadar();
-  }, [role]);
+  }, [role, fetchRadar]);
+
+  const handleShare = async () => {
+    const shareText = `🔍 Just got my personalized AI career intelligence report from JobBachao — the Market Radar card alone is worth it.\n\nMy role (${role}) threat level: ${data?.threat_level}\nHot skill this week: ${data?.hot_skill_of_the_week?.skill}\n\nGet yours free → ${window.location.origin}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'JobBachao Market Radar', text: shareText });
+      } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        setCopied(true);
+        toast.success('Copied! Share it with your team');
+        setTimeout(() => setCopied(false), 3000);
+      } catch {}
+    }
+  };
 
   if (loading) {
     return (
       <Card className="border-border/40 overflow-hidden">
-        <CardContent className="py-12">
-          <div className="flex flex-col items-center gap-4">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-            >
-              <Radar className="w-10 h-10 text-primary/60" />
-            </motion.div>
-            <div className="space-y-1 text-center">
-              <p className="text-sm font-bold text-foreground">Scanning Market Signals...</p>
-              <p className="text-xs text-muted-foreground">Analyzing AI tools, hiring trends & salary shifts for {role}</p>
+        <CardContent className="py-16">
+          <div className="flex flex-col items-center gap-5">
+            <div className="relative">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center"
+              >
+                <Radar className="w-8 h-8 text-primary" />
+              </motion.div>
+              <motion.div
+                animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute inset-0 rounded-2xl border-2 border-primary/30"
+              />
+            </div>
+            <div className="space-y-1.5 text-center">
+              <p className="text-sm font-black text-foreground">Building Your Live Market Radar</p>
+              <p className="text-xs text-muted-foreground max-w-[260px]">
+                Scanning AI releases, hiring signals & salary shifts for <span className="font-semibold text-foreground">{role}</span>
+              </p>
+            </div>
+            <div className="flex gap-1">
+              {[0, 1, 2, 3, 4].map(i => (
+                <motion.div
+                  key={i}
+                  animate={{ opacity: [0.3, 1, 0.3] }}
+                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+                  className="w-1.5 h-1.5 rounded-full bg-primary"
+                />
+              ))}
             </div>
           </div>
         </CardContent>
@@ -161,6 +208,8 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
   if (!data) return null;
 
   const threat = data.threat_level || 'MEDIUM';
+  const verdict = data.closing_verdict;
+  const verdictStyle = verdictColors[verdict?.status || 'ON_TRACK'] || verdictColors.ON_TRACK;
 
   return (
     <motion.div
@@ -169,40 +218,32 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
       transition={{ duration: 0.5 }}
       className="space-y-4"
     >
-      {/* Header Card */}
+      {/* Header */}
       <Card className="border-border/40 overflow-hidden relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-violet-500/[0.03]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.04] via-transparent to-violet-500/[0.04]" />
         <CardContent className="pt-5 pb-4 relative">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center shadow-lg shadow-primary/20">
-                <Radar className="w-5 h-5 text-white" />
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center shadow-lg shadow-primary/25">
+                <Radar className="w-5.5 h-5.5 text-white" />
               </div>
               <div>
-                <h3 className="text-base font-black text-foreground tracking-tight">Market Radar</h3>
-                <p className="text-[11px] text-muted-foreground font-medium">Live career intelligence · {data.briefing_date}</p>
+                <h3 className="text-base font-black text-foreground tracking-tight">Live Market Radar</h3>
+                <p className="text-[11px] text-muted-foreground font-medium">
+                  Intelligence for <span className="text-foreground font-semibold">{role}</span> · {data.briefing_date}
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge className={`${threatColors[threat]} border text-[10px] font-bold px-2 py-0.5`}>
-                {threatEmoji[threat]} {threat}
-              </Badge>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={() => fetchRadar(true)}
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </Button>
-            </div>
+            <Badge className={`${threatColors[threat]} border text-[10px] font-bold px-2.5 py-0.5`}>
+              {threat === 'LOW' ? '🟢' : threat === 'MEDIUM' ? '🟡' : threat === 'HIGH' ? '🟠' : '🔴'} {threat}
+            </Badge>
           </div>
 
           <p className="text-xs text-muted-foreground leading-relaxed mb-3">{data.threat_level_reason}</p>
 
-          {/* One-liner */}
-          <div className="rounded-lg bg-gradient-to-r from-primary/5 to-violet-500/5 border border-primary/10 px-3 py-2">
-            <p className="text-xs font-semibold text-foreground italic">💡 {data.one_liner}</p>
+          {/* Fortune cookie */}
+          <div className="rounded-xl bg-gradient-to-r from-primary/[0.06] via-violet-500/[0.04] to-primary/[0.06] border border-primary/10 px-4 py-2.5">
+            <p className="text-[13px] font-bold text-foreground italic leading-snug">💡 "{data.one_liner}"</p>
           </div>
         </CardContent>
       </Card>
@@ -219,19 +260,19 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
               key={i}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.08 }}
+              transition={{ delay: i * 0.1 }}
             >
               <Card
-                className={`border-border/40 cursor-pointer transition-all duration-300 hover:shadow-md hover:border-primary/20 group ${isExpanded ? 'ring-1 ring-primary/20' : ''}`}
+                className={`border-border/40 cursor-pointer transition-all duration-300 hover:shadow-md hover:border-primary/20 group ${isExpanded ? 'ring-1 ring-primary/20 shadow-md' : ''}`}
                 onClick={() => setExpandedSignal(isExpanded ? null : i)}
               >
                 <CardContent className="py-3 px-4">
                   <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${config.gradient} flex items-center justify-center flex-shrink-0 shadow-sm`}>
-                      <Icon className="w-4 h-4 text-white" />
+                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                      <Icon className="w-4.5 h-4.5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <Badge variant="outline" className="text-[9px] font-bold px-1.5 py-0 border-border/60">
                           {config.label}
                         </Badge>
@@ -241,10 +282,10 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
                           </span>
                         )}
                         <span className="ml-auto text-[9px] text-muted-foreground font-mono">
-                          {signal.relevance_score}%
+                          {signal.relevance_score}% match
                         </span>
                       </div>
-                      <p className="text-sm font-bold text-foreground leading-snug group-hover:text-primary transition-colors">
+                      <p className="text-[13px] font-bold text-foreground leading-snug group-hover:text-primary transition-colors">
                         {signal.headline}
                       </p>
 
@@ -257,23 +298,26 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
                             transition={{ duration: 0.25 }}
                             className="overflow-hidden"
                           >
-                            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                            <p className="text-xs text-muted-foreground mt-2.5 leading-relaxed">
                               {signal.body}
                             </p>
-                            <div className="mt-2.5 rounded-lg bg-primary/5 border border-primary/10 px-3 py-2">
-                              <div className="flex items-start gap-1.5">
-                                <Target className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-                                <p className="text-xs font-semibold text-foreground">{signal.action_item}</p>
+                            <div className="mt-3 rounded-xl bg-primary/5 border border-primary/10 px-3.5 py-2.5">
+                              <div className="flex items-start gap-2">
+                                <Target className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-0.5">Do this today</p>
+                                  <p className="text-xs font-semibold text-foreground">{signal.action_item}</p>
+                                </div>
                               </div>
                             </div>
-                            <p className="text-[10px] text-muted-foreground/70 mt-1.5 italic">
+                            <p className="text-[10px] text-muted-foreground/60 mt-2 italic">
                               📎 {signal.source_hint}
                             </p>
                           </motion.div>
                         )}
                       </AnimatePresence>
                     </div>
-                    <ChevronRight className={`w-4 h-4 text-muted-foreground/50 transition-transform flex-shrink-0 mt-1 ${isExpanded ? 'rotate-90' : ''}`} />
+                    <ChevronRight className={`w-4 h-4 text-muted-foreground/40 transition-transform flex-shrink-0 mt-1.5 ${isExpanded ? 'rotate-90' : ''}`} />
                   </div>
                 </CardContent>
               </Card>
@@ -282,41 +326,39 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
         })}
       </div>
 
-      {/* Bottom row: Hot Skill + Market Pulse */}
+      {/* Hot Skill + Market Pulse */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Hot Skill */}
         {data.hot_skill_of_the_week && (
-          <Card className="border-border/40 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.04] to-transparent" />
+          <Card className="border-border/40 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.05] to-transparent" />
             <CardContent className="py-4 relative">
-              <div className="flex items-center gap-2 mb-2.5">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                  <Flame className="w-3.5 h-3.5 text-white" />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm">
+                  <Flame className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-xs font-black text-foreground tracking-tight">🔥 HOT SKILL</span>
               </div>
-              <p className="text-lg font-black text-foreground mb-1">{data.hot_skill_of_the_week.skill}</p>
-              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold mb-2">
+              <p className="text-lg font-black text-foreground mb-1.5">{data.hot_skill_of_the_week.skill}</p>
+              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold mb-2.5">
                 {data.hot_skill_of_the_week.demand_change}
               </Badge>
-              <p className="text-xs text-muted-foreground leading-relaxed">{data.hot_skill_of_the_week.why_now}</p>
-              <p className="text-[10px] text-primary font-semibold mt-2">📚 {data.hot_skill_of_the_week.learn_signal}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-2">{data.hot_skill_of_the_week.why_now}</p>
+              <p className="text-[11px] text-primary font-bold">📚 {data.hot_skill_of_the_week.learn_signal}</p>
             </CardContent>
           </Card>
         )}
 
-        {/* Market Pulse */}
         {data.market_pulse && (
-          <Card className="border-border/40 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.04] to-transparent" />
+          <Card className="border-border/40 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.05] to-transparent" />
             <CardContent className="py-4 relative">
-              <div className="flex items-center gap-2 mb-2.5">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                  <Briefcase className="w-3.5 h-3.5 text-white" />
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                  <Briefcase className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-xs font-black text-foreground tracking-tight">📊 MARKET PULSE</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-muted-foreground font-medium">Hiring</span>
                   <Badge variant="outline" className="text-[10px] font-bold">
@@ -329,15 +371,15 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
                   <span className="text-[11px] font-bold text-foreground">{data.market_pulse.avg_salary_trend}</span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-muted-foreground font-medium block mb-1">Hiring Now</span>
+                  <span className="text-[11px] text-muted-foreground font-medium block mb-1">Top Hiring</span>
                   <div className="flex flex-wrap gap-1">
                     {(data.market_pulse.top_hiring_companies || []).map((c, i) => (
                       <Badge key={i} variant="outline" className="text-[9px] font-semibold">{c}</Badge>
                     ))}
                   </div>
                 </div>
-                <div className="rounded bg-indigo-500/5 border border-indigo-500/10 px-2 py-1.5 mt-1">
-                  <span className="text-[10px] text-muted-foreground">Emerging: </span>
+                <div className="rounded-lg bg-indigo-500/5 border border-indigo-500/10 px-2.5 py-1.5">
+                  <span className="text-[10px] text-muted-foreground">Emerging role: </span>
                   <span className="text-[10px] font-bold text-foreground">{data.market_pulse.emerging_role}</span>
                 </div>
               </div>
@@ -345,6 +387,68 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country })
           </Card>
         )}
       </div>
+
+      {/* Closing Verdict — The Grand Finale */}
+      {verdict && (
+        <motion.div
+          initial={{ opacity: 0, y: 16, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.6, type: 'spring', stiffness: 200 }}
+        >
+          <Card className={`border ${verdictStyle.border} overflow-hidden relative`}>
+            <div className={`absolute inset-0 bg-gradient-to-br ${verdictStyle.bg}`} />
+            <CardContent className="py-6 relative">
+              <div className="text-center space-y-4">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.8, type: 'spring', stiffness: 300, damping: 15 }}
+                  className="text-4xl"
+                >
+                  {verdictStyle.emoji}
+                </motion.div>
+
+                <div>
+                  <Badge className={`${verdictStyle.border} border ${verdictStyle.text} bg-transparent text-xs font-black px-3 py-0.5 mb-3`}>
+                    YOUR MARKET STATUS: {verdict.status?.replace('_', ' ')}
+                  </Badge>
+                  <p className={`text-sm font-bold ${verdictStyle.text} leading-relaxed max-w-md mx-auto`}>
+                    {verdict.message}
+                  </p>
+                </div>
+
+                {/* Share hook */}
+                <div className="pt-2 border-t border-border/30 mt-4">
+                  <p className="text-xs text-muted-foreground italic mb-3 max-w-sm mx-auto">
+                    💬 {verdict.share_hook}
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <Button
+                      onClick={handleShare}
+                      size="sm"
+                      className="gap-2 bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 shadow-lg shadow-primary/20 text-xs font-bold px-5"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+                      {copied ? 'Copied!' : 'Share with a colleague'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Subtle referral nudge */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.5 }}
+                  className="text-[10px] text-muted-foreground/50 flex items-center justify-center gap-1"
+                >
+                  <Users className="w-3 h-3" />
+                  2,847 professionals scanned their careers this week
+                </motion.p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
     </motion.div>
   );
 };
