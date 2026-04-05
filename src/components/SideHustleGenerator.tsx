@@ -822,22 +822,27 @@ const SideHustleGenerator: React.FC<SideHustleGeneratorProps> = ({ report, onCom
   if (!hustleReport) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+    <div className="min-h-screen bg-gradient-to-b from-muted/30 via-background to-muted/20">
+      <div className="max-w-3xl mx-auto px-4 py-10 sm:py-14 space-y-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-3"
+          className="text-center space-y-4"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 200 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/15 to-accent/15 text-primary text-xs font-bold tracking-wider border border-primary/10 shadow-sm"
+          >
             <Rocket className="w-3.5 h-3.5" />
-            MARCH 2026 OPPORTUNITY INTELLIGENCE
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-foreground">
-            4 Side Hustles Only You Can Build
+            APRIL 2026 OPPORTUNITY INTELLIGENCE
+          </motion.div>
+          <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight leading-tight">
+            Side Hustles Only <span className="bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">You</span> Can Build
           </h1>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
             {hustleReport.executiveSummary}
           </p>
         </motion.div>
@@ -850,34 +855,34 @@ const SideHustleGenerator: React.FC<SideHustleGeneratorProps> = ({ report, onCom
             transition={{ delay: 0.2 }}
             className="flex flex-wrap gap-1.5 justify-center"
           >
-            <span className="text-xs text-muted-foreground mr-1 self-center">Based on:</span>
+            <span className="text-xs text-muted-foreground mr-1 self-center font-medium">Based on:</span>
             {hustleReport.profileFactorsUsed.slice(0, 8).map((factor, i) => (
-              <Badge key={i} variant="outline" className="text-[10px]">{factor}</Badge>
+              <Badge key={i} variant="outline" className="text-[10px] font-medium bg-background/80">{factor}</Badge>
             ))}
           </motion.div>
         )}
 
         {/* Idea Cards */}
-        <div className="space-y-4">
+        <div className="space-y-6">
           {hustleReport.ideas.slice(0, 3).map((idea, i) => (
             <IdeaCard key={i} idea={idea} index={i} />
           ))}
         </div>
 
-        {/* Next: Startup Autopsy */}
+        {/* Next CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="text-center pt-4 pb-8"
+          className="text-center pt-6 pb-10"
         >
           <Button
             onClick={onComplete}
             size="lg"
-            className="gap-2 px-8"
+            className="gap-2.5 px-10 h-13 text-base font-bold rounded-xl bg-gradient-to-r from-primary to-indigo-600 hover:from-primary/90 hover:to-indigo-600/90 shadow-lg shadow-primary/20 transition-all duration-300 hover:shadow-xl hover:shadow-primary/30"
           >
             Next: Stress-Test Your Idea
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-5 h-5" />
           </Button>
         </motion.div>
       </div>
