@@ -5,7 +5,6 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
-import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { callAgent, AI_URL, PRO_MODEL, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
 import { tavilySearch } from "../_shared/tavily-search.ts";

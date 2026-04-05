@@ -254,12 +254,13 @@ Deno.serve(async (req: Request) => {
       ? `${founderProfile.role || "Professional"} at ${founderProfile.company || "N/A"} in ${founderProfile.industry || "Technology"} with ${founderProfile.yearsExp || "3-5"} years experience. Skills: ${(founderProfile.skills || []).join(", ")}. Moat skills: ${(founderProfile.moatSkills || []).join(", ")}.`
       : (background || "No background provided");
 
-    // ═══ STAGE 0: CLARIFY VAGUE INPUT (Flash ~5s) ═══
+    // ═══ STAGE 0+1: CLARIFY + DECOMPOSE (parallel when possible) ═══
     const ideaWordCount = idea.trim().split(/\s+/).length;
     let structuredIdea = idea;
     let clarification: any = null;
 
     if (ideaWordCount < 25) {
+      // Short idea: clarify first, then decompose
       console.log(`[StartupAutopsy] Stage 0: Clarifying vague input (${ideaWordCount} words)...`);
       clarification = await callAgent(
         apiKey, "Autopsy-Clarify", CLARIFY_PROMPT,
@@ -268,35 +269,43 @@ Deno.serve(async (req: Request) => {
       );
       if (clarification?.clarified_idea) {
         structuredIdea = `${clarification.clarified_idea}\nProduct: ${clarification.inferred_product || idea}\nCustomer: ${clarification.inferred_customer || "TBD"}\nRevenue: ${clarification.inferred_revenue_model || "TBD"}\nTech: ${clarification.inferred_tech || "TBD"}\nDifferentiator: ${clarification.inferred_differentiator || "TBD"}`;
-        console.log(`[StartupAutopsy] Stage 0 complete in ${Date.now() - startMs}ms: ${clarification.confidence} confidence`);
+        console.log(`[StartupAutopsy] Stage 0 complete in ${Date.now() - startMs}ms`);
       }
     }
 
     const userContext = `STARTUP IDEA:\n${structuredIdea}\n\nFOUNDER BACKGROUND: ${founderCtx}\n\nDecompose into structured DNA. Return ONLY JSON.`;
 
-    // ═══ STAGE 1: DECOMPOSE DNA (Flash ~8s) ═══
-    console.log(`[StartupAutopsy] Stage 1: Decomposing DNA...`);
-    const dna = await callAgent(
-      apiKey, "Autopsy-Decompose", DECOMPOSE_PROMPT, userContext,
-      FLASH_MODEL, 0.3, 30_000,
-    );
+    // ═══ STAGE 1+2: DECOMPOSE + GRAVEYARD SEARCH IN PARALLEL ═══
+    // Key optimization: Run decompose and graveyard search concurrently.
+    // Graveyard uses the raw idea text (doesn't need full DNA), then we
+    // merge results. This saves ~30s of serial waiting.
+    console.log(`[StartupAutopsy] Stage 1+2: Decomposing DNA + searching graveyard in parallel...`);
+
+    const findDeadSys = "You are a startup forensics investigator with deep knowledge of startup failures across all industries. Find real examples of failed startups similar to the one described. Use your knowledge of well-known startup failures, YC postmortems, and industry case studies. Respond ONLY with valid JSON.";
+
+    // Graveyard can work from the raw idea — doesn't need full DNA
+    const earlyGraveyardPrompt = buildFindDeadPrompt({
+      startup_dna: {
+        name_or_concept: structuredIdea.slice(0, 200),
+        one_liner: structuredIdea.slice(0, 100),
+        market_category: "unknown",
+        target_customer: "unknown",
+        value_proposition: structuredIdea.slice(0, 150),
+      },
+    });
+
+    const [dna, earlyDead] = await Promise.all([
+      callAgent(apiKey, "Autopsy-Decompose", DECOMPOSE_PROMPT, userContext, FLASH_MODEL, 0.3, 30_000),
+      callAgent(apiKey, "Autopsy-Graveyard", findDeadSys, earlyGraveyardPrompt, PRO_MODEL, 0.4, 60_000),
+    ]);
 
     if (!dna?.startup_dna) {
       return new Response(JSON.stringify({ error: "Failed to decompose idea. Try adding more detail." }), {
         status: 500, headers: { ...cors, "Content-Type": "application/json" },
       });
     }
-    console.log(`[StartupAutopsy] Stage 1 complete in ${Date.now() - startMs}ms: ${dna.startup_dna.name_or_concept}`);
 
-    // ═══ STAGE 2: FIND DEAD STARTUPS (Pro ~30s) ═══
-    console.log(`[StartupAutopsy] Stage 2: Searching graveyard...`);
-    const findDeadSys = "You are a startup forensics investigator with deep knowledge of startup failures across all industries. Find real examples of failed startups similar to the one described. Use your knowledge of well-known startup failures, YC postmortems, and industry case studies. Respond ONLY with valid JSON.";
-    const dead = await callAgent(
-      apiKey, "Autopsy-Graveyard", findDeadSys, buildFindDeadPrompt(dna),
-      PRO_MODEL, 0.4, 60_000,
-    );
-
-    const deadData = dead?.dead_startups?.length > 0 ? dead : {
+    const deadData = earlyDead?.dead_startups?.length > 0 ? earlyDead : {
       dead_startups: [],
       pattern_analysis: {
         most_common_death_cause: "Insufficient data — limited similar failures found",
@@ -305,7 +314,7 @@ Deno.serve(async (req: Request) => {
         timing_signal: "unclear",
       },
     };
-    console.log(`[StartupAutopsy] Stage 2 complete in ${Date.now() - startMs}ms: ${deadData.dead_startups?.length || 0} dead startups`);
+    console.log(`[StartupAutopsy] Stage 1+2 complete in ${Date.now() - startMs}ms: DNA=${dna.startup_dna.name_or_concept}, Dead=${deadData.dead_startups?.length || 0}`);
 
     // ═══ STAGE 3: SCORE + PLAYBOOK + ALTERNATIVES (parallel Pro calls) ═══
     console.log(`[StartupAutopsy] Stage 3: Scoring + generating alternatives in parallel...`);

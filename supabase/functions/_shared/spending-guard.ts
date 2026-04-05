@@ -1,3 +1,8 @@
+// ═══════════════════════════════════════════════════════════════
+// Spending Guard v2 — with in-memory cache to avoid DB hit on
+// every single edge function call. Cache TTL = 30s.
+// ═══════════════════════════════════════════════════════════════
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Cost weights per function (approximate $/call)
@@ -29,9 +34,15 @@ const FUNCTION_COST_WEIGHTS: Record<string, number> = {
 
 const DAILY_BUDGET_USD = 2500; // Viral-scale daily limit
 
+// ─── In-memory cache ────────────────────────────────────────
+// Avoids a DB round-trip on every single function call.
+// Worst case: 30s stale data = $0.50 extra spend before detection.
+const CACHE_TTL_MS = 30_000;
+let cachedSpend: { value: number; ts: number } | null = null;
+
 export interface SpendingCheckResult {
   allowed: boolean;
-  degraded: boolean; // true = switch to cheaper models
+  degraded: boolean;
   estimatedSpendUsd: number;
   budgetUsd: number;
   reason?: string;
@@ -39,6 +50,24 @@ export interface SpendingCheckResult {
 }
 
 export async function checkDailySpending(functionName: string, userId?: string): Promise<SpendingCheckResult> {
+  const now = Date.now();
+
+  // Fast path: return cached result if fresh
+  if (cachedSpend && (now - cachedSpend.ts) < CACHE_TTL_MS) {
+    const totalEstimatedSpend = cachedSpend.value;
+    const isCritical = functionName === "process-scan";
+    const atBudget = totalEstimatedSpend >= DAILY_BUDGET_USD;
+
+    if (atBudget && !isCritical) {
+      return { allowed: false, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
+    }
+    if (atBudget && isCritical) {
+      return { allowed: true, degraded: true, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
+    }
+    return { allowed: true, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
+  }
+
+  // Slow path: query DB
   const sb = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -63,28 +92,29 @@ export async function checkDailySpending(functionName: string, userId?: string):
       totalEstimatedSpend += row.call_count * weight;
     }
 
-    // Critical functions (process-scan) get degraded mode, not blocked
+    // Update cache
+    cachedSpend = { value: totalEstimatedSpend, ts: now };
+
     const isCritical = functionName === "process-scan";
     const atBudget = totalEstimatedSpend >= DAILY_BUDGET_USD;
     const nearBudget = totalEstimatedSpend >= DAILY_BUDGET_USD * 0.8;
 
     if (atBudget && !isCritical) {
-      console.warn(`[SpendingGuard] BLOCKED ${functionName}: $${totalEstimatedSpend.toFixed(2)}/$${DAILY_BUDGET_USD} daily budget exceeded`);
+      console.warn(`[SpendingGuard] BLOCKED ${functionName}: $${totalEstimatedSpend.toFixed(2)}/$${DAILY_BUDGET_USD}`);
       return { allowed: false, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
     }
 
     if (atBudget && isCritical) {
-      console.warn(`[SpendingGuard] DEGRADED ${functionName}: switching to Flash models ($${totalEstimatedSpend.toFixed(2)}/$${DAILY_BUDGET_USD})`);
+      console.warn(`[SpendingGuard] DEGRADED ${functionName}: switching to Flash models`);
       return { allowed: true, degraded: true, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
     }
 
     if (nearBudget) {
-      console.log(`[SpendingGuard] WARNING: ${functionName} at ${Math.round(totalEstimatedSpend / DAILY_BUDGET_USD * 100)}% of daily budget`);
+      console.log(`[SpendingGuard] WARNING: ${functionName} at ${Math.round(totalEstimatedSpend / DAILY_BUDGET_USD * 100)}%`);
     }
 
-    // Per-user daily limit
+    // Per-user daily limit (only query if global budget is fine)
     if (userId) {
-      const today = new Date().toISOString().slice(0, 10);
       const { data: userStats } = await sb
         .from("daily_usage_stats")
         .select("call_count")
@@ -92,23 +122,18 @@ export async function checkDailySpending(functionName: string, userId?: string):
         .eq("stat_date", today);
 
       const userCallCount = (userStats || []).reduce((sum: number, r: any) => sum + (r.call_count || 0), 0);
-      const USER_DAILY_LIMIT = 25; // calls per user per day
+      const USER_DAILY_LIMIT = 25;
 
       if (userCallCount >= USER_DAILY_LIMIT) {
-        console.warn(`[SpendingGuard] BLOCKED ${functionName}: user ${userId} reached daily limit (${userCallCount}/${USER_DAILY_LIMIT})`);
+        console.warn(`[SpendingGuard] BLOCKED ${functionName}: user ${userId} daily limit (${userCallCount}/${USER_DAILY_LIMIT})`);
         return {
-          allowed: false,
-          degraded: false,
-          estimatedSpendUsd: totalEstimatedSpend,
-          budgetUsd: DAILY_BUDGET_USD,
+          allowed: false, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD,
           reason: "user_daily_limit_exceeded",
           message: "Daily limit reached. Try again tomorrow.",
         };
       }
     }
 
-    // Never degrade quality for near-budget — only degrade when actually over budget
-    // Quality and accuracy trump cost savings
     return { allowed: true, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
   } catch (err) {
     console.error("[SpendingGuard] Exception, BLOCKING (fail-closed):", err);
