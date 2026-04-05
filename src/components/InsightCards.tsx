@@ -445,7 +445,7 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
                     <MarketRadarWidget
                       role={report.role || 'Professional'}
                       industry={report.industry || 'Technology'}
-                      skills={(report.skills || []).map((s: any) => typeof s === 'string' ? s : s.name || '').filter(Boolean)}
+                      skills={[...(report.all_skills || []), ...(report.moat_skills || [])].filter(Boolean)}
                       country={report.country}
                     />
                   </React.Suspense>
