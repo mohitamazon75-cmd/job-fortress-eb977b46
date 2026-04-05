@@ -63,7 +63,7 @@ function createScanCheckClient(accessToken: string) {
   });
 }
 
-type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'thank-you' | 'error';
+type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'thank-you' | 'error';
 
 // FIX 4 (LOW): Named interface for ScanRow instead of inline type
 interface ScanRow {
