@@ -654,6 +654,13 @@ const Index = () => {
           <p className="text-muted-foreground">Loading results...</p>
         </div>
       ))}
+      {phase === 'startup-autopsy' && (scanReport ? (
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><StartupAutopsyPage report={scanReport} onComplete={handleAutopsyComplete} country={country} /></Suspense>
+      ) : (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <p className="text-muted-foreground">Loading results...</p>
+        </div>
+      ))}
       {phase === 'thank-you' && (
         <div className="min-h-screen bg-background">
           <div className="max-w-lg mx-auto px-4 py-12">
