@@ -619,20 +619,46 @@ export default function DoomClockCard({ report, scanId }: Props) {
         <ProximityGauge value={aiProximity} />
       </motion.div>
 
-      {/* ── Skill Threat Cards ── */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            Skills closest to AI disruption
-          </p>
-          {topSkills.some(s => s.threatIntel) && (
-            <p className="text-[9px] text-primary font-semibold">Tap each for deep analysis ↓</p>
-          )}
+      {/* ── Skills from your resume ── */}
+      {extractedAtRisk.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-destructive" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                From your resume
+              </p>
+            </div>
+            {extractedAtRisk.some(s => s.threatIntel) && (
+              <p className="text-[9px] text-primary font-semibold">Tap for deep analysis ↓</p>
+            )}
+          </div>
+          {extractedAtRisk.slice(0, 5).map((skill, i) => (
+            <SkillThreatRow key={`ext-${skill.name}-${i}`} skill={skill} index={i} />
+          ))}
         </div>
-        {topSkills.map((skill, i) => (
-          <SkillThreatRow key={`${skill.name}-${i}`} skill={skill} index={i} />
-        ))}
-      </div>
+      )}
+
+      {/* ── Skills inferred from role profile ── */}
+      {inferredAtRisk.length > 0 && (
+        <div className="space-y-3">
+          <div className="px-1 space-y-1">
+            {extractedAtRisk.length > 0 && <div className="h-px bg-border/60 my-2" />}
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-prophet-gold/70" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Typical for this role
+              </p>
+            </div>
+            <p className="text-[10px] text-muted-foreground/70 ml-3.5">
+              Common skills for your role profile — not explicitly found on your resume
+            </p>
+          </div>
+          {inferredAtRisk.slice(0, 3).map((skill, i) => (
+            <SkillThreatRow key={`inf-${skill.name}-${i}`} skill={skill} index={i + extractedAtRisk.length} />
+          ))}
+        </div>
+      )}
 
       {/* ── Share Section ── */}
       <CaptureTarget innerRef={cardRef} role={role} industry={industry} skills={topSkills} date={date} />
