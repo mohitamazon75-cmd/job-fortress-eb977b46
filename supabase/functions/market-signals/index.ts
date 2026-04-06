@@ -420,6 +420,7 @@ async function handleMarket(req: any, corsHeaders: any, supabase: any, body: any
   const ms2T = setTimeout(() => ms2Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
+    signal: ms2Ctrl.signal,
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
@@ -454,11 +455,10 @@ Base ONLY on the provided data. No markdown.`,
       temperature: 0.2,
     }),
   });
+  clearTimeout(ms2T);
 
   if (!aiResp.ok) {
-    signal: ms2Ctrl.signal,
     return new Response(
-  clearTimeout(ms2T);
       JSON.stringify({ error: "AI synthesis failed" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
