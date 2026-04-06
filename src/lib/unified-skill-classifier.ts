@@ -162,6 +162,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       estimatedMonths: riskToMonths(baseRisk),
       actionTag: '💪 Double down',
       threatIntel: null,
+      source: 'extracted',
     });
   }
 
