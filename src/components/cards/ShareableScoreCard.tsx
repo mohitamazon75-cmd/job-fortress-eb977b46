@@ -389,7 +389,7 @@ function CaptureTarget({
                 fontFamily: FONT_MONO, fontSize: 8, fontWeight: 700,
                 color: C.warning, textTransform: 'uppercase', letterSpacing: '0.15em',
                 margin: '0 0 8px',
-              }}>⚠ Build now</p>
+              }}>⚠ Learning next</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {buildSkills.map(s => (
                   <span key={s} style={{
