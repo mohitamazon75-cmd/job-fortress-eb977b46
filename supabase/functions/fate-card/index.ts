@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     if (!assessment) {
       return new Response(
-        JSON.stringify({ error: "Assessment not found" }),
+        JSON.stringify({ error: "Assessment not found", code: "NOT_FOUND", status: "error" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
