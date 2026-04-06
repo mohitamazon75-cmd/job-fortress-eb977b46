@@ -35,8 +35,9 @@ const SKEPTICISM_FACTOR = 0.82;
 const FLOOR_OFFSET = 9;
 
 /** Max optimism credit: AI agent can deviate at most this many points
- *  below the KG baseline before being snapped back */
-const MAX_AI_OPTIMISM_DEVIATION = 15;
+ *  below the KG baseline before being snapped back.
+ *  Reduced from 15→5 after finding server DI=22 for Marketing (KG=65%). */
+const MAX_AI_OPTIMISM_DEVIATION = 5;
 
 /** Moat score cap when fewer than MIN_VERIFIED_MOAT_SKILLS are present */
 const UNVERIFIED_MOAT_CAP = 55;
