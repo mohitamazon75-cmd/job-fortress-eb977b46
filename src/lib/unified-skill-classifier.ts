@@ -125,6 +125,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       estimatedMonths: riskToMonths(intel?.risk_pct ?? sa.automation_risk),
       actionTag: actionTag(intel?.risk_pct ?? sa.automation_risk),
       threatIntel: intel,
+      source: 'extracted',
     });
   }
 
