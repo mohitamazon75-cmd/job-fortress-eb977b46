@@ -1122,7 +1122,7 @@ ${kgContext}`;
               skill_risks: skillRisks,
             }),
           });
-        } catch {
+        } catch { // Intentional: fire-and-forget prediction store; outer .catch() logs failures
           return Promise.resolve();
         }
       })().catch((e) => console.warn("[process-scan] store-prediction fire failed:", e)),
