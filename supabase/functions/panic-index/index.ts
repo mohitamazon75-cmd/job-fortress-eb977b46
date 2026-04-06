@@ -118,6 +118,8 @@ Deno.serve(async (req) => {
       try {
         const context = buildSearchContext(tavilyResult.results, 8);
         const answer = tavilyResult.answer || "";
+        const aiCtrl = new AbortController();
+        const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
         const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -158,7 +160,9 @@ Return JSON:
             ],
             temperature: 0.1,
           }),
+          signal: aiCtrl.signal,
         });
+        clearTimeout(aiT);
 
         if (resp.ok) {
           const data = await resp.json();

@@ -214,6 +214,8 @@ Return JSON:
         : `Based on these search results, validate pivots for a ${role} with ${skillsList}:\n\n${context}\n\nSummary: ${answer}${marketDepthContext}`;
 
       try {
+        const aiCtrl = new AbortController();
+        const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
         const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -225,7 +227,9 @@ Return JSON:
             messages: [systemMsg, { role: "user", content: userContent }],
             temperature: 0.1,
           }),
+          signal: aiCtrl.signal,
         });
+        clearTimeout(aiT);
 
         if (resp.ok) {
           const data = await resp.json();

@@ -121,6 +121,8 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════════════════
     const today = new Date().toISOString().split("T")[0];
 
+    const ai1Ctrl = new AbortController();
+    const ai1T = setTimeout(() => ai1Ctrl.abort(), 30_000);
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -158,7 +160,9 @@ No markdown, no explanation.`,
     });
 
     if (!aiResponse.ok) {
+      signal: ai1Ctrl.signal,
       console.error(`[live-news] AI error [${aiResponse.status}]`);
+    clearTimeout(ai1T);
       return new Response(JSON.stringify({ headlines: getFallbackHeadlines(), fallback: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -217,6 +221,8 @@ async function persistCache(supabase: any, headlines: any[]) {
 async function geminiOnlyHeadlines(apiKey: string) {
   try {
     const today = new Date().toISOString().split("T")[0];
+    const ai2Ctrl = new AbortController();
+    const ai2T = setTimeout(() => ai2Ctrl.abort(), 30_000);
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -234,7 +240,9 @@ async function geminiOnlyHeadlines(apiKey: string) {
         ],
         temperature: 0.9,
       }),
+      signal: ai2Ctrl.signal,
     });
+    clearTimeout(ai2T);
     if (!resp.ok) return null;
     const d = await resp.json();
     logTokenUsage("live-news", "fallback", "google/gemini-3-flash-preview", d);

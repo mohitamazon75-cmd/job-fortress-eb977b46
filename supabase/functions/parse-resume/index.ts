@@ -53,6 +53,8 @@ Deno.serve(async (req) => {
     const mimeType = fileData.type || "application/pdf";
 
     // Use Gemini to extract structured data from the PDF
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -95,7 +97,9 @@ No markdown, no explanation, only JSON.`,
         ],
         temperature: 0.05, // Near-zero for maximum extraction consistency
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();

@@ -61,6 +61,8 @@ Deno.serve(async (req) => {
     // ── AI Analysis ──
     const model = spending.degraded ? "google/gemini-2.5-flash-lite" : "google/gemini-3-flash-preview";
 
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -122,7 +124,9 @@ Recommend 3 adjacent roles (easier transitions with high skill overlap) and 1 st
         ],
         temperature: 0.3,
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();

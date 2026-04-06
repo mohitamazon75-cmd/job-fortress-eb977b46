@@ -231,6 +231,8 @@ Return JSON:
       : `Based on these search results, validate pivots for a ${role} with ${skillsList}:\n\n${context}\n\nSummary: ${answer}${marketDepthContext}`;
 
     try {
+      const ms1Ctrl = new AbortController();
+      const ms1T = setTimeout(() => ms1Ctrl.abort(), 30_000);
       const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -248,7 +250,9 @@ Return JSON:
       });
 
       if (resp.ok) {
+        signal: ms1Ctrl.signal,
         const data = await resp.json();
+      clearTimeout(ms1T);
         logTokenUsage("market-signals[enrich]", `query-${idx}`, "google/gemini-3-flash-preview", data);
         const content = data.choices?.[0]?.message?.content;
         if (content) {
@@ -412,6 +416,8 @@ async function handleMarket(req: any, corsHeaders: any, supabase: any, body: any
     );
   }
 
+  const ms2Ctrl = new AbortController();
+  const ms2T = setTimeout(() => ms2Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -450,7 +456,9 @@ Base ONLY on the provided data. No markdown.`,
   });
 
   if (!aiResp.ok) {
+    signal: ms2Ctrl.signal,
     return new Response(
+  clearTimeout(ms2T);
       JSON.stringify({ error: "AI synthesis failed" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -586,6 +594,8 @@ async function handleNews(corsHeaders: any, supabase: any, locale: any) {
 
   // Gemini synthesizes articles into headlines
   const today = new Date().toISOString().split("T")[0];
+  const ms3Ctrl = new AbortController();
+  const ms3T = setTimeout(() => ms3Ctrl.abort(), 30_000);
   const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -619,7 +629,9 @@ No markdown.`,
   });
 
   if (!aiResponse.ok) {
+    signal: ms3Ctrl.signal,
     return new Response(JSON.stringify({ headlines: getFallbackHeadlines(), fallback: true }), {
+  clearTimeout(ms3T);
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -758,6 +770,8 @@ Return JSON:
 
   const userPrompt = `Based on these real-time search results, generate career signals:\n\n${searchContext}\n\nTavily summaries:\n${tavilyAnswers}${communityCtx ? `\n\n${communityCtx}` : ''}\n\nFor a ${role} in ${industry || "technology"} with skills in ${skillsList}, based in ${locationCtx}.`;
 
+  const ms4Ctrl = new AbortController();
+  const ms4T = setTimeout(() => ms4Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -775,7 +789,9 @@ Return JSON:
   });
 
   if (!aiResp.ok) {
+    signal: ms4Ctrl.signal,
     return new Response(
+  clearTimeout(ms4T);
       JSON.stringify({ error: "AI synthesis failed", signals: [] }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -919,6 +935,8 @@ Return EXACTLY this JSON (no markdown, no explanation):
 
 Return 6-8 transitions including the current role. Be brutally realistic — no aspirational nonsense.`;
 
+  const ms5Ctrl = new AbortController();
+  const ms5T = setTimeout(() => ms5Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -934,7 +952,9 @@ Return 6-8 transitions including the current role. Be brutally realistic — no 
   });
 
   if (!aiResp.ok) {
+    signal: ms5Ctrl.signal,
     return new Response(
+  clearTimeout(ms5T);
       JSON.stringify({ error: "AI synthesis failed" }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -1068,6 +1088,8 @@ async function handleCompany(corsHeaders: any, supabase: any, body: any, locale:
   const roleContext = role ? `\nThe employee viewing this works as: ${role}` : "";
   const skillsContext = skills?.length ? `\nTheir key skills: ${skills.slice(0, 5).join(", ")}` : "";
 
+  const ms6Ctrl = new AbortController();
+  const ms6T = setTimeout(() => ms6Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -1117,7 +1139,9 @@ Maximum 5 news items. No markdown.`,
   });
 
   if (!aiResp.ok) {
+    signal: ms6Ctrl.signal,
     return new Response(
+  clearTimeout(ms6T);
       JSON.stringify({ news: [], error: "AI synthesis failed" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -1182,6 +1206,8 @@ function getFallbackHeadlines() {
 async function geminiOnlyHeadlines(apiKey: string) {
   try {
     const today = new Date().toISOString().split("T")[0];
+    const ms7Ctrl = new AbortController();
+    const ms7T = setTimeout(() => ms7Ctrl.abort(), 30_000);
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -1202,7 +1228,9 @@ async function geminiOnlyHeadlines(apiKey: string) {
     });
     if (!resp.ok) return null;
     const d = await resp.json();
+      signal: ms7Ctrl.signal,
     logTokenUsage("market-signals[news]", "fallback", "google/gemini-3-flash-preview", d);
+    clearTimeout(ms7T);
     const c = d.choices?.[0]?.message?.content;
     if (!c) return null;
     const j = c.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
@@ -1233,6 +1261,8 @@ async function generateCompanyFallback(apiKey: string, company: string, industry
   const roleCtx = role ? `working as a ${role}` : "";
   const skillCtx = skills?.length ? `with skills in ${skills.slice(0, 5).join(", ")}` : "";
 
+  const ms8Ctrl = new AbortController();
+  const ms8T = setTimeout(() => ms8Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -1282,7 +1312,9 @@ Maximum 4 items. No markdown.`,
       ],
       temperature: 0.3,
     }),
+    signal: ms8Ctrl.signal,
   });
+  clearTimeout(ms8T);
 
   if (!aiResp.ok) {
     return { news: [], sources: [], is_industry_level: true, fetched_at: now.toISOString() };

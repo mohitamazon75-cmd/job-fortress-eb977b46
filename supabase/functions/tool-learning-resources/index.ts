@@ -64,6 +64,8 @@ CRITICAL RULES for resources:
 - type must be one of: "course", "video", "docs"
 - Focus on the LATEST 2025-2026 version of ${tool_name}`;
 
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const response = await fetch(LOVABLE_API_URL, {
       method: "POST",
       headers: {
@@ -77,7 +79,9 @@ CRITICAL RULES for resources:
         ],
         temperature: 0.3,
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!response.ok) {
       const errText = await response.text();
