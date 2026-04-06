@@ -229,8 +229,7 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
               </p>
               {/* Use score-derived peer positioning instead of raw agent estimate */}
               {(() => {
-                const { computeStabilityScore: getScore } = require('@/lib/stability-score');
-                const posScore = getScore(report);
+                const posScore = computeStabilityScore(report);
                 const derivedPct = Math.min(95, Math.max(5, Math.round(((posScore - 5) / 90) * 100)));
                 return (
                   <p className="text-[11px] text-muted-foreground mt-0.5 font-semibold">
