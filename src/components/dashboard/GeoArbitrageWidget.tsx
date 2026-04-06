@@ -23,7 +23,7 @@ export default function GeoArbitrageWidget({ geoArbitrage, tier2, pivotRole, cou
       </h2>
       <p className="text-xs text-muted-foreground mb-4 ml-6">
         Earn more by working remotely for companies in higher-paying markets. 
-        "Delta" = how much extra you could earn. "Risk-adjusted" = realistic estimate after accounting for the chance of actually landing the role.
+        "Potential uplift" = extra monthly earnings at full probability. "Realistic estimate" = probability-weighted expected monthly gain.
       </p>
 
       <div className="grid md:grid-cols-2 gap-3">
