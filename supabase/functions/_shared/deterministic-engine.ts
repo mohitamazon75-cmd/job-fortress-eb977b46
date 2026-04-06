@@ -1545,7 +1545,7 @@ export function computeAll(
   const toneTag = deriveToneTag(determinismIndex);
 
   // 7. Replacing Tools (from KG)
-  const replacingTools = extractReplacingTools(profile, skillRiskData, jobData);
+  const replacingTools = extractReplacingTools(profile, skillRiskData, jobData, kgIndex);
 
   // 8. Execution Skills Dead — actually analyze which execution skills have high automation risk
   //    NOT just a blind copy of the first 3 execution skills
