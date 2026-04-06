@@ -338,7 +338,7 @@ export default function StrategicDossier({ report, scanId, enrichment, enrichmen
             const fiveYearPct = Math.min(95, Math.round(salaryDropPct * 2.5));
 
             if (clampedRisk > 65) {
-              return `Within ${report.months_remaining} months, ${Math.round(clampedRisk * 0.6)}% of current ${displayRole} tasks will be automated in ${report.industry}. Estimated annual earning pressure: ~${salaryDropPct}% of current package. 5-year cumulative impact: up to ${fiveYearPct}% of lifetime earnings at risk. ${isExec ? 'Organizational restructuring will consolidate your function.' : 'Companies are already consolidating teams.'}`;
+              return `Within the next ${report.months_remaining}-month action window, ${Math.round(clampedRisk * 0.6)}% of current ${displayRole} tasks will be automated in ${report.industry}. Estimated annual earning pressure: ~${salaryDropPct}% of current package. 5-year cumulative impact: up to ${fiveYearPct}% of lifetime earnings at risk. ${isExec ? 'The primary risk is organizational restructuring that consolidates your function — not task-level replacement.' : 'Companies are already consolidating teams.'}`;
             }
             if (clampedRisk > 40) {
               return `Your role has a ${report.months_remaining}-month window before meaningful market shift. Estimated annual earning erosion: ~${salaryDropPct}% of package. The risk is not sudden replacement — it's gradual irrelevance as AI-augmented ${isExec ? 'peers and restructured orgs' : 'peers'} outperform.`;
