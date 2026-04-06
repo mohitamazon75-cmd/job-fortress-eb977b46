@@ -632,7 +632,7 @@ Deno.serve(async (req) => {
             synthetic_fallback_used: usedAgent1SyntheticFallback,
         },
       });
-    } catch { /* non-blocking */ }
+    } catch (logErr) { console.warn("[process-scan] Agent1 quality log write failed:", logErr); }
 
     // Compound role handling
     let compoundRole = false;
