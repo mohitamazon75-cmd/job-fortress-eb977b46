@@ -105,7 +105,7 @@ const en: Strings = {
 
   tooltip_risk_score: 'How likely AI is to impact your current role. Higher = more urgent action needed.',
   tooltip_salary_bleed: 'Estimated monthly income you could lose if you don\'t upskill.',
-  tooltip_months_remaining: 'Approximate months before AI significantly disrupts your role.',
+  tooltip_months_remaining: 'Your action window — approximate months to proactively reposition before significant AI disruption.',
   tooltip_moat_skills: 'Skills that are hard for AI to replace — your competitive advantage.',
   tooltip_dead_skills: 'Skills being automated fast. Focus on upgrading these.',
   tooltip_geo_arbitrage: 'Earn more by working remotely for companies in higher-paying markets.',
