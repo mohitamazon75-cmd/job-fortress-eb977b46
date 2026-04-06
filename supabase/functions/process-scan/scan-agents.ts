@@ -77,6 +77,9 @@ export interface AgentOrchestrationInput {
   locale: any;
   scanCountry: string;
 
+  /** Primary job taxonomy match */
+  primaryJob: any;
+
   /** Time budget checker — returns true if enough time remains */
   hasTimeBudget: (msNeeded: number) => boolean;
 }
