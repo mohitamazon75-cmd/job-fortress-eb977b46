@@ -257,15 +257,13 @@ function CaptureTarget({
         margin: '0 28px', padding: '16px 20px',
         background: C.surface,
         borderRadius: 10,
-        borderLeft: `3px solid ${C.danger}`,
+        borderLeft: `3px solid ${scoreColor}`,
       }}>
         <p style={{
           fontSize: 14, color: C.offWhite, lineHeight: 1.65, margin: 0,
           fontWeight: 500,
         }}>
-          <strong style={{ color: C.white }}>{automatedTasks} of {totalTasks || 5} core tasks</strong>{' '}
-          will be fully automated by {automationYear}.
-          <span style={{ color: C.muted }}> The skills keeping you employed are the first AI will master.</span>
+          {verdictText}
         </p>
       </div>
 
