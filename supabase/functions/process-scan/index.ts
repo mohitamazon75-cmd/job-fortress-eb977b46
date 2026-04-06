@@ -47,7 +47,7 @@ import {
 } from "../_shared/scan-report-builder.ts";
 import { fetchCompanyHealth, type CompanyHealthResult } from "../_shared/company-health.ts";
 import { validateSkillDemand, type SkillDemandResult } from "../_shared/skill-demand-validator.ts";
-import { getKG } from "../_shared/riskiq-knowledge-graph.ts";
+
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
