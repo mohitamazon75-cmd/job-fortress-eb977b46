@@ -73,7 +73,8 @@ Deno.serve(async (req) => {
     let translations: Record<string, string>;
     try {
       translations = JSON.parse(cleaned);
-    } catch {
+    } catch (parseErr) {
+      console.error("[translate-verdict] JSON parse failed, returning empty translations:", parseErr);
       translations = {};
     }
 

@@ -41,10 +41,10 @@ import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
 import { callAgent, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
 import { callAgentWithFallback } from "../_shared/model-fallback.ts";
 import { recordScoreHistory, getPreviousScore } from "../_shared/score-history.ts";
-import { validateAgentOutput, Agent1Schema, Agent2ASchema, Agent2BSchema } from "../_shared/zod-schemas.ts";
+// validateAgentOutput, Agent1Schema, Agent2ASchema, Agent2BSchema removed — unused after refactor
 import { getPromptVersion } from "../_shared/prompt-versions.ts";
 import { findCachedScan } from "../_shared/scan-cache.ts";
-import { MAX_CONCURRENT_SCANS, TIMEOUTS, MODELS, DAILY_COST_CAP_USD } from "../_shared/constants.ts";
+import { MAX_CONCURRENT_SCANS, MODELS } from "../_shared/constants.ts";
 import {
   updateScan,
   buildDeterministicReport,
@@ -632,7 +632,7 @@ Deno.serve(async (req) => {
             synthetic_fallback_used: usedAgent1SyntheticFallback,
         },
       });
-    } catch { /* non-blocking */ }
+    } catch (logErr) { console.warn("[process-scan] Agent1 quality log write failed:", logErr); }
 
     // Compound role handling
     let compoundRole = false;
@@ -1122,7 +1122,7 @@ ${kgContext}`;
               skill_risks: skillRisks,
             }),
           });
-        } catch {
+        } catch { // Intentional: fire-and-forget prediction store; outer .catch() logs failures
           return Promise.resolve();
         }
       })().catch((e) => console.warn("[process-scan] store-prediction fire failed:", e)),
@@ -1145,7 +1145,9 @@ ${kgContext}`;
           await supabase.from("scans").update({ scan_status: "failed" }).eq("id", body.scanId);
         }
       }
-    } catch {}
+    } catch (recoveryErr) {
+      console.error("[Orchestrator] Recovery handler failed (scan may be stuck in processing):", recoveryErr);
+    }
 
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
