@@ -81,6 +81,8 @@ Deno.serve(async (req) => {
           // Only search with exact slug to avoid wrong-person matches
           const searchQuery = `site:linkedin.com/in/${slug}`;
 
+          const searchController = new AbortController();
+          const searchTimeout = setTimeout(() => searchController.abort(), 15_000);
           const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
             method: "POST",
             headers: {
@@ -88,7 +90,9 @@ Deno.serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ query: searchQuery, limit: 3, lang: "en" }),
+            signal: searchController.signal,
           });
+          clearTimeout(searchTimeout);
 
           if (searchResp.ok) {
             const searchData = await searchResp.json();

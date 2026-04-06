@@ -130,7 +130,9 @@ Return JSON:
             return_citations: true,
             search_recency_filter: "month",
           }),
+          signal: pxController.signal,
         });
+        clearTimeout(pxTimeout);
 
         if (!resp.ok) {
           console.error(`[kg-expand] Perplexity failed for ${job.job_family}: ${resp.status}`);

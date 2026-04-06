@@ -41,6 +41,8 @@ async function synthesizeWithGemini(
   userPrompt: string
 ): Promise<any | null> {
   try {
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 30_000);
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -55,7 +57,9 @@ async function synthesizeWithGemini(
         ],
         temperature: 0.1,
       }),
+      signal: aiController.signal,
     });
+    clearTimeout(aiTimeout);
     if (!resp.ok) return null;
     const data = await resp.json();
     logTokenUsage("kg-refresh", null, "google/gemini-3-flash-preview", data);
