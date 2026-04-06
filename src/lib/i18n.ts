@@ -78,7 +78,7 @@ const en: Strings = {
 
   diagnosis_title: 'Career Risk Diagnosis',
   risk_score_label: 'Risk Score',
-  months_remaining: 'Months before major disruption',
+  months_remaining: 'Action window (months)',
   salary_bleed: 'Monthly salary at risk',
   high_risk_skills: 'High-Risk Skills',
   safe_skills: 'Your Moat Skills',
