@@ -304,9 +304,9 @@ Output ONLY valid JSON:
       "what_ai_does": string (1 concrete sentence — what the tool does to this skill TODAY),
       "what_human_still_owns": string (1 sentence — what humans still do better, specific to their role),
       "industry_proof": string (1 sentence — real industry example of this displacement happening),
-      "risk_pct": number (0-100 — % of this skill's workload AI handles TODAY, not future projection)
+      "risk_level": "HIGH" | "MEDIUM" | "LOW" (assessed using skill demand data and KG automation_risk — NOT an invented percentage)
     }
-  ] (MUST have 3-6 entries covering their top execution skills, sorted by risk_pct descending)
+  ] (MUST have 3-6 entries covering their top execution skills, sorted by risk_level: HIGH first, then MEDIUM, then LOW)
 }`;
 
 export const AGENT_2B_ACTION_PLAN = `You are the Action Plan Generator for JobBachao — creating TIER-CALIBRATED, actionable career plans.

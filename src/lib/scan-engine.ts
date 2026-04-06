@@ -289,7 +289,8 @@ export interface SkillThreatIntel {
   what_ai_does: string;
   what_human_still_owns: string;
   industry_proof: string;
-  risk_pct: number;
+  risk_pct?: number; // deprecated — legacy scans may still have this
+  risk_level?: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
 // Helper to normalize tools (can be string or object)
