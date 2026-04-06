@@ -159,7 +159,7 @@ const hi: Strings = {
   // Hinglish tooltips — conversational, relatable
   tooltip_risk_score: 'AI से आपकी job को कितना ख़तरा है। ज़्यादा score = जल्दी action लो।',
   tooltip_salary_bleed: 'Agar upskill nahi kiya toh har mahine kitni salary doob sakti hai।',
-  tooltip_months_remaining: 'Lagbhag kitne mahine hain AI se pehle aapki role change hogi।',
+  tooltip_months_remaining: 'Aapke paas kitne mahine hain career reposition karne ke liye — AI disruption se pehle।',
   tooltip_moat_skills: 'Ye skills AI ke liye mushkil hain — yahi aapki taqat hai।',
   tooltip_dead_skills: 'Ye skills tezi se automate ho rahi hain। Inhe upgrade karo।',
   tooltip_geo_arbitrage: 'Remote kaam karke zyada paisa kamao — bahar ki companies ke liye kaam karo।',

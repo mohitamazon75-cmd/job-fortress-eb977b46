@@ -100,7 +100,7 @@ function classifyAlerts(report: ScanReport): Alert[] {
     severity: urgencySeverity,
     icon: <AlertTriangle className="w-5 h-5" />,
     stat: `Urgency index: ${urgency}/100 — action window narrowing.`,
-    description: `Industry adoption rate suggests ${report.months_remaining || 18} months before significant role transformation.`,
+    description: `Industry adoption rate suggests a ${report.months_remaining || 18}-month action window for proactive repositioning.`,
     detail: `Based on ${report.industry || 'industry'} AI adoption curves and your seniority level (${inferSeniorityTier(report.seniority_tier)}), the window for proactive skill adjustment is ${urgency >= 60 ? 'narrowing rapidly' : 'still open but should not be ignored'}.`,
   });
 

@@ -260,7 +260,7 @@ export default function StrategicDossier({ report, scanId, enrichment, enrichmen
           <div>
             <p className="text-[11px] text-dossier-muted-fg mb-1">{vocab.windowLabel}</p>
             <p className="text-2xl font-semibold tabular-nums text-dossier-fg">
-              {report.months_remaining}<span className="text-sm ml-0.5">months</span>
+              {report.months_remaining}<span className="text-sm ml-0.5">mo. window</span>
             </p>
           </div>
           <div>

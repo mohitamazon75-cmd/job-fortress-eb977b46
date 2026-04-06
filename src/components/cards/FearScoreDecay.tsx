@@ -186,7 +186,7 @@ export default function FearScoreDecay({ report, enrichment }: Props) {
             <TrendingDown className="w-3 h-3 text-destructive mt-0.5 flex-shrink-0" />
             <span className="text-[11px] text-foreground/80">
               {scoreDrop >= 12
-                ? `At this pace, your role's core tasks could be largely automated within ${report.months_remaining || 18} months`
+                ? `At this pace, your action window for meaningful career repositioning is approximately ${report.months_remaining || 18} months`
                 : `Without action, your competitive edge will erode as AI-augmented peers outperform`
               }
             </span>

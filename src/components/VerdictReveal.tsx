@@ -522,7 +522,7 @@ export default function VerdictReveal({ report, onComplete }: VerdictRevealProps
                       </span>
                       <span className="text-[11px] font-bold text-background/70">
                         {report.score_variability ? (
-                          <>Score: {careerPositionScore} ± {Math.max(2, Math.round((report.score_variability.di_range.high - report.score_variability.di_range.low) / 4))}</>
+                          <>Score: {careerPositionScore} ± {Math.max(2, Math.round((Math.min(95, report.score_variability.di_range.high) - Math.max(5, report.score_variability.di_range.low)) / 4))}</>
                         ) : (
                           <>Based on {totalSkillsAnalyzed > 0 ? `${totalSkillsAnalyzed} skills analyzed` : 'industry data'}</>
                         )}

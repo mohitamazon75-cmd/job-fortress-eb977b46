@@ -211,9 +211,10 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">AIRMM™ Framework</p>
         </div>
         <p className="text-[10px] text-muted-foreground mb-1">
-          <span className="font-bold">A</span>I Resistance · <span className="font-bold">I</span>ncome Resilience · <span className="font-bold">R</span>ole Moat · <span className="font-bold">M</span>arket Mobility · Seniority Shield
+         <span className="font-bold">A</span>I Resistance · <span className="font-bold">I</span>ncome Resilience · <span className="font-bold">R</span>ole Moat · <span className="font-bold">M</span>arket Mobility · Seniority Shield
         </p>
-        <p className="text-[10px] text-muted-foreground mb-4">Current position → projected after closing your top skill gaps</p>
+        <p className="text-[10px] text-muted-foreground mb-1">Current position → illustrative projections after closing your top skill gaps</p>
+        <p className="text-[9px] text-muted-foreground/60 mb-4 italic">Projections are directional estimates based on typical skill-gap closure patterns, not guarantees.</p>
 
         <div className="space-y-3">
           {airmm.map((dim, i) => {
