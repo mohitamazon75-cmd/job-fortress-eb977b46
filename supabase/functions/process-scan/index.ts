@@ -15,13 +15,6 @@ import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spe
 
 import {
   AGENT_1_PROFILER,
-  AGENT_2A_RISK_ANALYSIS,
-  AGENT_2B_ACTION_PLAN,
-  AGENT_2C_PIVOT_MAPPING,
-  JUDO_STRATEGY_SYSTEM_PROMPT,
-  WEEKLY_DIET_SYSTEM_PROMPT,
-  buildSeniorityJudoPrompt,
-  buildSeniorityDietPrompt,
 } from "../_shared/agent-prompts.ts";
 import {
   resolveIndustry,
