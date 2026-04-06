@@ -96,7 +96,7 @@ Return ONLY valid JSON:
       console.error("[career-obituary] AI API error:", status);
       if (status === 402 || status === 429) {
         return new Response(
-          JSON.stringify({ error: status === 402 ? "AI credits exhausted" : "Rate limited" }),
+          JSON.stringify({ error: status === 402 ? "AI credits exhausted" : "Rate limited", code: status === 402 ? "CREDITS_EXHAUSTED" : "RATE_LIMITED", status: "error" }),
           { status, headers: { ...cors, "Content-Type": "application/json" } }
         );
       }

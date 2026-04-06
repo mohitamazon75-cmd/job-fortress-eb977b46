@@ -104,7 +104,7 @@ Deno.serve(async (req: Request) => {
     );
   } catch (err) {
     console.error('[score-drift]', err);
-    return new Response(JSON.stringify({ drift: 0, error: String(err) }), {
+    return new Response(JSON.stringify({ drift: 0, error: String(err), status: "error" }), {
       status: 200, // Return 200 so UI doesn't break — drift is optional
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

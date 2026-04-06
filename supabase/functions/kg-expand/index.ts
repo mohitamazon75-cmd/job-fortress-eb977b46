@@ -220,7 +220,7 @@ Return JSON:
   } catch (error) {
     console.error("[kg-expand] error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error", code: "INTERNAL_ERROR", status: "error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
