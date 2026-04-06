@@ -215,36 +215,39 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Curated Resources</p>
                           
                           {week.books?.map((b, j) => (
-                            <div key={`book-${j}`} className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2">
+                            <a key={`book-${j}`} href={buildSearchUrl(b.title, b.author_or_platform, 'book', (b as any).url)} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2 hover:bg-muted/50 transition-colors group cursor-pointer">
                               <BookOpen className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-                              <div className="min-w-0">
-                                <p className="text-xs font-bold text-foreground">{b.title}</p>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-primary group-hover:underline">{b.title}</p>
                                 <p className="text-[11px] text-muted-foreground">{b.author_or_platform}</p>
                                 {b.why_relevant && <p className="text-[11px] text-muted-foreground/70 italic mt-0.5">{b.why_relevant}</p>}
                               </div>
-                            </div>
+                              <ExternalLink className="w-3 h-3 text-muted-foreground/50 group-hover:text-primary mt-0.5 flex-shrink-0" />
+                            </a>
                           ))}
 
                           {week.courses?.map((c, j) => (
-                            <div key={`course-${j}`} className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2">
+                            <a key={`course-${j}`} href={buildSearchUrl(c.title, c.author_or_platform, 'course', (c as any).url)} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2 hover:bg-muted/50 transition-colors group cursor-pointer">
                               <GraduationCap className="w-3.5 h-3.5 text-prophet-gold mt-0.5 flex-shrink-0" />
-                              <div className="min-w-0">
-                                <p className="text-xs font-bold text-foreground">{c.title}</p>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-prophet-gold group-hover:underline">{c.title}</p>
                                 <p className="text-[11px] text-muted-foreground">{c.author_or_platform}</p>
                                 {c.why_relevant && <p className="text-[11px] text-muted-foreground/70 italic mt-0.5">{c.why_relevant}</p>}
                               </div>
-                            </div>
+                              <ExternalLink className="w-3 h-3 text-muted-foreground/50 group-hover:text-prophet-gold mt-0.5 flex-shrink-0" />
+                            </a>
                           ))}
 
                           {week.videos?.map((v, j) => (
-                            <div key={`video-${j}`} className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2">
+                            <a key={`video-${j}`} href={buildSearchUrl(v.title, v.author_or_platform, 'video', (v as any).url)} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2 hover:bg-muted/50 transition-colors group cursor-pointer">
                               <Video className="w-3.5 h-3.5 text-prophet-cyan mt-0.5 flex-shrink-0" />
-                              <div className="min-w-0">
-                                <p className="text-xs font-bold text-foreground">{v.title}</p>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-prophet-cyan group-hover:underline">{v.title}</p>
                                 <p className="text-[11px] text-muted-foreground">{v.author_or_platform}</p>
                                 {v.why_relevant && <p className="text-[11px] text-muted-foreground/70 italic mt-0.5">{v.why_relevant}</p>}
                               </div>
-                            </div>
+                              <ExternalLink className="w-3 h-3 text-muted-foreground/50 group-hover:text-prophet-cyan mt-0.5 flex-shrink-0" />
+                            </a>
                           ))}
                         </div>
                       )}
