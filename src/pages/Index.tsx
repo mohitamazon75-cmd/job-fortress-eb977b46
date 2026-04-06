@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import HeroSection from '@/components/HeroSection';
 import SocialProofSection from '@/components/SocialProofSection';
 import InputMethodStep from '@/components/InputMethodStep';
-import AuthGuard from '@/components/AuthGuard';
 import ReAuthModal from '@/components/ReAuthModal';
 import RescanDetector from '@/components/RescanDetector';
 import RateLimitUpsell from '@/components/RateLimitUpsell';
@@ -82,19 +81,6 @@ interface ExistingScanHydrationRow {
   years_experience: string | null;
   metro_tier: string | null;
   linkedin_url: string | null;
-}
-
-// Tiny component that fires onReady once on mount (avoids render-loop in AuthGuard children)
-function AuthAutoAdvance({ onReady }: { onReady: () => void }) {
-  const fired = useRef(false);
-  useEffect(() => {
-    if (!fired.current) { fired.current = true; onReady(); }
-  }, [onReady]);
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Preparing your analysis...</div>
-    </div>
-  );
 }
 
 const Index = () => {
@@ -417,12 +403,6 @@ const Index = () => {
     setPhase('auth-gate');
   };
 
-  // Called after auth is confirmed — check for previous scans
-  const handleAuthConfirmed = () => {
-    track('auth_complete');
-    setPhase('rescan-check');
-  };
-
   // Called when user wants to proceed with a new scan (from rescan check or directly)
   const handleProceedNewScan = () => {
     setPhase('onboarding');
@@ -607,7 +587,20 @@ const Index = () => {
   };
 
   // FIX 1 (HIGH): Remove duplicate session state — use useAuth() hook instead
-  const { session } = useAuth();
+  const { session, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (phase !== 'auth-gate') return;
+    if (authLoading) return;
+
+    if (session) {
+      track('auth_complete');
+      setPhase('rescan-check');
+      return;
+    }
+
+    navigate('/auth', { replace: true });
+  }, [phase, authLoading, session, navigate, track]);
 
   useEffect(() => {
     const syncTestProState = () => setTestProUnlocked(readTestProUnlock());
@@ -658,15 +651,11 @@ const Index = () => {
         />
       )}
       {phase === 'auth-gate' && (
-        <AuthGuard
-          fallback={
-            <div className="min-h-screen bg-background flex items-center justify-center">
-              <div className="animate-pulse text-muted-foreground">Checking authentication...</div>
-            </div>
-          }
-        >
-          {() => <AuthAutoAdvance onReady={handleAuthConfirmed} />}
-        </AuthGuard>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">
+            {authLoading ? 'Checking authentication...' : 'Redirecting to sign in...'}
+          </div>
+        </div>
       )}
       {phase === 'rescan-check' && (
         <RescanDetector
