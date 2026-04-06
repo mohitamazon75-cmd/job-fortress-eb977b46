@@ -8,40 +8,111 @@ import type { SkillRiskRow, KGSkillIndex } from "./det-types.ts";
 
 // ── CALIBRATION CONFIG ──
 // All tunable constants in one place. Each documented with rationale.
+// Last calibrated: 2026-04 (hand-tuned baselines — to be validated against real career outcome data)
 export const CALIBRATION = {
+  // Monthly salary depreciation rate when DI=50 (baseline midpoint)
+  // Hand-tuned from Indian IT market 2023-2024 salary compression trends
+  // TODO: validate against real longitudinal salary data when available
   SALARY_BLEED_BASE_RATE: 0.35,
+
+  // Maximum salary bleed cap — even fully automatable roles retain 40% value floor
   SALARY_BLEED_CAP: 0.60,
+
+  // Power curve exponent for salary bleed scaling — >1 means accelerating loss at higher DI
   SALARY_BLEED_POWER: 1.2,
+
+  // DI normalization point for salary bleed calculation (DI/70 = 1.0x multiplier)
   SALARY_BLEED_DI_NORM: 70,
+
+  // AI pressure kicks in above this DI threshold (below = minimal AI impact on salary)
   AI_PRESSURE_THRESHOLD: 30,
+
+  // Divisor for AI pressure contribution to bleed (higher = less impact per DI point)
   AI_PRESSURE_DIVISOR: 200,
+
+  // Divisor for market health amplification of salary bleed
   MARKET_AMPLIFIER_DIVISOR: 50,
+
+  // Experience years threshold before seniority reduction applies
   EXPERIENCE_THRESHOLD_YEARS: 8,
+
+  // Percentage reduction per year of experience above threshold (0.8 = 0.8% per year)
   EXPERIENCE_REDUCTION_PER_YEAR: 0.8,
+
+  // Max experience-based DI reduction for non-executives (percentage points)
   EXPERIENCE_REDUCTION_CAP: 15,
+
+  // Max experience-based DI reduction for executives (higher due to institutional knowledge moat)
   EXECUTIVE_EXPERIENCE_REDUCTION_CAP: 20,
+
+  // Flat survivability bonus for EXECUTIVE tier (organizational judgment moat)
   EXECUTIVE_SURVIVABILITY_BONUS: 10,
+
+  // Base survivability score before skill/market adjustments (floor for all profiles)
   SURVIVABILITY_BASE: 25,
+
+  // Power curve for obsolescence timeline — >1 means low-DI roles get disproportionately more months
   OBSOLESCENCE_POWER_CURVE: 1.3,
+
+  // Base months for obsolescence calculation (anchor point = 5 years)
   OBSOLESCENCE_BASE_MONTHS: 60,
+
+  // Range in months added/subtracted from base based on DI (total swing = 2x this value)
   OBSOLESCENCE_RANGE: 50,
+
+  // Annual AI capability acceleration rate (12% per year compounding from baseline year)
+  // Source: estimated from AI benchmark improvement rates 2022-2025
   OBSOLESCENCE_AI_ACCELERATION_RATE: 0.12,
+
+  // Baseline year for AI acceleration calculation
   OBSOLESCENCE_AI_BASELINE_YEAR: 2025,
+
+  // Weight of market decline signal on obsolescence timeline reduction
   OBSOLESCENCE_MARKET_DECLINE_WEIGHT: 0.15,
+
+  // Weight of AI job mentions signal on obsolescence timeline reduction
   OBSOLESCENCE_AI_MENTIONS_WEIGHT: 0.10,
+
+  // Obsolescence reduction factor for ORANGE risk zone (moderate acceleration)
   OBSOLESCENCE_ZONE_ORANGE_FACTOR: 0.35,
+
+  // Obsolescence reduction factor for RED risk zone (severe acceleration)
   OBSOLESCENCE_ZONE_RED_FACTOR: 0.70,
+
+  // Scaling factor for market pressure contribution to DI
   MARKET_PRESSURE_SCALE: 10,
+
+  // DI bonus for 20+ year veterans (institutional knowledge moat)
   SENIORITY_BONUS_20YR: 6,
+
+  // DI bonus for 15+ year veterans
   SENIORITY_BONUS_15YR: 3,
+
+  // DI threshold above which penalty scaling applies to survivability
   DI_PENALTY_THRESHOLD: 50,
+
+  // Rate at which DI above threshold reduces survivability (0.2 = 0.2 points per DI point)
   DI_PENALTY_RATE: 0.2,
+
+  // Base confidence margin (±) for score ranges shown to users
   CONFIDENCE_BASE_MARGIN: 15,
+
+  // Minimum DI score — prevents false certainty of 0% automation risk
   DI_CLAMP_MIN: 5,
+
+  // Maximum DI score — even the most automatable role retains some human oversight component
   DI_CLAMP_MAX: 95,
+
+  // Minimum survivability — even highest-risk profiles have some transition runway
   SURVIVABILITY_CLAMP_MIN: 5,
+
+  // Maximum survivability — no role is 100% immune to AI disruption
   SURVIVABILITY_CLAMP_MAX: 95,
+
+  // DI ceiling for roles flagged as essential (healthcare, emergency services, etc.)
   ESSENTIAL_ROLE_DI_CEILING: 70,
+
+  // Survivability floor for essential roles — society needs these regardless of AI capability
   ESSENTIAL_ROLE_SURVIVABILITY_FLOOR: 30,
 } as const;
 

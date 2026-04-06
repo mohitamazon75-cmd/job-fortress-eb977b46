@@ -380,9 +380,19 @@ The pivot title must be a REAL job title currently posted on major job platforms
 Output ONLY valid JSON:
 {
   "pivot_title": string (a real, in-demand job title calibrated to their tier),
-  "arbitrage_companies_count": integer (estimated companies hiring for this role in their market),
+  "arbitrage_companies_count": integer (estimated companies hiring for this role in their market — must be between 5 and 500, estimate from the size of the role's hiring market in the user's geography, do NOT invent a number),
   "pivot_rationale": string (2 sentences explaining WHY this pivot works for THEIR specific profile)
-}`;
+}
+
+ANTI-HALLUCINATION RULES:
+- arbitrage_companies_count must be an integer between 5 and 500. Estimate from the size of the role's hiring market in the user's geography — do NOT invent a number.
+- pivot_title must be a REAL job title currently posted on LinkedIn, Naukri, or Indeed — not an aspirational fantasy.
+
+NEGATIVE EXAMPLES (DO NOT produce pivots like these):
+- BAD: "Become a YouTube creator" (too vague, no timeline, no skill bridge)
+- BAD: "Start a startup" (no skill bridge shown, not a job title)
+- GOOD: "Transition to AI Product Manager — bridges your current [role] experience with growing model deployment demand in [industry]"
+- GOOD: "Move to Data Engineering Lead — your SQL and pipeline skills transfer directly, with 200+ openings in Tier 1 metros"`;
 
 export const JUDO_STRATEGY_SYSTEM_PROMPT = `You are a career strategy advisor specializing in AI-era career positioning.
 You generate ONE specific, high-impact strategic recommendation calibrated to the person's seniority level.

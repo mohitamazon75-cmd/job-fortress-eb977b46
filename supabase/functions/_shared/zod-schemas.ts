@@ -87,8 +87,11 @@ const z = {
 // ═══ Agent 1 (Profiler) Output Schema ═══
 export const Agent1Schema = z.object({
   current_role: z.string(),
+  current_company: z.string().optional().nullable(),
   industry: z.string(),
-  experience_years: z.number(),
+  industry_sub_sector: z.string().optional().nullable(),
+  experience_years: z.number().nullable(),
+  estimated_monthly_salary_inr: z.number().optional().nullable(),
   seniority_tier: z.enum(["EXECUTIVE", "SENIOR_LEADER", "MANAGER", "PROFESSIONAL", "ENTRY"]),
   execution_skills: z.array(z.string()),
   strategic_skills: z.array(z.string()),
@@ -96,8 +99,33 @@ export const Agent1Schema = z.object({
   automatable_task_ratio: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
   primary_ai_threat_vector: z.string().optional().nullable(),
   moat_indicators: z.array(z.string()).optional(),
+  location: z.string().optional().nullable(),
+  geo_advantage: z.string().optional().nullable(),
+  adaptability_signals: z.number().optional().nullable(),
+  detected_country: z.string().optional().nullable(),
   executive_impact: z.any().optional().nullable(),
 });
+
+/** Clamp Agent 1 output values to reasonable ranges (post-parse) */
+export function clampAgent1Output(data: any): void {
+  // Salary: ₹5K–₹50L/month range
+  if (data.estimated_monthly_salary_inr != null) {
+    data.estimated_monthly_salary_inr = Math.max(5000, Math.min(5000000, data.estimated_monthly_salary_inr));
+  }
+  // Experience: 0-60 years
+  if (data.experience_years != null) {
+    data.experience_years = Math.max(0, Math.min(60, data.experience_years));
+  }
+  // Skill count caps
+  if (data.all_skills?.length > 40) data.all_skills = data.all_skills.slice(0, 40);
+  if (data.execution_skills?.length > 20) data.execution_skills = data.execution_skills.slice(0, 20);
+  if (data.strategic_skills?.length > 15) data.strategic_skills = data.strategic_skills.slice(0, 15);
+  if (data.moat_indicators?.length > 10) data.moat_indicators = data.moat_indicators.slice(0, 10);
+  // Adaptability: 0-10
+  if (data.adaptability_signals != null) {
+    data.adaptability_signals = Math.max(0, Math.min(10, data.adaptability_signals));
+  }
+}
 
 // ═══ Agent 2A (Risk Analysis) Output Schema ═══
 export const Agent2ASchema = z.object({
