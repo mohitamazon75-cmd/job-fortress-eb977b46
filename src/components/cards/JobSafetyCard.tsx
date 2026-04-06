@@ -109,7 +109,7 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{Math.round(automationRisk)}%</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Task Overlap with AI</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Exposure Index</p>
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{moatSkills.length}</p>
