@@ -142,11 +142,10 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
 
   const marketModel = report.market_position_model;
 
-  // Peer bar: parse "top 48% est. percentile" → 48
-  const peerRaw = survivability?.peer_percentile_estimate ?? '';
-  const peerMatch = peerRaw.match(/(\d+)/);
-  const peerPct = peerMatch ? parseInt(peerMatch[1]) : null;
-  const peerBarWidth = peerPct ?? 50;
+  // Peer bar: derive from actual score, not raw agent estimate
+  // Score of 51 on 5-95 scale → normalize to 0-100 percentile
+  const peerPct = Math.max(5, Math.min(95, Math.round(((score - 5) / 90) * 100)));
+  const peerBarWidth = peerPct;
   const peerBarColor = score >= 70 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-400' : score >= 30 ? 'bg-orange-400' : 'bg-red-400';
 
   // At-risk tasks for free tease: top 3 skills by automation risk from skillAdjustments

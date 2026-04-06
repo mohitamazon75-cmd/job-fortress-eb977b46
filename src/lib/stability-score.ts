@@ -184,9 +184,11 @@ export function computeScoreBreakdown(report: ScanReport): ScoreDecomposition {
   // ── Step 4: Market percentile reality check ──
   // KG-linked cap: high-disruption roles shouldn't claim top-quartile market position.
   // Formula: kgMarketCap = 100 - kgBaseline, clamped to [20, 55].
-  // E.g., Marketing (KG=65%) → cap at 35%; Doctor (KG=15%) → cap at 55%.
+  // Seniority modifier: senior leaders in high-risk fields can still have strong
+  // individual market position even as junior roles erode.
+  const seniorityMarketBonus = tier === 'EXECUTIVE' ? 15 : tier === 'SENIOR_LEADER' ? 10 : tier === 'MANAGER' ? 5 : 0;
   const kgMarketCap = kgBaseline !== null
-    ? Math.max(20, Math.min(55, 100 - kgBaseline))
+    ? Math.max(20, Math.min(65, 100 - kgBaseline + seniorityMarketBonus))
     : UNVERIFIED_MARKET_CAP;
   const hasCohortData = (report as any).cohort_size > 10
     || report.survivability?.peer_percentile_estimate;

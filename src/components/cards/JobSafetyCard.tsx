@@ -69,8 +69,8 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
     return <Minus className="w-3.5 h-3.5 text-muted-foreground" />;
   })();
 
-  // Derive richer profile insights
-  const automationRisk = report.automation_risk ?? report.determinism_index ?? 50;
+  // Use KG-corrected automation risk — NOT raw determinism_index
+  const automationRisk = breakdown.effectiveAutomationRisk;
   const moatSkills = report.moat_skills || [];
   const deadSkills = report.execution_skills_dead || [];
   const companyName = report.linkedin_company;
