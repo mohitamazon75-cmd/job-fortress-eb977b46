@@ -16,10 +16,18 @@ interface WeekPlan {
   deliverable: string;
   effort_hours?: number;
   fallback_action?: string;
-  books?: Array<{ title: string; author_or_platform: string; why_relevant: string }>;
-  courses?: Array<{ title: string; author_or_platform: string; why_relevant: string }>;
-  videos?: Array<{ title: string; author_or_platform: string; why_relevant: string }>;
+  books?: Array<{ title: string; author_or_platform: string; why_relevant: string; url?: string }>;
+  courses?: Array<{ title: string; author_or_platform: string; why_relevant: string; url?: string }>;
+  videos?: Array<{ title: string; author_or_platform: string; why_relevant: string; url?: string }>;
 }
+
+const buildSearchUrl = (title: string, author: string, type: 'book' | 'course' | 'video', url?: string) => {
+  if (url && /^https?:\/\//i.test(url)) return url;
+  const query = `${title} ${author}`.trim();
+  if (type === 'book') return `https://www.amazon.in/s?k=${encodeURIComponent(query)}`;
+  if (type === 'video') return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(query + ' course')}`;
+};
 
 export default function DefensePlanCard({ report }: DefensePlanCardProps) {
   const score = computeStabilityScore(report);
