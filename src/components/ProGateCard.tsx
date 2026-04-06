@@ -137,11 +137,9 @@ export default function ProGateCard({ featureName, featureDescription, icon: Ico
         {/* Pricing Footer */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span>₹300/month</span>
-            <span>·</span>
-            <span>₹1,999/year</span>
+            <span>₹300/month · Both reports</span>
           </div>
-          <span>Razorpay</span>
+          <span className="font-bold text-primary">Save 44% yearly</span>
         </div>
       </div>
 
