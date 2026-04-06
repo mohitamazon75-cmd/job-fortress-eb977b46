@@ -211,21 +211,22 @@ function CaptureTarget({
         </div>
         <div style={{ textAlign: 'center', flexShrink: 0 }}>
           <div style={{
-            width: 72, height: 72, borderRadius: '50%',
+            width: 80, height: 80, borderRadius: '50%',
             border: `3px solid ${scoreColor}`,
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
+            background: C.white,
           }}>
             <span style={{
-              fontFamily: FONT_HEADLINE, fontSize: 30, fontWeight: 900,
+              fontFamily: FONT_HEADLINE, fontSize: 32, fontWeight: 900,
               color: scoreColor, lineHeight: 1,
             }}>{score}</span>
-            <span style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>/100</span>
+            <span style={{ fontSize: 9, color: C.muted, marginTop: 2, lineHeight: 1 }}>/100</span>
           </div>
           <div style={{
-            marginTop: 6, fontFamily: FONT_MONO, fontSize: 9,
+            marginTop: 8, fontFamily: FONT_MONO, fontSize: 9,
             color: scoreColor, fontWeight: 600, letterSpacing: '0.08em',
-            background: `${scoreColor}15`, padding: '3px 10px', borderRadius: 4,
+            background: `${scoreColor}15`, padding: '4px 12px', borderRadius: 4,
             textTransform: 'uppercase', whiteSpace: 'nowrap',
           }}>
             {scoreBadge}
@@ -259,20 +260,20 @@ function CaptureTarget({
           { label: 'SALARY RISK', value: salaryRiskLPA, sub: 'IMPACT ANNUALLY', color: C.warning },
         ].map((stat, i) => (
           <div key={i} style={{
-            flex: 1, padding: '16px 10px', textAlign: 'center',
+            flex: 1, padding: '16px 8px', textAlign: 'center',
             borderRight: i < 2 ? `1px solid ${C.border}` : 'none',
           }}>
             <p style={{
               fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
-              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em',
+              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em',
               margin: '0 0 8px',
             }}>{stat.label}</p>
             <p style={{
-              fontFamily: FONT_HEADLINE, fontSize: 26, fontWeight: 900,
+              fontFamily: FONT_HEADLINE, fontSize: 22, fontWeight: 900,
               color: stat.color, margin: 0, lineHeight: 1,
             }}>{stat.value}</p>
             <p style={{
-              fontFamily: FONT_MONO, fontSize: 8, fontWeight: 500,
+              fontFamily: FONT_MONO, fontSize: 7, fontWeight: 500,
               color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em',
               margin: '6px 0 0',
             }}>{stat.sub}</p>
@@ -320,7 +321,7 @@ function CaptureTarget({
       {/* ── 7. Countdown block ── */}
       <div style={{
         background: C.dark, margin: '4px 24px 18px', borderRadius: 10,
-        padding: '18px 24px',
+        padding: '20px 24px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div>
@@ -331,20 +332,20 @@ function CaptureTarget({
           }}>Disruption Window</p>
           <p style={{
             fontSize: 13, color: '#aaa', margin: 0, lineHeight: 1.5,
-            maxWidth: 260,
+            maxWidth: 240,
           }}>
             Before mass displacement<br />hits this role in India
           </p>
         </div>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 80 }}>
           <span style={{
-            fontFamily: FONT_HEADLINE, fontSize: 48, fontWeight: 900,
-            color: C.countdown, lineHeight: 1,
+            fontFamily: FONT_HEADLINE, fontSize: 44, fontWeight: 900,
+            color: C.countdown, lineHeight: 1, display: 'block',
           }}>{monthsRemaining}</span>
           <p style={{
             fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
-            color: C.countdown, textTransform: 'uppercase', letterSpacing: '0.15em',
-            margin: '4px 0 0', opacity: 0.8,
+            color: C.countdown, textTransform: 'uppercase', letterSpacing: '0.12em',
+            margin: '6px 0 0', opacity: 0.8,
           }}>Months Left</p>
         </div>
       </div>
