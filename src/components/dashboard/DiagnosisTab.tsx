@@ -5,6 +5,7 @@ import HinglishTooltip from '@/components/dashboard/HinglishTooltip';
 import { AlertTriangle, CheckCircle, Brain, Clock, Shield, ShieldCheck, TrendingDown, ArrowRight, Flame, Eye, Zap, ChevronDown, Info, FlaskConical, ExternalLink, Swords, Database } from 'lucide-react';
 import { getExecutiveLabel } from '@/lib/seniority-utils';
 import { formatCurrency, normalizeTools } from '@/lib/scan-engine';
+import { computeStabilityScore } from '@/lib/stability-score';
 import MLWakingState from '@/components/MLWakingState';
 import PanicIndexWidget from '@/components/PanicIndexWidget';
 import CompanyBenchmarkWidget from '@/components/CompanyBenchmarkWidget';
