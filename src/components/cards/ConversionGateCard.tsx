@@ -71,7 +71,7 @@ function buildFeatureTiles(report: ScanReport): FeatureTile[] {
       id: 'salary-scripts',
       icon: <DollarSign className="w-5 h-5" />,
       title: 'Salary Negotiation Scripts',
-      description: `${annualBleedLakh}. Copy-paste scripts calibrated for your next review or offer negotiation.`,
+      description: `${annualBleedLabel}. Copy-paste scripts calibrated for your next review or offer negotiation.`,
       highlight: 'Ready-to-use scripts',
       accentClass: 'bg-prophet-green/10 text-prophet-green border-prophet-green/20',
     },
