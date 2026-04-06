@@ -124,6 +124,8 @@ Deno.serve(async (req) => {
     const roleContext = role ? `\nThe employee viewing this works as: ${role}` : "";
     const skillsContext = skills?.length ? `\nTheir key skills: ${skills.slice(0, 5).join(", ")}` : "";
 
+    const ai1Ctrl = new AbortController();
+    const ai1T = setTimeout(() => ai1Ctrl.abort(), 30_000);
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -173,7 +175,9 @@ Maximum 5 news items. No markdown.`,
     });
 
     if (!aiResp.ok) {
+      signal: ai1Ctrl.signal,
       const status = aiResp.status;
+    clearTimeout(ai1T);
       if (status === 402 || status === 429) {
         return new Response(
           JSON.stringify({ news: [], error: status === 402 ? "AI credits exhausted" : "Rate limited", rate_limited: true }),
@@ -255,6 +259,8 @@ async function generateIndustryFallback(
   const roleCtx = role ? `working as a ${role}` : "";
   const skillCtx = skills?.length ? `with skills in ${skills.slice(0, 5).join(", ")}` : "";
 
+  const ai2Ctrl = new AbortController();
+  const ai2T = setTimeout(() => ai2Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -304,7 +310,9 @@ Maximum 4 items. No markdown.`,
       ],
       temperature: 0.3,
     }),
+    signal: ai2Ctrl.signal,
   });
+  clearTimeout(ai2T);
 
   if (!aiResp.ok) {
     return { news: [], sources: [], is_industry_level: true, fetched_at: now.toISOString() };
