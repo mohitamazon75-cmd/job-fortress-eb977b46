@@ -41,7 +41,7 @@ import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
 import { callAgent, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
 import { callAgentWithFallback } from "../_shared/model-fallback.ts";
 import { recordScoreHistory, getPreviousScore } from "../_shared/score-history.ts";
-import { validateAgentOutput, Agent1Schema, Agent2ASchema, Agent2BSchema } from "../_shared/zod-schemas.ts";
+// validateAgentOutput, Agent1Schema, Agent2ASchema, Agent2BSchema removed — unused after refactor
 import { getPromptVersion } from "../_shared/prompt-versions.ts";
 import { findCachedScan } from "../_shared/scan-cache.ts";
 import { MAX_CONCURRENT_SCANS, TIMEOUTS, MODELS, DAILY_COST_CAP_USD } from "../_shared/constants.ts";
