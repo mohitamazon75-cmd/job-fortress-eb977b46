@@ -26,13 +26,23 @@ export interface ClassifiedSkill {
   actionTag: string;
 }
 
+// Power-curve formula mirroring server's OBSOLESCENCE_POWER_CURVE logic
+// Produces smooth months instead of abrupt step-function jumps
+const OBSOLESCENCE_BASE_MONTHS = 60;   // Max months at 0% risk
+const OBSOLESCENCE_RANGE = 50;         // How many months the curve can subtract
+const OBSOLESCENCE_POWER = 1.3;        // Non-linear exponent (matches server)
+const AI_ACCELERATION_RATE = 0.12;     // 12% annual compression (matches server)
+const AI_BASELINE_YEAR = 2025;
+
 function riskToMonths(risk: number): number {
-  if (risk >= 85) return 6;
-  if (risk >= 70) return 12;
-  if (risk >= 55) return 24;
-  if (risk >= 40) return 36;
-  if (risk >= 25) return 60;
-  return 84;
+  const normalizedRisk = Math.max(0, Math.min(100, risk)) / 100;
+  // Power curve: higher risk = steeper month reduction
+  const baseCurve = OBSOLESCENCE_BASE_MONTHS - OBSOLESCENCE_RANGE * Math.pow(normalizedRisk, OBSOLESCENCE_POWER);
+  // AI acceleration compounding from baseline year
+  const yearsElapsed = Math.max(0, new Date().getFullYear() - AI_BASELINE_YEAR);
+  const accelerationFactor = Math.pow(1 - AI_ACCELERATION_RATE, yearsElapsed);
+  const months = Math.round(baseCurve * accelerationFactor);
+  return Math.max(3, Math.min(84, months));
 }
 
 function classifyStatus(risk: number): 'automated' | 'at-risk' | 'safe' {

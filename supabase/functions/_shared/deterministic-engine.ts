@@ -640,13 +640,57 @@ function levenshteinSimilarity(a: string, b: string): number {
   return 1 - matrix[a.length][b.length] / maxLen;
 }
 
+/**
+ * Pre-built hashmap index for O(1) KG skill lookups.
+ * Build once per computeAll call, reuse for all matchSkillToKG calls.
+ */
+export interface KGSkillIndex {
+  /** exact normalized name → SkillRiskRow */
+  exact: Map<string, SkillRiskRow>;
+  /** all normalized names for substring fallback */
+  entries: Array<{ norm: string; row: SkillRiskRow }>;
+}
+
+export function buildKGSkillIndex(skillRiskData: SkillRiskRow[]): KGSkillIndex {
+  const exact = new Map<string, SkillRiskRow>();
+  const entries: Array<{ norm: string; row: SkillRiskRow }> = [];
+  for (const row of skillRiskData) {
+    const norm = normalize(row.skill_name);
+    if (norm) {
+      exact.set(norm, row);
+      entries.push({ norm, row });
+    }
+  }
+  return { exact, entries };
+}
+
 export function matchSkillToKG(
   userSkill: string,
-  skillRiskData: SkillRiskRow[]
+  skillRiskData: SkillRiskRow[],
+  index?: KGSkillIndex
 ): SkillRiskRow | null {
   const normSkill = normalize(userSkill);
   if (!normSkill) return null;
 
+  // Fast path: use pre-built index if available
+  if (index) {
+    // O(1) exact match
+    const exactMatch = index.exact.get(normSkill);
+    if (exactMatch) return exactMatch;
+
+    // O(n) substring check (still faster than Levenshtein)
+    for (const { norm, row } of index.entries) {
+      if (normSkill.includes(norm) || norm.includes(normSkill)) return row;
+    }
+
+    // O(n) Levenshtein fallback — only for unmatched skills
+    for (const { norm, row } of index.entries) {
+      if (levenshteinSimilarity(normSkill, norm) > 0.7) return row;
+    }
+    return null;
+  }
+
+  // Legacy path: no index (backward compatible)
   for (const dbSkill of skillRiskData) {
     const normDb = normalize(dbSkill.skill_name);
     if (
@@ -680,7 +724,8 @@ export function calculateDeterminismIndex(
   jobBaseline: number,
   marketSignal: MarketSignalRow | null,
   industry?: string | null,
-  subSector?: string | null
+  subSector?: string | null,
+  kgIndex?: KGSkillIndex
 ): DIResult {
   const isExec = profile.seniority_tier === 'EXECUTIVE' || profile.seniority_tier === 'SENIOR_LEADER';
   const isManager = profile.seniority_tier === 'MANAGER';
@@ -707,7 +752,7 @@ export function calculateDeterminismIndex(
   const matchedKGNames = new Set<string>(); // Deduplicate by KG skill name
 
   for (const userSkill of uniqueSkills) {
-    const matched = matchSkillToKG(userSkill, skillRiskData);
+    const matched = matchSkillToKG(userSkill, skillRiskData, kgIndex);
     if (matched) {
       const normMatchedName = normalize(matched.skill_name);
       // Skip duplicates (multiple user skills matching same KG entry)
@@ -1227,7 +1272,8 @@ export function deriveToneTag(
 export function extractReplacingTools(
   profile: ProfileInput,
   skillRiskData: SkillRiskRow[],
-  jobData: JobTaxonomyRow | null
+  jobData: JobTaxonomyRow | null,
+  kgIndex?: KGSkillIndex
 ): ReplacingTool[] {
   const tools: ReplacingTool[] = [];
   const seenTools = new Set<string>();
@@ -1245,7 +1291,7 @@ export function extractReplacingTools(
   });
 
   for (const skill of uniqueSkills) {
-    const matched = matchSkillToKG(skill, skillRiskData);
+    const matched = matchSkillToKG(skill, skillRiskData, kgIndex);
     if (matched && matched.replacement_tools?.length > 0) {
       for (const toolName of matched.replacement_tools) {
         const key = toolName.toLowerCase().trim();
@@ -1442,8 +1488,11 @@ export function computeAll(
 ): DeterministicResult {
   const jobBaseline = jobData?.disruption_baseline || 60;
 
+  // Build KG skill index once — O(n) build, then O(1) lookups for all matchSkillToKG calls
+  const kgIndex = buildKGSkillIndex(skillRiskData);
+
   // 1. Determinism Index (with breakdown)
-  const diResult = calculateDeterminismIndex(profile, skillRiskData, jobSkillMap, jobBaseline, marketSignal, industry, subSector);
+  const diResult = calculateDeterminismIndex(profile, skillRiskData, jobSkillMap, jobBaseline, marketSignal, industry, subSector, kgIndex);
   let determinismIndex = diResult.index;
 
   // Essential role safeguard: cap DI for roles with structural societal demand
@@ -1496,7 +1545,7 @@ export function computeAll(
   const toneTag = deriveToneTag(determinismIndex);
 
   // 7. Replacing Tools (from KG)
-  const replacingTools = extractReplacingTools(profile, skillRiskData, jobData);
+  const replacingTools = extractReplacingTools(profile, skillRiskData, jobData, kgIndex);
 
   // 8. Execution Skills Dead — actually analyze which execution skills have high automation risk
   //    NOT just a blind copy of the first 3 execution skills
@@ -1525,7 +1574,7 @@ export function computeAll(
     
     // For executives, also skip any skill that matches trivially generic KG entries
     if (isExecOrSenior) {
-      const matched = matchSkillToKG(execSkill, skillRiskData);
+      const matched = matchSkillToKG(execSkill, skillRiskData, kgIndex);
       // Skip if it's a generic commodity category (communication, content) with high automation
       // but low strategic relevance — executives have more important exposure vectors
       if (matched && ['communication', 'content', 'admin'].includes(matched.category || '') && matched.automation_risk > 50) {
@@ -1533,7 +1582,7 @@ export function computeAll(
       }
     }
     
-    const matched = matchSkillToKG(execSkill, skillRiskData);
+    const matched = matchSkillToKG(execSkill, skillRiskData, kgIndex);
     // Only mark as "dead" if KG confirms high automation risk (>50%)
     // or if no KG match but the job baseline suggests high risk
     if (matched && matched.automation_risk > 50) {

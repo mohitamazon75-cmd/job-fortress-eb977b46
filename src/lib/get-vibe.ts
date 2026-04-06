@@ -1,6 +1,7 @@
 import { type ScanReport, normalizeTools } from '@/lib/scan-engine';
 import { inferSeniorityTier } from '@/lib/seniority-utils';
 import { getVerbatimRole } from '@/lib/role-guard';
+import { computeScoreBreakdown } from '@/lib/stability-score';
 
 // ═══════════════════════════════════════════════════════════════
 // CENTRALIZED VIBE ENGINE — Fear → Anxiety → Hope → Plan arc
@@ -43,6 +44,9 @@ function demandLabel(raw: string): string {
 /**
  * Returns the emotional narrative vibe for a given career position score.
  * Each tier follows a Fear → Anxiety → Hope → Plan arc.
+ * 
+ * IMPORTANT: Uses computeScoreBreakdown() to get KG-corrected automation risk,
+ * ensuring narrative text matches the actual displayed score.
  */
 export function getVibe(score: number, report: ScanReport): Vibe {
   const tier = inferSeniorityTier(report.seniority_tier);
@@ -50,7 +54,9 @@ export function getVibe(score: number, report: ScanReport): Vibe {
   const moatSkills = (report.moat_skills || []).length;
   const rawDemand = report.market_position_model?.demand_trend ?? 'Stable';
   const demand = demandLabel(rawDemand);
-  const automationRisk = report.automation_risk ?? report.determinism_index ?? 50;
+  // Use KG-corrected risk from the score engine — NOT raw AI agent value
+  const breakdown = computeScoreBreakdown(report);
+  const automationRisk = breakdown.effectiveAutomationRisk;
   const roleName = getVerbatimRole(report);
   const talentDensity = report.market_position_model?.talent_density ?? 'moderate';
   const riskPct = Math.round(automationRisk);

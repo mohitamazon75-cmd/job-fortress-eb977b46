@@ -146,40 +146,47 @@ export function computeScoreBreakdown(report: ScanReport): ScoreDecomposition {
   const seniorityProtection = SENIORITY_PROTECTION[tier] ?? 40;
 
   // ── Step 2: KG Floor Enforcement ──
-  // If the Knowledge Graph says this role has a disruption baseline
-  // of e.g. 65%, the AI agent can claim at most (65 - 15) = 50%.
-  // This prevents hallucinated low-risk scores for high-risk roles.
-  const kgBaseline = getKGBaseline(
-    report.role,
-    report.matched_job_family ?? (report as any).matchedJobFamily
-  );
-  
+  // The server's deterministic engine already applies industry floors,
+  // sub-sector floors, and KG skill matching. When determinism_index
+  // is present, it IS the KG-corrected value — don't re-apply floors.
+  // Only apply client-side KG floors when using raw automation_risk
+  // (i.e., the AI agent's unverified estimate, no server pass).
   let effectiveAutomationRisk = aiAutomationRisk;
   let kgOverrideApplied = false;
 
-  if (kgBaseline !== null) {
-    const minAllowedRisk = Math.max(0, kgBaseline - MAX_AI_OPTIMISM_DEVIATION);
-    if (aiAutomationRisk < minAllowedRisk) {
-      effectiveAutomationRisk = minAllowedRisk;
-      kgOverrideApplied = true;
-      console.log(
-        `[ScoreEngine] KG override: AI said risk=${aiAutomationRisk}% for "${report.role}", ` +
-        `but KG baseline=${kgBaseline}%. Snapped to ${effectiveAutomationRisk}%.`
-      );
+  const serverAlreadyCorrected = report.determinism_index != null;
+
+  if (!serverAlreadyCorrected) {
+    // Fallback: no server DI available, apply client-side KG floors
+    const kgBaseline = getKGBaseline(
+      report.role,
+      report.matched_job_family ?? (report as any).matchedJobFamily
+    );
+    
+    if (kgBaseline !== null) {
+      const minAllowedRisk = Math.max(0, kgBaseline - MAX_AI_OPTIMISM_DEVIATION);
+      if (aiAutomationRisk < minAllowedRisk) {
+        effectiveAutomationRisk = minAllowedRisk;
+        kgOverrideApplied = true;
+        console.log(
+          `[ScoreEngine] KG override: AI said risk=${aiAutomationRisk}% for "${report.role}", ` +
+          `but KG baseline=${kgBaseline}%. Snapped to ${effectiveAutomationRisk}%.`
+        );
+      }
     }
   }
 
   // ── Step 3: Evidence-gated moat score ──
   // A high moat score requires actual verified moat skills.
-  // Without evidence, cap at UNVERIFIED_MOAT_CAP.
+  // This is a presentation-layer guard on top of the server's
+  // structural moat calculation — prevents inflated moat display
+  // when the evidence is thin.
   const verifiedMoatCount = (report.moat_skills || []).length;
   const effectiveMoat = verifiedMoatCount >= MIN_VERIFIED_MOAT_SKILLS
     ? aiMoatScore
     : Math.min(aiMoatScore, UNVERIFIED_MOAT_CAP);
 
   // ── Step 4: Market percentile reality check ──
-  // If no real cohort data backs the market percentile, cap it.
-  // Real cohort data is indicated by cohort_size > 0 or peer data.
   const hasCohortData = (report as any).cohort_size > 10
     || report.survivability?.peer_percentile_estimate;
   const effectiveMarketPercentile = hasCohortData
