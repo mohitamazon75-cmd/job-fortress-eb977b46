@@ -581,10 +581,10 @@ export default function ShareableScoreCard({ report }: Props) {
             Copy-paste caption
           </p>
           <p className="text-xs text-foreground leading-relaxed whitespace-pre-line">
-            I just scanned my resume on JobBachao.
-            {'\n\n'}<strong>{automatedTasks} of my {totalTasks || 5} tasks will be automated by {automationYear}.</strong>
-            {' '}My career safety score: {score}/100. {salaryRiskLabel} salary at risk.
-            {'\n\n'}Can you beat my score? 👇
+            {scoreEmoji} <strong>I just checked how replaceable I am by AI.</strong>
+            {'\n\n'}Result: {score}/100. {automatedTasks} of my {totalTasks || 5} tasks are already automatable.
+            {'\n\n'}Scary? Yes. But at least now I know.
+            {'\n\n'}How safe is YOUR job? 👇
             {'\n'}<span className="text-primary font-bold">jobbachao.com</span>
           </p>
           <button
