@@ -120,7 +120,9 @@ export async function optimizePivotsRemote(
 
 export function buildAIRMMState(report: ScanReport): AIRMMState {
   const survivability = report.survivability?.score ?? 50;
-  const di = report.determinism_index;
+  // Use KG-corrected risk from the unified score engine
+  const breakdown = computeScoreBreakdown(report);
+  const di = breakdown.effectiveAutomationRisk;
   // Direct salary estimate — avoids circular back-calculation from DI
   const monthlySalary = (report as any).estimated_monthly_salary_inr
     ?? (report.survivability?.breakdown?.experience_bonus
@@ -155,7 +157,6 @@ export function buildAIRMMState(report: ScanReport): AIRMMState {
     },
   };
 }
-
 export function buildPivotOptions(report: ScanReport): PivotOption[] {
   // Direct salary estimate — same logic as buildAIRMMState
   const monthlySalary = (report as any).estimated_monthly_salary_inr
