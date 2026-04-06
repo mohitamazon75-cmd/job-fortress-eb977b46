@@ -165,6 +165,18 @@ export function estimateMonthlySalary(
 // MASTER CALCULATION — orchestrates all deterministic computations
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * computeAll — Master deterministic scoring function.
+ *
+ * @param profile - Parsed user profile with skills, experience, geo data
+ * @param skillRiskData - Skill risk matrix rows from DB
+ * @param jobSkillMap - Job-skill mapping rows from DB
+ * @param jobData - Matched job taxonomy row (nullable)
+ * @param marketSignal - Latest market signal for the job family (nullable)
+ * @param hasLinkedIn - Whether LinkedIn data was provided
+ * @returns Complete deterministic result: DI, moat, urgency, survivability, timeline, salary bleed
+ * @notes Does NOT call any AI models — purely deterministic from DB data + profile.
+ */
 export function computeAll(
   profile: ProfileInput,
   skillRiskData: SkillRiskRow[],
