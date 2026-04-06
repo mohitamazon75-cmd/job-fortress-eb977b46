@@ -321,7 +321,7 @@ function CaptureTarget({
       {/* ── 7. Countdown block ── */}
       <div style={{
         background: C.dark, margin: '4px 24px 18px', borderRadius: 10,
-        padding: '18px 24px',
+        padding: '20px 24px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div>
@@ -332,20 +332,20 @@ function CaptureTarget({
           }}>Disruption Window</p>
           <p style={{
             fontSize: 13, color: '#aaa', margin: 0, lineHeight: 1.5,
-            maxWidth: 260,
+            maxWidth: 240,
           }}>
             Before mass displacement<br />hits this role in India
           </p>
         </div>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 80 }}>
           <span style={{
-            fontFamily: FONT_HEADLINE, fontSize: 48, fontWeight: 900,
-            color: C.countdown, lineHeight: 1,
+            fontFamily: FONT_HEADLINE, fontSize: 44, fontWeight: 900,
+            color: C.countdown, lineHeight: 1, display: 'block',
           }}>{monthsRemaining}</span>
           <p style={{
             fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
-            color: C.countdown, textTransform: 'uppercase', letterSpacing: '0.15em',
-            margin: '4px 0 0', opacity: 0.8,
+            color: C.countdown, textTransform: 'uppercase', letterSpacing: '0.12em',
+            margin: '6px 0 0', opacity: 0.8,
           }}>Months Left</p>
         </div>
       </div>
