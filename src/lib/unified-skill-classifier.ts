@@ -26,6 +26,8 @@ export interface ClassifiedSkill {
   actionTag: string;
   /** Deep threat intelligence from Agent 2A — null for safe/unmatched skills */
   threatIntel?: SkillThreatIntel | null;
+  /** Whether this skill was directly extracted from the resume or inferred from role profile */
+  source: 'extracted' | 'inferred';
 }
 
 function riskToMonths(risk: number): number {
@@ -123,6 +125,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       estimatedMonths: riskToMonths(intel?.risk_pct ?? sa.automation_risk),
       actionTag: actionTag(intel?.risk_pct ?? sa.automation_risk),
       threatIntel: intel,
+      source: 'extracted',
     });
   }
 
@@ -141,6 +144,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       estimatedMonths: riskToMonths(baseRisk),
       actionTag: actionTag(baseRisk),
       threatIntel: intel,
+      source: 'extracted',
     });
   }
 
@@ -158,6 +162,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       estimatedMonths: riskToMonths(baseRisk),
       actionTag: '💪 Double down',
       threatIntel: null,
+      source: 'extracted',
     });
   }
 
@@ -179,6 +184,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
         estimatedMonths: riskToMonths(baseRisk),
         actionTag: actionTag(baseRisk),
         threatIntel: intel,
+        source: 'inferred',
       });
     }
   }

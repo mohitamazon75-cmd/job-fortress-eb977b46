@@ -24,6 +24,8 @@ export interface ClassifiedSkill {
   weight?: number;
   estimatedMonths: number;
   actionTag: string;
+  /** Whether this skill was directly extracted from the resume or inferred from role profile */
+  source: 'extracted' | 'inferred';
 }
 
 // Power-curve formula mirroring server's OBSOLESCENCE_POWER_CURVE logic
@@ -102,6 +104,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       weight: sa.weight,
       estimatedMonths: riskToMonths(sa.automation_risk),
       actionTag: actionTag(sa.automation_risk),
+      source: 'extracted',
     });
   }
 
@@ -118,6 +121,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       replacedBy: toolMap.get(key) || tools[0]?.tool_name || 'AI Agents',
       estimatedMonths: riskToMonths(baseRisk),
       actionTag: actionTag(baseRisk),
+      source: 'extracted',
     });
   }
 
@@ -134,6 +138,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       replacedBy: null,
       estimatedMonths: riskToMonths(baseRisk),
       actionTag: '💪 Double down',
+      source: 'extracted',
     });
   }
 
@@ -153,6 +158,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
         replacedBy: baseRisk >= 40 ? (tools[0]?.tool_name || null) : null,
         estimatedMonths: riskToMonths(baseRisk),
         actionTag: actionTag(baseRisk),
+        source: 'inferred',
       });
     }
   }
