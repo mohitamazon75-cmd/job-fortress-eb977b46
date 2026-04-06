@@ -64,7 +64,7 @@ const SOCIAL_PROOF_AVATARS = [
   { initials: 'SJ', color: 'bg-emerald-500' },
 ];
 
-export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTier = 'year' }: ProUpgradeModalProps) {
+export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTier = 'month' }: ProUpgradeModalProps) {
   const [selected, setSelected] = useState<'month' | 'year'>(defaultTier);
   const [loading, setLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
