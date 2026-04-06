@@ -158,6 +158,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
         replacedBy: baseRisk >= 40 ? (tools[0]?.tool_name || null) : null,
         estimatedMonths: riskToMonths(baseRisk),
         actionTag: actionTag(baseRisk),
+        source: 'inferred',
       });
     }
   }
