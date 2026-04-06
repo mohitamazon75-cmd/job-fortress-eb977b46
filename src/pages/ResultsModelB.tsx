@@ -119,17 +119,13 @@ export default function ResultsModelB() {
     setLoading(true);
     setError("");
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const uid = session?.user?.id ?? null;
+      const { data: { user } } = await supabase.auth.getUser();
+      const uid = user?.id || null;
       setUserId(uid);
 
       // First call triggers the background job
       const { data, error: fnError } = await supabase.functions.invoke("get-model-b-analysis", {
-        body: {
-          analysis_id: analysisId,
-          ...(uid ? { user_id: uid } : {}),
-          resume_filename: "Your Resume",
-        },
+        body: { analysis_id: analysisId, user_id: uid, resume_filename: "Your Resume" },
       });
 
       if (fnError) throw new Error(fnError.message || "Analysis failed");
@@ -173,11 +169,7 @@ export default function ResultsModelB() {
 
       try {
         const { data, error: fnError } = await supabase.functions.invoke("get-model-b-analysis", {
-          body: {
-            analysis_id: analysisId,
-            ...(uid ? { user_id: uid } : {}),
-            poll: true,
-          },
+          body: { analysis_id: analysisId, user_id: uid, poll: true },
         });
 
         if (fnError) throw new Error(fnError.message);
@@ -198,11 +190,7 @@ export default function ResultsModelB() {
         // not_started or error — retry trigger
         if (polls < 3) {
           const { data: retrigger } = await supabase.functions.invoke("get-model-b-analysis", {
-            body: {
-              analysis_id: analysisId,
-              ...(uid ? { user_id: uid } : {}),
-              resume_filename: "Your Resume",
-            },
+            body: { analysis_id: analysisId, user_id: uid, resume_filename: "Your Resume" },
           });
           if (retrigger?.data?.card_data) {
             const cd = retrigger.data.card_data;

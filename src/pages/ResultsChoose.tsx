@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,24 +15,10 @@ export default function ResultsChoose() {
   const [userId, setUserId] = useState<string | null>(null);
   const { isActive, loading: subLoading } = useSubscription();
 
-  const openPricing = useCallback(() => {
-    try {
-      if (analysisId) {
-        sessionStorage.setItem('jb_last_analysis_id', analysisId);
-      }
-    } catch {}
-
-    navigate(analysisId ? `/pricing?id=${analysisId}` : "/pricing");
-  }, [analysisId, navigate]);
-
   useEffect(() => {
     if (!analysisId) { navigate("/", { replace: true }); return; }
-    try {
-      sessionStorage.setItem('jb_last_analysis_id', analysisId);
-    } catch {}
-
-    supabase.auth.getSession().then(({ data }) => {
-      const uid = data?.session?.user?.id || null;
+    supabase.auth.getUser().then(({ data }) => {
+      const uid = data?.user?.id || null;
       setUserId(uid);
       supabase.functions.invoke("log-ab-event", {
         body: { analysis_id: analysisId, user_id: uid, event_type: "choice_shown" },
@@ -149,7 +135,7 @@ export default function ResultsChoose() {
                 </div>
               </div>
               <button
-                onClick={openPricing}
+                onClick={() => navigate("/pricing")}
                 style={{
                   padding: "12px 28px", borderRadius: 12,
                   background: "linear-gradient(135deg, #4F46E5, #7C3AED)",
@@ -189,7 +175,7 @@ export default function ResultsChoose() {
             buttonLabel="See conservative analysis"
             buttonStyle="outline"
             onNavigate={() => logAndNavigate("model_a_chosen", `/?id=${analysisId}`)}
-            onUnlock={openPricing}
+            onUnlock={() => navigate("/pricing")}
             
           />
 
@@ -221,7 +207,7 @@ export default function ResultsChoose() {
             buttonLabel="See aggressive analysis"
             buttonStyle="filled"
             onNavigate={() => logAndNavigate("model_b_chosen", `/results/model-b?id=${analysisId}`)}
-            onUnlock={openPricing}
+            onUnlock={() => navigate("/pricing")}
             
           />
         </div>

@@ -15,24 +15,6 @@ interface SubscriptionState {
  * Returns { tier, isActive, expiresAt, loading }.
  */
 export function useSubscription(): SubscriptionState {
-  const readTestUnlock = (): SubscriptionState | null => {
-    try {
-      if (sessionStorage.getItem('jb_test_pro_unlock') !== '1') return null;
-
-      const storedTier = sessionStorage.getItem('jb_test_pro_tier');
-      const tier: SubscriptionTier = storedTier === 'pro_monthly' ? 'pro_monthly' : 'pro';
-
-      return {
-        tier,
-        isActive: true,
-        expiresAt: null,
-        loading: false,
-      };
-    } catch {
-      return null;
-    }
-  };
-
   const [state, setState] = useState<SubscriptionState>({
     tier: 'free',
     isActive: false,
@@ -44,12 +26,6 @@ export function useSubscription(): SubscriptionState {
     let cancelled = false;
 
     const fetch = async () => {
-      const testUnlockState = readTestUnlock();
-      if (testUnlockState) {
-        if (!cancelled) setState(testUnlockState);
-        return;
-      }
-
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user || cancelled) {
@@ -89,23 +65,9 @@ export function useSubscription(): SubscriptionState {
       fetch();
     });
 
-    const syncTestUnlock = () => {
-      const testUnlockState = readTestUnlock();
-      if (testUnlockState) {
-        setState(testUnlockState);
-      } else {
-        fetch();
-      }
-    };
-
-    window.addEventListener('subscription-updated', syncTestUnlock);
-    window.addEventListener('storage', syncTestUnlock);
-
     return () => {
       cancelled = true;
       subscription.unsubscribe();
-      window.removeEventListener('subscription-updated', syncTestUnlock);
-      window.removeEventListener('storage', syncTestUnlock);
     };
   }, []);
 
