@@ -24,7 +24,7 @@ const PROFILE = {
 };
 
 const SCORE_FACTORS = [
-  { label: 'AI Task Overlap', pts: -18, desc: '62% of daily tasks automatable' },
+  { label: 'AI Exposure Index', pts: -18, desc: '62% of daily tasks automatable' },
   { label: 'Human Edge Skills', pts: +12, desc: 'Stakeholder mgmt, negotiation' },
   { label: 'Seniority Shield', pts: +11, desc: '7 yrs experience buffer' },
   { label: 'Market Demand', pts: +7, desc: 'Role still hiring in Tier-1' },

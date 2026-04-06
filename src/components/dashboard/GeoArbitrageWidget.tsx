@@ -23,7 +23,7 @@ export default function GeoArbitrageWidget({ geoArbitrage, tier2, pivotRole, cou
       </h2>
       <p className="text-xs text-muted-foreground mb-4 ml-6">
         Earn more by working remotely for companies in higher-paying markets. 
-        "Delta" = how much extra you could earn. "Risk-adjusted" = realistic estimate after accounting for the chance of actually landing the role.
+        "Potential uplift" = extra monthly earnings at full probability. "Realistic estimate" = probability-weighted expected monthly gain.
       </p>
 
       <div className="grid md:grid-cols-2 gap-3">
@@ -37,7 +37,7 @@ export default function GeoArbitrageWidget({ geoArbitrage, tier2, pivotRole, cou
           
           <div className="space-y-2 mt-3">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">Extra you could earn/mo</span>
+              <span className="text-xs text-muted-foreground">Potential uplift/mo</span>
               <span className="text-sm font-black text-prophet-green">+{formatCurrency(geoArbitrage.raw_delta_inr_monthly, country)}</span>
             </div>
             <div className="flex justify-between items-center">
@@ -49,7 +49,7 @@ export default function GeoArbitrageWidget({ geoArbitrage, tier2, pivotRole, cou
               <span className="text-xs font-bold text-foreground">{geoArbitrage.geo_probability_pct}%</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">Potential gain in 1 year</span>
+              <span className="text-xs text-muted-foreground">Expected gain in 1 year</span>
               <span className="text-sm font-black text-prophet-green">{formatCurrency(geoArbitrage.expected_value_12mo_inr, country)}</span>
             </div>
             <div className="flex justify-between items-center">

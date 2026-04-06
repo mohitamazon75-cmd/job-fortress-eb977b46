@@ -150,8 +150,11 @@ export function ConfidenceIntervalCard({ report }: IntelligenceProofCardsProps) 
   if (!ci) return null;
 
   const score = 100 - (report.determinism_index ?? 50);
-  const low = Math.min(100 - ci.di_range.high, 100 - ci.di_range.low);
-  const high = Math.max(100 - ci.di_range.high, 100 - ci.di_range.low);
+  const rawLow = Math.min(100 - ci.di_range.high, 100 - ci.di_range.low);
+  const rawHigh = Math.max(100 - ci.di_range.high, 100 - ci.di_range.low);
+  // STAT-2 fix: Clamp CI bounds to valid score range [5, 95]
+  const low = Math.max(5, rawLow);
+  const high = Math.min(95, rawHigh);
 
   return (
     <motion.div

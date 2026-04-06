@@ -78,7 +78,7 @@ const en: Strings = {
 
   diagnosis_title: 'Career Risk Diagnosis',
   risk_score_label: 'Risk Score',
-  months_remaining: 'Months before major disruption',
+  months_remaining: 'Action window (months)',
   salary_bleed: 'Monthly salary at risk',
   high_risk_skills: 'High-Risk Skills',
   safe_skills: 'Your Moat Skills',
@@ -105,7 +105,7 @@ const en: Strings = {
 
   tooltip_risk_score: 'How likely AI is to impact your current role. Higher = more urgent action needed.',
   tooltip_salary_bleed: 'Estimated monthly income you could lose if you don\'t upskill.',
-  tooltip_months_remaining: 'Approximate months before AI significantly disrupts your role.',
+  tooltip_months_remaining: 'Your action window — approximate months to proactively reposition before significant AI disruption.',
   tooltip_moat_skills: 'Skills that are hard for AI to replace — your competitive advantage.',
   tooltip_dead_skills: 'Skills being automated fast. Focus on upgrading these.',
   tooltip_geo_arbitrage: 'Earn more by working remotely for companies in higher-paying markets.',
@@ -131,7 +131,7 @@ const hi: Strings = {
 
   diagnosis_title: 'Career Risk जाँच',
   risk_score_label: 'Risk Score',
-  months_remaining: 'बड़े disruption से पहले कितने महीने',
+  months_remaining: 'Action window (महीने)',
   salary_bleed: 'हर महीने कितनी salary risk में',
   high_risk_skills: 'ख़तरे वाली Skills',
   safe_skills: 'आपकी Safe Skills',
@@ -159,7 +159,7 @@ const hi: Strings = {
   // Hinglish tooltips — conversational, relatable
   tooltip_risk_score: 'AI से आपकी job को कितना ख़तरा है। ज़्यादा score = जल्दी action लो।',
   tooltip_salary_bleed: 'Agar upskill nahi kiya toh har mahine kitni salary doob sakti hai।',
-  tooltip_months_remaining: 'Lagbhag kitne mahine hain AI se pehle aapki role change hogi।',
+  tooltip_months_remaining: 'Aapke paas kitne mahine hain career reposition karne ke liye — AI disruption se pehle।',
   tooltip_moat_skills: 'Ye skills AI ke liye mushkil hain — yahi aapki taqat hai।',
   tooltip_dead_skills: 'Ye skills tezi se automate ho rahi hain। Inhe upgrade karo।',
   tooltip_geo_arbitrage: 'Remote kaam karke zyada paisa kamao — bahar ki companies ke liye kaam karo।',

@@ -109,14 +109,20 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{Math.round(automationRisk)}%</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Task Overlap with AI</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Exposure Index</p>
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{moatSkills.length}</p>
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Moat Skills</p>
+            {moatSkills.length > 0 && moatSkills.length < 4 && (
+              <p className="text-[8px] text-prophet-gold mt-0.5">Score capped — need 4+</p>
+            )}
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
-            <p className="text-lg font-black text-foreground tabular-nums">{tools.length}</p>
+            <p className="text-lg font-black text-foreground tabular-nums">{(() => {
+              const moatSet = new Set((report.moat_skills || []).map(s => s.toLowerCase()));
+              return tools.filter(t => !moatSet.has((t.automates_task || '').toLowerCase())).length;
+            })()}</p>
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Tools Competing</p>
           </div>
         </div>
@@ -208,9 +214,10 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">AIRMM™ Framework</p>
         </div>
         <p className="text-[10px] text-muted-foreground mb-1">
-          <span className="font-bold">A</span>I Resistance · <span className="font-bold">I</span>ncome Resilience · <span className="font-bold">R</span>ole Moat · <span className="font-bold">M</span>arket Mobility · Seniority Shield
+         <span className="font-bold">A</span>I Resistance · <span className="font-bold">I</span>ncome Resilience · <span className="font-bold">R</span>ole Moat · <span className="font-bold">M</span>arket Mobility · Seniority Shield
         </p>
-        <p className="text-[10px] text-muted-foreground mb-4">Current position → projected after closing your top skill gaps</p>
+        <p className="text-[10px] text-muted-foreground mb-1">Current position → illustrative projections after closing your top skill gaps</p>
+        <p className="text-[9px] text-muted-foreground/60 mb-4 italic">Projections are directional estimates based on typical skill-gap closure patterns, not guarantees.</p>
 
         <div className="space-y-3">
           {airmm.map((dim, i) => {
