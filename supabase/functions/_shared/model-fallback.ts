@@ -11,6 +11,8 @@ import { callAgent } from "./ai-agent-caller.ts";
 const TIER1 = "google/gemini-3.1-pro-preview";
 const TIER2 = "google/gemini-3-pro-preview";
 const TIER3 = "google/gemini-3-flash-preview";
+const OPENAI_PRIMARY = "openai/gpt-5";
+const OPENAI_SECONDARY = "openai/gpt-5-mini";
 const EMERGENCY = "google/gemini-2.5-pro";
 
 // Agents where Flash produces unacceptably degraded output
@@ -110,7 +112,10 @@ export async function callAgentWithFallback(
 
   // Build fallback order
   const models = [preferredModel];
+  if (preferredModel !== TIER1) models.push(TIER1);
   if (preferredModel !== TIER2) models.push(TIER2);
+  if (preferredModel !== OPENAI_PRIMARY) models.push(OPENAI_PRIMARY);
+  if (preferredModel !== OPENAI_SECONDARY) models.push(OPENAI_SECONDARY);
   if (!isQualityCritical && preferredModel !== TIER3) models.push(TIER3);
   models.push(EMERGENCY);
   const uniqueModels = [...new Set(models)];
