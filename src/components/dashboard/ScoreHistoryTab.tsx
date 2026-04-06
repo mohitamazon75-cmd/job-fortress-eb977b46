@@ -87,24 +87,12 @@ export default function ScoreHistoryTab({ userId, locale = 'en' }: ScoreHistoryT
     }
   }, [userId]);
 
-  // Handle enroll nudge emails
+  // TODO(2026-04-06): nurture-emails removed — JobBachao
+  // email system not yet designed. Re-implement when ready.
   const handleEnrollNudge = async () => {
-    try {
-      const result = await supabase.functions.invoke('nurture-emails', {
-        body: { campaign: 'rescan_nudge', user_id: userId }
-      });
-      if (result.error) {
-        throw result.error;
-      }
-      toast.success('Enrolled in rescan nudge emails', {
-        description: 'We\'ll remind you when it\'s time to rescan.',
-      });
-    } catch (err) {
-      console.error('[ScoreHistoryTab] Nudge enrollment failed:', err);
-      toast.error('Failed to enroll', {
-        description: 'Please try again later.',
-      });
-    }
+    toast.info('Email nudges coming soon', {
+      description: 'This feature is under development.',
+    });
   };
 
   // Empty state

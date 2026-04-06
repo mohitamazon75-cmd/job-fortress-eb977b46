@@ -1,3 +1,24 @@
+/**
+ * generate-weekly-brief
+ * Status: INCOMPLETE — not wired to any trigger
+ *
+ * This function generates weekly job market briefs and writes
+ * to the weekly_briefs table. The table and RLS policies exist.
+ *
+ * To activate: add a pg_cron schedule in a new migration:
+ *   SELECT cron.schedule(
+ *     'weekly-brief-job',
+ *     '0 0 * * 0',  -- Sunday midnight UTC
+ *     $$ SELECT net.http_post(
+ *       url := current_setting('app.supabase_url')
+ *              || '/functions/v1/generate-weekly-brief',
+ *       headers := '{"Content-Type":"application/json"}'::jsonb
+ *     ) $$
+ *   );
+ *
+ * TODO(2026-04-06): Wire cron trigger when feature is
+ * ready for production.
+ */
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
