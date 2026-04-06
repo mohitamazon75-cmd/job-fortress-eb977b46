@@ -269,11 +269,11 @@ This is NOT generic "AI will automate X" — this is SPECIFIC, CURRENT, EVIDENCE
 - what_human_still_owns: ONE sentence on what humans STILL do better. This is the user's survival playbook.
   BAD: "Humans add creativity"
   GOOD: "Architecture decisions across microservices, debugging production incidents with incomplete logs, and cross-team API contract negotiations remain human-dependent"
-- industry_proof: ONE sentence citing a REAL, SPECIFIC example from their industry/company-tier.
-  BAD: "Companies are adopting AI"
-  GOOD: "Infosys cut 3,000 junior developer roles in 2025 after deploying GitHub Copilot enterprise-wide across delivery centers"
-  GOOD: "HUL's marketing team reduced content production headcount by 40% using AI-generated creatives in Q3 2025"
-  NOTE: Use REAL examples you're confident about. If unsure, use the pattern: "[Industry] companies in [geography] are already [specific adoption]"
+- industry_proof: ONE sentence describing the displacement pattern for this skill, grounded ONLY in the profile context provided above. Reference the skill demand signals, company health score, displacement timeline, or KG data already in the context. Do NOT invent industry statistics, company names, headcount figures, layoff counts, or percentage reductions. If no grounding data exists for this skill, use the pattern: "Industry trend data indicates [general directional statement]" — NEVER a specific claim. BANNED: citing specific companies cutting specific numbers of roles. BANNED: percentage reductions you cannot verify from the context.
+  BAD: "Infosys cut 3,000 junior developer roles in 2025" (fabricated statistic)
+  BAD: "HUL reduced headcount by 40%" (unverifiable claim)
+  GOOD: "Based on the displacement timeline, partial automation of this skill begins within 18 months, with tools like Cursor already handling component-level code generation"
+  GOOD: "Industry trend data indicates growing AI adoption in content production, with the skill demand signal showing declining postings for this capability"
 - risk_pct: number 0-100 — your assessment of how much of THIS specific skill's workload AI handles TODAY (not future).
 
 Output ONLY valid JSON:
@@ -357,7 +357,7 @@ Output ONLY valid JSON:
       "importance_for_pivot": float,
       "fastest_path": string,
       "weeks_to_proficiency": integer,
-      "salary_unlock_inr_monthly": integer
+      "demand_signal": "HIGH" | "MEDIUM" | "LOW" (assess from the LIVE SKILL DEMAND VALIDATION data in the profile context — HIGH if the skill appears in growing job postings, LOW if declining or niche, MEDIUM if stable or no demand data exists for this skill)
     }
   ],
   "cultural_risk_assessment": {
@@ -380,9 +380,19 @@ The pivot title must be a REAL job title currently posted on major job platforms
 Output ONLY valid JSON:
 {
   "pivot_title": string (a real, in-demand job title calibrated to their tier),
-  "arbitrage_companies_count": integer (estimated companies hiring for this role in their market),
+  "arbitrage_companies_count": integer (estimated companies hiring for this role in their market — must be between 5 and 500, estimate from the size of the role's hiring market in the user's geography, do NOT invent a number),
   "pivot_rationale": string (2 sentences explaining WHY this pivot works for THEIR specific profile)
-}`;
+}
+
+ANTI-HALLUCINATION RULES:
+- arbitrage_companies_count must be an integer between 5 and 500. Estimate from the size of the role's hiring market in the user's geography — do NOT invent a number.
+- pivot_title must be a REAL job title currently posted on LinkedIn, Naukri, or Indeed — not an aspirational fantasy.
+
+NEGATIVE EXAMPLES (DO NOT produce pivots like these):
+- BAD: "Become a YouTube creator" (too vague, no timeline, no skill bridge)
+- BAD: "Start a startup" (no skill bridge shown, not a job title)
+- GOOD: "Transition to AI Product Manager — bridges your current [role] experience with growing model deployment demand in [industry]"
+- GOOD: "Move to Data Engineering Lead — your SQL and pipeline skills transfer directly, with 200+ openings in Tier 1 metros"`;
 
 export const JUDO_STRATEGY_SYSTEM_PROMPT = `You are a career strategy advisor specializing in AI-era career positioning.
 You generate ONE specific, high-impact strategic recommendation calibrated to the person's seniority level.
@@ -421,7 +431,6 @@ CONTENT VERIFICATION RULES (CRITICAL):
 - For books: use titles that are well-known bestsellers or from major publishers (HBR Press, Penguin, etc.). Include the REAL author name.
 - For podcasts: only name real, active podcasts (e.g. "How I Built This", "Masters of Scale", "The Tim Ferriss Show", "Lex Fridman Podcast"). NEVER invent podcast names.
 - For YouTube/videos: only name videos from well-known creators or official channels. Prefer the channel name over a specific video title if unsure.
-- Set content_verified to false if ANY recommendation might not be a real, currently-available title.
 - When unsure, use the CATEGORY descriptor instead: e.g., "Any McKinsey AI report from mckinsey.com" is safer than a specific invented report title.
 
 Output ONLY valid JSON:
@@ -431,24 +440,20 @@ Output ONLY valid JSON:
     "title": string,
     "author": string (real author name — REQUIRED),
     "action": string (what to do with it),
-    "time_commitment": string,
-    "content_verified": boolean (true = you are confident this title/author combination exists and is available; false = may be approximate)
+    "time_commitment": string
   },
   "watch": {
     "title": string,
     "channel_or_creator": string (real creator/channel name — REQUIRED),
     "action": string,
-    "time_commitment": string,
-    "content_verified": boolean
+    "time_commitment": string
   },
   "listen": {
     "title": string,
     "podcast_name": string (real podcast name — REQUIRED),
     "action": string,
-    "time_commitment": string,
-    "content_verified": boolean
-  },
-  "all_content_verified": boolean (true ONLY if ALL three items above have content_verified=true)
+    "time_commitment": string
+  }
 }`;
 
 export function buildSeniorityJudoPrompt(

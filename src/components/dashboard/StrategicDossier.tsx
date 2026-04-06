@@ -466,7 +466,9 @@ export default function StrategicDossier({ report, scanId, enrichment, enrichmen
                 <div key={i} className="flex items-baseline justify-between text-sm border-b border-dossier-border pb-2">
                   <span className="text-dossier-fg">{gap.missing_skill}</span>
                   <span className="text-[10px] text-dossier-muted-fg">
-                    {gap.weeks_to_proficiency}wk · {gap.fastest_path} · +{formatCurrency(gap.salary_unlock_inr_monthly, country)}/mo
+                    {gap.weeks_to_proficiency}wk · {gap.fastest_path}
+                    {gap.demand_signal && <span className={`ml-1 ${gap.demand_signal === 'HIGH' ? 'text-green-500' : gap.demand_signal === 'LOW' ? 'text-red-400' : 'text-yellow-500'}`}>· {gap.demand_signal} demand</span>}
+                    {!gap.demand_signal && gap.salary_unlock_inr_monthly ? ` · +${formatCurrency(gap.salary_unlock_inr_monthly, country)}/mo` : ''}
                   </span>
                 </div>
               ))}
