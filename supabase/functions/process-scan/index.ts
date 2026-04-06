@@ -67,74 +67,7 @@ const FAST_MODEL = MODELS.FLASH; // Tier 3: Weekly Diet and other synthesis task
 const CACHE_TTL_HOURS = 6;
 const GLOBAL_TIMEOUT_MS = 150_000; // Supabase edge function wall clock limit
 
-const NOISY_PROFILE_SOURCE_REGEX = /(scribd|slideshare|poshmark|tripadvisor|naukri|indeed|glassdoor|quora|pinterest|reddit|facebook|instagram)/i;
 
-// ═══════════════════════════════════════════════════════════════
-// PROFILE COMPLETENESS
-// ═══════════════════════════════════════════════════════════════
-const HIGH_VALUE_FIELDS = [
-  'current_role',
-  'experience_years',
-  'primary_skills',
-  'estimated_monthly_salary_inr',
-  'industry',
-  'current_company',
-  'city',
-] as const;
-
-function computeProfileCompleteness(profile: Record<string, unknown>): {
-  profile_completeness_pct: number;
-  profile_gaps: string[];
-} {
-  const gaps: string[] = [];
-  let filled = 0;
-  for (const field of HIGH_VALUE_FIELDS) {
-    const val = profile[field];
-    const present = val !== null && val !== undefined &&
-                    val !== '' &&
-                    !(Array.isArray(val) && val.length === 0);
-    if (present) filled++;
-    else gaps.push(field);
-  }
-  return {
-    profile_completeness_pct: Math.round((filled / HIGH_VALUE_FIELDS.length) * 100),
-    profile_gaps: gaps,
-  };
-}
-
-function extractLinkedinSlug(linkedinUrl: string): string {
-  const slugMatch = linkedinUrl.match(/\/in\/([\w-]+)/i);
-  return slugMatch ? slugMatch[1].toLowerCase() : "";
-}
-
-function sanitizeEvidenceSnippet(text: string, maxLength = 500): string {
-  return stripUnverifiedNumbers(sanitizeInput(text.replace(/\s+/g, " ").trim())).slice(0, maxLength);
-}
-
-function stripUnverifiedNumbers(text: string): string {
-  return text
-    .replace(/[\$₹€£]\s*[\d,.]+\s*[KMBT]?\b/gi, "[amount]")
-    .replace(/\b\d{2,}\+?\s*(investors?|employees?|clients?|companies|customers?|users?|members?|offices?|countries)\b/gi, "[metric]")
-    .replace(/(raised|funded|revenue of|worth|valued at)\s*[\$₹€£]?\s*[\d,.]+\s*[KMBT]?\b/gi, "[financial claim]");
-}
-
-function isTrustedLinkedinResult(urlInput: string, titleInput: string, contentInput: string, slug: string): boolean {
-  const url = String(urlInput || "").toLowerCase();
-  const title = String(titleInput || "").toLowerCase();
-  const content = String(contentInput || "").toLowerCase();
-
-  if (!url.includes("linkedin.com/in/")) return false;
-  if (NOISY_PROFILE_SOURCE_REGEX.test(url)) return false;
-
-  if (slug) {
-    const slugTokens = slug.split(/[-_]+/).filter((token) => token.length >= 3);
-    const exactSlugMatch = url.includes(`/in/${slug}`);
-    const tokenMatches = slugTokens.filter((token) => url.includes(token) || title.includes(token) || content.includes(token)).length;
-    return exactSlugMatch || (slugTokens.length > 0 && tokenMatches >= Math.min(2, slugTokens.length));
-  }
-
-  return title.includes("linkedin") || content.includes("linkedin");
-}
 
 // ═══════════════════════════════════════════════════════════════
 // MAIN HANDLER — ORCHESTRATOR
