@@ -44,7 +44,7 @@ import { recordScoreHistory, getPreviousScore } from "../_shared/score-history.t
 // validateAgentOutput, Agent1Schema, Agent2ASchema, Agent2BSchema removed — unused after refactor
 import { getPromptVersion } from "../_shared/prompt-versions.ts";
 import { findCachedScan } from "../_shared/scan-cache.ts";
-import { MAX_CONCURRENT_SCANS, TIMEOUTS, MODELS, DAILY_COST_CAP_USD } from "../_shared/constants.ts";
+import { MAX_CONCURRENT_SCANS, MODELS } from "../_shared/constants.ts";
 import {
   updateScan,
   buildDeterministicReport,
