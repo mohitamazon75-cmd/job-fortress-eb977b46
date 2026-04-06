@@ -37,7 +37,7 @@ export default function GeoArbitrageWidget({ geoArbitrage, tier2, pivotRole, cou
           
           <div className="space-y-2 mt-3">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">Extra you could earn/mo</span>
+              <span className="text-xs text-muted-foreground">Potential uplift/mo</span>
               <span className="text-sm font-black text-prophet-green">+{formatCurrency(geoArbitrage.raw_delta_inr_monthly, country)}</span>
             </div>
             <div className="flex justify-between items-center">
