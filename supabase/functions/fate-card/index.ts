@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
 
     if (!assessmentId) {
       return new Response(
-        JSON.stringify({ error: "assessmentId required" }),
+        JSON.stringify({ error: "assessmentId required", code: "INVALID_INPUT", status: "error" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
