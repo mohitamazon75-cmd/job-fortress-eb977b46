@@ -121,6 +121,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       replacedBy: toolMap.get(key) || tools[0]?.tool_name || 'AI Agents',
       estimatedMonths: riskToMonths(baseRisk),
       actionTag: actionTag(baseRisk),
+      source: 'extracted',
     });
   }
 
