@@ -371,7 +371,7 @@ function CaptureTarget({
                 fontFamily: FONT_MONO, fontSize: 8, fontWeight: 700,
                 color: C.safe, textTransform: 'uppercase', letterSpacing: '0.15em',
                 margin: '0 0 8px',
-              }}>✓ Your edge</p>
+              }}>✓ What keeps me safe</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {moatSkills.map(s => (
                   <span key={s} style={{
