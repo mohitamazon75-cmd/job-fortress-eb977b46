@@ -24,8 +24,6 @@ import {
   buildSeniorityDietPrompt,
 } from "../_shared/agent-prompts.ts";
 import {
-  inferFromLinkedinUrl,
-  parseExperienceYears,
   resolveIndustry,
   validateAgent1Output,
   detectCompoundRole,
@@ -33,7 +31,10 @@ import {
   validateOutputForTier,
   matchRoleToJobFamily,
   sanitizeInput,
+  parseExperienceYears,
 } from "../_shared/scan-helpers.ts";
+import { computeProfileCompleteness } from "../_shared/scan-utils.ts";
+import { gatherEnrichmentData } from "./scan-enrichment.ts";
 
 // New shared modules
 import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
