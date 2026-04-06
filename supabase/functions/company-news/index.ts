@@ -128,6 +128,7 @@ Deno.serve(async (req) => {
     const ai1T = setTimeout(() => ai1Ctrl.abort(), 30_000);
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
+      signal: ai1Ctrl.signal,
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
@@ -173,11 +174,10 @@ Maximum 5 news items. No markdown.`,
         temperature: 0.2,
       }),
     });
+    clearTimeout(ai1T);
 
     if (!aiResp.ok) {
-      signal: ai1Ctrl.signal,
       const status = aiResp.status;
-    clearTimeout(ai1T);
       if (status === 402 || status === 429) {
         return new Response(
           JSON.stringify({ news: [], error: status === 402 ? "AI credits exhausted" : "Rate limited", rate_limited: true }),
