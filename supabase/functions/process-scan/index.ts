@@ -31,7 +31,7 @@ import {
   validateOutputForTier,
   matchRoleToJobFamily,
   sanitizeInput,
-  parseExperienceYears,
+  
 } from "../_shared/scan-helpers.ts";
 import { computeProfileCompleteness } from "../_shared/scan-utils.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
