@@ -46,6 +46,8 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════════════════
     if (FIRECRAWL_API_KEY) {
       try {
+        const scrapeController = new AbortController();
+        const scrapeTimeout = setTimeout(() => scrapeController.abort(), 15_000);
         const scrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
           method: "POST",
           headers: {
@@ -53,7 +55,9 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ url: linkedinUrl, formats: ["markdown"] }),
+          signal: scrapeController.signal,
         });
+        clearTimeout(scrapeTimeout);
 
         if (scrapeResponse.ok) {
           const scrapeData = await scrapeResponse.json();
@@ -77,6 +81,8 @@ Deno.serve(async (req) => {
           // Only search with exact slug to avoid wrong-person matches
           const searchQuery = `site:linkedin.com/in/${slug}`;
 
+          const searchController = new AbortController();
+          const searchTimeout = setTimeout(() => searchController.abort(), 15_000);
           const searchResp = await fetch("https://api.firecrawl.dev/v1/search", {
             method: "POST",
             headers: {
@@ -84,7 +90,9 @@ Deno.serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ query: searchQuery, limit: 3, lang: "en" }),
+            signal: searchController.signal,
           });
+          clearTimeout(searchTimeout);
 
           if (searchResp.ok) {
             const searchData = await searchResp.json();

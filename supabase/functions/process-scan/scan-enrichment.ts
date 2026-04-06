@@ -339,6 +339,14 @@ async function enrichFromLinkedin(
  * @param input - Scan data and configuration
  * @returns Enrichment results with profile text and extracted metadata
  */
+/**
+ * gatherEnrichmentData — Collects external data from all available sources.
+ *
+ * @param input - EnrichmentInput with resume path, LinkedIn URL, API keys, scan context
+ * @returns EnrichmentResult with resume text, LinkedIn data, Firecrawl/Tavily results
+ * @notes Each source fails independently — partial results always returned, never thrown.
+ *        All external calls use AbortController with 15s timeouts.
+ */
 export async function gatherEnrichmentData(input: EnrichmentInput): Promise<EnrichmentResult> {
   const { scan, hasResume, activeModel, supabaseClient } = input;
   const linkedinInference = inferFromLinkedinUrl(scan.linkedin_url);

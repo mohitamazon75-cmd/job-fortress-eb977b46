@@ -100,6 +100,14 @@ export interface AgentOrchestrationResult {
 // MAIN ORCHESTRATION
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * orchestrateAgents — Runs all AI agents and ML gateway in parallel.
+ *
+ * @param input - AgentOrchestrationInput with all pre-computed data from the pipeline
+ * @returns AgentOrchestrationResult with mlObsolescence, validatedAgent2, and context vars
+ * @notes Uses Promise.allSettled with a defensive parallel deadline. Individual agent
+ *        failures degrade gracefully. Judo/Diet skipped if time budget is insufficient.
+ */
 export async function orchestrateAgents(
   input: AgentOrchestrationInput,
 ): Promise<AgentOrchestrationResult> {

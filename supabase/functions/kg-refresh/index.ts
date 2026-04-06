@@ -13,6 +13,8 @@ function sleep(ms: number) {
 
 async function searchFirecrawl(apiKey: string, query: string): Promise<string[]> {
   try {
+    const fcController = new AbortController();
+    const fcTimeout = setTimeout(() => fcController.abort(), 15_000);
     const resp = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
       headers: {
@@ -20,7 +22,9 @@ async function searchFirecrawl(apiKey: string, query: string): Promise<string[]>
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ query, limit: 5, lang: "en", country: "in", tbs: "qdr:m" }),
+      signal: fcController.signal,
     });
+    clearTimeout(fcTimeout);
     if (!resp.ok) return [];
     const data = await resp.json();
     return (data.data || [])
@@ -37,6 +41,8 @@ async function synthesizeWithGemini(
   userPrompt: string
 ): Promise<any | null> {
   try {
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 30_000);
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -51,7 +57,9 @@ async function synthesizeWithGemini(
         ],
         temperature: 0.1,
       }),
+      signal: aiController.signal,
     });
+    clearTimeout(aiTimeout);
     if (!resp.ok) return null;
     const data = await resp.json();
     logTokenUsage("kg-refresh", null, "google/gemini-3-flash-preview", data);

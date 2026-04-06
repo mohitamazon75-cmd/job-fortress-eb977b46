@@ -1,3 +1,14 @@
+/**
+ * @fileoverview process-scan — Main orchestrator for the JobBachao scan pipeline.
+ *
+ * Purpose: Receives a scanId, coordinates all analysis stages, and persists the final report.
+ * Flow:    CORS → Auth → Rate limit → Cache check → Enrichment → Deterministic engine →
+ *          Agent orchestration → Report assembly → Quality passes → Persist & respond.
+ * Inputs:  { scanId: string, forceRefresh?: boolean } via POST body.
+ * Returns: { status: "complete", report: FinalJsonReport } on success.
+ * Notes:   150s global timeout. Agents run in parallel via scan-agents.ts.
+ *          Enrichment delegated to scan-enrichment.ts. Deterministic scoring via barrel.
+ */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   computeAll,

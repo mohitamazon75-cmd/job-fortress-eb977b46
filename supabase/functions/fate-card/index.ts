@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
 
     if (!assessmentId) {
       return new Response(
-        JSON.stringify({ error: "assessmentId required" }),
+        JSON.stringify({ error: "assessmentId required", code: "INVALID_INPUT", status: "error" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     if (!assessment) {
       return new Response(
-        JSON.stringify({ error: "Assessment not found" }),
+        JSON.stringify({ error: "Assessment not found", code: "NOT_FOUND", status: "error" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Fate card error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error", code: "INTERNAL_ERROR", status: "error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

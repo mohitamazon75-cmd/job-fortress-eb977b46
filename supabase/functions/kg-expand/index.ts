@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
     if (!PERPLEXITY_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "PERPLEXITY_API_KEY not configured" }),
+        JSON.stringify({ error: "PERPLEXITY_API_KEY not configured", code: "CONFIG_ERROR", status: "error" }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     if (!allJobs?.length) {
       return new Response(
-        JSON.stringify({ error: "No job families found" }),
+        JSON.stringify({ error: "No job families found", code: "NOT_FOUND", status: "error" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -89,6 +89,8 @@ Deno.serve(async (req) => {
 
     for (const job of batchJobs) {
       try {
+        const pxController = new AbortController();
+        const pxTimeout = setTimeout(() => pxController.abort(), 15_000);
         const resp = await fetch("https://api.perplexity.ai/chat/completions", {
           method: "POST",
           headers: {
@@ -128,7 +130,9 @@ Return JSON:
             return_citations: true,
             search_recency_filter: "month",
           }),
+          signal: pxController.signal,
         });
+        clearTimeout(pxTimeout);
 
         if (!resp.ok) {
           console.error(`[kg-expand] Perplexity failed for ${job.job_family}: ${resp.status}`);
@@ -220,7 +224,7 @@ Return JSON:
   } catch (error) {
     console.error("[kg-expand] error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
+      JSON.stringify({ error: "Internal server error", code: "INTERNAL_ERROR", status: "error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
