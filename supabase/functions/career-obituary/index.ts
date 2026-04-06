@@ -1,3 +1,4 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
@@ -13,6 +14,21 @@ Deno.serve(async (req) => {
   if (blocked) return blocked;
 
   try {
+    // --- Soft auth: identify user if logged in, allow anonymous ---
+    const authHeader = req.headers.get("Authorization");
+    let user = null;
+    if (authHeader) {
+      const authClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data } = await authClient.auth.getUser();
+      user = data?.user ?? null;
+    }
+    // user is now either the authenticated User object or null (anonymous)
+    // --- end soft auth ---
+
     const { role, industry, city, skills, achievements, experience } = await req.json();
 
     const roleLabel = role || "Professional";
