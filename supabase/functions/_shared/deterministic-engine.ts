@@ -1272,7 +1272,8 @@ export function deriveToneTag(
 export function extractReplacingTools(
   profile: ProfileInput,
   skillRiskData: SkillRiskRow[],
-  jobData: JobTaxonomyRow | null
+  jobData: JobTaxonomyRow | null,
+  kgIndex?: KGSkillIndex
 ): ReplacingTool[] {
   const tools: ReplacingTool[] = [];
   const seenTools = new Set<string>();
