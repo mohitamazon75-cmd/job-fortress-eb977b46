@@ -261,7 +261,7 @@ function CaptureTarget({
         borderLeft: `3px solid ${scoreColor}`,
       }}>
         <p style={{
-          fontSize: 14, color: C.offWhite, lineHeight: 1.65, margin: 0,
+          fontSize: 14, color: C.text, lineHeight: 1.65, margin: 0,
           fontWeight: 500,
         }}>
           {verdictText}
@@ -311,7 +311,7 @@ function CaptureTarget({
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 marginBottom: 5,
               }}>
-                <span style={{ fontSize: 12, color: C.offWhite, fontWeight: 500 }}>{task.name}</span>
+                <span style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>{task.name}</span>
                 <span style={{
                   fontFamily: FONT_MONO, fontSize: 12, fontWeight: 700,
                   color: C.danger,
