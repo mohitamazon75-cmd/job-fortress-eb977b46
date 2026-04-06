@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     if (!allJobs?.length) {
       return new Response(
-        JSON.stringify({ error: "No job families found" }),
+        JSON.stringify({ error: "No job families found", code: "NOT_FOUND", status: "error" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
