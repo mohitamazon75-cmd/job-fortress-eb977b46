@@ -176,7 +176,7 @@ export default function ResultsChoose() {
             buttonStyle="outline"
             onNavigate={() => logAndNavigate("model_a_chosen", `/?id=${analysisId}`)}
             onUnlock={() => navigate("/pricing")}
-            LockIcon={Shield}
+            
           />
 
           {/* VS divider */}
