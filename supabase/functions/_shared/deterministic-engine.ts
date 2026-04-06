@@ -640,13 +640,57 @@ function levenshteinSimilarity(a: string, b: string): number {
   return 1 - matrix[a.length][b.length] / maxLen;
 }
 
+/**
+ * Pre-built hashmap index for O(1) KG skill lookups.
+ * Build once per computeAll call, reuse for all matchSkillToKG calls.
+ */
+export interface KGSkillIndex {
+  /** exact normalized name → SkillRiskRow */
+  exact: Map<string, SkillRiskRow>;
+  /** all normalized names for substring fallback */
+  entries: Array<{ norm: string; row: SkillRiskRow }>;
+}
+
+export function buildKGSkillIndex(skillRiskData: SkillRiskRow[]): KGSkillIndex {
+  const exact = new Map<string, SkillRiskRow>();
+  const entries: Array<{ norm: string; row: SkillRiskRow }> = [];
+  for (const row of skillRiskData) {
+    const norm = normalize(row.skill_name);
+    if (norm) {
+      exact.set(norm, row);
+      entries.push({ norm, row });
+    }
+  }
+  return { exact, entries };
+}
+
 export function matchSkillToKG(
   userSkill: string,
-  skillRiskData: SkillRiskRow[]
+  skillRiskData: SkillRiskRow[],
+  index?: KGSkillIndex
 ): SkillRiskRow | null {
   const normSkill = normalize(userSkill);
   if (!normSkill) return null;
 
+  // Fast path: use pre-built index if available
+  if (index) {
+    // O(1) exact match
+    const exactMatch = index.exact.get(normSkill);
+    if (exactMatch) return exactMatch;
+
+    // O(n) substring check (still faster than Levenshtein)
+    for (const { norm, row } of index.entries) {
+      if (normSkill.includes(norm) || norm.includes(normSkill)) return row;
+    }
+
+    // O(n) Levenshtein fallback — only for unmatched skills
+    for (const { norm, row } of index.entries) {
+      if (levenshteinSimilarity(normSkill, norm) > 0.7) return row;
+    }
+    return null;
+  }
+
+  // Legacy path: no index (backward compatible)
   for (const dbSkill of skillRiskData) {
     const normDb = normalize(dbSkill.skill_name);
     if (
