@@ -131,11 +131,27 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
       const config = TIER_CONFIG[selected];
       const RZP_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
       if (!RZP_KEY) {
-        toast.info("You're on the early access list!", {
-          description: "We'll notify you the moment payments go live. You'll get first access at this price.",
-          duration: 5000,
-        });
+        // TEST MODE: simulate successful payment
+        const expiresAt = selected === 'year'
+          ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            subscription_tier: config.tier === 'pro_monthly' ? 'pro' : config.tier,
+            subscription_expires_at: expiresAt,
+          })
+          .eq('id', session.user.id);
+        if (updateError) {
+          setPaymentError('Failed to activate test subscription.');
+          setLoading(false);
+          return;
+        }
+        toast.success("✅ Test payment successful! Both reports unlocked.", { duration: 4000 });
+        window.dispatchEvent(new Event('subscription-updated'));
+        onSuccess?.(config.tier);
         onClose();
+        setLoading(false);
         return;
       }
       const options = {
