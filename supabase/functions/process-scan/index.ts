@@ -21,10 +21,8 @@ import {
   validateAgent1Output,
   detectCompoundRole,
   inferCompanyTier,
-  validateOutputForTier,
   matchRoleToJobFamily,
   sanitizeInput,
-  
 } from "../_shared/scan-helpers.ts";
 import { computeProfileCompleteness } from "../_shared/scan-utils.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
