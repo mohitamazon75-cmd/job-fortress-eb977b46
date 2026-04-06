@@ -235,6 +235,7 @@ Return JSON:
       const ms1T = setTimeout(() => ms1Ctrl.abort(), 30_000);
       const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
+        signal: ms1Ctrl.signal,
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
@@ -248,11 +249,10 @@ Return JSON:
           },
         }),
       });
+      clearTimeout(ms1T);
 
       if (resp.ok) {
-        signal: ms1Ctrl.signal,
         const data = await resp.json();
-      clearTimeout(ms1T);
         logTokenUsage("market-signals[enrich]", `query-${idx}`, "google/gemini-3-flash-preview", data);
         const content = data.choices?.[0]?.message?.content;
         if (content) {
