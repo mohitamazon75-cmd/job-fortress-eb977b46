@@ -260,20 +260,20 @@ function CaptureTarget({
           { label: 'SALARY RISK', value: salaryRiskLPA, sub: 'IMPACT ANNUALLY', color: C.warning },
         ].map((stat, i) => (
           <div key={i} style={{
-            flex: 1, padding: '16px 10px', textAlign: 'center',
+            flex: 1, padding: '16px 8px', textAlign: 'center',
             borderRight: i < 2 ? `1px solid ${C.border}` : 'none',
           }}>
             <p style={{
               fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
-              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em',
+              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em',
               margin: '0 0 8px',
             }}>{stat.label}</p>
             <p style={{
-              fontFamily: FONT_HEADLINE, fontSize: 26, fontWeight: 900,
+              fontFamily: FONT_HEADLINE, fontSize: 22, fontWeight: 900,
               color: stat.color, margin: 0, lineHeight: 1,
             }}>{stat.value}</p>
             <p style={{
-              fontFamily: FONT_MONO, fontSize: 8, fontWeight: 500,
+              fontFamily: FONT_MONO, fontSize: 7, fontWeight: 500,
               color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em',
               margin: '6px 0 0',
             }}>{stat.sub}</p>
