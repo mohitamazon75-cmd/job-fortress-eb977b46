@@ -348,11 +348,11 @@ function CaptureTarget({
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 8 }}>
           <span style={{
             fontFamily: FONT_HEADLINE, fontSize: 56, fontWeight: 900,
-            color: C.gold, lineHeight: 1,
+            color: C.danger, lineHeight: 1,
           }}>{monthsRemaining}</span>
           <span style={{
             fontFamily: FONT_MONO, fontSize: 13, fontWeight: 700,
-            color: C.gold, textTransform: 'uppercase', letterSpacing: '0.1em',
+            color: C.danger, textTransform: 'uppercase', letterSpacing: '0.1em',
             opacity: 0.7,
           }}>months</span>
         </div>
