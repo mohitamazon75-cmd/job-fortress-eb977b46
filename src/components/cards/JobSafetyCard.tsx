@@ -116,7 +116,10 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Moat Skills</p>
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
-            <p className="text-lg font-black text-foreground tabular-nums">{tools.length}</p>
+            <p className="text-lg font-black text-foreground tabular-nums">{(() => {
+              const moatSet = new Set((report.moat_skills || []).map(s => s.toLowerCase()));
+              return tools.filter(t => !moatSet.has((t.automates_task || '').toLowerCase())).length;
+            })()}</p>
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Tools Competing</p>
           </div>
         </div>
