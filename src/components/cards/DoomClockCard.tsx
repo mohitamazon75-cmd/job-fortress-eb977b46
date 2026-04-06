@@ -492,7 +492,11 @@ export default function DoomClockCard({ report, scanId }: Props) {
     [allSkills]
   );
 
-  const topSkills = atRisk.slice(0, 5); // Show up to 5 skills
+  // Split at-risk skills by source
+  const extractedAtRisk = useMemo(() => atRisk.filter(s => s.source === 'extracted'), [atRisk]);
+  const inferredAtRisk = useMemo(() => atRisk.filter(s => s.source === 'inferred'), [atRisk]);
+
+  const topSkills = atRisk.slice(0, 5); // For share card
   const totalAtRisk = atRisk.length;
   const safeCount = allSkills.filter(s => s.status === 'safe').length;
   const aiProximity = computeAIProximity(allSkills);
