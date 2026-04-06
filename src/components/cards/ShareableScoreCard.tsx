@@ -184,8 +184,19 @@ function CaptureTarget({
             background: C.danger, display: 'inline-block',
             boxShadow: `0 0 8px ${C.danger}`,
           }} />
-          AI SCAN LIVE
+          LIVE RESULT
         </span>
+      </div>
+
+      {/* ── 2. Emotional headline — the scroll stopper ── */}
+      <div style={{
+        padding: '28px 28px 8px', textAlign: 'center',
+      }}>
+        <p style={{
+          fontFamily: FONT_HEADLINE, fontSize: 24, fontWeight: 900,
+          color: C.white, lineHeight: 1.35, margin: 0,
+          fontStyle: 'italic',
+        }}>"{headline}"</p>
       </div>
 
       {/* ── 2. Hero: Score + Role (the money shot) ── */}
