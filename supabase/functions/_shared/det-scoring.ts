@@ -3,15 +3,13 @@
  * Determinism Index calculation, and Score Variability.
  */
 
-import { CALIBRATION } from "./det-orchestrator.ts";
+import { CALIBRATION, normalize, matchSkillToKG } from "./det-utils.ts";
 import { getIndustryAutomationFloor, getIndustrySkillModifier } from "./det-industry.ts";
+import { calculateObsolescenceTimeline, calculateSalaryBleed } from "./det-lifecycle.ts";
 import type {
   ProfileInput, SkillRiskRow, JobSkillMapRow, MarketSignalRow,
   SkillAdjustment, ScoreVariability, KGSkillIndex,
 } from "./det-types.ts";
-import { matchSkillToKG, normalize } from "./det-orchestrator.ts";
-import { calculateObsolescenceTimeline } from "./det-lifecycle.ts";
-import { calculateSalaryBleed } from "./det-lifecycle.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // MOAT SCORE — Standalone metric measuring irreplaceable value
@@ -46,10 +44,7 @@ export function calculateMoatScore(
 
   switch (tier) {
     case 'ENTRY': {
-      const techFreshness = skillCoverage;
-      const certSignal = adaptability;
-      const nicheDomain = strategicSkillDepth;
-      moat = techFreshness * 0.3 + certSignal * 0.2 + nicheDomain * 0.3 + lowRiskRatio * 0.2;
+      moat = skillCoverage * 0.3 + adaptability * 0.2 + strategicSkillDepth * 0.3 + lowRiskRatio * 0.2;
       break;
     }
     case 'PROFESSIONAL': {
@@ -238,22 +233,20 @@ export function calculateDeterminismIndex(
   const baseScore = index;
 
   // Executive moat reductions
-  let scaleMoatReduction = 0;
-  let regulatoryMoatReduction = 0;
-  let relationshipMoatReduction = 0;
-
   if ((isExec || isManager) && profile.executive_impact) {
     const impact = profile.executive_impact;
+    let scaleMoatReduction = 0;
     if (impact.revenue_scope_usd && impact.revenue_scope_usd > 0) {
       scaleMoatReduction = Math.min(15, Math.round(Math.log10(Math.max(1, impact.revenue_scope_usd / 1_000_000)) * 5));
     }
     if (scaleMoatReduction === 0 && impact.team_size_org && impact.team_size_org > 0) {
       scaleMoatReduction = Math.min(10, Math.round(Math.log10(Math.max(1, impact.team_size_org)) * 4));
     }
+    let regulatoryMoatReduction = 0;
     if (impact.regulatory_domains?.length > 0) {
       regulatoryMoatReduction = Math.min(12, impact.regulatory_domains.length * 4);
     }
-    relationshipMoatReduction = 0;
+    let relationshipMoatReduction = 0;
     if (impact.board_exposure) relationshipMoatReduction += 3;
     if (impact.investor_facing) relationshipMoatReduction += 2;
     if (impact.domain_tenure_years) {
@@ -264,17 +257,13 @@ export function calculateDeterminismIndex(
     }
     relationshipMoatReduction = Math.min(13, relationshipMoatReduction);
 
-    if (isExec) {
-      index = Math.round(index * 0.4);
-    } else if (isManager) {
-      index = Math.round(index * 0.7);
-    }
+    if (isExec) { index = Math.round(index * 0.4); }
+    else if (isManager) { index = Math.round(index * 0.7); }
     index = Math.round(index - scaleMoatReduction - regulatoryMoatReduction - relationshipMoatReduction);
   }
 
   // ENTRY-tier amplification
-  const isEntry = profile.seniority_tier === 'ENTRY';
-  if (isEntry && !(profile.executive_impact)) {
+  if (profile.seniority_tier === 'ENTRY' && !profile.executive_impact) {
     index = Math.round(index * 1.15);
   }
 
