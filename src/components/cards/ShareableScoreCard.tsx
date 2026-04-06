@@ -357,7 +357,7 @@ function CaptureTarget({
         </div>
         <p style={{
           fontSize: 12, color: C.muted, margin: '8px 0 0', lineHeight: 1.4,
-        }}>before mass displacement hits this role</p>
+        }}>{countdownCopy}</p>
       </div>
 
       {/* ── 7. Skills: Moat vs Build ── */}
