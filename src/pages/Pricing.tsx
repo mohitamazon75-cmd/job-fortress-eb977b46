@@ -1,7 +1,8 @@
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Shield, Zap, FileText, TrendingUp, Lock, AlertTriangle, Target, BarChart3, BookOpen, MessageSquare } from 'lucide-react';
 import ProUpgradeModal from '@/components/ProUpgradeModal';
+import { supabase } from '@/integrations/supabase/client';
 
 const REPORT_A_HIGHLIGHTS = [
   { icon: AlertTriangle, text: 'Career Position Score™ — your real AI displacement risk' },
@@ -30,7 +31,48 @@ const ALL_FEATURES = [
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showModal, setShowModal] = useState(false);
+  const analysisIdFromUrl = searchParams.get('id');
+
+  const resolveAnalysisId = useCallback(async () => {
+    if (analysisIdFromUrl) return analysisIdFromUrl;
+
+    try {
+      const cachedAnalysisId = sessionStorage.getItem('jb_last_analysis_id');
+      if (cachedAnalysisId) return cachedAnalysisId;
+    } catch {}
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) return null;
+
+    const { data } = await supabase
+      .from('scans')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('scan_status', 'complete')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return data?.id ?? null;
+  }, [analysisIdFromUrl]);
+
+  const handleUpgradeSuccess = useCallback(async () => {
+    const analysisId = await resolveAnalysisId();
+
+    if (analysisId) {
+      try {
+        sessionStorage.setItem('jb_last_analysis_id', analysisId);
+      } catch {}
+
+      navigate(`/results/choose?id=${analysisId}`, { replace: true });
+      return;
+    }
+
+    navigate('/', { replace: true });
+  }, [navigate, resolveAnalysisId]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -205,6 +247,9 @@ export default function Pricing() {
       <ProUpgradeModal 
         isOpen={showModal} 
         onClose={() => setShowModal(false)} 
+        onSuccess={() => {
+          void handleUpgradeSuccess();
+        }}
         defaultTier="month"
       />
     </div>
