@@ -104,6 +104,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       weight: sa.weight,
       estimatedMonths: riskToMonths(sa.automation_risk),
       actionTag: actionTag(sa.automation_risk),
+      source: 'extracted',
     });
   }
 
