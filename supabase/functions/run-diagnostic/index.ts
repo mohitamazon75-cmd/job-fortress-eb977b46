@@ -76,6 +76,8 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<string>
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+  const aiCtrl = new AbortController();
+  const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -90,7 +92,9 @@ async function callAI(systemPrompt: string, userPrompt: string): Promise<string>
       ],
       temperature: 0.4,
     }),
+    signal: aiCtrl.signal,
   });
+  clearTimeout(aiT);
 
   if (!response.ok) {
     const text = await response.text();

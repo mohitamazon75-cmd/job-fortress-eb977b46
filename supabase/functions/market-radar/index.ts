@@ -95,6 +95,8 @@ RULES:
 - The share_hook should create genuine FOMO for colleagues who haven't used this tool
 - one_liner should be screenshot-worthy`;
 
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -109,7 +111,9 @@ RULES:
         ],
         temperature: 0.7,
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!response.ok) {
       const status = response.status;

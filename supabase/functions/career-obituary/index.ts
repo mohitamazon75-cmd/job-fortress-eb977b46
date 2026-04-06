@@ -74,6 +74,8 @@ Return ONLY valid JSON:
   "epitaph": "One devastating tombstone line. Max 12 words. The kind of line people put in their bio."
 }`;
 
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const response = await fetch(AI_URL, {
       method: "POST",
       headers: {
@@ -89,7 +91,9 @@ Return ONLY valid JSON:
         temperature: 0.85,
         response_format: { type: "json_object" },
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!response.ok) {
       const status = response.status;

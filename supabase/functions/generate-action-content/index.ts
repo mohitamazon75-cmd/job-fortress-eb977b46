@@ -43,6 +43,8 @@ RULES:
 - Use markdown formatting for readability (headers, bold, bullet points).
 - Keep it actionable and ready to use — the user should be able to copy and paste directly.`;
 
+      const aiCtrl = new AbortController();
+      const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const response = await fetch(AI_URL, {
       method: "POST",
       headers: {
@@ -59,7 +61,9 @@ RULES:
         max_tokens: 4000,
         temperature: 0.4,
       }),
+        signal: aiCtrl.signal,
     });
+      clearTimeout(aiT);
 
     if (!response.ok) {
       if (response.status === 429) {

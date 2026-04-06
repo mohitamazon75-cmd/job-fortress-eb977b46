@@ -103,6 +103,8 @@ CRITICAL:
 
 Return ONLY valid JSON, no markdown.`;
 
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const response = await fetch(LOVABLE_API_URL, {
       method: "POST",
       headers: {
@@ -115,7 +117,9 @@ Return ONLY valid JSON, no markdown.`;
         temperature: 0.7,
         response_format: { type: "json_object" },
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!response.ok) {
       const status = response.status;
