@@ -439,7 +439,7 @@ function CaptureTarget({
         }}>
           <span style={{
             fontFamily: FONT_BODY, fontSize: 13, fontWeight: 800,
-            color: C.text, letterSpacing: '0.02em',
+            color: '#FFFFFF', letterSpacing: '0.02em',
           }}>Check Now →</span>
         </div>
       </div>
