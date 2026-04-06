@@ -1520,7 +1520,7 @@ export function computeAll(
   // match and executive moat reductions are applied. The jobBaseline from
   // job_taxonomy.disruption_baseline is research-backed and should act as a floor
   // (with a small tolerance for seniority-adjusted roles).
-  const isExecOrSenior = profile.seniority_tier === 'EXECUTIVE' || profile.seniority_tier === 'SENIOR_LEADER';
+  const isExecOrSeniorForFloor = profile.seniority_tier === 'EXECUTIVE' || profile.seniority_tier === 'SENIOR_LEADER';
   const kgFloorTolerance = isExecOrSenior ? 15 : 5; // Executives can deviate more from baseline
   const kgMinDI = Math.max(CALIBRATION.DI_CLAMP_MIN, jobBaseline - kgFloorTolerance);
   if (determinismIndex < kgMinDI) {
