@@ -771,6 +771,13 @@ const SideHustleGenerator: React.FC<SideHustleGeneratorProps> = ({ report, onCom
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
+        if (resp.status === 402 || errData.code === 'SUBSCRIPTION_REQUIRED') {
+          const { toast } = await import('sonner');
+          toast.error('This feature requires a Pro subscription');
+          setPhase('error');
+          setError('Pro subscription required');
+          return;
+        }
         throw new Error(errData.error || `Failed (${resp.status})`);
       }
 

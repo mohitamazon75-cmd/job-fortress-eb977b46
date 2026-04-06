@@ -624,6 +624,17 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
         signal: controller.signal,
       });
 
+      if (resp.status === 402) {
+        const errData = await resp.json().catch(() => ({}));
+        if (errData.code === 'SUBSCRIPTION_REQUIRED') {
+          const { toast } = await import('sonner');
+          toast.error('This feature requires a Pro subscription');
+        }
+        setStreamError('Pro subscription required to access this feature.');
+        setStreamComplete(true);
+        return;
+      }
+
       if (!resp.ok || !resp.body) {
         setStreamError('Analysis details temporarily unavailable.');
         setStreamComplete(true);
