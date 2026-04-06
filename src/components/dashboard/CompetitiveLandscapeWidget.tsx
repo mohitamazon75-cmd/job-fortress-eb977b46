@@ -238,7 +238,7 @@ export default function CompetitiveLandscapeWidget({ currentRole, industry, curr
                         </span>
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        AI Risk: <span className={`font-bold ${t.ai_risk_pct >= 50 ? 'text-destructive' : 'text-prophet-green'}`}>{t.ai_risk_pct}%</span>
+                        AI Risk: <span className={`font-bold ${transitionRiskBadge(t).color}`}>{transitionRiskBadge(t).label}</span>
                       </span>
                       {!t.is_current && (
                         <>
