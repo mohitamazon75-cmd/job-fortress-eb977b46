@@ -159,6 +159,8 @@ RULES:
 - homework: ALL resources must be REAL. The "why" must reference the person's specific skills or role.
 - Every "why_you", "relevance", and "why" MUST mention something specific about being a ${role} in ${industry}.`;
 
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -173,7 +175,9 @@ RULES:
         ],
         temperature: 0.15,
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!resp.ok) {
       console.error(`[cheat-sheet] AI error: ${resp.status}`);

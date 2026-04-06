@@ -63,6 +63,8 @@ Deno.serve(async (req) => {
 
     const hasSearchData = searchContext.length > 0;
 
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -89,7 +91,9 @@ Return ONLY valid JSON (no markdown, no code fences):
         ],
         temperature: 0.3,
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!aiResp.ok) {
       const status = aiResp.status;

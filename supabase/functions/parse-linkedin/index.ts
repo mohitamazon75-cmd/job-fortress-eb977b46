@@ -191,6 +191,8 @@ Deno.serve(async (req) => {
           ? "This is a DIRECT SCRAPE of the LinkedIn page — data is high quality. Extract all available information."
           : "WARNING: This data comes from SEARCH SNIPPETS (Google preview text), NOT a direct profile page. Search snippets are often incomplete, may contain data from WRONG PEOPLE with similar names, and frequently include hallucinated or out-of-context numbers. Be EXTREMELY conservative. Only extract facts you are HIGHLY CONFIDENT belong to the target person.";
 
+        const aiCtrl = new AbortController();
+        const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
         const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -242,7 +244,9 @@ No markdown, no explanation.`,
             ],
             temperature: 0.0, // Zero temperature for maximum determinism
           }),
+          signal: aiCtrl.signal,
         });
+        clearTimeout(aiT);
 
         if (aiResp.ok) {
           const aiData = await aiResp.json();

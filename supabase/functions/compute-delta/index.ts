@@ -27,6 +27,8 @@ async function generateDeltaSummary(
   try {
     const prompt = `You are a career AI analyst. In one short sentence (max 15 words), describe the career impact of someone whose automation risk determinism index changed from ${previousDI} to ${currentDI} (delta: ${scoreDelta > 0 ? '+' : ''}${scoreDelta}). Be encouraging if delta is positive, cautionary if negative. Respond with ONLY the sentence, no quotes.`;
 
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -39,7 +41,9 @@ async function generateDeltaSummary(
         temperature: 0.3,
         max_tokens: 100,
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!res.ok) {
       console.warn(`[compute-delta] AI gateway failed ${res.status}`);

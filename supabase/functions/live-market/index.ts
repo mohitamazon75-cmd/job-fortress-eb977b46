@@ -151,6 +151,8 @@ Deno.serve(async (req) => {
     }
 
     // ═══ SYNTHESIZE: Merge all sources via Gemini ═══
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -186,7 +188,9 @@ Base ONLY on the provided data. No markdown.`,
         ],
         temperature: 0.2,
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!aiResp.ok) {
       return new Response(

@@ -287,6 +287,8 @@ USER CAREER REPORT CONTEXT:
     const modelToUse = spendCheck.degraded ? "google/gemini-3-flash-preview" : "google/gemini-3.1-pro-preview";
     const systemPrompt = buildSystemPrompt(reportContext, liveContext);
 
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -303,7 +305,9 @@ USER CAREER REPORT CONTEXT:
         stream_options: { include_usage: true },
         temperature: 0.4,
       }),
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     if (!response.ok) {
       if (response.status === 429) {

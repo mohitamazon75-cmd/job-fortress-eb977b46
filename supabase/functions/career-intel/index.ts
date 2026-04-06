@@ -177,6 +177,8 @@ Deno.serve(async (req) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000);
 
+    const aiCtrl = new AbortController();
+    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -192,7 +194,9 @@ Deno.serve(async (req) => {
         temperature: 0.1,
       }),
       signal: controller.signal,
+      signal: aiCtrl.signal,
     });
+    clearTimeout(aiT);
 
     clearTimeout(timeout);
 
