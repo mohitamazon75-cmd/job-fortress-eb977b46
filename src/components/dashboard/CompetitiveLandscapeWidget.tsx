@@ -16,11 +16,30 @@ interface Transition {
   is_current: boolean;
   skill_overlap_pct: number;
   demand_trend: string;
-  ai_risk_pct: number;
+  ai_risk_pct?: number; // deprecated — legacy scans only
+  risk_level?: 'HIGH' | 'MEDIUM' | 'LOW';
   transition_difficulty: string;
   why_viable: string;
   salary_delta: string;
   time_to_transition: string;
+}
+
+/** Map risk_level enum to a numeric proxy for backward-compatible rendering */
+function transitionRiskNumeric(t: Transition): number {
+  if (t.risk_level) {
+    if (t.risk_level === 'HIGH') return 75;
+    if (t.risk_level === 'MEDIUM') return 45;
+    return 20; // LOW
+  }
+  return t.ai_risk_pct ?? 50;
+}
+
+/** Risk level label + color */
+function transitionRiskBadge(t: Transition): { label: string; color: string } {
+  const level = t.risk_level ?? (t.ai_risk_pct != null ? (t.ai_risk_pct >= 60 ? 'HIGH' : t.ai_risk_pct >= 35 ? 'MEDIUM' : 'LOW') : 'MEDIUM');
+  if (level === 'HIGH') return { label: 'HIGH', color: 'text-destructive' };
+  if (level === 'MEDIUM') return { label: 'MEDIUM', color: 'text-prophet-gold' };
+  return { label: 'LOW', color: 'text-prophet-green' };
 }
 
 interface LandscapeData {
