@@ -38,7 +38,7 @@ import { gatherEnrichmentData } from "./scan-enrichment.ts";
 
 // New shared modules
 import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
-import { callAgent, fetchWithBackoff, AI_URL, GPT5_MODEL, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
+import { callAgent, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
 import { callAgentWithFallback } from "../_shared/model-fallback.ts";
 import { recordScoreHistory, getPreviousScore } from "../_shared/score-history.ts";
 import { validateAgentOutput, Agent1Schema, Agent2ASchema, Agent2BSchema } from "../_shared/zod-schemas.ts";
