@@ -35,6 +35,7 @@ import {
 } from "../_shared/scan-helpers.ts";
 import { computeProfileCompleteness } from "../_shared/scan-utils.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
+import { orchestrateAgents } from "./scan-agents.ts";
 
 // New shared modules
 import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
