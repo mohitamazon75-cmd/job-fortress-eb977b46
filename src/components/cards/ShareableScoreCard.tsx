@@ -55,13 +55,14 @@ function useCardData(report: ScanReport) {
 
   const aiExposure = Math.round(report.determinism_index ?? 50);
   const humanEdge = Math.max(0, 100 - aiExposure);
-  const salaryBleedMonthly = report.salary_bleed_monthly ?? 0;
-  const salaryRiskLPA = salaryBleedMonthly > 0 ? `₹${(salaryBleedMonthly * 12 / 100000).toFixed(1)}L` : '₹0';
+  const salaryDropPct = report.career_shock_simulator?.salary_drop_percentage
+    ?? (report.score_breakdown?.salary_bleed_breakdown?.final_rate
+      ? Math.round(report.score_breakdown.salary_bleed_breakdown.final_rate * 100)
+      : Math.round(aiExposure * 0.4));
+  const salaryRiskLabel = salaryDropPct > 0 ? `~${salaryDropPct}%` : '0%';
 
-  const peerPercentile = Math.min(95, Math.max(5, Math.round(
-    (report.market_position_model?.market_percentile as number) ??
-    (typeof report.peer_percentile_estimate === 'number' ? report.peer_percentile_estimate : score)
-  )));
+  // Derive peer percentile from Career Position Score for consistency
+  const peerPercentile = Math.min(95, Math.max(5, Math.round(((score - 5) / 90) * 100)));
 
   const monthsRemaining = report.months_remaining ?? 24;
 
