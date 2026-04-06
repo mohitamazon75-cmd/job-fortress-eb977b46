@@ -15,26 +15,18 @@ import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spe
 
 import {
   AGENT_1_PROFILER,
-  AGENT_2A_RISK_ANALYSIS,
-  AGENT_2B_ACTION_PLAN,
-  AGENT_2C_PIVOT_MAPPING,
-  JUDO_STRATEGY_SYSTEM_PROMPT,
-  WEEKLY_DIET_SYSTEM_PROMPT,
-  buildSeniorityJudoPrompt,
-  buildSeniorityDietPrompt,
 } from "../_shared/agent-prompts.ts";
 import {
   resolveIndustry,
   validateAgent1Output,
   detectCompoundRole,
   inferCompanyTier,
-  validateOutputForTier,
   matchRoleToJobFamily,
   sanitizeInput,
-  
 } from "../_shared/scan-helpers.ts";
 import { computeProfileCompleteness } from "../_shared/scan-utils.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
+import { orchestrateAgents } from "./scan-agents.ts";
 
 // New shared modules
 import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
@@ -49,14 +41,13 @@ import {
   updateScan,
   buildDeterministicReport,
   normalizeFounderImmediateStep,
-  validateToolStatic,
   deduplicateReportText,
   runQualityEditor,
   assembleReport,
 } from "../_shared/scan-report-builder.ts";
 import { fetchCompanyHealth, type CompanyHealthResult } from "../_shared/company-health.ts";
 import { validateSkillDemand, type SkillDemandResult } from "../_shared/skill-demand-validator.ts";
-import { getKG } from "../_shared/riskiq-knowledge-graph.ts";
+
 
 // ═══════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -760,243 +751,40 @@ No explanation, no markdown. Return ONLY the JSON.`;
     console.log(`[Orchestrator] DI=${det.determinism_index}, SS=${det.survivability.score}, quality=${det.data_quality.overall}${companyHealthResult ? `, companyHealth=${companyHealthResult.score}` : ''}${skillDemandResults.length > 0 ? `, skillsValidated=${skillDemandResults.length}` : ''}${detectedSubSector ? `, subSector=${detectedSubSector}` : ''}`);
 
     // ══════════════════════════════════════════════════════════
-    // STEPS 7+8+9: ALL IN PARALLEL (ML Gateway + Judo/Diet + Agents 2A/2B/2C)
+    // STEPS 7+8+9: PARALLEL AGENT ORCHESTRATION (extracted to scan-agents.ts)
     // ══════════════════════════════════════════════════════════
-    const seniorityTier = agent1?.seniority_tier || "PROFESSIONAL";
-    const expYears = profileInput.experience_years ?? 5;
-    const displayName = linkedinName || "this professional";
-    const displayCompany = linkedinCompany || agent1?.current_company || "their company";
+    const agentResults = await orchestrateAgents({
+      LOVABLE_API_KEY,
+      activeModel,
+      FAST_MODEL,
+      GLOBAL_TIMEOUT_MS,
+      globalStart,
+      scanId,
+      scan: { user_id: scan.user_id, metro_tier: scan.metro_tier, linkedin_url: scan.linkedin_url },
+      supabaseUrl: Deno.env.get("SUPABASE_URL")!,
+      supabaseServiceRoleKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      profileInput,
+      detectedRole,
+      resolvedRoleHint,
+      resolvedIndustry,
+      agent1,
+      det,
+      linkedinName,
+      linkedinCompany,
+      companyTier,
+      compoundRole,
+      roleComponents,
+      detectedSubSector,
+      companyHealthResult,
+      skillDemandResults,
+      kgContext,
+      locale,
+      scanCountry,
+      primaryJob,
+      hasTimeBudget,
+    });
 
-    const { estimateMonthlySalary, calculateGeoArbitrage } = await import("../_shared/deterministic-engine.ts");
-    const monthlySalary = estimateMonthlySalary(profileInput.estimated_monthly_salary_inr, primaryJob, profileInput.experience_years, companyTier, scan.metro_tier || null);
-    const geoArb = calculateGeoArbitrage(monthlySalary, profileInput.geo_advantage);
-    const executiveImpact = profileInput.executive_impact;
-    const hasImpactData = executiveImpact && (executiveImpact.revenue_scope_usd || executiveImpact.team_size_org || executiveImpact.regulatory_domains?.length);
-
-    // ── Fix 4: Repeat scan delta detection ───────────────────────
-    let previousScoreData: { determinism_index: number; survivability_score: number | null; moat_score: number | null; created_at: string } | null = null;
-    if (scan.user_id && scan.user_id !== 'anon') {
-      try {
-        previousScoreData = await getPreviousScore(supabase, scan.user_id, scanId);
-        if (previousScoreData) {
-          const daysSinceLast = Math.round((Date.now() - new Date(previousScoreData.created_at).getTime()) / (1000 * 60 * 60 * 24));
-          console.log(`[Orchestrator] Rescan detected: previous DI=${previousScoreData.determinism_index}, ${daysSinceLast} days ago`);
-        }
-      } catch (e) { console.warn("[Orchestrator] Previous score lookup failed (non-fatal):", e); }
-    }
-    const isRescan = !!previousScoreData;
-    const diDelta = isRescan ? det.determinism_index - previousScoreData!.determinism_index : 0;
-    const ssDelta = isRescan && previousScoreData!.survivability_score != null ? det.survivability.score - previousScoreData!.survivability_score : 0;
-    const daysSinceLastScan = isRescan ? Math.round((Date.now() - new Date(previousScoreData!.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 0;
-    // Determine how far into the action plan they are (based on days since last scan)
-    const weeksElapsed = Math.floor(daysSinceLastScan / 7);
-    const rescanContext = isRescan ? `
-RESCAN CONTEXT (CRITICAL — this person has done a previous scan):
-- Previous DI Score: ${previousScoreData!.determinism_index}/100 → Current DI: ${det.determinism_index}/100 (DELTA: ${diDelta > 0 ? '+' : ''}${diDelta} points)
-- Previous Survivability: ${previousScoreData!.survivability_score ?? 'N/A'}/100 → Current: ${det.survivability.score}/100 (DELTA: ${ssDelta > 0 ? '+' : ''}${ssDelta} points)
-- Days since last scan: ${daysSinceLastScan} days (approximately ${weeksElapsed} weeks elapsed)
-- Score trend: ${diDelta > 3 ? '⚠️ WORSENING — risk is increasing' : diDelta < -3 ? '✅ IMPROVING — risk is decreasing' : '→ STABLE — no significant change'}
-
-ACTION PLAN INSTRUCTION: Because this is a RESCAN after ${daysSinceLastScan} days, DO NOT restart from Week 1.
-- Assume they have completed approximately ${weeksElapsed} weeks of their previous action plan.
-- Start the plan from Week ${Math.max(1, weeksElapsed + 1)} (the NEXT logical step forward).
-- If diDelta > 5 (score worsening significantly), increase urgency and add a crisis mitigation step as Week 1.
-- If diDelta < -5 (score improving), acknowledge their progress explicitly and build on their momentum.
-- Reference what they SHOULD have completed by now (based on elapsed time) before giving new tasks.
-- The plan must feel like a CONTINUATION, not a reset. Never repeat advice from a hypothetical previous scan.` : '';
-
-    // ── KG Role Lookup for displacement timeline ──────────────────
-    const kg = getKG();
-    const kgRole = kg.getRole(detectedRole) || kg.getRole(agent1?.current_role || "") || kg.getRole(resolvedRoleHint);
-    const currentYear = new Date().getFullYear();
-    const displacementTimeline = kgRole ? {
-      partial_year: currentYear + kgRole.partial_displacement_years,
-      significant_year: currentYear + kgRole.significant_displacement_years,
-      critical_year: currentYear + kgRole.critical_displacement_years,
-      partial_displacement_years: kgRole.partial_displacement_years,
-      significant_displacement_years: kgRole.significant_displacement_years,
-      critical_displacement_years: kgRole.critical_displacement_years,
-    } : null;
-
-    const sharedProfileContext = `
-PERSON: ${displayName}
-PROFILE:
-- Full Name: ${displayName}
-- Current Role: ${detectedRole}
-- Current Company: ${displayCompany}${companyTier ? ` (${companyTier} tier)` : ""}
-- Industry: ${agent1?.industry || resolvedIndustry}${detectedSubSector ? ` → Sub-sector: ${detectedSubSector}` : ""}
-- Experience: ${profileInput.experience_years || "Unknown"} years
-- Location: ${agent1?.location || scan.metro_tier || "Unknown"}
-- Metro Tier: ${scan.metro_tier || "tier1"}
-- Monthly Salary: ${locale.currencySymbol}${monthlySalary.toLocaleString("en-IN")} (${locale.currencySymbol}${Math.round(monthlySalary * 12 / 100000 * 10) / 10}L annual CTC)
-- Salary Band: ${
-  monthlySalary < 40_000 ? "Entry/Junior (< ₹5L CTC) — highly cost-sensitive, every rupee counts, survival mode thinking" :
-  monthlySalary < 85_000 ? "Mid-level (₹5–10L CTC) — building financial buffer, career pivots carry moderate risk" :
-  monthlySalary < 166_000 ? "Senior IC / Manager (₹10–20L CTC) — significant lifestyle commitments, career risk is personal-finance risk" :
-  monthlySalary < 333_000 ? "Lead / Principal / Director (₹20–40L CTC) — high-stakes decision-making, brand equity matters as much as skills" :
-  "Executive / VP+ (₹40L+ CTC) — replacement cost to employer is enormous, AI risk manifests as strategic de-prioritisation not direct job loss"
-}
-- AI Replacement Cost Delta: ${locale.currencySymbol}${Math.max(0, monthlySalary - Math.round(monthlySalary * 0.03)).toLocaleString("en-IN")}/month potential AI savings for employer (use this to calibrate urgency)
-- Strategic Skills: ${JSON.stringify(profileInput.strategic_skills)}
-- Execution Skills: ${JSON.stringify(profileInput.execution_skills)}
-- All Skills: ${JSON.stringify(profileInput.all_skills)}
-- Geo Advantage: ${profileInput.geo_advantage || "None"}
-${compoundRole ? `- Compound Role: ${roleComponents.join(" + ")}` : ""}
-- Automatable Task Ratio: ${agent1?.automatable_task_ratio || "MEDIUM"}
-- Primary AI Threat: ${agent1?.primary_ai_threat_vector || "AI automation of core tasks"}
-- Moat Indicators: ${JSON.stringify(agent1?.moat_indicators || [])}
-${hasImpactData ? `
-EXECUTIVE IMPACT:
-- Revenue: ${executiveImpact.revenue_scope_usd ? "$" + (executiveImpact.revenue_scope_usd / 1_000_000).toFixed(1) + "M" : "N/A"}
-- Org Scale: ${executiveImpact.team_size_org || "Unknown"} people
-- Regulatory: ${executiveImpact.regulatory_domains?.join(", ") || "None"}
-- Board: ${executiveImpact.board_exposure ? "YES" : "No"}
-- Moat: ${executiveImpact.moat_type || "Unknown"} — ${executiveImpact.moat_evidence || "N/A"}` : ""}
-
-DETERMINISTIC:
-- DI: ${det.determinism_index}/100, Moat: ${det.moat_score}/100, Urgency: ${det.urgency_score}/100
-- Months: ${det.months_remaining}, SS: ${det.survivability.score}/100, Tone: ${det.tone_tag}
-
-SENIORITY: ${seniorityTier}
-${displacementTimeline ? `
-DISPLACEMENT TIMELINE (from Knowledge Graph — use these EXACT years in your urgency_horizon and threat_timeline output):
-- Partial displacement begins: ${displacementTimeline.partial_year} (${displacementTimeline.partial_displacement_years} years from now — 20-30% of tasks automatable)
-- Significant displacement: ${displacementTimeline.significant_year} (${displacementTimeline.significant_displacement_years} years — 50%+ of tasks automatable, role restructuring begins)
-- Critical displacement: ${displacementTimeline.critical_year} (${displacementTimeline.critical_displacement_years} years — role elimination or fundamental transformation)
-INSTRUCTION: Your urgency_horizon MUST reference ${displacementTimeline.significant_year} as the year by which significant displacement hits. Your threat_timeline.partial_displacement_year MUST be ${Math.round(displacementTimeline.partial_year)}.` : ''}
-${companyHealthResult && companyHealthResult.search_grounded ? `
-COMPANY HEALTH INTELLIGENCE (LIVE DATA — use this to contextualize advice):
-- Health Score: ${companyHealthResult.score}/100
-- Signals: ${companyHealthResult.signals.join("; ")}
-- Risk Factors: ${companyHealthResult.risk_factors.join(", ") || "None detected"}
-- Growth Factors: ${companyHealthResult.growth_factors.join(", ") || "None detected"}
-- Summary: ${companyHealthResult.summary}
-IMPORTANT: Factor this company-specific intelligence into your analysis. If the company is struggling, the person's actual risk is HIGHER than generic role-based analysis suggests.` : ''}
-${skillDemandResults.length > 0 ? `
-LIVE SKILL DEMAND VALIDATION:
-${skillDemandResults.map(d => `- ${d.skill_name}: ${d.demand_signal.toUpperCase()} (adjustment: ${d.adjustment > 0 ? '+' : ''}${d.adjustment}) — ${d.evidence}`).join("\n")}
-NOTE: These skill risk adjustments are already factored into the DI score. Use this context to give more specific, evidence-backed advice.` : ''}
-
-${kgContext}`;
-
-    // ── Launch ALL heavy work in parallel ──
-    console.log(`[Orchestrator] Launching Steps 7+8+9 in parallel at ${((Date.now() - globalStart) / 1000).toFixed(1)}s`);
-
-    // ML Gateway promise
-    const mlPromise = (async () => {
-      try {
-        const ML_GATEWAY_URL = `${Deno.env.get("SUPABASE_URL")}/functions/v1/ml-gateway`;
-        const mlController = new AbortController();
-        const mlTimeout = setTimeout(() => mlController.abort(), 10_000);
-        const mlResp = await fetch(ML_GATEWAY_URL, {
-          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
-          body: JSON.stringify({ endpoint: "predict-obsolescence", payload: { skills: profileInput.all_skills, execution_skills: profileInput.execution_skills, strategic_skills: profileInput.strategic_skills, role: detectedRole, industry: agent1?.industry || resolvedIndustry, experience_years: profileInput.experience_years, metro_tier: scan.metro_tier || "tier1", determinism_index: det.determinism_index }, scanId }),
-          signal: mlController.signal,
-        });
-        clearTimeout(mlTimeout);
-        if (mlResp.ok) return { data: await mlResp.json(), timedOut: false };
-        if (mlResp.status === 504) return { data: null, timedOut: true };
-        await mlResp.json().catch(() => ({}));
-        return { data: null, timedOut: false };
-      } catch (mlErr: any) {
-        if (mlErr?.name === "AbortError") return { data: null, timedOut: true };
-        console.warn("[ML] Fallback to deterministic:", mlErr?.name || mlErr);
-        return { data: null, timedOut: false };
-      }
-    })();
-
-    // Judo + Diet promise (doesn't depend on ML results — we'll merge judo_strategy later)
-    const judoDietPromise = hasTimeBudget(15_000) ? Promise.allSettled([
-      callAgentWithFallback(LOVABLE_API_KEY, "JudoStrategy", JUDO_STRATEGY_SYSTEM_PROMPT,
-        buildSeniorityJudoPrompt(seniorityTier, expYears, displayName, displayCompany, agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry, profileInput.strategic_skills, profileInput.execution_skills, profileInput.all_skills, det.determinism_index, det.survivability.score, scan.metro_tier || "tier1", null, profileInput.executive_impact || null),
-        activeModel, 0.3, 25_000).then(r => r.data),
-      callAgent(LOVABLE_API_KEY, "WeeklyDiet", WEEKLY_DIET_SYSTEM_PROMPT,
-        buildSeniorityDietPrompt(seniorityTier, expYears, displayName, agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry, profileInput.strategic_skills, null),
-        FAST_MODEL, 0.3, 15_000),
-    ]) : Promise.resolve(null);
-
-    // Agents 2A+2B+2C promise — with model fallback chain
-    const agents2Promise = Promise.allSettled([
-      callAgentWithFallback(LOVABLE_API_KEY, "Agent2A:Risk", AGENT_2A_RISK_ANALYSIS, `Generate risk analysis for:\n${sharedProfileContext}\n\nUse "${displayName}" by name. Reference "${displayCompany}".`, activeModel, 0.3, 25_000).then(r => r.data),
-      callAgentWithFallback(LOVABLE_API_KEY, "Agent2B:Plan", AGENT_2B_ACTION_PLAN, `Generate tier-calibrated action plan for:\n${sharedProfileContext}\nTier: ${seniorityTier}\nCountry: ${locale.label}\nCurrency: ${locale.currency}\nGeo Arbitrage Delta: ${locale.currencySymbol}${geoArb?.probability_adjusted_delta_inr || 0}/month\nJob Boards: ${locale.jobBoards.join(", ")}${rescanContext ? `\n${rescanContext}` : ''}`, activeModel, 0.35, 25_000).then(r => r.data),
-      callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", AGENT_2C_PIVOT_MAPPING, `Map career pivots for:\n${sharedProfileContext}\nMoat Score: ${det.moat_score}/100. Pivots must be realistic for ${seniorityTier} tier.\nCountry: ${locale.label}. Use job titles from ${locale.jobBoards.join("/")}.`, FAST_MODEL, 0.3, 25_000).then(r => r.data),
-    ]);
-
-    // ── Await all in parallel with defensive timeout ──
-    const parallelDeadlineMs = Math.max(10_000, GLOBAL_TIMEOUT_MS - (Date.now() - globalStart) - 15_000);
-    console.log(`[Orchestrator] Parallel deadline: ${(parallelDeadlineMs / 1000).toFixed(1)}s`);
-
-    let mlResult: any, judoDietResult: any, agents2Results: any;
-    const parallelAll = Promise.all([mlPromise, judoDietPromise, agents2Promise]);
-    const parallelTimer = new Promise<'PARALLEL_TIMEOUT'>((resolve) =>
-      setTimeout(() => resolve('PARALLEL_TIMEOUT'), parallelDeadlineMs)
-    );
-    const raceResult = await Promise.race([parallelAll, parallelTimer]);
-
-    if (raceResult === 'PARALLEL_TIMEOUT') {
-      console.warn(`[Orchestrator] Parallel timeout after ${(parallelDeadlineMs / 1000).toFixed(1)}s — assembling partial report`);
-      // Harvest whatever settled so far using allSettled with a 0ms race
-      const settled = await Promise.race([
-        Promise.allSettled([mlPromise, judoDietPromise, agents2Promise]),
-        new Promise<PromiseSettledResult<any>[]>((resolve) => setTimeout(() => resolve([
-          { status: 'rejected', reason: 'timeout' } as PromiseRejectedResult,
-          { status: 'rejected', reason: 'timeout' } as PromiseRejectedResult,
-          { status: 'rejected', reason: 'timeout' } as PromiseRejectedResult,
-        ]), 500))
-      ]);
-      mlResult = settled[0]?.status === 'fulfilled' ? settled[0].value : { data: null, timedOut: true };
-      judoDietResult = settled[1]?.status === 'fulfilled' ? settled[1].value : null;
-      // For agents2, if it settled it would be PromiseSettledResult<any>[] from allSettled
-      agents2Results = settled[2]?.status === 'fulfilled' ? settled[2].value : [
-        { status: 'rejected', reason: 'timeout' },
-        { status: 'rejected', reason: 'timeout' },
-        { status: 'rejected', reason: 'timeout' },
-      ];
-    } else {
-      [mlResult, judoDietResult, agents2Results] = raceResult as [any, any, any];
-    }
-
-    // Unpack ML
-    let mlObsolescence: any = mlResult.data;
-    const mlTimedOut = mlResult.timedOut;
-
-    // Unpack Judo/Diet
-    if (judoDietResult && Array.isArray(judoDietResult)) {
-      const seniorityJudoStrategy = judoDietResult[0].status === "fulfilled" ? judoDietResult[0].value : null;
-      const seniorityDiet = judoDietResult[1].status === "fulfilled" ? judoDietResult[1].value : null;
-      validateToolStatic(seniorityJudoStrategy);
-      if (seniorityJudoStrategy || seniorityDiet) {
-        if (!mlObsolescence) mlObsolescence = {};
-        if (seniorityJudoStrategy) mlObsolescence.judo_strategy = seniorityJudoStrategy;
-        if (seniorityDiet) mlObsolescence.weekly_survival_diet = seniorityDiet;
-      }
-    }
-
-    // Unpack Agents 2A/2B/2C
-    const agent2a = agents2Results[0].status === "fulfilled" ? agents2Results[0].value : null;
-    const agent2b = agents2Results[1].status === "fulfilled" ? agents2Results[1].value : null;
-    const agent2c = agents2Results[2].status === "fulfilled" ? agents2Results[2].value : null;
-
-    // TASK 2: Score-narrative consistency check for Agent2A
-    if (agent2a && det?.determinism_index !== undefined) {
-      const di = det.determinism_index;
-      const narrative = JSON.stringify(agent2a).toLowerCase();
-      const safetyWords = ['safe', 'stable', 'improving', 'secure', 'no risk'];
-      const hasConflict = di > 65 && safetyWords.some(w => narrative.includes(w));
-      if (hasConflict) {
-        console.warn(`[Agent2A] Score-narrative conflict detected: DI=${di} but narrative suggests safety. Report may need review.`);
-        // Note: don't re-run (costly) — just log for monitoring
-      }
-    }
-
-    const agent2 = { ...(agent2a || {}), ...(agent2b || {}),
-      pivot_title: agent2c?.pivot_title || agent2a?.pivot_title || `${detectedRole} → Strategy Lead`,
-      arbitrage_companies_count: agent2c?.arbitrage_companies_count || 10,
-      pivot_rationale: agent2c?.pivot_rationale || null,
-    };
-
-    const validatedAgent2 = validateOutputForTier(agent2, seniorityTier, displayName);
-    console.log(`[Orchestrator] Steps 7+8+9 complete at ${((Date.now() - globalStart) / 1000).toFixed(1)}s`);
+    const { mlObsolescence, mlTimedOut, validatedAgent2, seniorityTier, displayName, displayCompany } = agentResults;
 
     // ══════════════════════════════════════════════════════════
     // STEP 10: REPORT ASSEMBLY
