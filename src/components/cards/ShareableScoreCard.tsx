@@ -199,9 +199,9 @@ function CaptureTarget({
         }}>"{headline}"</p>
       </div>
 
-      {/* ── 2. Hero: Score + Role (the money shot) ── */}
+      {/* ── 3. Hero: Score + Role ── */}
       <div style={{
-        padding: '36px 28px 28px',
+        padding: '20px 28px 28px',
         textAlign: 'center',
         background: `radial-gradient(ellipse at 50% 80%, ${scoreGlow} 0%, transparent 70%)`,
       }}>
