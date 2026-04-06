@@ -24,26 +24,26 @@ function safeFileName(str: string): string {
   return str.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase().substring(0, 50) || 'career';
 }
 
-// ── Color tokens (v5 — dark mode, high contrast) ──
+// ── Color tokens (v6 — light, clean, professional) ──
 const C = {
-  bg: '#0A0A0B',
-  surface: '#141416',
-  surfaceLight: '#1C1C1F',
-  border: '#2A2A2E',
-  borderLight: '#3A3A3F',
-  danger: '#FF4D4D',
-  dangerGlow: '#FF4D4D40',
-  safe: '#00E676',
-  safeGlow: '#00E67630',
-  warning: '#FFB300',
-  warningGlow: '#FFB30030',
-  gold: '#F5C842',
+  bg: '#FAFAF8',
+  surface: '#FFFFFF',
+  surfaceLight: '#F5F3EF',
+  border: '#E5E2DB',
+  borderLight: '#D9D5CC',
+  danger: '#DC2626',
+  dangerGlow: '#DC262615',
+  safe: '#16A34A',
+  safeGlow: '#16A34A15',
+  warning: '#D97706',
+  warningGlow: '#D9770615',
+  gold: '#B45309',
   white: '#FFFFFF',
-  offWhite: '#E8E6E1',
-  muted: '#6B6B73',
-  mutedLight: '#8E8E96',
-  text: '#F0EFE9',
-  accent: '#FF6B35',
+  offWhite: '#F8F7F4',
+  muted: '#78756E',
+  mutedLight: '#9B9890',
+  text: '#1A1A1A',
+  accent: '#EA580C',
 };
 
 // ── Derive card data from report ──
@@ -160,6 +160,7 @@ function CaptureTarget({
         fontFamily: FONT_BODY,
         boxSizing: 'border-box',
         overflow: 'hidden',
+        border: `1px solid ${C.border}`,
       }}
     >
       {/* ── 1. Top brand strip ── */}
@@ -194,7 +195,7 @@ function CaptureTarget({
       }}>
         <p style={{
           fontFamily: FONT_HEADLINE, fontSize: 24, fontWeight: 900,
-          color: C.white, lineHeight: 1.35, margin: 0,
+          color: C.text, lineHeight: 1.35, margin: 0,
           fontStyle: 'italic',
         }}>"{headline}"</p>
       </div>
@@ -244,7 +245,7 @@ function CaptureTarget({
         {/* Role & industry */}
         <p style={{
           fontFamily: FONT_HEADLINE, fontSize: 22, fontWeight: 900,
-          color: C.white, lineHeight: 1.3, margin: '18px 0 0',
+          color: C.text, lineHeight: 1.3, margin: '18px 0 0',
           wordBreak: 'break-word',
         }}>{role}</p>
         <p style={{
@@ -260,7 +261,7 @@ function CaptureTarget({
         borderLeft: `3px solid ${scoreColor}`,
       }}>
         <p style={{
-          fontSize: 14, color: C.offWhite, lineHeight: 1.65, margin: 0,
+          fontSize: 14, color: C.text, lineHeight: 1.65, margin: 0,
           fontWeight: 500,
         }}>
           {verdictText}
@@ -310,7 +311,7 @@ function CaptureTarget({
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 marginBottom: 5,
               }}>
-                <span style={{ fontSize: 12, color: C.offWhite, fontWeight: 500 }}>{task.name}</span>
+                <span style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>{task.name}</span>
                 <span style={{
                   fontFamily: FONT_MONO, fontSize: 12, fontWeight: 700,
                   color: C.danger,
@@ -347,11 +348,11 @@ function CaptureTarget({
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 8 }}>
           <span style={{
             fontFamily: FONT_HEADLINE, fontSize: 56, fontWeight: 900,
-            color: C.gold, lineHeight: 1,
+            color: C.danger, lineHeight: 1,
           }}>{monthsRemaining}</span>
           <span style={{
             fontFamily: FONT_MONO, fontSize: 13, fontWeight: 700,
-            color: C.gold, textTransform: 'uppercase', letterSpacing: '0.1em',
+            color: C.danger, textTransform: 'uppercase', letterSpacing: '0.1em',
             opacity: 0.7,
           }}>months</span>
         </div>
@@ -426,7 +427,7 @@ function CaptureTarget({
         <div>
           <p style={{
             fontFamily: FONT_HEADLINE, fontSize: 16, fontWeight: 900,
-            color: C.white, margin: 0, lineHeight: 1.3,
+            color: C.text, margin: 0, lineHeight: 1.3,
           }}>How safe is your job?</p>
           <p style={{
             fontSize: 11, color: C.muted, margin: '3px 0 0',
@@ -438,7 +439,7 @@ function CaptureTarget({
         }}>
           <span style={{
             fontFamily: FONT_BODY, fontSize: 13, fontWeight: 800,
-            color: C.white, letterSpacing: '0.02em',
+            color: '#FFFFFF', letterSpacing: '0.02em',
           }}>Check Now →</span>
         </div>
       </div>
