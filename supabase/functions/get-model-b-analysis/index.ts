@@ -22,11 +22,11 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { analysis_id, user_id, resume_filename, poll } = body;
+    const { analysis_id, user_id: requestedUserId, resume_filename, poll } = body;
 
-    if (!analysis_id || !user_id) {
+    if (!analysis_id) {
       return new Response(
-        JSON.stringify({ success: false, error: "analysis_id and user_id are required" }),
+        JSON.stringify({ success: false, error: "analysis_id is required" }),
         { status: 400, headers: jsonHeaders }
       );
     }
@@ -49,6 +49,32 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ success: true, data: cached }),
         { headers: jsonHeaders }
+      );
+    }
+
+    // ─── Resolve scan + owner up front so published/test flows don't fail on missing client auth ───
+    const { data: scan, error: scanError } = await supabase
+      .from("scans")
+      .select("*")
+      .eq("id", analysis_id)
+      .maybeSingle();
+
+    if (scanError || !scan) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Analysis not found" }),
+        { status: 404, headers: jsonHeaders }
+      );
+    }
+
+    const resolvedUserId =
+      typeof requestedUserId === "string" && requestedUserId.trim().length > 0
+        ? requestedUserId
+        : scan.user_id;
+
+    if (!resolvedUserId) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Could not resolve analysis owner" }),
+        { status: 400, headers: jsonHeaders }
       );
     }
 
@@ -78,20 +104,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ─── Get resume text from scans table ───
-    const { data: scan, error: scanError } = await supabase
-      .from("scans")
-      .select("*")
-      .eq("id", analysis_id)
-      .maybeSingle();
-
-    if (scanError || !scan) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Analysis not found" }),
-        { status: 404, headers: jsonHeaders }
-      );
-    }
-
     const resumeText = extractResumeText(scan);
 
     if (!resumeText || resumeText.length < 20) {
@@ -114,7 +126,7 @@ Deno.serve(async (req) => {
       .from("model_b_results")
       .upsert({
         analysis_id,
-        user_id,
+        user_id: resolvedUserId,
         resume_filename: resume_filename ?? "Your Resume",
         card_data: null,
         risk_score: null,
@@ -128,7 +140,7 @@ Deno.serve(async (req) => {
 
     // ─── Launch background AI processing ───
     const processPromise = processAnalysis(
-      supabase, LOVABLE_API_KEY, analysis_id, user_id,
+      supabase, LOVABLE_API_KEY, analysis_id, resolvedUserId,
       resume_filename, resumeText
     );
 
