@@ -343,7 +343,7 @@ export default function StrategicDossier({ report, scanId, enrichment, enrichmen
             if (clampedRisk > 40) {
               return `Your role has a ${report.months_remaining}-month window before meaningful market shift. Estimated annual earning erosion: ~${salaryDropPct}% of package. The risk is not sudden replacement — it's gradual irrelevance as AI-augmented ${isExec ? 'peers and restructured orgs' : 'peers'} outperform.`;
             }
-            return `Your position is currently stable, but ${report.industry} is shifting. Estimated annual salary pressure: ~${salaryDropPct}% of package. ${isExec ? 'Complacency at the leadership level is the primary risk — organizations that adopt AI governance early will restructure around those leaders.' : 'Complacency is the primary risk — peers who upskill will pull ahead.'}`;
+            return `Your position is currently stable, but ${report.industry} is shifting. Estimated annual salary pressure: ~${salaryDropPct}% of package. ${isExec ? 'The primary leadership risk is organizational restructuring — early adopters of AI governance will define the new structure.' : 'Complacency is the primary risk — peers who upskill will pull ahead.'}`;
           })()}
         </p>
       </section>
