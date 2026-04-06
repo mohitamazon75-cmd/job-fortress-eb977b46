@@ -160,6 +160,7 @@ function CaptureTarget({
         fontFamily: FONT_BODY,
         boxSizing: 'border-box',
         overflow: 'hidden',
+        border: `1px solid ${C.border}`,
       }}
     >
       {/* ── 1. Top brand strip ── */}
