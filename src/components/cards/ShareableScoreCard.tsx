@@ -113,7 +113,32 @@ function CaptureTarget({
 
   const scoreColor = score >= 70 ? C.safe : score >= 40 ? C.warning : C.danger;
   const scoreGlow = score >= 70 ? C.safeGlow : score >= 40 ? C.warningGlow : C.dangerGlow;
-  const riskLabel = score >= 70 ? 'LOW RISK' : score >= 40 ? 'MODERATE RISK' : 'HIGH RISK';
+  const riskLabel = score >= 70 ? 'SAFE — FOR NOW' : score >= 40 ? 'EXPOSED' : 'REPLACEABLE';
+
+  // Emotional copy — fear → hope arc
+  const headline = score >= 70
+    ? 'I\'m harder to replace than most.'
+    : score >= 40
+    ? 'AI is coming for my job. I checked.'
+    : 'I\'m already replaceable. Here\'s proof.';
+
+  const verdictText = score >= 70
+    ? `${humanEdge}% of what I do is still uniquely human. But ${automatedTasks} of my ${totalTasks || 5} tasks are already automatable by ${automationYear}. Even "safe" isn't permanent.`
+    : score >= 40
+    ? `${automatedTasks} of my ${totalTasks || 5} core tasks will be fully automated by ${automationYear}. The skills keeping me employed today are the exact ones AI learns next.`
+    : `${automatedTasks} of my ${totalTasks || 5} tasks? Already automatable. ${salaryRiskLabel} of my salary is at risk. By ${automationYear}, this role looks completely different.`;
+
+  const countdownCopy = monthsRemaining <= 18
+    ? 'before this role is unrecognizable'
+    : monthsRemaining <= 36
+    ? 'before mass displacement hits'
+    : 'before the next wave of cuts';
+
+  const hopeLine = score >= 70
+    ? `I know my edge. Do you know yours?`
+    : score >= 40
+    ? `At least now I know. Most people won't check until it's too late.`
+    : `Scary? Yes. But now I have a plan. Most people won't even look.`;
 
   const FONT_HEADLINE = '"Playfair Display", Georgia, serif';
   const FONT_BODY = '"DM Sans", system-ui, sans-serif';
@@ -159,13 +184,24 @@ function CaptureTarget({
             background: C.danger, display: 'inline-block',
             boxShadow: `0 0 8px ${C.danger}`,
           }} />
-          AI SCAN LIVE
+          LIVE RESULT
         </span>
       </div>
 
-      {/* ── 2. Hero: Score + Role (the money shot) ── */}
+      {/* ── 2. Emotional headline — the scroll stopper ── */}
       <div style={{
-        padding: '36px 28px 28px',
+        padding: '28px 28px 8px', textAlign: 'center',
+      }}>
+        <p style={{
+          fontFamily: FONT_HEADLINE, fontSize: 24, fontWeight: 900,
+          color: C.white, lineHeight: 1.35, margin: 0,
+          fontStyle: 'italic',
+        }}>"{headline}"</p>
+      </div>
+
+      {/* ── 3. Hero: Score + Role ── */}
+      <div style={{
+        padding: '20px 28px 28px',
         textAlign: 'center',
         background: `radial-gradient(ellipse at 50% 80%, ${scoreGlow} 0%, transparent 70%)`,
       }}>
@@ -221,15 +257,13 @@ function CaptureTarget({
         margin: '0 28px', padding: '16px 20px',
         background: C.surface,
         borderRadius: 10,
-        borderLeft: `3px solid ${C.danger}`,
+        borderLeft: `3px solid ${scoreColor}`,
       }}>
         <p style={{
           fontSize: 14, color: C.offWhite, lineHeight: 1.65, margin: 0,
           fontWeight: 500,
         }}>
-          <strong style={{ color: C.white }}>{automatedTasks} of {totalTasks || 5} core tasks</strong>{' '}
-          will be fully automated by {automationYear}.
-          <span style={{ color: C.muted }}> The skills keeping you employed are the first AI will master.</span>
+          {verdictText}
         </p>
       </div>
 
@@ -323,7 +357,7 @@ function CaptureTarget({
         </div>
         <p style={{
           fontSize: 12, color: C.muted, margin: '8px 0 0', lineHeight: 1.4,
-        }}>before mass displacement hits this role</p>
+        }}>{countdownCopy}</p>
       </div>
 
       {/* ── 7. Skills: Moat vs Build ── */}
@@ -337,7 +371,7 @@ function CaptureTarget({
                 fontFamily: FONT_MONO, fontSize: 8, fontWeight: 700,
                 color: C.safe, textTransform: 'uppercase', letterSpacing: '0.15em',
                 margin: '0 0 8px',
-              }}>✓ Your edge</p>
+              }}>✓ What keeps me safe</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {moatSkills.map(s => (
                   <span key={s} style={{
@@ -355,7 +389,7 @@ function CaptureTarget({
                 fontFamily: FONT_MONO, fontSize: 8, fontWeight: 700,
                 color: C.warning, textTransform: 'uppercase', letterSpacing: '0.15em',
                 margin: '0 0 8px',
-              }}>⚠ Build now</p>
+              }}>⚠ Learning next</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {buildSkills.map(s => (
                   <span key={s} style={{
@@ -370,7 +404,20 @@ function CaptureTarget({
         </div>
       )}
 
-      {/* ── 8. CTA footer ── */}
+      {/* ── 8. Hope line — the emotional turn ── */}
+      <div style={{
+        margin: '0 28px 16px', padding: '14px 20px',
+        background: `${C.safe}08`, borderRadius: 8,
+        border: `1px solid ${C.safe}20`,
+        textAlign: 'center',
+      }}>
+        <p style={{
+          fontSize: 14, color: C.safe, fontWeight: 700,
+          margin: 0, fontStyle: 'italic', lineHeight: 1.5,
+        }}>{hopeLine}</p>
+      </div>
+
+      {/* ── 9. CTA footer ── */}
       <div style={{
         padding: '18px 28px',
         borderTop: `1px solid ${C.border}`,
@@ -380,7 +427,7 @@ function CaptureTarget({
           <p style={{
             fontFamily: FONT_HEADLINE, fontSize: 16, fontWeight: 900,
             color: C.white, margin: 0, lineHeight: 1.3,
-          }}>Can you beat this score?</p>
+          }}>How safe is your job?</p>
           <p style={{
             fontSize: 11, color: C.muted, margin: '3px 0 0',
           }}>Free · 60 seconds · No sign-up</p>
@@ -392,7 +439,7 @@ function CaptureTarget({
           <span style={{
             fontFamily: FONT_BODY, fontSize: 13, fontWeight: 800,
             color: C.white, letterSpacing: '0.02em',
-          }}>Scan Now →</span>
+          }}>Check Now →</span>
         </div>
       </div>
     </div>
@@ -453,7 +500,8 @@ export default function ShareableScoreCard({ report }: Props) {
     }
   }, [imageUrl]);
 
-  const caption = `I just scanned my resume on JobBachao.\n\n${automatedTasks} of my ${totalTasks || 5} tasks will be automated by ${automationYear}.\nMy career safety score: ${score}/100.\n${salaryRiskLabel} salary at risk.\n\nCan you beat my score? 👇\njobbachao.com`;
+  const scoreEmoji = score >= 70 ? '🛡️' : score >= 40 ? '⚠️' : '🚨';
+  const caption = `${scoreEmoji} I just checked how replaceable I am by AI.\n\nResult: ${score}/100. ${automatedTasks} of my ${totalTasks || 5} tasks are already automatable.\n\nScary? Yes. But at least now I know.\n\nHow safe is YOUR job? 👇\njobbachao.com`;
 
   const handleDownload = useCallback(async () => {
     const url = await ensureImage();
@@ -533,10 +581,10 @@ export default function ShareableScoreCard({ report }: Props) {
             Copy-paste caption
           </p>
           <p className="text-xs text-foreground leading-relaxed whitespace-pre-line">
-            I just scanned my resume on JobBachao.
-            {'\n\n'}<strong>{automatedTasks} of my {totalTasks || 5} tasks will be automated by {automationYear}.</strong>
-            {' '}My career safety score: {score}/100. {salaryRiskLabel} salary at risk.
-            {'\n\n'}Can you beat my score? 👇
+            {scoreEmoji} <strong>I just checked how replaceable I am by AI.</strong>
+            {'\n\n'}Result: {score}/100. {automatedTasks} of my {totalTasks || 5} tasks are already automatable.
+            {'\n\n'}Scary? Yes. But at least now I know.
+            {'\n\n'}How safe is YOUR job? 👇
             {'\n'}<span className="text-primary font-bold">jobbachao.com</span>
           </p>
           <button
