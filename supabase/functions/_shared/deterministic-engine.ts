@@ -1574,7 +1574,7 @@ export function computeAll(
     
     // For executives, also skip any skill that matches trivially generic KG entries
     if (isExecOrSenior) {
-      const matched = matchSkillToKG(execSkill, skillRiskData);
+      const matched = matchSkillToKG(execSkill, skillRiskData, kgIndex);
       // Skip if it's a generic commodity category (communication, content) with high automation
       // but low strategic relevance — executives have more important exposure vectors
       if (matched && ['communication', 'content', 'admin'].includes(matched.category || '') && matched.automation_risk > 50) {
