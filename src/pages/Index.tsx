@@ -283,30 +283,80 @@ const Index = () => {
   }, []);
 
   // Auto-recovery: when error screen shows, check if backend actually completed the scan
+  // Also falls back to the URL param scan if the current in-flight scan failed
   useEffect(() => {
-    if (phase !== 'error' || !scanId || !accessToken) return;
-    setErrorScanStatus('checking');
-    const sc = createScanCheckClient(accessToken);
-    sc.from('scans')
-      .select('scan_status, final_json_report')
-      .eq('id', scanId)
-      .single()
-      .then(({ data }: any) => {
-        if (!isMountedRef.current) return;
-        const row = data as ScanRow | null;
-        if (row?.scan_status === 'complete' && row?.final_json_report) {
-          console.debug('[AutoRecover] Scan completed in backend, recovering result');
-          setScanReport(row.final_json_report as ScanReport);
-          setMoneyShotSeen(false);
+    if (phase !== 'error') return;
+    
+    const tryRecover = async () => {
+      setErrorScanStatus('checking');
+
+      // 1. Check the current in-flight scan
+      if (scanId && accessToken) {
+        try {
+          const sc = createScanCheckClient(accessToken);
+          const { data } = await sc.from('scans')
+            .select('scan_status, final_json_report')
+            .eq('id', scanId)
+            .single();
+          const row = data as ScanRow | null;
+          if (row?.scan_status === 'complete' && row?.final_json_report) {
+            console.debug('[AutoRecover] Current scan completed in backend');
+            setScanReport(row.final_json_report as ScanReport);
+            setMoneyShotSeen(false);
             navigate(`/results/choose?id=${scanId}`);
-        } else {
-          setErrorScanStatus(row?.scan_status ?? 'unknown');
-        }
-      })
-      .then(undefined, () => {
-        if (isMountedRef.current) setErrorScanStatus('unknown');
-      });
-  }, [phase, scanId, accessToken, navigate]);
+            return;
+          }
+        } catch {}
+      }
+
+      // 2. Fallback: if URL has a different scan ID, check if THAT one is complete
+      if (routedScanId && routedScanId !== scanId) {
+        try {
+          const { data } = await supabase.from('scans')
+            .select('id, scan_status, final_json_report, access_token')
+            .eq('id', routedScanId)
+            .single();
+          const row = data as (ScanRow & { id: string; access_token: string | null }) | null;
+          if (row?.scan_status === 'complete' && row?.final_json_report) {
+            console.debug('[AutoRecover] URL scan is complete, recovering from', routedScanId);
+            setScanId(row.id);
+            setAccessToken(row.access_token || '');
+            setScanReport(row.final_json_report as ScanReport);
+            setMoneyShotSeen(false);
+            navigate(`/results/choose?id=${routedScanId}`);
+            return;
+          }
+        } catch {}
+      }
+
+      // 3. Check user's most recent completed scan as last resort
+      if (session?.user?.id) {
+        try {
+          const { data } = await supabase.from('scans')
+            .select('id, scan_status, final_json_report, access_token')
+            .eq('user_id', session.user.id)
+            .eq('scan_status', 'complete')
+            .not('final_json_report', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          if (data?.final_json_report) {
+            console.debug('[AutoRecover] Found recent completed scan', data.id);
+            setScanId(data.id);
+            setAccessToken(data.access_token || '');
+            setScanReport(data.final_json_report as ScanReport);
+            setMoneyShotSeen(false);
+            navigate(`/results/choose?id=${data.id}`);
+            return;
+          }
+        } catch {}
+      }
+
+      if (isMountedRef.current) setErrorScanStatus('failed');
+    };
+
+    tryRecover();
+  }, [phase, scanId, accessToken, routedScanId, session?.user?.id, navigate]);
 
   // Scroll to top on phase change + track phase
   useEffect(() => {
