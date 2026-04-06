@@ -24,26 +24,26 @@ function safeFileName(str: string): string {
   return str.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase().substring(0, 50) || 'career';
 }
 
-// ── Color tokens (v5 — dark mode, high contrast) ──
+// ── Color tokens (v6 — light, clean, professional) ──
 const C = {
-  bg: '#0A0A0B',
-  surface: '#141416',
-  surfaceLight: '#1C1C1F',
-  border: '#2A2A2E',
-  borderLight: '#3A3A3F',
-  danger: '#FF4D4D',
-  dangerGlow: '#FF4D4D40',
-  safe: '#00E676',
-  safeGlow: '#00E67630',
-  warning: '#FFB300',
-  warningGlow: '#FFB30030',
-  gold: '#F5C842',
+  bg: '#FAFAF8',
+  surface: '#FFFFFF',
+  surfaceLight: '#F5F3EF',
+  border: '#E5E2DB',
+  borderLight: '#D9D5CC',
+  danger: '#DC2626',
+  dangerGlow: '#DC262615',
+  safe: '#16A34A',
+  safeGlow: '#16A34A15',
+  warning: '#D97706',
+  warningGlow: '#D9770615',
+  gold: '#B45309',
   white: '#FFFFFF',
-  offWhite: '#E8E6E1',
-  muted: '#6B6B73',
-  mutedLight: '#8E8E96',
-  text: '#F0EFE9',
-  accent: '#FF6B35',
+  offWhite: '#F8F7F4',
+  muted: '#78756E',
+  mutedLight: '#9B9890',
+  text: '#1A1A1A',
+  accent: '#EA580C',
 };
 
 // ── Derive card data from report ──
