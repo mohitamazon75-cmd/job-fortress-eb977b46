@@ -598,6 +598,7 @@ async function handleNews(corsHeaders: any, supabase: any, locale: any) {
   const ms3T = setTimeout(() => ms3Ctrl.abort(), 30_000);
   const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
+    signal: ms3Ctrl.signal,
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
@@ -627,11 +628,10 @@ No markdown.`,
       temperature: 0.3,
     }),
   });
+  clearTimeout(ms3T);
 
   if (!aiResponse.ok) {
-    signal: ms3Ctrl.signal,
     return new Response(JSON.stringify({ headlines: getFallbackHeadlines(), fallback: true }), {
-  clearTimeout(ms3T);
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
