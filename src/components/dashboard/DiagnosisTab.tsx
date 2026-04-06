@@ -226,9 +226,19 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
                   ? 'Moderate — some protection, but room to strengthen'
                   : 'Low — many others can do what you do right now'}
               </p>
-              {report.survivability.peer_percentile_estimate && (
-                <p className="text-[11px] text-muted-foreground mt-0.5 font-semibold">{report.survivability.peer_percentile_estimate}</p>
-              )}
+              {/* Use score-derived peer positioning instead of raw agent estimate */}
+              {(() => {
+                const { computeStabilityScore: getScore } = require('@/lib/stability-score');
+                const posScore = getScore(report);
+                const derivedPct = Math.min(95, Math.max(5, Math.round(((posScore - 5) / 90) * 100)));
+                return (
+                  <p className="text-[11px] text-muted-foreground mt-0.5 font-semibold">
+                    {derivedPct > 50
+                      ? `Better protected than ${derivedPct}% of peers`
+                      : `More exposed than ${100 - derivedPct}% of peers`}
+                  </p>
+                );
+              })()}
             </div>
           )}
         </div>

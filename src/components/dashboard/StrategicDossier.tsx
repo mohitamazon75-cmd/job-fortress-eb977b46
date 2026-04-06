@@ -268,11 +268,16 @@ export default function StrategicDossier({ report, scanId, enrichment, enrichmen
             <p className={`text-2xl font-semibold tabular-nums ${strengthColor}`}>
               {strengthScore}<span className="text-sm">/100</span>
             </p>
-            {report.survivability?.peer_percentile_estimate && (
-              <p className="text-[10px] text-dossier-muted-fg mt-0.5">
-                {report.survivability.peer_percentile_estimate}
-              </p>
-            )}
+            {(() => {
+              const derivedPct = Math.min(95, Math.max(5, Math.round(((careerPositionScore - 5) / 90) * 100)));
+              return (
+                <p className="text-[10px] text-dossier-muted-fg mt-0.5">
+                  {derivedPct > 50
+                    ? `Better protected than ${derivedPct}% of peers`
+                    : `More exposed than ${100 - derivedPct}% of peers`}
+                </p>
+              );
+            })()}
           </div>
         </div>
 
