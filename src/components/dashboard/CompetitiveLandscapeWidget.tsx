@@ -132,7 +132,7 @@ export default function CompetitiveLandscapeWidget({ currentRole, industry, curr
     return 'bg-prophet-green';
   };
 
-  const escapeZones = data.transitions.filter(t => !t.is_current && t.ai_risk_pct < currentDI && t.demand_trend !== 'declining');
+  const escapeZones = data.transitions.filter(t => !t.is_current && transitionRiskNumeric(t) < currentDI && t.demand_trend !== 'declining');
 
   return (
     <motion.div
