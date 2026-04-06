@@ -305,7 +305,7 @@ export default function VerdictReveal({ report, onComplete }: VerdictRevealProps
                         transition={{ delay: 0.3 }}
                         className="text-sm text-muted-foreground font-medium self-start mt-2 group relative cursor-help"
                       >
-                        ± {Math.max(2, Math.round((report.score_variability.di_range.high - report.score_variability.di_range.low) / 4))}
+                        ± {Math.max(2, Math.round((Math.min(95, report.score_variability.di_range.high) - Math.max(5, report.score_variability.di_range.low)) / 4))}
                         <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-foreground text-background text-[10px] rounded whitespace-nowrap pointer-events-none z-50">
                           Score variability. Tighter with LinkedIn data.
                         </div>
