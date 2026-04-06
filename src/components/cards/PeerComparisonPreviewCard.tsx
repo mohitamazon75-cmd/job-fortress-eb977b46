@@ -10,9 +10,8 @@ interface PeerComparisonPreviewCardProps {
 
 export default function PeerComparisonPreviewCard({ report }: PeerComparisonPreviewCardProps) {
   const careerPositionScore = computeStabilityScore(report);
-  const peerRaw = report.survivability?.peer_percentile_estimate;
-  const peerMatch = peerRaw?.match?.(/(\d+)/);
-  const peerPercentile = peerMatch ? parseInt(peerMatch[1]) : undefined;
+  // Derive peer percentile from Career Position Score for consistency
+  const peerPercentile = Math.min(95, Math.max(5, Math.round(((careerPositionScore - 5) / 90) * 100)));
 
   return (
     <motion.div
