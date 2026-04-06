@@ -1486,8 +1486,11 @@ export function computeAll(
 ): DeterministicResult {
   const jobBaseline = jobData?.disruption_baseline || 60;
 
+  // Build KG skill index once — O(n) build, then O(1) lookups for all matchSkillToKG calls
+  const kgIndex = buildKGSkillIndex(skillRiskData);
+
   // 1. Determinism Index (with breakdown)
-  const diResult = calculateDeterminismIndex(profile, skillRiskData, jobSkillMap, jobBaseline, marketSignal, industry, subSector);
+  const diResult = calculateDeterminismIndex(profile, skillRiskData, jobSkillMap, jobBaseline, marketSignal, industry, subSector, kgIndex);
   let determinismIndex = diResult.index;
 
   // Essential role safeguard: cap DI for roles with structural societal demand
