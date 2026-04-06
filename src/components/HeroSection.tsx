@@ -181,10 +181,12 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             className="text-lg sm:text-2xl md:text-3xl text-muted-foreground max-w-3xl mx-auto mb-8 sm:mb-12 leading-relaxed font-medium"
           >
             We analyze your career against{' '}
+            <span className="text-foreground font-bold">two reports</span> — a risk diagnosis{' '}
+            <em>and</em> a growth playbook — covering{' '}
             <span className="text-foreground font-bold">95+ job families</span>,{' '}
             <span className="text-foreground font-bold">200+ AI tools</span>, and{' '}
-            <span className="text-foreground font-bold">live market data</span> to tell you{' '}
-            <span className="text-primary font-black">exactly</span> how safe your job is.
+            <span className="text-foreground font-bold">live market data</span>.{' '}
+            <span className="text-primary font-black">Know your risk. Own your future.</span>
           </motion.p>
 
           {/* Dual CTA */}
