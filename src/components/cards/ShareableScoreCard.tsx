@@ -1,10 +1,8 @@
 /**
- * ShareableScoreCard — Viral career risk report card (v4)
+ * ShareableScoreCard — Viral career risk report card (v5)
  *
- * 10-section newspaper-style design with Playfair Display headlines.
- * Designed to stop scrolling on LinkedIn/Instagram and drive shares.
- * All data dynamically populated from ScanReport — no new API calls.
- *
+ * Redesigned for maximum social-feed stopping power.
+ * Dark, bold, emotionally provocative. Readable at thumbnail size.
  * html2canvas-safe: CaptureTarget uses inline styles only.
  */
 import { useRef, useState, useCallback, useEffect } from 'react';
@@ -26,20 +24,26 @@ function safeFileName(str: string): string {
   return str.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase().substring(0, 50) || 'career';
 }
 
-// ── Color tokens ──
+// ── Color tokens (v5 — dark mode, high contrast) ──
 const C = {
-  bg: '#FAFAF7',
-  border: '#E2DED6',
-  danger: '#E85D3A',
-  safe: '#2A7D55',
-  warning: '#B87A1A',
-  dark: '#111111',
-  countdown: '#F5C842',
-  warmGrey: '#F4F2EE',
-  verdictBg: '#FFF8F4',
-  white: '#ffffff',
-  muted: '#8A857D',
-  text: '#1A1A1A',
+  bg: '#0A0A0B',
+  surface: '#141416',
+  surfaceLight: '#1C1C1F',
+  border: '#2A2A2E',
+  borderLight: '#3A3A3F',
+  danger: '#FF4D4D',
+  dangerGlow: '#FF4D4D40',
+  safe: '#00E676',
+  safeGlow: '#00E67630',
+  warning: '#FFB300',
+  warningGlow: '#FFB30030',
+  gold: '#F5C842',
+  white: '#FFFFFF',
+  offWhite: '#E8E6E1',
+  muted: '#6B6B73',
+  mutedLight: '#8E8E96',
+  text: '#F0EFE9',
+  accent: '#FF6B35',
 };
 
 // ── Derive card data from report ──
@@ -47,11 +51,9 @@ function useCardData(report: ScanReport) {
   const score = computeStabilityScore(report);
   const role = sanitize(report.matched_job_family || report.role || 'Professional', 50);
   const industry = sanitize(report.industry || 'Technology', 40);
-  const yearsExp = report.years_experience || '';
 
   const allSkills = classifySkills(report);
   const atRisk = allSkills.filter(s => s.status !== 'safe').sort((a, b) => a.estimatedMonths - b.estimatedMonths);
-  const safeSkills = allSkills.filter(s => s.status === 'safe');
 
   const aiExposure = Math.round(report.determinism_index ?? 50);
   const humanEdge = Math.max(0, 100 - aiExposure);
@@ -61,20 +63,16 @@ function useCardData(report: ScanReport) {
       : Math.round(aiExposure * 0.4));
   const salaryRiskLabel = salaryDropPct > 0 ? `~${salaryDropPct}%` : '0%';
 
-  // Derive peer percentile from Career Position Score for consistency
-  const peerPercentile = Math.min(95, Math.max(5, Math.round(((score - 5) / 90) * 100)));
-
   const monthsRemaining = report.months_remaining ?? 24;
 
-  // Top 3 at-risk tasks with automation %
   const tools = normalizeTools(report.ai_tools_replacing || []);
   const taskRows = (report.execution_skills_dead || []).slice(0, 3).map((task, i) => ({
-    name: sanitize(task, 35),
+    name: sanitize(task, 30),
     pct: Math.min(95, Math.max(45, 90 - i * 10 - Math.round(Math.random() * 5))),
   }));
   if (taskRows.length === 0 && tools.length > 0) {
     tools.slice(0, 3).forEach((t, i) => {
-      taskRows.push({ name: sanitize(t.automates_task || t.tool_name, 35), pct: 85 - i * 10 });
+      taskRows.push({ name: sanitize(t.automates_task || t.tool_name, 30), pct: 85 - i * 10 });
     });
   }
 
@@ -82,25 +80,23 @@ function useCardData(report: ScanReport) {
   const automatedTasks = taskRows.length;
   const automationYear = new Date().getFullYear() + Math.max(1, Math.round(monthsRemaining / 12));
 
-  const moatSkills = (report.moat_skills ?? []).slice(0, 3).map(s => sanitize(s, 25));
-  const buildSkills = atRisk.slice(0, 3).map(s => sanitize(s.name, 25));
+  const moatSkills = (report.moat_skills ?? []).slice(0, 3).map(s => sanitize(s, 22));
+  const buildSkills = atRisk.slice(0, 3).map(s => sanitize(s.name, 22));
   if (buildSkills.length === 0 && report.execution_skills_dead?.length) {
-    report.execution_skills_dead.slice(0, 3).forEach(s => buildSkills.push(sanitize(s, 25)));
+    report.execution_skills_dead.slice(0, 3).forEach(s => buildSkills.push(sanitize(s, 22)));
   }
 
-  const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-
   return {
-    score, role, industry, yearsExp, aiExposure, humanEdge,
-    salaryRiskLabel, peerPercentile, monthsRemaining,
+    score, role, industry, aiExposure, humanEdge,
+    salaryRiskLabel, monthsRemaining,
     taskRows, totalTasks, automatedTasks, automationYear,
-    moatSkills, buildSkills, date,
+    moatSkills, buildSkills,
   };
 }
 
 // ═══════════════════════════════════════════════════════════════
 // CaptureTarget — rendered off-screen for html2canvas export
-// Uses ONLY inline styles for reliable capture
+// v5: Bold dark design, fewer sections, maximum stopping power
 // ═══════════════════════════════════════════════════════════════
 function CaptureTarget({
   innerRef, data,
@@ -109,18 +105,25 @@ function CaptureTarget({
   data: ReturnType<typeof useCardData>;
 }) {
   const {
-    score, role, industry, yearsExp, aiExposure, humanEdge,
-    salaryRiskLabel, peerPercentile, monthsRemaining,
+    score, role, industry, aiExposure, humanEdge,
+    salaryRiskLabel, monthsRemaining,
     taskRows, totalTasks, automatedTasks, automationYear,
-    moatSkills, buildSkills, date,
+    moatSkills, buildSkills,
   } = data;
 
   const scoreColor = score >= 70 ? C.safe : score >= 40 ? C.warning : C.danger;
-  const scoreBadge = score >= 70 ? '✓ LOOKING GOOD' : score >= 40 ? '⚠ HEADS UP' : '🚨 AT RISK';
+  const scoreGlow = score >= 70 ? C.safeGlow : score >= 40 ? C.warningGlow : C.dangerGlow;
+  const riskLabel = score >= 70 ? 'LOW RISK' : score >= 40 ? 'MODERATE RISK' : 'HIGH RISK';
 
   const FONT_HEADLINE = '"Playfair Display", Georgia, serif';
   const FONT_BODY = '"DM Sans", system-ui, sans-serif';
   const FONT_MONO = '"DM Mono", "Courier New", monospace';
+
+  // Build arc path for the score ring
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.min(100, Math.max(0, score));
+  const offset = circumference - (progress / 100) * circumference;
 
   return (
     <div
@@ -132,296 +135,265 @@ function CaptureTarget({
         fontFamily: FONT_BODY,
         boxSizing: 'border-box',
         overflow: 'hidden',
-        border: `1px solid ${C.border}`,
       }}
     >
-      {/* ── 1. Top strip ── */}
+      {/* ── 1. Top brand strip ── */}
       <div style={{
-        background: C.dark, padding: '12px 24px',
+        padding: '14px 28px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        borderBottom: `1px solid ${C.border}`,
       }}>
         <span style={{
-          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500,
-          color: '#888', textTransform: 'uppercase', letterSpacing: '0.15em',
+          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700,
+          color: C.mutedLight, letterSpacing: '0.15em', textTransform: 'uppercase',
         }}>
-          JobBachao · Career Risk Report
+          JobBachao.com
         </span>
         <span style={{
-          fontFamily: FONT_MONO, fontSize: 11, fontWeight: 500,
-          color: C.danger, textTransform: 'uppercase', letterSpacing: '0.1em',
+          fontFamily: FONT_MONO, fontSize: 10, fontWeight: 600,
+          color: C.danger, letterSpacing: '0.1em', textTransform: 'uppercase',
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
           <span style={{
-            width: 7, height: 7, borderRadius: '50%',
+            width: 6, height: 6, borderRadius: '50%',
             background: C.danger, display: 'inline-block',
-            boxShadow: `0 0 6px ${C.danger}`,
+            boxShadow: `0 0 8px ${C.danger}`,
           }} />
-          LIVE SCAN
+          AI SCAN LIVE
         </span>
       </div>
 
-      {/* ── 2. Headline block ── */}
+      {/* ── 2. Hero: Score + Role (the money shot) ── */}
       <div style={{
-        background: C.dark, padding: '24px 24px 26px',
-        borderBottom: `3px solid ${C.danger}`,
+        padding: '36px 28px 28px',
+        textAlign: 'center',
+        background: `radial-gradient(ellipse at 50% 80%, ${scoreGlow} 0%, transparent 70%)`,
       }}>
-        <p style={{
-          fontFamily: FONT_MONO, fontSize: 10, fontWeight: 500,
-          color: '#666', textTransform: 'uppercase', letterSpacing: '0.2em',
-          margin: '0 0 12px',
-        }}>
-          AI Displacement Alert
-        </p>
-        <p style={{
-          fontFamily: FONT_HEADLINE, fontSize: 28, fontWeight: 900,
-          color: C.white, lineHeight: 1.3, margin: '0 0 4px',
-        }}>
-          Your boss already knows<br />your job is disappearing.<br />
-          <span style={{ fontStyle: 'italic', color: C.danger }}>Do you?</span>
-        </p>
-        <p style={{
-          fontSize: 13, color: '#999', margin: '14px 0 0', lineHeight: 1.5,
-        }}>
-          I just scanned my resume.{' '}
-          <span style={{ color: C.white, fontWeight: 700 }}>
-            {automatedTasks} of my {totalTasks || 5} tasks will be automated by {automationYear}.
-          </span>{' '}
-          Took 60 seconds.
-        </p>
-      </div>
-
-      {/* ── 3. Job title row ── */}
-      <div style={{
-        background: C.white, padding: '20px 24px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        gap: 16,
-      }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{
-            fontFamily: FONT_HEADLINE, fontSize: 19, fontWeight: 900,
-            color: C.text, margin: 0, lineHeight: 1.35,
-            wordBreak: 'break-word',
-          }}>
-            {role}
-          </p>
-          <p style={{
-            fontSize: 13, color: C.muted, margin: '4px 0 0',
-          }}>
-            {industry}{yearsExp ? ` · ${yearsExp}` : ''}
-          </p>
-        </div>
-        <div style={{ textAlign: 'center', flexShrink: 0 }}>
+        {/* Score ring via SVG */}
+        <div style={{ display: 'inline-block', position: 'relative', width: 130, height: 130 }}>
+          <svg width="130" height="130" style={{ transform: 'rotate(-90deg)' }}>
+            <circle cx="65" cy="65" r={radius} fill="none" stroke={C.border} strokeWidth="6" />
+            <circle
+              cx="65" cy="65" r={radius} fill="none"
+              stroke={scoreColor} strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+            />
+          </svg>
           <div style={{
-            width: 80, height: 80, borderRadius: '50%',
-            border: `3px solid ${scoreColor}`,
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            background: C.white,
+            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{
-              fontFamily: FONT_HEADLINE, fontSize: 32, fontWeight: 900,
+              fontFamily: FONT_HEADLINE, fontSize: 48, fontWeight: 900,
               color: scoreColor, lineHeight: 1,
             }}>{score}</span>
-            <span style={{ fontSize: 9, color: C.muted, marginTop: 2, lineHeight: 1 }}>/100</span>
-          </div>
-          <div style={{
-            marginTop: 8, fontFamily: FONT_MONO, fontSize: 9,
-            color: scoreColor, fontWeight: 600, letterSpacing: '0.08em',
-            background: `${scoreColor}15`, padding: '4px 12px', borderRadius: 4,
-            textTransform: 'uppercase', whiteSpace: 'nowrap',
-          }}>
-            {scoreBadge}
+            <span style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>/100</span>
           </div>
         </div>
+
+        {/* Risk badge */}
+        <div style={{
+          display: 'inline-block', marginTop: 14,
+          background: `${scoreColor}18`, border: `1px solid ${scoreColor}40`,
+          borderRadius: 6, padding: '5px 18px',
+        }}>
+          <span style={{
+            fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700,
+            color: scoreColor, letterSpacing: '0.12em',
+          }}>{riskLabel}</span>
+        </div>
+
+        {/* Role & industry */}
+        <p style={{
+          fontFamily: FONT_HEADLINE, fontSize: 22, fontWeight: 900,
+          color: C.white, lineHeight: 1.3, margin: '18px 0 0',
+          wordBreak: 'break-word',
+        }}>{role}</p>
+        <p style={{
+          fontSize: 13, color: C.muted, margin: '6px 0 0',
+        }}>{industry}</p>
       </div>
 
-      {/* ── 4. Verdict box ── */}
+      {/* ── 3. Emotional verdict line ── */}
       <div style={{
-        margin: '0 24px', padding: '16px 18px',
-        background: C.verdictBg, borderLeft: `3px solid ${C.danger}`,
-        borderRadius: '0 8px 8px 0',
+        margin: '0 28px', padding: '16px 20px',
+        background: C.surface,
+        borderRadius: 10,
+        borderLeft: `3px solid ${C.danger}`,
       }}>
         <p style={{
-          fontSize: 13.5, color: C.text, lineHeight: 1.6, margin: 0,
+          fontSize: 14, color: C.offWhite, lineHeight: 1.65, margin: 0,
+          fontWeight: 500,
         }}>
-          <strong>{automatedTasks} of your {totalTasks || 5} core tasks will be fully automated by {automationYear}.</strong>{' '}
-          The skills keeping you employed right now are the exact ones AI will master first.
+          <strong style={{ color: C.white }}>{automatedTasks} of {totalTasks || 5} core tasks</strong>{' '}
+          will be fully automated by {automationYear}.
+          <span style={{ color: C.muted }}> The skills keeping you employed are the first AI will master.</span>
         </p>
       </div>
 
-      {/* ── 5. Stats row ── */}
+      {/* ── 4. Three key metrics ── */}
       <div style={{
-        display: 'flex', gap: 0, margin: '18px 24px',
-        background: C.warmGrey, borderRadius: 10, overflow: 'hidden',
-        border: `1px solid ${C.border}`,
+        display: 'flex', gap: 10, margin: '20px 28px 0',
       }}>
         {[
-          { label: 'HUMAN EDGE', value: `${humanEdge}%`, sub: 'IRREPLACEABLE', color: C.safe },
-          { label: 'AI EXPOSURE', value: `${aiExposure}%`, sub: 'AT RISK NOW', color: C.danger },
-          { label: 'SALARY RISK', value: salaryRiskLabel, sub: 'IMPACT ANNUALLY', color: C.warning },
+          { label: 'Human Edge', value: `${humanEdge}%`, color: C.safe, glow: C.safeGlow },
+          { label: 'AI Exposure', value: `${aiExposure}%`, color: C.danger, glow: C.dangerGlow },
+          { label: 'Salary Risk', value: salaryRiskLabel, color: C.warning, glow: C.warningGlow },
         ].map((stat, i) => (
           <div key={i} style={{
-            flex: 1, padding: '16px 8px', textAlign: 'center',
-            borderRight: i < 2 ? `1px solid ${C.border}` : 'none',
+            flex: 1, padding: '18px 12px', textAlign: 'center',
+            background: C.surface, borderRadius: 10,
+            border: `1px solid ${C.border}`,
           }}>
             <p style={{
-              fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
-              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em',
-              margin: '0 0 8px',
-            }}>{stat.label}</p>
-            <p style={{
-              fontFamily: FONT_HEADLINE, fontSize: 22, fontWeight: 900,
+              fontFamily: FONT_HEADLINE, fontSize: 26, fontWeight: 900,
               color: stat.color, margin: 0, lineHeight: 1,
             }}>{stat.value}</p>
             <p style={{
-              fontFamily: FONT_MONO, fontSize: 7, fontWeight: 500,
-              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em',
-              margin: '6px 0 0',
-            }}>{stat.sub}</p>
+              fontFamily: FONT_MONO, fontSize: 8, fontWeight: 600,
+              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em',
+              margin: '8px 0 0',
+            }}>{stat.label}</p>
           </div>
         ))}
       </div>
 
-      {/* ── 6. Tasks AI is eating ── */}
+      {/* ── 5. Tasks AI is eating — visual bars ── */}
       {taskRows.length > 0 && (
-        <div style={{ padding: '0 24px 14px' }}>
+        <div style={{ padding: '20px 28px 0' }}>
           <p style={{
-            fontFamily: FONT_MONO, fontSize: 10, fontWeight: 600,
-            color: C.muted, textTransform: 'uppercase', letterSpacing: '0.18em',
-            margin: '0 0 12px',
+            fontFamily: FONT_MONO, fontSize: 9, fontWeight: 700,
+            color: C.muted, textTransform: 'uppercase', letterSpacing: '0.2em',
+            margin: '0 0 14px',
           }}>
-            Tasks AI is eating right now
+            Tasks being automated
           </p>
           {taskRows.map((task, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: 10, gap: 12,
-            }}>
-              <span style={{ fontSize: 13, color: C.text, fontWeight: 500, flex: 1, minWidth: 0 }}>
-                {task.name}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                <div style={{
-                  width: 64, height: 7, background: '#E8E4DD', borderRadius: 4, overflow: 'hidden',
-                }}>
-                  <div style={{
-                    width: `${task.pct}%`, height: '100%',
-                    background: C.danger, borderRadius: 4,
-                  }} />
-                </div>
+            <div key={i} style={{ marginBottom: 10 }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                marginBottom: 5,
+              }}>
+                <span style={{ fontSize: 12, color: C.offWhite, fontWeight: 500 }}>{task.name}</span>
                 <span style={{
-                  fontFamily: FONT_MONO, fontSize: 12, fontWeight: 600,
-                  color: C.danger, minWidth: 34, textAlign: 'right',
+                  fontFamily: FONT_MONO, fontSize: 12, fontWeight: 700,
+                  color: C.danger,
                 }}>{task.pct}%</span>
+              </div>
+              <div style={{
+                width: '100%', height: 5, background: C.surfaceLight, borderRadius: 3, overflow: 'hidden',
+              }}>
+                <div style={{
+                  width: `${task.pct}%`, height: '100%',
+                  background: `linear-gradient(90deg, ${C.danger}, ${C.accent})`,
+                  borderRadius: 3,
+                }} />
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* ── 7. Countdown block ── */}
+      {/* ── 6. Disruption countdown — dramatic center ── */}
       <div style={{
-        background: C.dark, margin: '4px 24px 18px', borderRadius: 10,
-        padding: '20px 24px',
+        margin: '20px 28px',
+        padding: '22px',
+        background: `linear-gradient(135deg, ${C.surfaceLight} 0%, ${C.surface} 100%)`,
+        borderRadius: 12,
+        border: `1px solid ${C.borderLight}`,
+        textAlign: 'center',
+      }}>
+        <p style={{
+          fontFamily: FONT_MONO, fontSize: 9, fontWeight: 700,
+          color: C.muted, textTransform: 'uppercase', letterSpacing: '0.2em',
+          margin: '0 0 10px',
+        }}>Disruption window</p>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 8 }}>
+          <span style={{
+            fontFamily: FONT_HEADLINE, fontSize: 56, fontWeight: 900,
+            color: C.gold, lineHeight: 1,
+          }}>{monthsRemaining}</span>
+          <span style={{
+            fontFamily: FONT_MONO, fontSize: 13, fontWeight: 700,
+            color: C.gold, textTransform: 'uppercase', letterSpacing: '0.1em',
+            opacity: 0.7,
+          }}>months</span>
+        </div>
+        <p style={{
+          fontSize: 12, color: C.muted, margin: '8px 0 0', lineHeight: 1.4,
+        }}>before mass displacement hits this role</p>
+      </div>
+
+      {/* ── 7. Skills: Moat vs Build ── */}
+      {(moatSkills.length > 0 || buildSkills.length > 0) && (
+        <div style={{
+          display: 'flex', gap: 10, padding: '0 28px 20px',
+        }}>
+          {moatSkills.length > 0 && (
+            <div style={{ flex: 1 }}>
+              <p style={{
+                fontFamily: FONT_MONO, fontSize: 8, fontWeight: 700,
+                color: C.safe, textTransform: 'uppercase', letterSpacing: '0.15em',
+                margin: '0 0 8px',
+              }}>✓ Your edge</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {moatSkills.map(s => (
+                  <span key={s} style={{
+                    background: `${C.safe}12`, border: `1px solid ${C.safe}25`,
+                    color: C.safe, borderRadius: 6, padding: '5px 12px',
+                    fontSize: 11, fontWeight: 600,
+                  }}>{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {buildSkills.length > 0 && (
+            <div style={{ flex: 1 }}>
+              <p style={{
+                fontFamily: FONT_MONO, fontSize: 8, fontWeight: 700,
+                color: C.warning, textTransform: 'uppercase', letterSpacing: '0.15em',
+                margin: '0 0 8px',
+              }}>⚠ Build now</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {buildSkills.map(s => (
+                  <span key={s} style={{
+                    background: `${C.warning}12`, border: `1px solid ${C.warning}25`,
+                    color: C.warning, borderRadius: 6, padding: '5px 12px',
+                    fontSize: 11, fontWeight: 600,
+                  }}>{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 8. CTA footer ── */}
+      <div style={{
+        padding: '18px 28px',
+        borderTop: `1px solid ${C.border}`,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div>
           <p style={{
-            fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
-            color: '#666', textTransform: 'uppercase', letterSpacing: '0.15em',
-            margin: '0 0 6px',
-          }}>Disruption Window</p>
+            fontFamily: FONT_HEADLINE, fontSize: 16, fontWeight: 900,
+            color: C.white, margin: 0, lineHeight: 1.3,
+          }}>Can you beat this score?</p>
           <p style={{
-            fontSize: 13, color: '#aaa', margin: 0, lineHeight: 1.5,
-            maxWidth: 240,
-          }}>
-            Before mass displacement<br />hits this role in India
-          </p>
+            fontSize: 11, color: C.muted, margin: '3px 0 0',
+          }}>Free · 60 seconds · No sign-up</p>
         </div>
-        <div style={{ textAlign: 'center', flexShrink: 0, minWidth: 80 }}>
+        <div style={{
+          background: C.danger, borderRadius: 8, padding: '10px 20px',
+          flexShrink: 0,
+        }}>
           <span style={{
-            fontFamily: FONT_HEADLINE, fontSize: 44, fontWeight: 900,
-            color: C.countdown, lineHeight: 1, display: 'block',
-          }}>{monthsRemaining}</span>
-          <p style={{
-            fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
-            color: C.countdown, textTransform: 'uppercase', letterSpacing: '0.12em',
-            margin: '6px 0 0', opacity: 0.8,
-          }}>Months Left</p>
+            fontFamily: FONT_BODY, fontSize: 13, fontWeight: 800,
+            color: C.white, letterSpacing: '0.02em',
+          }}>Scan Now →</span>
         </div>
-      </div>
-
-      {/* ── 8. Skill sections ── */}
-      <div style={{
-        display: 'flex', gap: 20, padding: '0 24px 16px',
-      }}>
-        {moatSkills.length > 0 && (
-          <div style={{ flex: 1 }}>
-            <p style={{
-              fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
-              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em',
-              margin: '0 0 10px',
-            }}>Your moat — what AI can't replace</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-              {moatSkills.map(s => (
-                <span key={s} style={{
-                  background: `${C.safe}15`, border: `1px solid ${C.safe}40`,
-                  color: C.safe, borderRadius: 6, padding: '4px 12px',
-                  fontSize: 11, fontWeight: 600,
-                }}>{s}</span>
-              ))}
-            </div>
-          </div>
-        )}
-        {buildSkills.length > 0 && (
-          <div style={{ flex: 1 }}>
-            <p style={{
-              fontFamily: FONT_MONO, fontSize: 9, fontWeight: 600,
-              color: C.muted, textTransform: 'uppercase', letterSpacing: '0.12em',
-              margin: '0 0 10px',
-            }}>Build these before it's too late</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-              {buildSkills.map(s => (
-                <span key={s} style={{
-                  background: `${C.warning}15`, border: `1px solid ${C.warning}40`,
-                  color: C.warning, borderRadius: 6, padding: '4px 12px',
-                  fontSize: 11, fontWeight: 600,
-                }}>{s}</span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── 9. Percentile bar ── */}
-      <div style={{
-        margin: '0 24px 16px', padding: '14px 18px',
-        background: `${C.safe}12`, borderRadius: 8,
-        border: `1px solid ${C.safe}30`,
-      }}>
-        <p style={{
-          fontSize: 13, color: C.text, lineHeight: 1.6, margin: 0,
-        }}>
-          <strong style={{ color: C.safe }}>You're safer than {peerPercentile}% of Indian {role.toLowerCase()} professionals.</strong>{' '}
-          <span style={{ color: C.muted }}>But peers who've upskilled in AI are pulling ahead — fast.</span>
-        </p>
-      </div>
-
-      {/* ── 10. Footer ── */}
-      <div style={{
-        padding: '14px 24px', borderTop: `1px solid ${C.border}`,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <span style={{
-          fontFamily: FONT_MONO, fontSize: 11, color: C.muted,
-        }}>
-          jobbachao.com · {date}
-        </span>
-        <span style={{
-          fontSize: 12, color: C.danger, fontStyle: 'italic', fontWeight: 600,
-        }}>
-          Can your friends beat your score?
-        </span>
       </div>
     </div>
   );
@@ -435,9 +407,10 @@ export default function ShareableScoreCard({ report }: Props) {
   const mountedRef = useRef(true);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
 
   const data = useCardData(report);
-  const { score, role, automatedTasks, totalTasks, automationYear, salaryRiskLabel, date } = data;
+  const { score, role, automatedTasks, totalTasks, automationYear, salaryRiskLabel } = data;
 
   useEffect(() => { return () => { mountedRef.current = false }; }, []);
 
@@ -473,21 +446,21 @@ export default function ShareableScoreCard({ report }: Props) {
       setImageUrl(url);
       return url;
     } catch {
+      setShareError('Could not generate image. Try again.');
       return null;
     } finally {
       setCapturing(false);
     }
   }, [imageUrl]);
 
-  // Share caption text
-  const caption = `"Your boss already knows your job is disappearing. Do you?"\n\nI just scanned my resume on JobBachao. ${automatedTasks} of my ${totalTasks || 5} tasks will be automated by ${automationYear}.\nMy AI displacement score: ${score}/100. ${salaryRiskLabel} of my salary is already at risk.\n\nTook 60 seconds. Check yours 👇\njobbachao.com`;
+  const caption = `I just scanned my resume on JobBachao.\n\n${automatedTasks} of my ${totalTasks || 5} tasks will be automated by ${automationYear}.\nMy career safety score: ${score}/100.\n${salaryRiskLabel} salary at risk.\n\nCan you beat my score? 👇\njobbachao.com`;
 
   const handleDownload = useCallback(async () => {
     const url = await ensureImage();
     if (!url) return;
     const a = document.createElement('a');
     a.href = url;
-    a.download = `career-risk-${safeFileName(role)}.png`;
+    a.download = `career-scan-${safeFileName(role)}.png`;
     a.click();
   }, [ensureImage, role]);
 
@@ -534,19 +507,23 @@ export default function ShareableScoreCard({ report }: Props) {
           </div>
         )}
 
+        {shareError && (
+          <p className="px-3 text-xs text-destructive text-center">{shareError}</p>
+        )}
+
         {/* Share buttons */}
         <div className="px-3 pb-2 grid grid-cols-2 gap-2">
           <button
             type="button" onClick={handleWhatsApp}
             className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#25D366] text-white font-bold text-sm hover:bg-[#20BA5A] transition-colors"
           >
-            <MessageCircle className="w-4 h-4" /> Share on WhatsApp
+            <MessageCircle className="w-4 h-4" /> WhatsApp
           </button>
           <button
             type="button" onClick={handleLinkedIn}
             className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#0A66C2] text-white font-bold text-sm hover:bg-[#004182] transition-colors"
           >
-            <Linkedin className="w-4 h-4" /> Post on LinkedIn
+            <Linkedin className="w-4 h-4" /> LinkedIn
           </button>
         </div>
 
@@ -556,18 +533,15 @@ export default function ShareableScoreCard({ report }: Props) {
             Copy-paste caption
           </p>
           <p className="text-xs text-foreground leading-relaxed whitespace-pre-line">
-            <strong>"Your boss already knows your job is disappearing. Do you?"</strong>
-            {'\n\n'}I just scanned my resume on JobBachao.{' '}
-            <strong>{automatedTasks} of my {totalTasks || 5} tasks will be automated by {automationYear}.</strong>
-            {' '}My AI displacement score: {score}/100. {salaryRiskLabel} of my salary is already at risk.
-            {'\n\n'}Took 60 seconds. Check yours 👇
+            I just scanned my resume on JobBachao.
+            {'\n\n'}<strong>{automatedTasks} of my {totalTasks || 5} tasks will be automated by {automationYear}.</strong>
+            {' '}My career safety score: {score}/100. {salaryRiskLabel} salary at risk.
+            {'\n\n'}Can you beat my score? 👇
             {'\n'}<span className="text-primary font-bold">jobbachao.com</span>
           </p>
           <button
             type="button"
-            onClick={() => {
-              navigator.clipboard.writeText(caption);
-            }}
+            onClick={() => { navigator.clipboard.writeText(caption); }}
             className="mt-3 w-full py-2 rounded-lg border border-border bg-card text-xs font-bold text-foreground hover:bg-muted transition-colors"
           >
             Copy Caption
@@ -580,7 +554,7 @@ export default function ShareableScoreCard({ report }: Props) {
             type="button" onClick={handleDownload} disabled={capturing || !imageUrl}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border text-foreground font-bold text-xs hover:bg-muted/50 transition-colors disabled:opacity-50"
           >
-            <Download className="w-3.5 h-3.5" /> Download Card for Instagram
+            <Download className="w-3.5 h-3.5" /> Download Card
           </button>
         </div>
       </motion.div>
