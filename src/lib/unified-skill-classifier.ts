@@ -150,7 +150,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
     if (seenSkills.has(key)) continue;
     seenSkills.add(key);
     const intel = findThreatIntel(ds);
-    const baseRisk = intel?.risk_pct ?? (75 + (stableHash(ds) % 15));
+    const baseRisk = threatIntelRisk(intel, 75 + (stableHash(ds) % 15));
     results.push({
       name: ds,
       risk: baseRisk,
