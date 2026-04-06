@@ -30,9 +30,9 @@ const TESTIMONIALS = [
 ];
 
 const STATS = [
-  { value: '₹10/day', label: 'Less than a coffee — unlimited scans, full defense plan, AI career coach & salary scripts' },
-  { value: '95×147', label: 'Job families × skill vectors in the Knowledge Graph — O*NET, ESCO, NASSCOM calibrated' },
-  { value: '< 4 min', label: 'We don\'t just ask an AI — we run your profile through 14,000+ skill vectors, a proprietary Knowledge Graph, and 3 reasoning models. That takes a moment. Accuracy takes longer than guessing.' },
+  { value: '2 Reports', label: 'Risk Diagnosis + Growth Playbook — two complete views from a single scan, both free' },
+  { value: '10+', label: 'Deliverables per scan — score, doom clock, pivot paths, salary scripts, ATS rewrite & more' },
+  { value: '< 4 min', label: '4-agent intelligence engine + Knowledge Graph + live market signals. Not a quiz — a career MRI.' },
 ];
 
 export default function SocialProofSection() {

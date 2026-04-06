@@ -308,9 +308,9 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
               {[
                 { step: '01', Icon: Link2, title: 'Link Profile', desc: 'Paste LinkedIn or upload your resume', color: 'hsl(var(--primary))' },
-                { step: '02', Icon: Brain, title: 'AI Scan', desc: '95+ job families × 147+ skill vectors', color: 'hsl(var(--prophet-cyan))' },
-                { step: '03', Icon: BarChart3, title: 'Your Score', desc: 'Deterministic career risk analysis', color: 'hsl(var(--prophet-gold))' },
-                { step: '04', Icon: Shield, title: 'Defense Plan', desc: 'Personalized career playbook', color: 'hsl(var(--prophet-green))' },
+                { step: '02', Icon: Brain, title: 'AI Scan', desc: '4-agent intelligence engine analyses your career', color: 'hsl(var(--prophet-cyan))' },
+                { step: '03', Icon: BarChart3, title: 'Report A', desc: 'Risk score, doom clock, AI threat map', color: 'hsl(var(--prophet-gold))' },
+                { step: '04', Icon: Shield, title: 'Report B', desc: 'Growth playbook, pivot paths, salary scripts', color: 'hsl(var(--prophet-green))' },
               ].map((item, i) => (
                 <motion.div
                   key={item.step}
