@@ -9,87 +9,13 @@ import { getVerbatimRole } from '@/lib/role-guard';
 import { useLiveEnrichment } from '@/hooks/use-live-enrichment';
 import FearScoreDecay from '@/components/cards/FearScoreDecay';
 import CohortInsightBadge from '@/components/cards/CohortInsightBadge';
+import { getVibe } from '@/lib/get-vibe';
 
 /**
  * Card 1: "What This Means For You" — narrative + AIRMM + intelligence profile.
  * NO score hero, NO pillar bars, NO 90-day path (those are in VerdictReveal).
  * Each piece of information here is NEW — not shown before.
  */
-
-type Vibe = {
-  emoji: string;
-  label: string;
-  color: string;
-  bg: string;
-  border: string;
-  headline: string;
-  body: string;
-  replaceability: string;
-  bullets: string[];
-};
-
-function getVibe(score: number, report: ScanReport): Vibe {
-  const tier = inferSeniorityTier(report.seniority_tier);
-  const tierLabel = tier.replace('_', ' ').toLowerCase();
-  const moatSkills = (report.moat_skills || []).length;
-  const rawDemandTrend = report.market_position_model?.demand_trend ?? 'Stable';
-  const demandLabel = (() => {
-    const d = rawDemandTrend.toLowerCase().trim();
-    if (d.includes('rising') || d.includes('growing') || d.includes('high')) return 'strong';
-    if (d.includes('stable') || d.includes('steady')) return 'steady';
-    if (d.includes('declining') || d.includes('falling') || d.includes('weak')) return 'softening';
-    if (d.includes('pressure') || d.includes('competitive')) return 'under pressure';
-    return 'steady'; // Safe fallback — prevents "demand demand" text bug
-  })();
-  const automationRisk = report.automation_risk ?? report.determinism_index ?? 50;
-  const roleName = getVerbatimRole(report);
-  const talentDensity = report.market_position_model?.talent_density ?? 'moderate';
-
-  if (score >= 70) return {
-    emoji: '🛡️', label: 'Safe Zone', color: 'text-prophet-green', bg: 'bg-prophet-green/[0.06]', border: 'border-prophet-green/20',
-    headline: `Strong today — but the landscape is shifting.`,
-    body: `${roleName} roles still need a real human — only ~${Math.round(automationRisk)}% overlaps with AI today. But that number was half this 18 months ago. The tools are getting better quietly.`,
-    replaceability: 'Replacing you today would be hard. But AI-augmented professionals are learning to match your output faster than you think.',
-    bullets: [
-      `Hiring demand is ${demandLabel} — but companies are already testing AI alternatives for parts of this role`,
-      moatSkills >= 3 ? `${moatSkills} of your skills are hard to automate today — but the "safe" list shrinks every year` : 'Your judgment-heavy work protects you — for now. AI agents are starting to handle nuanced decisions too',
-      talentDensity === 'scarce' ? 'Thin talent pool gives you leverage — but only while AI can\'t replicate your edge' : `As a ${tierLabel}, your context is valuable — but institutional knowledge is exactly what AI is learning to capture`,
-    ],
-  };
-  if (score >= 50) return {
-    emoji: '⚡', label: 'Stay Sharp', color: 'text-primary', bg: 'bg-primary/[0.06]', border: 'border-primary/20',
-    headline: `The danger zone where most people feel fine — until they don't.`,
-    body: `About ${Math.round(automationRisk)}% of typical ${roleName} tasks could be handled by AI today. A junior professional with AI tools can now match your output speed.`,
-    replaceability: 'You\'re valued — but "valued" and "irreplaceable" are very different things when budgets tighten.',
-    bullets: [
-      `Market demand is ${demandLabel} — but companies are hiring fewer people for more output now`,
-      moatSkills > 0 ? `${moatSkills} of your strengths are hard to replicate today — without active investment, that drops to zero within 2 years` : 'You don\'t have a clear "irreplaceable" skill yet — that\'s the single biggest risk we flag',
-      'The gap between your score and "at risk" is smaller than it looks — one AI breakthrough in your domain changes everything',
-    ],
-  };
-  if (score >= 30) return {
-    emoji: '🔥', label: 'Heads Up', color: 'text-prophet-gold', bg: 'bg-prophet-gold/[0.06]', border: 'border-prophet-gold/20',
-    headline: `Your role is more exposed than most.`,
-    body: `Around ${Math.round(automationRisk)}% of ${roleName} tasks are the kind AI is getting good at. Hiring demand is ${demandLabel}.`,
-    replaceability: 'Honestly? This role could be backfilled faster than you\'d like.',
-    bullets: [
-      'A big chunk of your daily work follows patterns AI can learn',
-      moatSkills > 0 ? `You have ${moatSkills} unique strengths — but it's a thin margin` : 'Right now, it\'s hard to point to something that makes you irreplaceable',
-      'Pick ONE skill that requires creativity or relationships, and go deep',
-    ],
-  };
-  return {
-    emoji: '🚨', label: 'Act Now', color: 'text-destructive', bg: 'bg-destructive/[0.06]', border: 'border-destructive/20',
-    headline: `We're not going to sugarcoat this.`,
-    body: `Most ${roleName} day-to-day work maps directly onto what AI already does well. High talent supply + routine tasks = structural risk.`,
-    replaceability: 'This seat could be filled quickly. But knowing this now puts you ahead of 90% of people.',
-    bullets: [
-      `~${Math.round(automationRisk)}% of your tasks overlap with AI — one of the highest we see`,
-      'Talent supply is high — you\'re competing with more people AND machines',
-      'Your defense plan maps the fastest escape route from this risk zone',
-    ],
-  };
-}
 
 export default function JobSafetyCard({ report, scanId }: { report: ScanReport; scanId?: string }) {
   const score = computeStabilityScore(report);
