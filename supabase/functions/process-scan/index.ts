@@ -654,6 +654,7 @@ Deno.serve(async (req) => {
     // STEP 4.5 + 5 + 5.5: PARALLEL — Company Health + Agent1 + Skill Demand
     // ══════════════════════════════════════════════════════════
     let companyHealthResult: CompanyHealthResult | null = null;
+    let usedAgent1SyntheticFallback = false;
     const companyForHealth = linkedinCompany || (scan.enrichment_cache as any)?.company || null;
 
     // Launch Company Health, Agent1, and prepare for Skill Demand in parallel
@@ -770,13 +771,44 @@ Deno.serve(async (req) => {
         console.log(`[Agent1:Profiler] Completed on ${profilerResult.model_used.split("/").pop()} (${profilerResult.latency_ms}ms, chain: ${profilerResult.fallback_chain.map(m => m.split("/").pop()).join(" → ")})`);
       }
       if (!agent1) {
-        console.error("[Agent1:Profiler] Profiler failed — cannot produce reliable report");
-        await updateScan(supabase, scanId, null, null, null);
-        clearTimeout(globalTimer);
-        return new Response(
-          JSON.stringify({ error: "Profile extraction failed. Please retry in a few minutes.", code: "AGENT1_FAILED" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        console.error("[Agent1:Profiler] Profiler failed — falling back to synthesized deterministic profile");
+        usedAgent1SyntheticFallback = true;
+        const fallbackRole = parsedLinkedinRole || resolvedRoleHint || `${resolvedIndustry || "IT"} Professional`;
+        const fallbackSkills = Array.from(new Set([
+          ...manualMatchedSkills,
+          ...skillMapRows.slice(0, 8).map((skill) => skill.skill_name),
+        ])).filter(Boolean);
+        const executionFallback = fallbackSkills.slice(0, 3);
+        const strategicFallback = fallbackSkills.slice(3, 5);
+
+        agent1 = {
+          current_role: fallbackRole,
+          current_company: linkedinCompany || null,
+          industry: resolvedIndustry,
+          industry_sub_sector: null,
+          experience_years: normalizedExperienceYears ?? 5,
+          seniority_tier: normalizedExperienceYears !== null
+            ? normalizedExperienceYears >= 15
+              ? "EXECUTIVE"
+              : normalizedExperienceYears >= 10
+                ? "SENIOR_LEADER"
+                : normalizedExperienceYears >= 6
+                  ? "MANAGER"
+                  : normalizedExperienceYears >= 2
+                    ? "PROFESSIONAL"
+                    : "ENTRY"
+            : "PROFESSIONAL",
+          execution_skills: executionFallback,
+          strategic_skills: strategicFallback,
+          all_skills: fallbackSkills,
+          automatable_task_ratio: "MEDIUM",
+          primary_ai_threat_vector: "AI automation of routine execution work",
+          moat_indicators: strategicFallback,
+          executive_impact: null,
+          geo_advantage: null,
+          adaptability_signals: manualMatchedSkills.length > 0 ? 2 : 1,
+          estimated_monthly_salary_inr: null,
+        };
       }
     }
 
@@ -834,9 +866,9 @@ Deno.serve(async (req) => {
     try {
       await supabase.from("edge_function_logs").insert({
         function_name: "process-scan:agent1-quality",
-        status: agent1Success ? "success" : "timeout",
-        error_code: agent1Success ? null : "AGENT1_TIMEOUT",
-        error_message: agent1Success ? null : `Agent1 failed for ${resolvedRoleHint} in ${resolvedIndustry}`,
+          status: agent1Success ? (usedAgent1SyntheticFallback ? "degraded" : "success") : "timeout",
+          error_code: agent1Success ? (usedAgent1SyntheticFallback ? "AGENT1_SYNTHETIC_FALLBACK" : null) : "AGENT1_TIMEOUT",
+          error_message: agent1Success ? (usedAgent1SyntheticFallback ? `Agent1 synthetic fallback used for ${resolvedIndustry}` : null) : `Agent1 failed for ${resolvedRoleHint} in ${resolvedIndustry}`,
         request_meta: {
           scan_id: scanId,
           role_detected: agent1Role,
@@ -847,6 +879,7 @@ Deno.serve(async (req) => {
           job_family_matched: targetFamily,
           profile_text_length: rawProfileText.length,
           linkedin_url: scan.linkedin_url ? "present" : "absent",
+            synthetic_fallback_used: usedAgent1SyntheticFallback,
         },
       });
     } catch { /* non-blocking */ }
