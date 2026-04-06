@@ -205,7 +205,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
                 className="group relative w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 rounded-2xl text-primary-foreground font-black text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
                 style={{ background: 'var(--gradient-primary)', boxShadow: '0 16px 60px hsl(var(--primary) / 0.4)' }}
               >
-                Analyse My Career Risk
+                Get My 2 Free Reports
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
                 <motion.div
                   className="absolute inset-0 rounded-2xl"
