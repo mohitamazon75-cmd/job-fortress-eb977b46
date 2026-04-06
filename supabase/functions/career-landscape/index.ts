@@ -91,7 +91,7 @@ Return EXACTLY this JSON (no markdown, no explanation):
       "is_current": false,
       "skill_overlap_pct": 75,
       "demand_trend": "booming|growing|stable|declining",
-      "ai_risk_pct": 30,
+      "risk_level": "HIGH" | "MEDIUM" | "LOW",
       "transition_difficulty": "easy|moderate|hard",
       "why_viable": "1 sentence — what specific skills transfer and why this works",
       "salary_delta": "+15%",
