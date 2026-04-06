@@ -193,7 +193,6 @@ Deno.serve(async (req) => {
         ],
         temperature: 0.1,
       }),
-      signal: controller.signal,
       signal: aiCtrl.signal,
     });
     clearTimeout(aiT);
