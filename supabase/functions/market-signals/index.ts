@@ -235,6 +235,7 @@ Return JSON:
       const ms1T = setTimeout(() => ms1Ctrl.abort(), 30_000);
       const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
+        signal: ms1Ctrl.signal,
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
@@ -248,11 +249,10 @@ Return JSON:
           },
         }),
       });
+      clearTimeout(ms1T);
 
       if (resp.ok) {
-        signal: ms1Ctrl.signal,
         const data = await resp.json();
-      clearTimeout(ms1T);
         logTokenUsage("market-signals[enrich]", `query-${idx}`, "google/gemini-3-flash-preview", data);
         const content = data.choices?.[0]?.message?.content;
         if (content) {
@@ -420,6 +420,7 @@ async function handleMarket(req: any, corsHeaders: any, supabase: any, body: any
   const ms2T = setTimeout(() => ms2Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
+    signal: ms2Ctrl.signal,
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
@@ -454,11 +455,10 @@ Base ONLY on the provided data. No markdown.`,
       temperature: 0.2,
     }),
   });
+  clearTimeout(ms2T);
 
   if (!aiResp.ok) {
-    signal: ms2Ctrl.signal,
     return new Response(
-  clearTimeout(ms2T);
       JSON.stringify({ error: "AI synthesis failed" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -598,6 +598,7 @@ async function handleNews(corsHeaders: any, supabase: any, locale: any) {
   const ms3T = setTimeout(() => ms3Ctrl.abort(), 30_000);
   const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
+    signal: ms3Ctrl.signal,
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
@@ -627,11 +628,10 @@ No markdown.`,
       temperature: 0.3,
     }),
   });
+  clearTimeout(ms3T);
 
   if (!aiResponse.ok) {
-    signal: ms3Ctrl.signal,
     return new Response(JSON.stringify({ headlines: getFallbackHeadlines(), fallback: true }), {
-  clearTimeout(ms3T);
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -774,6 +774,7 @@ Return JSON:
   const ms4T = setTimeout(() => ms4Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
+    signal: ms4Ctrl.signal,
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
@@ -787,11 +788,10 @@ Return JSON:
       temperature: 0.1,
     }),
   });
+  clearTimeout(ms4T);
 
   if (!aiResp.ok) {
-    signal: ms4Ctrl.signal,
     return new Response(
-  clearTimeout(ms4T);
       JSON.stringify({ error: "AI synthesis failed", signals: [] }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -939,6 +939,7 @@ Return 6-8 transitions including the current role. Be brutally realistic — no 
   const ms5T = setTimeout(() => ms5Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
+    signal: ms5Ctrl.signal,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -950,11 +951,10 @@ Return 6-8 transitions including the current role. Be brutally realistic — no 
       max_tokens: 2000,
     }),
   });
+  clearTimeout(ms5T);
 
   if (!aiResp.ok) {
-    signal: ms5Ctrl.signal,
     return new Response(
-  clearTimeout(ms5T);
       JSON.stringify({ error: "AI synthesis failed" }),
       { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -1092,6 +1092,7 @@ async function handleCompany(corsHeaders: any, supabase: any, body: any, locale:
   const ms6T = setTimeout(() => ms6Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
+    signal: ms6Ctrl.signal,
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
@@ -1137,11 +1138,10 @@ Maximum 5 news items. No markdown.`,
       temperature: 0.2,
     }),
   });
+  clearTimeout(ms6T);
 
   if (!aiResp.ok) {
-    signal: ms6Ctrl.signal,
     return new Response(
-  clearTimeout(ms6T);
       JSON.stringify({ news: [], error: "AI synthesis failed" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -1210,6 +1210,7 @@ async function geminiOnlyHeadlines(apiKey: string) {
     const ms7T = setTimeout(() => ms7Ctrl.abort(), 30_000);
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
+      signal: ms7Ctrl.signal,
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -1226,11 +1227,10 @@ async function geminiOnlyHeadlines(apiKey: string) {
         temperature: 0.9,
       }),
     });
+    clearTimeout(ms7T);
     if (!resp.ok) return null;
     const d = await resp.json();
-      signal: ms7Ctrl.signal,
     logTokenUsage("market-signals[news]", "fallback", "google/gemini-3-flash-preview", d);
-    clearTimeout(ms7T);
     const c = d.choices?.[0]?.message?.content;
     if (!c) return null;
     const j = c.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();

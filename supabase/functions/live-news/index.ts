@@ -125,6 +125,7 @@ Deno.serve(async (req) => {
     const ai1T = setTimeout(() => ai1Ctrl.abort(), 30_000);
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
+      signal: ai1Ctrl.signal,
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
@@ -158,11 +159,10 @@ No markdown, no explanation.`,
         temperature: 0.3,
       }),
     });
+    clearTimeout(ai1T);
 
     if (!aiResponse.ok) {
-      signal: ai1Ctrl.signal,
       console.error(`[live-news] AI error [${aiResponse.status}]`);
-    clearTimeout(ai1T);
       return new Response(JSON.stringify({ headlines: getFallbackHeadlines(), fallback: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
