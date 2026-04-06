@@ -253,7 +253,7 @@ export default function StrategicDossier({ report, scanId, enrichment, enrichmen
             </p>
             {report.score_variability && !isExec && (
               <p className="text-[10px] text-dossier-muted-fg mt-0.5">
-                Range: {report.score_variability.di_range.low}–{report.score_variability.di_range.high}%
+                Range: {Math.max(5, report.score_variability.di_range.low)}–{Math.min(95, report.score_variability.di_range.high)}%
               </p>
             )}
           </div>
