@@ -211,21 +211,22 @@ function CaptureTarget({
         </div>
         <div style={{ textAlign: 'center', flexShrink: 0 }}>
           <div style={{
-            width: 72, height: 72, borderRadius: '50%',
+            width: 80, height: 80, borderRadius: '50%',
             border: `3px solid ${scoreColor}`,
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
+            background: C.white,
           }}>
             <span style={{
-              fontFamily: FONT_HEADLINE, fontSize: 30, fontWeight: 900,
+              fontFamily: FONT_HEADLINE, fontSize: 32, fontWeight: 900,
               color: scoreColor, lineHeight: 1,
             }}>{score}</span>
-            <span style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>/100</span>
+            <span style={{ fontSize: 9, color: C.muted, marginTop: 2, lineHeight: 1 }}>/100</span>
           </div>
           <div style={{
-            marginTop: 6, fontFamily: FONT_MONO, fontSize: 9,
+            marginTop: 8, fontFamily: FONT_MONO, fontSize: 9,
             color: scoreColor, fontWeight: 600, letterSpacing: '0.08em',
-            background: `${scoreColor}15`, padding: '3px 10px', borderRadius: 4,
+            background: `${scoreColor}15`, padding: '4px 12px', borderRadius: 4,
             textTransform: 'uppercase', whiteSpace: 'nowrap',
           }}>
             {scoreBadge}
