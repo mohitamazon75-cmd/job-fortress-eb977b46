@@ -117,8 +117,7 @@ export async function orchestrateAgents(
 
   const monthlySalary = estimateMonthlySalary(
     profileInput.estimated_monthly_salary_inr, 
-    null, // primaryJob not needed — estimateMonthlySalary handles null
-    profileInput.experience_years, companyTier, scan.metro_tier || null,
+    input.primaryJob, profileInput.experience_years, companyTier, scan.metro_tier || null,
   );
   const geoArb = calculateGeoArbitrage(monthlySalary, profileInput.geo_advantage);
   const executiveImpact = profileInput.executive_impact;
