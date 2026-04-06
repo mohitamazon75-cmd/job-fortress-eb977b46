@@ -101,7 +101,8 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
   );
   const liveTools = (enrichment.data?.tool_threats || []).slice(0, 3);
 
-  const automationRisk = report.automation_risk ?? report.determinism_index ?? 50;
+  // Use KG-corrected automation risk — NOT raw determinism_index
+  const automationRisk = breakdown.effectiveAutomationRisk;
   const moatSkills = report.moat_skills || [];
   const deadSkills = report.execution_skills_dead || [];
   const companyName = report.linkedin_company;
