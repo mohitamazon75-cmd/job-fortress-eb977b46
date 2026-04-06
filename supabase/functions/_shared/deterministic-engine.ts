@@ -1521,7 +1521,7 @@ export function computeAll(
   // job_taxonomy.disruption_baseline is research-backed and should act as a floor
   // (with a small tolerance for seniority-adjusted roles).
   const isExecOrSeniorForFloor = profile.seniority_tier === 'EXECUTIVE' || profile.seniority_tier === 'SENIOR_LEADER';
-  const kgFloorTolerance = isExecOrSenior ? 15 : 5; // Executives can deviate more from baseline
+  const kgFloorTolerance = isExecOrSeniorForFloor ? 15 : 5; // Executives can deviate more from baseline
   const kgMinDI = Math.max(CALIBRATION.DI_CLAMP_MIN, jobBaseline - kgFloorTolerance);
   if (determinismIndex < kgMinDI) {
     console.log(`[DeterministicEngine] KG floor enforcement: DI=${determinismIndex} < floor=${kgMinDI} (baseline=${jobBaseline}, tolerance=${kgFloorTolerance}). Snapping up.`);
