@@ -130,6 +130,7 @@ const Index = () => {
   const [scanId, setScanId] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [scanReport, setScanReport] = useState<ScanReport | null>(null);
+  const [testProUnlocked, setTestProUnlocked] = useState(readTestProUnlock);
   const [moneyShotSeen, setMoneyShotSeen] = useState(false);
   const [showReAuth, setShowReAuth] = useState(false);
   const [_showGoalModal, _setShowGoalModal] = useState(false);
