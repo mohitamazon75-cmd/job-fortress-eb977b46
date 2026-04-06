@@ -1582,7 +1582,7 @@ export function computeAll(
       }
     }
     
-    const matched = matchSkillToKG(execSkill, skillRiskData);
+    const matched = matchSkillToKG(execSkill, skillRiskData, kgIndex);
     // Only mark as "dead" if KG confirms high automation risk (>50%)
     // or if no KG match but the job baseline suggests high risk
     if (matched && matched.automation_risk > 50) {
