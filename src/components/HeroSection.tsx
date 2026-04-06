@@ -233,7 +233,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
               className="flex items-center justify-center gap-2 mt-5"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
-              <span className="text-xs text-muted-foreground"><span className="text-prophet-green font-bold">60–120 sec</span> deep analysis · Your data stays private</span>
+              <span className="text-xs text-muted-foreground"><span className="text-prophet-green font-bold">2 reports</span> · Risk Score + Growth Playbook · Under 4 min</span>
             </motion.div>
           </motion.div>
 
