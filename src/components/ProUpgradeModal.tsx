@@ -120,40 +120,37 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
   const handleUpgrade = useCallback(async () => {
     setLoading(true);
     setPaymentError(null);
+
+    const config = TIER_CONFIG[selected];
+    const RZP_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setPaymentError('Please sign in to upgrade.');
-        setLoading(false);
-        return;
-      }
-      await loadRazorpaySDK();
-      const config = TIER_CONFIG[selected];
-      const RZP_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
       if (!RZP_KEY) {
-        // TEST MODE: simulate successful payment
-        const expiresAt = selected === 'year'
-          ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            subscription_tier: config.tier === 'pro_monthly' ? 'pro' : config.tier,
-            subscription_expires_at: expiresAt,
-          })
-          .eq('id', session.user.id);
-        if (updateError) {
-          setPaymentError('Failed to activate test subscription.');
-          setLoading(false);
-          return;
-        }
-        toast.success("✅ Test payment successful! Both reports unlocked.", { duration: 4000 });
+        try {
+          sessionStorage.setItem('jb_test_pro_unlock', '1');
+          sessionStorage.setItem('jb_test_pro_tier', config.tier);
+        } catch {}
+
+        toast.success("✅ Test payment successful! Both reports unlocked.", {
+          description: 'Continuing exactly as if payment succeeded.',
+          duration: 4000,
+        });
         window.dispatchEvent(new Event('subscription-updated'));
         onSuccess?.(config.tier);
         onClose();
         setLoading(false);
         return;
       }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setPaymentError('Please sign in to upgrade.');
+        setLoading(false);
+        return;
+      }
+
+      await loadRazorpaySDK();
+
       const options = {
         key: RZP_KEY,
         amount: config.amount,
@@ -170,8 +167,10 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
         handler: async (response: { razorpay_payment_id: string; razorpay_order_id?: string }) => {
           try {
             const result = await activateSubscription(
-              response.razorpay_payment_id, response.razorpay_order_id,
-              config.tier, session.access_token,
+              response.razorpay_payment_id,
+              response.razorpay_order_id,
+              config.tier,
+              session.access_token,
             );
             if (!result.success) {
               setPaymentError(`Payment received but activation failed. Payment ID: ${response.razorpay_payment_id}. Contact support.`);
@@ -182,7 +181,6 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
               description: 'All Pro features are now unlocked. Scroll down to see everything.',
               duration: 5000,
             });
-            // Dispatch custom event to notify dashboard to refresh Pro status
             window.dispatchEvent(new Event('subscription-updated'));
             onSuccess?.(config.tier);
             onClose();
@@ -193,6 +191,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
         },
         modal: { ondismiss: () => setLoading(false) },
       };
+
       const rzp = new (window as any).Razorpay(options);
       rzp.on('payment.failed', (resp: any) => {
         setPaymentError(resp.error?.description ?? 'Payment failed. Please try again.');

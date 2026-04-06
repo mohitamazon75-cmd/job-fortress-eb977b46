@@ -103,6 +103,13 @@ const Index = () => {
   const routedScanId = searchParams.get('id');
   const { track } = useAnalytics();
   const { withMutex, isLocked } = useRequestMutex();
+  const readTestProUnlock = () => {
+    try {
+      return sessionStorage.getItem('jb_test_pro_unlock') === '1';
+    } catch {
+      return false;
+    }
+  };
   const [phase, setPhase] = useState<AppPhase>('hero');
   const [step, setStep] = useState(1);
   const detectCountry = () => {
@@ -123,6 +130,7 @@ const Index = () => {
   const [scanId, setScanId] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [scanReport, setScanReport] = useState<ScanReport | null>(null);
+  const [testProUnlocked, setTestProUnlocked] = useState(readTestProUnlock);
   const [moneyShotSeen, setMoneyShotSeen] = useState(false);
   const [showReAuth, setShowReAuth] = useState(false);
   const [_showGoalModal, _setShowGoalModal] = useState(false);
@@ -601,8 +609,18 @@ const Index = () => {
   // FIX 1 (HIGH): Remove duplicate session state — use useAuth() hook instead
   const { session } = useAuth();
 
-  // Derive isProUser from scanReport
-  const isProUser = !!(scanReport as any)?.user_is_pro;
+  useEffect(() => {
+    const syncTestProState = () => setTestProUnlocked(readTestProUnlock());
+    window.addEventListener('subscription-updated', syncTestProState);
+    window.addEventListener('storage', syncTestProState);
+    return () => {
+      window.removeEventListener('subscription-updated', syncTestProState);
+      window.removeEventListener('storage', syncTestProState);
+    };
+  }, []);
+
+  // Derive isProUser from scanReport or test-mode unlock
+  const isProUser = !!((scanReport as any)?.user_is_pro || testProUnlocked);
 
   return (
     <>
