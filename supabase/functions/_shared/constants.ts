@@ -1,7 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
-// Centralized constants — single source of truth for all edge functions
-// Update here to change across the entire system.
-// ═══════════════════════════════════════════════════════════════
+/**
+ * @fileoverview Centralized runtime constants for all edge functions.
+ * Contains model identifiers, timeout budgets, cost caps, storage buckets,
+ * and score thresholds. Update here to change across the entire system.
+ * 
+ * Imported by: process-scan/index.ts
+ * Related: prompt-versions.ts (prompt version tags, separate concern)
+ */
 
 /** Max concurrent scans in the processing queue */
 export const MAX_CONCURRENT_SCANS = 50;
