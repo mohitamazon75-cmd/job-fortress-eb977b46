@@ -131,7 +131,7 @@ const hi: Strings = {
 
   diagnosis_title: 'Career Risk जाँच',
   risk_score_label: 'Risk Score',
-  months_remaining: 'बड़े disruption से पहले कितने महीने',
+  months_remaining: 'Action window (महीने)',
   salary_bleed: 'हर महीने कितनी salary risk में',
   high_risk_skills: 'ख़तरे वाली Skills',
   safe_skills: 'आपकी Safe Skills',
