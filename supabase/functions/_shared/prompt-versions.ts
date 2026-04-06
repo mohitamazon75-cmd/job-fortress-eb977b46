@@ -1,7 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
-// Week 4 #8: Prompt versioning system.
-// Tags every agent call with a prompt version for reproducibility.
-// ═══════════════════════════════════════════════════════════════
+/**
+ * @fileoverview Prompt versioning system for agent reproducibility.
+ * Tags every agent call with a semantic version so outputs can be
+ * traced back to the exact prompt that generated them.
+ * 
+ * Imported by: process-scan/index.ts
+ * Related: constants.ts (runtime config, separate concern)
+ */
 
 export const PROMPT_VERSIONS: Record<string, string> = {
   "Agent1:Profiler": "v3.2.0",
