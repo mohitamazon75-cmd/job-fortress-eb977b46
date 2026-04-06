@@ -113,7 +113,32 @@ function CaptureTarget({
 
   const scoreColor = score >= 70 ? C.safe : score >= 40 ? C.warning : C.danger;
   const scoreGlow = score >= 70 ? C.safeGlow : score >= 40 ? C.warningGlow : C.dangerGlow;
-  const riskLabel = score >= 70 ? 'LOW RISK' : score >= 40 ? 'MODERATE RISK' : 'HIGH RISK';
+  const riskLabel = score >= 70 ? 'SAFE — FOR NOW' : score >= 40 ? 'EXPOSED' : 'REPLACEABLE';
+
+  // Emotional copy — fear → hope arc
+  const headline = score >= 70
+    ? 'I\'m harder to replace than most.'
+    : score >= 40
+    ? 'AI is coming for my job. I checked.'
+    : 'I\'m already replaceable. Here\'s proof.';
+
+  const verdictText = score >= 70
+    ? `${humanEdge}% of what I do is still uniquely human. But ${automatedTasks} of my ${totalTasks || 5} tasks are already automatable by ${automationYear}. Even "safe" isn't permanent.`
+    : score >= 40
+    ? `${automatedTasks} of my ${totalTasks || 5} core tasks will be fully automated by ${automationYear}. The skills keeping me employed today are the exact ones AI learns next.`
+    : `${automatedTasks} of my ${totalTasks || 5} tasks? Already automatable. ${salaryRiskLabel} of my salary is at risk. By ${automationYear}, this role looks completely different.`;
+
+  const countdownCopy = monthsRemaining <= 18
+    ? 'before this role is unrecognizable'
+    : monthsRemaining <= 36
+    ? 'before mass displacement hits'
+    : 'before the next wave of cuts';
+
+  const hopeLine = score >= 70
+    ? `I know my edge. Do you know yours?`
+    : score >= 40
+    ? `At least now I know. Most people won't check until it's too late.`
+    : `Scary? Yes. But now I have a plan. Most people won't even look.`;
 
   const FONT_HEADLINE = '"Playfair Display", Georgia, serif';
   const FONT_BODY = '"DM Sans", system-ui, sans-serif';
