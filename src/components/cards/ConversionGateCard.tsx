@@ -37,9 +37,12 @@ function buildFeatureTiles(report: ScanReport): FeatureTile[] {
   const moatSkills = report.moat_skills || [];
   const topMoat = moatSkills[0] || 'strategic skills';
 
-  const salaryBleedMonthly = report.salary_bleed_monthly ?? 0;
-  const annualBleedLakh = salaryBleedMonthly > 0
-    ? `₹${(salaryBleedMonthly * 12 / 100000).toFixed(1)}L/yr at risk`
+  const salaryDropPct = report.career_shock_simulator?.salary_drop_percentage
+    ?? (report.score_breakdown?.salary_bleed_breakdown?.final_rate
+      ? Math.round(report.score_breakdown.salary_bleed_breakdown.final_rate * 100)
+      : null);
+  const annualBleedLabel = salaryDropPct && salaryDropPct > 0
+    ? `~${salaryDropPct}% annual earning pressure`
     : `Market-calibrated for ${role}`;
 
   const pivotRole = report.pivot_roles?.[0]?.role

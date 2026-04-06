@@ -330,12 +330,21 @@ export default function StrategicDossier({ report, scanId, enrichment, enrichmen
           {isExec ? 'Inaction Scenario' : 'If You Do Nothing'}
         </p>
         <p className="text-sm text-dossier-muted-fg leading-[1.8]">
-          {clampedRisk > 65
-            ? `Within ${report.months_remaining} months, ${Math.round(clampedRisk * 0.6)}% of current ${displayRole} tasks will be automated in ${report.industry}. Monthly earning pressure: ${formatCurrency(report.salary_bleed_monthly, country)}. ${report.total_5yr_loss_inr ? `5-year cumulative impact: ${formatCurrency(report.total_5yr_loss_inr, country)}.` : `5-year impact: ${formatCurrency(report.salary_bleed_monthly * 60, country)}.`} ${isExec ? 'Organizational restructuring will consolidate your function.' : 'Companies are already consolidating teams.'}`
-            : clampedRisk > 40
-            ? `Your role has a ${report.months_remaining}-month window before meaningful market shift. Monthly earning erosion: ${formatCurrency(report.salary_bleed_monthly, country)}. The risk is not sudden replacement — it's gradual irrelevance as AI-augmented ${isExec ? 'peers and restructured orgs' : 'peers'} outperform.`
-            : `Your position is currently stable, but ${report.industry} is shifting. Monthly salary pressure: ${formatCurrency(report.salary_bleed_monthly, country)}. ${isExec ? 'Complacency at the leadership level is the primary risk — organizations that adopt AI governance early will restructure around those leaders.' : 'Complacency is the primary risk — peers who upskill will pull ahead.'}`
-          }
+          {(() => {
+            const salaryDropPct = report.career_shock_simulator?.salary_drop_percentage
+              ?? (report.score_breakdown?.salary_bleed_breakdown?.final_rate
+                ? Math.round(report.score_breakdown.salary_bleed_breakdown.final_rate * 100)
+                : Math.round(clampedRisk * 0.4));
+            const fiveYearPct = Math.min(95, Math.round(salaryDropPct * 2.5));
+
+            if (clampedRisk > 65) {
+              return `Within ${report.months_remaining} months, ${Math.round(clampedRisk * 0.6)}% of current ${displayRole} tasks will be automated in ${report.industry}. Estimated annual earning pressure: ~${salaryDropPct}% of current package. 5-year cumulative impact: up to ${fiveYearPct}% of lifetime earnings at risk. ${isExec ? 'Organizational restructuring will consolidate your function.' : 'Companies are already consolidating teams.'}`;
+            }
+            if (clampedRisk > 40) {
+              return `Your role has a ${report.months_remaining}-month window before meaningful market shift. Estimated annual earning erosion: ~${salaryDropPct}% of package. The risk is not sudden replacement — it's gradual irrelevance as AI-augmented ${isExec ? 'peers and restructured orgs' : 'peers'} outperform.`;
+            }
+            return `Your position is currently stable, but ${report.industry} is shifting. Estimated annual salary pressure: ~${salaryDropPct}% of package. ${isExec ? 'Complacency at the leadership level is the primary risk — organizations that adopt AI governance early will restructure around those leaders.' : 'Complacency is the primary risk — peers who upskill will pull ahead.'}`;
+          })()}
         </p>
       </section>
 
