@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Shield, Rocket, ArrowRight, RotateCcw } from "lucide-react";
+import { Shield, Rocket, ArrowRight, RotateCcw, Zap, TrendingUp, Lock, Target } from "lucide-react";
 
 export default function ResultsChoose() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const analysisId = searchParams.get("id");
   const [userId, setUserId] = useState<string | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<"a" | "b" | null>(null);
 
   useEffect(() => {
     if (!analysisId) { navigate("/", { replace: true }); return; }
@@ -30,123 +31,163 @@ export default function ResultsChoose() {
 
   if (!analysisId) return null;
 
-  const teamAFeatures = [
-    { text: "Career Safety Score & risk breakdown", highlight: false },
-    { text: "AI Impact Dossier with skill analysis", highlight: false },
-    { text: "90-day defense plan with resources", highlight: false },
-    { text: "Salary preservation strategy", highlight: false },
-  ];
-
-  const teamBFeatures = [
-    { text: "Live ATS scoring & resume optimization", highlight: false },
-    { text: "Salary negotiation anchors with scripts", highlight: false },
-    { text: "Pivot paths with real job matches", highlight: false },
-    { text: "Market radar & growth playbook", highlight: false },
-  ];
-
   return (
-    <div style={{ background: "#FFFFFF", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 880, margin: "0 auto", padding: "48px 24px 64px" }}>
+    <div style={{ background: "#09090B", minHeight: "100vh", position: "relative", overflow: "hidden" }}>
+      {/* Ambient glow effects */}
+      <div style={{
+        position: "absolute", top: "-20%", left: "-10%", width: "50%", height: "60%",
+        background: "radial-gradient(ellipse, rgba(99,102,241,0.08) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", top: "-20%", right: "-10%", width: "50%", height: "60%",
+        background: "radial-gradient(ellipse, rgba(234,179,8,0.06) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "0", left: "30%", width: "40%", height: "40%",
+        background: "radial-gradient(ellipse, rgba(99,102,241,0.04) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+
+      <div style={{ maxWidth: 920, margin: "0 auto", padding: "48px 24px 64px", position: "relative", zIndex: 1 }}>
 
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 48 }}
+          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 56 }}
         >
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: "#111" }}>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: "#FAFAFA" }}>
             JobBachao
           </span>
-          <span style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600,
-            color: "#22C55E", background: "#F0FDF4", border: "1.5px solid #BBF7D0",
-            borderRadius: 100, padding: "5px 14px", display: "inline-flex", alignItems: "center", gap: 6,
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E" }} />
-            Analysis ready
-          </span>
+          <motion.span
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700,
+              color: "#4ADE80", background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)",
+              borderRadius: 100, padding: "6px 16px", display: "inline-flex", alignItems: "center", gap: 8,
+              letterSpacing: "0.05em", textTransform: "uppercase" as const,
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ADE80", boxShadow: "0 0 8px #4ADE80" }} />
+            Analysis Complete
+          </motion.span>
         </motion.div>
 
-        {/* Headline — neutral, no bias */}
+        {/* Headline */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
-          style={{ marginBottom: 12 }}
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.6 }}
+          style={{ textAlign: "center", marginBottom: 16 }}
         >
           <h1 style={{
             fontFamily: "'Playfair Display', serif",
-            fontSize: "clamp(26px, 4vw, 38px)", fontWeight: 900,
-            color: "#111", lineHeight: 1.2, margin: 0,
+            fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 900,
+            color: "#FAFAFA", lineHeight: 1.15, margin: 0,
           }}>
-            Your resume. Two expert lenses.
+            Two reports.{" "}
+            <span style={{
+              background: "linear-gradient(135deg, #818CF8, #6366F1, #A78BFA)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            }}>
+              One resume.
+            </span>
           </h1>
         </motion.div>
 
         <motion.p
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
           style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#666",
-            lineHeight: 1.7, margin: "0 0 40px", maxWidth: 560,
+            fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#71717A",
+            lineHeight: 1.7, margin: "0 auto 48px", maxWidth: 480, textAlign: "center",
           }}
         >
-          Start with either report — you can always come back and explore the other.
-          Both use the same data from your resume.
+          Start with either — explore the other anytime. Both powered by the same AI analysis of your resume.
         </motion.p>
 
-        {/* Cards — equal weight, no bias */}
-        <div className="ab-cards-row" style={{ display: "flex", gap: 16, alignItems: "stretch" }}>
+        {/* Cards */}
+        <div className="ab-cards-row" style={{ display: "flex", gap: 20, alignItems: "stretch" }}>
 
-          {/* REPORT A */}
+          {/* REPORT A — Risk Diagnosis */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, type: "spring", damping: 20 }}
             className="ab-card"
             onClick={() => logAndNavigate("model_a_chosen", `/?id=${analysisId}`)}
+            onMouseEnter={() => setHoveredCard("a")}
+            onMouseLeave={() => setHoveredCard(null)}
             style={{
-              flex: 1, borderRadius: 16, padding: "28px 24px",
+              flex: 1, borderRadius: 20, padding: "32px 28px",
               display: "flex", flexDirection: "column",
-              background: "#FAFAFA", border: "1.5px solid #E5E7EB",
-              cursor: "pointer", transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#111";
-              e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.08)";
-              e.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#E5E7EB";
-              e.currentTarget.style.boxShadow = "none";
-              e.currentTarget.style.transform = "translateY(0)";
+              background: hoveredCard === "a"
+                ? "linear-gradient(165deg, rgba(39,39,42,0.95), rgba(24,24,27,0.98))"
+                : "rgba(24,24,27,0.6)",
+              border: hoveredCard === "a" ? "1.5px solid rgba(161,161,170,0.3)" : "1.5px solid rgba(63,63,70,0.5)",
+              cursor: "pointer",
+              transition: "all 0.35s cubic-bezier(0.4,0,0.2,1)",
+              transform: hoveredCard === "a" ? "translateY(-4px)" : "translateY(0)",
+              boxShadow: hoveredCard === "a"
+                ? "0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(161,161,170,0.1)"
+                : "0 4px 20px rgba(0,0,0,0.2)",
+              backdropFilter: "blur(20px)",
+              position: "relative", overflow: "hidden",
             }}
           >
-            {/* Icon + Label */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 10, background: "#F3F4F6",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <Shield size={20} color="#374151" />
-              </div>
-              <div>
-                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9CA3AF" }}>
-                  Report A
-                </div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 800, color: "#111", lineHeight: 1.2 }}>
-                  Risk Diagnosis
-                </div>
-              </div>
+            {/* Accent gradient bar */}
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0, height: 3,
+              background: "linear-gradient(90deg, #A1A1AA, #D4D4D8, #A1A1AA)",
+              opacity: hoveredCard === "a" ? 1 : 0.3,
+              transition: "opacity 0.3s",
+            }} />
+
+            {/* Icon */}
+            <div style={{
+              width: 48, height: 48, borderRadius: 14,
+              background: "linear-gradient(135deg, rgba(161,161,170,0.15), rgba(161,161,170,0.05))",
+              border: "1px solid rgba(161,161,170,0.15)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 20,
+            }}>
+              <Shield size={22} color="#A1A1AA" />
             </div>
 
-            <p style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#666",
-              lineHeight: 1.65, margin: "0 0 18px",
+            <div style={{
+              fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 600,
+              letterSpacing: "0.18em", textTransform: "uppercase" as const,
+              color: "#71717A", marginBottom: 6,
             }}>
-              Conservative analysis focused on protecting your current position, salary, and career trajectory.
+              Report A
+            </div>
+            <div style={{
+              fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900,
+              color: "#FAFAFA", marginBottom: 12, lineHeight: 1.2,
+            }}>
+              Risk Diagnosis
+            </div>
+            <p style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: "#71717A",
+              lineHeight: 1.7, margin: "0 0 22px",
+            }}>
+              What to <strong style={{ color: "#A1A1AA" }}>protect</strong> — your salary, seniority, and career trajectory under AI disruption.
             </p>
 
             {/* Features */}
-            <div style={{ marginBottom: 20, flex: 1 }}>
-              {teamAFeatures.map((f) => (
-                <div key={f.text} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                  <span style={{ color: "#9CA3AF", fontSize: 14, marginTop: 1, flexShrink: 0 }}>✓</span>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12.5, fontWeight: 500, color: "#444", lineHeight: 1.5 }}>{f.text}</span>
+            <div style={{ marginBottom: 24, flex: 1 }}>
+              {[
+                { icon: <Target size={13} />, text: "Career Safety Score & risk breakdown" },
+                { icon: <Zap size={13} />, text: "AI Impact Dossier with skill analysis" },
+                { icon: <Shield size={13} />, text: "90-day defense plan with resources" },
+                { icon: <Lock size={13} />, text: "Salary preservation strategy" },
+              ].map((f) => (
+                <div key={f.text} style={{
+                  display: "flex", alignItems: "center", gap: 10, marginBottom: 10,
+                  padding: "6px 0",
+                }}>
+                  <span style={{ color: "#52525B", flexShrink: 0 }}>{f.icon}</span>
+                  <span style={{
+                    fontFamily: "'DM Sans', sans-serif", fontSize: 12.5, fontWeight: 500,
+                    color: "#A1A1AA", lineHeight: 1.4,
+                  }}>{f.text}</span>
                 </div>
               ))}
             </div>
@@ -154,68 +195,112 @@ export default function ResultsChoose() {
             {/* CTA */}
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              padding: "12px 0", borderRadius: 10,
-              border: "1.5px solid #D1D5DB", background: "#FFF",
-              fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "#111",
-              transition: "all 0.15s",
+              padding: "14px 0", borderRadius: 12,
+              background: hoveredCard === "a"
+                ? "linear-gradient(135deg, #FAFAFA, #E4E4E7)"
+                : "rgba(63,63,70,0.3)",
+              color: hoveredCard === "a" ? "#09090B" : "#A1A1AA",
+              fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700,
+              transition: "all 0.3s",
+              border: hoveredCard === "a" ? "none" : "1px solid rgba(63,63,70,0.5)",
             }}>
               Start with Risk Diagnosis <ArrowRight size={14} />
             </div>
           </motion.div>
 
-          {/* REPORT B */}
+          {/* Divider */}
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+            padding: "0 4px", minWidth: 40,
+          }}>
+            <div style={{ width: 1, flex: 1, background: "linear-gradient(to bottom, transparent, rgba(63,63,70,0.5), transparent)" }} />
+            <span style={{
+              fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 700,
+              color: "#3F3F46", padding: "10px 0", letterSpacing: "0.15em",
+            }}>OR</span>
+            <div style={{ width: 1, flex: 1, background: "linear-gradient(to bottom, transparent, rgba(63,63,70,0.5), transparent)" }} />
+          </div>
+
+          {/* REPORT B — Growth Playbook */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, type: "spring", damping: 20 }}
             className="ab-card"
             onClick={() => logAndNavigate("model_b_chosen", `/results/model-b?id=${analysisId}`)}
+            onMouseEnter={() => setHoveredCard("b")}
+            onMouseLeave={() => setHoveredCard(null)}
             style={{
-              flex: 1, borderRadius: 16, padding: "28px 24px",
+              flex: 1, borderRadius: 20, padding: "32px 28px",
               display: "flex", flexDirection: "column",
-              background: "#FAFAFA", border: "1.5px solid #E5E7EB",
-              cursor: "pointer", transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#4F46E5";
-              e.currentTarget.style.boxShadow = "0 8px 32px rgba(79,70,229,0.12)";
-              e.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#E5E7EB";
-              e.currentTarget.style.boxShadow = "none";
-              e.currentTarget.style.transform = "translateY(0)";
+              background: hoveredCard === "b"
+                ? "linear-gradient(165deg, rgba(49,46,89,0.6), rgba(24,24,27,0.98))"
+                : "rgba(24,24,27,0.6)",
+              border: hoveredCard === "b" ? "1.5px solid rgba(129,140,248,0.4)" : "1.5px solid rgba(63,63,70,0.5)",
+              cursor: "pointer",
+              transition: "all 0.35s cubic-bezier(0.4,0,0.2,1)",
+              transform: hoveredCard === "b" ? "translateY(-4px)" : "translateY(0)",
+              boxShadow: hoveredCard === "b"
+                ? "0 20px 60px rgba(99,102,241,0.15), 0 0 0 1px rgba(129,140,248,0.1)"
+                : "0 4px 20px rgba(0,0,0,0.2)",
+              backdropFilter: "blur(20px)",
+              position: "relative", overflow: "hidden",
             }}
           >
-            {/* Icon + Label */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 10, background: "#EEF2FF",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <Rocket size={20} color="#4F46E5" />
-              </div>
-              <div>
-                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9CA3AF" }}>
-                  Report B
-                </div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 800, color: "#111", lineHeight: 1.2 }}>
-                  Growth Playbook
-                </div>
-              </div>
+            {/* Accent gradient bar */}
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0, height: 3,
+              background: "linear-gradient(90deg, #6366F1, #818CF8, #A78BFA)",
+              opacity: hoveredCard === "b" ? 1 : 0.3,
+              transition: "opacity 0.3s",
+            }} />
+
+            {/* Icon */}
+            <div style={{
+              width: 48, height: 48, borderRadius: 14,
+              background: "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(99,102,241,0.05))",
+              border: "1px solid rgba(99,102,241,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 20,
+            }}>
+              <Rocket size={22} color="#818CF8" />
             </div>
 
-            <p style={{
-              fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#666",
-              lineHeight: 1.65, margin: "0 0 18px",
+            <div style={{
+              fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 600,
+              letterSpacing: "0.18em", textTransform: "uppercase" as const,
+              color: "#6366F1", marginBottom: 6,
             }}>
-              Aggressive analysis focused on market opportunities, salary growth, and career pivots.
+              Report B
+            </div>
+            <div style={{
+              fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900,
+              color: "#FAFAFA", marginBottom: 12, lineHeight: 1.2,
+            }}>
+              Growth Playbook
+            </div>
+            <p style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: "#71717A",
+              lineHeight: 1.7, margin: "0 0 22px",
+            }}>
+              How to <strong style={{ color: "#818CF8" }}>attack</strong> — salary growth, market pivots, and ATS-optimized positioning.
             </p>
 
             {/* Features */}
-            <div style={{ marginBottom: 20, flex: 1 }}>
-              {teamBFeatures.map((f) => (
-                <div key={f.text} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                  <span style={{ color: "#4F46E5", fontSize: 14, marginTop: 1, flexShrink: 0 }}>✓</span>
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12.5, fontWeight: 500, color: "#444", lineHeight: 1.5 }}>{f.text}</span>
+            <div style={{ marginBottom: 24, flex: 1 }}>
+              {[
+                { icon: <Zap size={13} />, text: "Live ATS scoring & resume optimization" },
+                { icon: <TrendingUp size={13} />, text: "Salary negotiation anchors with scripts" },
+                { icon: <Rocket size={13} />, text: "Pivot paths with real job matches" },
+                { icon: <Target size={13} />, text: "Market radar & growth playbook" },
+              ].map((f) => (
+                <div key={f.text} style={{
+                  display: "flex", alignItems: "center", gap: 10, marginBottom: 10,
+                  padding: "6px 0",
+                }}>
+                  <span style={{ color: "#6366F1", flexShrink: 0 }}>{f.icon}</span>
+                  <span style={{
+                    fontFamily: "'DM Sans', sans-serif", fontSize: 12.5, fontWeight: 500,
+                    color: "#A1A1AA", lineHeight: 1.4,
+                  }}>{f.text}</span>
                 </div>
               ))}
             </div>
@@ -223,42 +308,52 @@ export default function ResultsChoose() {
             {/* CTA */}
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              padding: "12px 0", borderRadius: 10,
-              border: "1.5px solid #D1D5DB", background: "#FFF",
-              fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "#111",
-              transition: "all 0.15s",
+              padding: "14px 0", borderRadius: 12,
+              background: hoveredCard === "b"
+                ? "linear-gradient(135deg, #6366F1, #4F46E5)"
+                : "rgba(63,63,70,0.3)",
+              color: hoveredCard === "b" ? "#FFF" : "#818CF8",
+              fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700,
+              transition: "all 0.3s",
+              border: hoveredCard === "b" ? "none" : "1px solid rgba(99,102,241,0.2)",
+              boxShadow: hoveredCard === "b" ? "0 4px 20px rgba(99,102,241,0.3)" : "none",
             }}>
               Start with Growth Playbook <ArrowRight size={14} />
             </div>
           </motion.div>
         </div>
 
-        {/* Reassurance strip */}
+        {/* Footer reassurance */}
         <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}
           style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            marginTop: 28, padding: "12px 0",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            marginTop: 36, padding: "14px 0",
           }}
         >
-          <RotateCcw size={13} color="#9CA3AF" />
+          <RotateCcw size={12} color="#52525B" />
           <span style={{
-            fontFamily: "'DM Sans', sans-serif", fontSize: 12.5, color: "#9CA3AF", fontWeight: 500,
+            fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#52525B", fontWeight: 500,
           }}>
-            You can switch to the other report anytime — no data is lost
+            Switch to the other report anytime — no data is lost
           </span>
         </motion.div>
       </div>
 
       <style>{`
-        .ab-card:hover > div:last-child {
-          background: #111 !important;
-          color: #FFF !important;
-          border-color: #111 !important;
-        }
         @media (max-width: 640px) {
           .ab-cards-row {
             flex-direction: column !important;
+          }
+          .ab-cards-row > div:nth-child(2) {
+            flex-direction: row !important;
+            padding: 0 !important;
+            min-width: unset !important;
+          }
+          .ab-cards-row > div:nth-child(2) > div:first-child,
+          .ab-cards-row > div:nth-child(2) > div:last-child {
+            height: 1px !important; width: auto !important; flex: 1 !important;
+            background: linear-gradient(to right, transparent, rgba(63,63,70,0.5), transparent) !important;
           }
         }
       `}</style>
