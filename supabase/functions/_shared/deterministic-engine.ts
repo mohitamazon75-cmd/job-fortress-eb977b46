@@ -752,7 +752,7 @@ export function calculateDeterminismIndex(
   const matchedKGNames = new Set<string>(); // Deduplicate by KG skill name
 
   for (const userSkill of uniqueSkills) {
-    const matched = matchSkillToKG(userSkill, skillRiskData);
+    const matched = matchSkillToKG(userSkill, skillRiskData, kgIndex);
     if (matched) {
       const normMatchedName = normalize(matched.skill_name);
       // Skip duplicates (multiple user skills matching same KG entry)
