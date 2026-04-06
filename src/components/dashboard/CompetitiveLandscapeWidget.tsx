@@ -16,11 +16,30 @@ interface Transition {
   is_current: boolean;
   skill_overlap_pct: number;
   demand_trend: string;
-  ai_risk_pct: number;
+  ai_risk_pct?: number; // deprecated — legacy scans only
+  risk_level?: 'HIGH' | 'MEDIUM' | 'LOW';
   transition_difficulty: string;
   why_viable: string;
   salary_delta: string;
   time_to_transition: string;
+}
+
+/** Map risk_level enum to a numeric proxy for backward-compatible rendering */
+function transitionRiskNumeric(t: Transition): number {
+  if (t.risk_level) {
+    if (t.risk_level === 'HIGH') return 75;
+    if (t.risk_level === 'MEDIUM') return 45;
+    return 20; // LOW
+  }
+  return t.ai_risk_pct ?? 50;
+}
+
+/** Risk level label + color */
+function transitionRiskBadge(t: Transition): { label: string; color: string } {
+  const level = t.risk_level ?? (t.ai_risk_pct != null ? (t.ai_risk_pct >= 60 ? 'HIGH' : t.ai_risk_pct >= 35 ? 'MEDIUM' : 'LOW') : 'MEDIUM');
+  if (level === 'HIGH') return { label: 'HIGH', color: 'text-destructive' };
+  if (level === 'MEDIUM') return { label: 'MEDIUM', color: 'text-prophet-gold' };
+  return { label: 'LOW', color: 'text-prophet-green' };
 }
 
 interface LandscapeData {
@@ -113,7 +132,7 @@ export default function CompetitiveLandscapeWidget({ currentRole, industry, curr
     return 'bg-prophet-green';
   };
 
-  const escapeZones = data.transitions.filter(t => !t.is_current && t.ai_risk_pct < currentDI && t.demand_trend !== 'declining');
+  const escapeZones = data.transitions.filter(t => !t.is_current && transitionRiskNumeric(t) < currentDI && t.demand_trend !== 'declining');
 
   return (
     <motion.div
@@ -175,7 +194,7 @@ export default function CompetitiveLandscapeWidget({ currentRole, industry, curr
             >
               {/* AI Risk micro-bar */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-muted">
-                <div className={`h-full ${getRiskBarColor(t.ai_risk_pct)}`} style={{ width: `${t.ai_risk_pct}%` }} />
+                <div className={`h-full ${getRiskBarColor(transitionRiskNumeric(t))}`} style={{ width: `${transitionRiskNumeric(t)}%` }} />
               </div>
 
               <div className="p-3 pt-3.5">
@@ -219,7 +238,7 @@ export default function CompetitiveLandscapeWidget({ currentRole, industry, curr
                         </span>
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        AI Risk: <span className={`font-bold ${t.ai_risk_pct >= 50 ? 'text-destructive' : 'text-prophet-green'}`}>{t.ai_risk_pct}%</span>
+                        AI Risk: <span className={`font-bold ${transitionRiskBadge(t).color}`}>{transitionRiskBadge(t).label}</span>
                       </span>
                       {!t.is_current && (
                         <>

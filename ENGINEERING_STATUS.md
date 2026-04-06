@@ -120,35 +120,38 @@ process-scan/index.ts (942 lines — orchestrator)
 
 ---
 
-## LLM/Prompt Layer Status (post-audit)
+## LLM/Prompt Layer Status (post-audit 2026-04-06)
 
-| Agent | Fix Applied | Score |
-|-------|-------------|-------|
-| Agent 1 (Profiler) | Zod schema + range clamping (salary ₹5K–₹50L, experience 0-60, skill caps) | 8.5/10 |
-| Agent 2A (Risk) | `industry_proof` grounded to context data only; `risk_pct` → `risk_level` enum | 8.5/10 |
-| Agent 2B (Action Plan) | `salary_unlock_inr_monthly` → grounded `demand_signal` (HIGH/MEDIUM/LOW) | 8/10 |
-| Agent 2C (Pivot) | Anti-hallucination rules, negative examples, arbitrage range 5-500 | 7/10 |
-| Judo Strategy | No changes — `months_gained` ungrounded but low-stakes | 7.5/10 |
-| Weekly Diet | `content_verified` removed; server-side domain verification via `diet-verification.ts` | 7.5/10 |
-| Det Engine | All CALIBRATION constants documented with rationale | 8/10 |
-
-**Overall LLM layer score: 8/10**
+| Agent | Before | After | Fix Applied |
+|-------|--------|-------|-------------|
+| Agent 1 (Profiler) | 8/10 | 8.5/10 | Zod schema + range clamping (salary ₹5K–₹50L, experience 0-60, skill caps) |
+| Agent 2A (Risk) | 6.5/10 | 8.5/10 | `industry_proof` grounded to context data only; `risk_pct` → `risk_level` enum |
+| Agent 2B (Action Plan) | 7/10 | 8/10 | `salary_unlock_inr_monthly` → grounded `demand_signal` (HIGH/MEDIUM/LOW) |
+| Agent 2C (Pivot) | 5/10 | 7/10 | Anti-hallucination rules, negative examples, arbitrage range 5-500 |
+| Judo Strategy | 7.5/10 | 7.5/10 | No changes — `months_gained` ungrounded but low-stakes |
+| Weekly Diet | 6/10 | 7.5/10 | `content_verified` removed; server-side domain verification via `diet-verification.ts` |
+| Det Engine | 7.5/10 | 8/10 | All CALIBRATION constants documented with rationale |
+| **Overall** | **6.5/10** | **8/10** | |
 
 ### Remaining LLM Limitations (accepted)
 - `months_gained` in Judo Strategy is ungrounded projection (low-stakes — directional only)
 - `weeks_to_proficiency` in Agent 2B is ungrounded (directional, not financial — accepted)
-- Agent 2C pivot quality still depends heavily on model knowledge of job markets
+- Agent 2C pivot quality still depends heavily on model knowledge of job markets — needs live job data injection to reach 9/10
 - All agent outputs are LLM-generated and should be treated as directional intelligence, not precise data
 
 ### Key Files Modified
 - `_shared/agent-prompts.ts` — industry_proof, risk_level, demand_signal, 2C rules
 - `_shared/zod-schemas.ts` — Agent1Schema strengthened, clampAgent1Output added, demand_signal
-- `_shared/diet-verification.ts` — new server-side domain verification
+- `_shared/diet-verification.ts` — server-side domain verification
 - `_shared/det-utils.ts` — all CALIBRATION constants documented
 - `process-scan/index.ts` — Agent1 validation + clamping wired in
 - `process-scan/scan-agents.ts` — diet verification wired in
+- `career-landscape/index.ts` — `ai_risk_pct` → `risk_level` in prompt schema
+- `market-signals/index.ts` — `ai_risk_pct` → `risk_level` in prompt schema
 - `src/lib/scan-engine.ts` — SkillThreatIntel type updated (risk_level + backward compat)
 - `src/lib/unified-skill-classifier.ts` — threatIntelRisk() helper for risk_level → numeric
+- `src/components/dashboard/CompetitiveLandscapeWidget.tsx` — risk_level badge display (backward compat with legacy ai_risk_pct)
 - `src/components/dashboard/StrategicDossier.tsx` — demand_signal badge display
 
-✅ LLM audit cycle complete
+✅ Full audit cycle complete — architecture 8.5/10 + LLM layer 8/10
+
