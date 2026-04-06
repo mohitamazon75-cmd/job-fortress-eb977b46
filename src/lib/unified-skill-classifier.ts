@@ -133,12 +133,12 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
     const toolName = intel?.threat_tool || toolMap.get(key) || (isDead ? (tools[0]?.tool_name || 'AI Tools') : null);
     results.push({
       name: sa.skill_name,
-      risk: intel?.risk_pct ?? sa.automation_risk,
-      status: classifyStatus(intel?.risk_pct ?? sa.automation_risk),
+      risk: threatIntelRisk(intel, sa.automation_risk),
+      status: classifyStatus(threatIntelRisk(intel, sa.automation_risk)),
       replacedBy: toolName,
       weight: sa.weight,
-      estimatedMonths: riskToMonths(intel?.risk_pct ?? sa.automation_risk),
-      actionTag: actionTag(intel?.risk_pct ?? sa.automation_risk),
+      estimatedMonths: riskToMonths(threatIntelRisk(intel, sa.automation_risk)),
+      actionTag: actionTag(threatIntelRisk(intel, sa.automation_risk)),
       threatIntel: intel,
       source: 'extracted',
     });
