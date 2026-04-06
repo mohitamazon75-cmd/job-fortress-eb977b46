@@ -209,208 +209,24 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════════════
-    // STEP 2: DATA INGESTION
+    // STEP 2: DATA INGESTION (delegated to scan-enrichment.ts)
     // ══════════════════════════════════════════════════════════
-    let rawProfileText = "";
-    let profileExtractionConfidence = "medium"; // Track data quality for downstream gating
-    let linkedinName: string | null = null;
-    let linkedinCompany: string | null = null;
-    let parsedLinkedinIndustry: string | null = null;
-    let parsedLinkedinRole: string | null = null;
-    const linkedinInference = inferFromLinkedinUrl(scan.linkedin_url);
-    let normalizedExperienceYears = parseExperienceYears(scan.years_experience);
-    let resumeExtractedYears: number | null = null;
+    const enrichment = await gatherEnrichmentData({
+      scan: {
+        linkedin_url: scan.linkedin_url,
+        resume_file_path: scan.resume_file_path,
+        years_experience: scan.years_experience,
+        metro_tier: scan.metro_tier,
+        industry: scan.industry,
+      },
+      hasResume,
+      activeModel,
+      supabaseClient: supabase,
+    });
+    let { rawProfileText, normalizedExperienceYears } = enrichment;
+    const { profileExtractionConfidence, linkedinName, linkedinCompany, parsedLinkedinIndustry, parsedLinkedinRole } = enrichment;
+    const linkedinInference = { inferredName: linkedinName, inferredIndustry: parsedLinkedinIndustry, inferredRoleHint: parsedLinkedinRole, confidence: profileExtractionConfidence === "high" ? 0.8 : profileExtractionConfidence === "medium" ? 0.5 : 0.2 };
 
-    // Resume parsing
-    if (hasResume) {
-      console.log(`[Ingestion] Parsing resume: ${scan.resume_file_path}`);
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (LOVABLE_API_KEY) {
-        try {
-          const { data: fileData, error: dlError } = await supabase.storage.from("resumes").download(scan.resume_file_path);
-          if (!dlError && fileData) {
-            const arrayBuffer = await fileData.arrayBuffer();
-            const bytes = new Uint8Array(arrayBuffer);
-            let binary = "";
-            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-            const resumeBase64 = btoa(binary);
-            const aiResp = await fetch(AI_URL, {
-              method: "POST",
-              headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                model: activeModel, messages: [
-                  { role: "system", content: `You are a resume parser. Extract structured career data from the resume. Return ONLY valid JSON:\n{\n  "name": string,\n  "headline": string (VERBATIM job title from resume — copy character by character, NEVER upgrade or inflate),\n  "company": string (current/most recent company),\n  "location": string,\n  "skills": [string] (specific granular skills, NOT broad categories — aim for 15-25),\n  "experience": [{"title": string, "company": string, "duration": string}],\n  "education": [{"degree": string, "institution": string}],\n  "inferredIndustry": string,\n  "yearsOfExperience": number\n}\nCRITICAL: headline MUST be the EXACT title as written on the resume. If it says "Senior Manager", output "Senior Manager" NOT "Director". If it says "Digital Marketing Manager", output "Digital Marketing Manager" NOT "Marketing Director".\nNo markdown, no explanation, only JSON.` },
-                  { role: "user", content: [{ type: "text", text: "Extract all professional data from this resume. The headline field MUST be the VERBATIM job title — do NOT upgrade, paraphrase, or inflate it:" }, { type: "image_url", image_url: { url: `data:application/pdf;base64,${resumeBase64}` } }] },
-                ], temperature: 0.05, // Near-zero for maximum extraction consistency
-                generationConfig: {
-                  responseMimeType: "application/json",
-                },
-              }),
-            });
-            if (aiResp.ok) {
-              const aiData = await aiResp.json();
-              logTokenUsage("process-scan", "resume-parser", activeModel, aiData);
-              const content = aiData.choices?.[0]?.message?.content;
-              if (content) {
-                try {
-                  const parsed = JSON.parse(content);
-                  linkedinName = parsed.name || null;
-                  linkedinCompany = parsed.company || null;
-                  parsedLinkedinIndustry = parsed.inferredIndustry || null;
-                  parsedLinkedinRole = parsed.headline || null;
-                  rawProfileText = `Name: ${parsed.name || "Unknown"}\nHeadline: ${parsed.headline || "Unknown"}\nCompany: ${parsed.company || "Unknown"}\nLocation: ${parsed.location || "Unknown"}\nSkills: ${(parsed.skills || []).join(", ")}\nYears of Experience: ${parsed.yearsOfExperience || "Unknown"}\n`;
-                  if (parsed.experience?.length > 0) {
-                    rawProfileText += `Experience:\n`;
-                    for (const exp of parsed.experience) rawProfileText += `  - ${exp.title} at ${exp.company} (${exp.duration})\n`;
-                  }
-                  profileExtractionConfidence = "high";
-                  // Reconcile experience: resume is ground truth
-                  if (parsed.yearsOfExperience && typeof parsed.yearsOfExperience === 'number' && parsed.yearsOfExperience > 0 && parsed.yearsOfExperience < 60) {
-                    resumeExtractedYears = parsed.yearsOfExperience;
-                    if (normalizedExperienceYears !== null && Math.abs(resumeExtractedYears - normalizedExperienceYears) > 2) {
-                      console.debug(`[Ingestion] Experience conflict: user selected "${scan.years_experience}" (${normalizedExperienceYears}y) but resume shows ${resumeExtractedYears}y — using resume value`);
-                      normalizedExperienceYears = resumeExtractedYears;
-                    } else if (normalizedExperienceYears === null) {
-                      normalizedExperienceYears = resumeExtractedYears;
-                    }
-                  }
-                  // Security: log data shape only — never log PII (names, roles, companies) in production
-                  console.debug(`[Ingestion] Resume parsed: name=${linkedinName ? '[present]' : '[absent]'}, role=${parsedLinkedinRole ? '[present]' : '[absent]'}, exp=${resumeExtractedYears ?? 'absent'}`);
-                } catch (e) {
-                  console.error("[Ingestion] Resume parsing JSON failed:", e);
-                  profileExtractionConfidence = "low";
-                }
-              }
-            } else { await aiResp.text(); }
-          }
-        } catch (e) { console.error("[Ingestion] Resume parsing failed:", e); }
-      }
-    }
-
-    // LinkedIn parsing
-    if (scan.linkedin_url && !hasResume) {
-      try {
-        const parseUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/parse-linkedin`;
-        const parseController = new AbortController();
-        const parseTimeout = setTimeout(() => parseController.abort(), 10_000);
-        const parseResp = await fetch(parseUrl, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ linkedinUrl: scan.linkedin_url }),
-          signal: parseController.signal,
-        });
-        clearTimeout(parseTimeout);
-        if (parseResp.ok) {
-          const profile = await parseResp.json();
-          profileExtractionConfidence = profile.extraction_confidence || profile.rawExtractionQuality || "low";
-          linkedinName = profile.name && profile.name !== "Unknown" ? profile.name : linkedinInference.inferredName;
-          linkedinCompany = profile.company || null;
-          parsedLinkedinIndustry = profile.suggestedIndustry || profile.matchedIndustry || null;
-          parsedLinkedinRole = profile.headline || profile.matchedJobFamily || null;
-          
-          // Only include data fields that are actually populated (avoid "Unknown" pollution)
-          rawProfileText = "";
-          if (profile.name && profile.name !== "Unknown") rawProfileText += `Name: ${profile.name}\n`;
-          if (profile.headline && profile.headline !== "Unknown" && profile.headline !== "Professional") rawProfileText += `Headline: ${profile.headline}\n`;
-          if (profile.company) rawProfileText += `Company: ${profile.company}\n`;
-          if (profile.location) rawProfileText += `Location: ${profile.location}\n`;
-          if (profile.skills?.length > 0) rawProfileText += `Skills: ${profile.skills.join(", ")}\n`;
-          if (profile.experience?.length > 0) { rawProfileText += `Experience:\n`; for (const exp of profile.experience) rawProfileText += `  - ${exp.title} at ${exp.company} (${exp.duration})\n`; }
-          if (profile.matchedSkills?.length > 0) { rawProfileText += `\nSkill Risk Matches:\n`; for (const ms of profile.matchedSkills) rawProfileText += `  - ${ms.profile_skill} → automation risk: ${ms.automation_risk}%\n`; }
-          
-          // Add data quality warning to profile text so Agent1 sees it
-          if (profileExtractionConfidence === "low") {
-            rawProfileText += `\n⚠️ DATA QUALITY WARNING: Profile data was extracted from search snippets (NOT a direct LinkedIn page scrape). Data may be incomplete or contain errors. Do NOT fabricate details. Use null for any field you cannot verify from the text above.\n`;
-          }
-          
-          // Security: log signal quality only — never log PII (name, role, company) in production logs
-          console.log(`[Ingestion] LinkedIn parsed: confidence=${profileExtractionConfidence}, name=${linkedinName ? '[present]' : '[absent]'}, role=${parsedLinkedinRole ? '[present]' : '[absent]'}, company=${linkedinCompany ? '[present]' : '[absent]'}`);
-        } else { await parseResp.text(); }
-        const linkedinSlug = extractLinkedinSlug(scan.linkedin_url);
-
-        // Firecrawl enrichment
-        const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
-        if (FIRECRAWL_API_KEY) {
-          try {
-            const scrapeResp = await fetchWithBackoff("https://api.firecrawl.dev/v1/scrape", {
-              method: "POST", headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-              body: JSON.stringify({ url: scan.linkedin_url, formats: ["markdown"], onlyMainContent: true }),
-            });
-            if (scrapeResp.ok) {
-              const d = await scrapeResp.json();
-              const md = d?.data?.markdown;
-              if (md && md.length > 200) rawProfileText += `\n--- Raw LinkedIn Profile ---\n${sanitizeInput(md.slice(0, 4000))}\n`;
-            } else {
-              await scrapeResp.text();
-              const searchQuery = linkedinSlug
-                ? `site:linkedin.com/in/${linkedinSlug} "${linkedinSlug.replace(/-/g, " ")}"`
-                : `site:linkedin.com/in/ "${(linkedinName || "").trim()}" professional`;
-
-              const searchResp = await fetchWithBackoff("https://api.firecrawl.dev/v1/search", {
-                method: "POST", headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ query: searchQuery, limit: 5, lang: "en" }),
-              });
-
-              if (searchResp.ok) {
-                const searchData = await searchResp.json();
-                const snippets = (searchData?.data || [])
-                  .filter((item: any) => isTrustedLinkedinResult(String(item.url || item.link || ""), String(item.title || ""), String(item.description || ""), linkedinSlug))
-                  .map((item: any) => `${item.title || "LinkedIn"}: ${sanitizeEvidenceSnippet(String(item.description || ""), 240)}`)
-                  .filter(Boolean)
-                  .slice(0, 3);
-
-                if (snippets.length > 0) rawProfileText += `\n--- Search Profile Data ---\n${sanitizeInput(snippets.join("\n"))}\n`;
-              }
-            }
-          } catch (e) { console.error("[Ingestion] Firecrawl failed:", e); }
-        }
-
-        // ── Tavily enrichment when profile data is thin (strict LinkedIn-only confidence filter) ──
-        const TAVILY_API_KEY = Deno.env.get("TAVILY_API_KEY");
-        if (TAVILY_API_KEY && rawProfileText.length < 800) {
-          try {
-            const nameGuess2 = linkedinSlug.split(/[-_]+/).filter(Boolean).slice(0, 3)
-              .map((t: string) => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase()).join(" ");
-            const tavilyQuery = linkedinSlug
-              ? `site:linkedin.com/in/${linkedinSlug} "${nameGuess2 || linkedinSlug.replace(/[-_]+/g, " ")}"`
-              : `site:linkedin.com/in/ "${nameGuess2 || linkedinName || "professional"}" professional experience`;
-
-            console.log(`[Ingestion] Tavily enrichment (strict) — raw profile text ${rawProfileText.length} chars`);
-            const tavilyResp = await fetchWithBackoff("https://api.tavily.com/search", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                api_key: TAVILY_API_KEY,
-                query: tavilyQuery,
-                search_depth: "advanced",
-                max_results: 5,
-                include_answer: false,
-                include_domains: ["linkedin.com"],
-              }),
-            });
-
-            if (tavilyResp.ok) {
-              const tavilyData = await tavilyResp.json();
-              const tavilyParts = (tavilyData.results || [])
-                .filter((r: any) => isTrustedLinkedinResult(String(r.url || ""), String(r.title || ""), String(r.content || ""), linkedinSlug))
-                .map((r: any) => `${r.title || "LinkedIn Profile"}\n${sanitizeEvidenceSnippet(String(r.content || ""), 600)}`)
-                .filter(Boolean)
-                .slice(0, 3);
-
-              if (tavilyParts.length > 0) {
-                rawProfileText += `\n--- Tavily Profile Intelligence ---\n${sanitizeInput(tavilyParts.join("\n\n").slice(0, 2500))}\n`;
-                console.log(`[Ingestion] Tavily added ${tavilyParts.length} trusted LinkedIn blocks, total profile text now ${rawProfileText.length} chars`);
-              } else {
-                console.log("[Ingestion] Tavily returned no trusted LinkedIn blocks; skipped");
-              }
-            }
-          } catch (e) { console.error("[Ingestion] Tavily enrichment failed:", e); }
-        }
-      } catch (e) { console.error("[Ingestion] LinkedIn scrape failed:", e); }
-    }
-
-    // ══════════════════════════════════════════════════════════
-    // STEP 3: RESOLVE INDUSTRY & PROFILE TEXT
     // ══════════════════════════════════════════════════════════
     const { industry: resolvedIndustry, reason: industryResolutionReason } = resolveIndustry(
       scan.industry, parsedLinkedinIndustry, linkedinInference.inferredIndustry, linkedinInference.confidence,
