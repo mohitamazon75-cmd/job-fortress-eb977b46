@@ -114,5 +114,41 @@ process-scan/index.ts (942 lines — orchestrator)
 | Phase 4 | Deterministic engine split — monolith → 6 focused modules |
 | Phase 5 | process-scan split — extracted scan-enrichment.ts + scan-agents.ts |
 | Phase 6 | Polish — response envelopes, AbortController timeouts, JSDoc headers |
+| Phase 7 | LLM/Prompt quality audit — 7 fixes across all agents |
 
 **Architecture score: 8.5/10**
+
+---
+
+## LLM/Prompt Layer Status (post-audit)
+
+| Agent | Fix Applied | Score |
+|-------|-------------|-------|
+| Agent 1 (Profiler) | Zod schema + range clamping (salary ₹5K–₹50L, experience 0-60, skill caps) | 8.5/10 |
+| Agent 2A (Risk) | `industry_proof` grounded to context data only; `risk_pct` → `risk_level` enum | 8.5/10 |
+| Agent 2B (Action Plan) | `salary_unlock_inr_monthly` → grounded `demand_signal` (HIGH/MEDIUM/LOW) | 8/10 |
+| Agent 2C (Pivot) | Anti-hallucination rules, negative examples, arbitrage range 5-500 | 7/10 |
+| Judo Strategy | No changes — `months_gained` ungrounded but low-stakes | 7.5/10 |
+| Weekly Diet | `content_verified` removed; server-side domain verification via `diet-verification.ts` | 7.5/10 |
+| Det Engine | All CALIBRATION constants documented with rationale | 8/10 |
+
+**Overall LLM layer score: 8/10**
+
+### Remaining LLM Limitations (accepted)
+- `months_gained` in Judo Strategy is ungrounded projection (low-stakes — directional only)
+- `weeks_to_proficiency` in Agent 2B is ungrounded (directional, not financial — accepted)
+- Agent 2C pivot quality still depends heavily on model knowledge of job markets
+- All agent outputs are LLM-generated and should be treated as directional intelligence, not precise data
+
+### Key Files Modified
+- `_shared/agent-prompts.ts` — industry_proof, risk_level, demand_signal, 2C rules
+- `_shared/zod-schemas.ts` — Agent1Schema strengthened, clampAgent1Output added, demand_signal
+- `_shared/diet-verification.ts` — new server-side domain verification
+- `_shared/det-utils.ts` — all CALIBRATION constants documented
+- `process-scan/index.ts` — Agent1 validation + clamping wired in
+- `process-scan/scan-agents.ts` — diet verification wired in
+- `src/lib/scan-engine.ts` — SkillThreatIntel type updated (risk_level + backward compat)
+- `src/lib/unified-skill-classifier.ts` — threatIntelRisk() helper for risk_level → numeric
+- `src/components/dashboard/StrategicDossier.tsx` — demand_signal badge display
+
+✅ LLM audit cycle complete
