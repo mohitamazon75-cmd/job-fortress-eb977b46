@@ -38,9 +38,25 @@ export default function JobDangerMeterCard({ report }: { report: ScanReport }) {
         {vibe.headline}
       </p>
 
-      <p className="text-xs text-foreground/70 leading-relaxed text-center mb-4">
+      <p className="text-xs text-foreground/70 leading-relaxed text-center mb-3">
         {vibe.body}
       </p>
+
+      {/* HOPE pivot */}
+      {vibe.hope && (
+        <div className="rounded-lg border border-prophet-green/20 bg-prophet-green/[0.04] px-3 py-2.5 mb-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-prophet-green mb-1">💚 What's protecting you</p>
+          <p className="text-xs text-foreground/80 leading-relaxed">{vibe.hope}</p>
+        </div>
+      )}
+
+      {/* PLAN directive */}
+      {vibe.plan && (
+        <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2.5 mb-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">🗺️ Your next move</p>
+          <p className="text-xs text-foreground/80 leading-relaxed">{vibe.plan}</p>
+        </div>
+      )}
 
       <div className="space-y-2.5">
         {vibe.bullets.map((b, i) => (
