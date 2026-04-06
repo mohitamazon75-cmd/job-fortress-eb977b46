@@ -92,8 +92,7 @@ export default function ScoreHistoryTab({ userId, locale = 'en' }: ScoreHistoryT
   const handleEnrollNudge = async () => {
     toast.info('Email nudges coming soon', {
       description: 'This feature is under development.',
-      });
-    }
+    });
   };
 
   // Empty state
