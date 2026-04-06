@@ -16,6 +16,21 @@ function stableHash(str: string): number {
   return hash;
 }
 
+/** Convert risk_level enum to numeric risk for display/calculation.
+ *  Falls back to legacy risk_pct if present, otherwise uses KG automation_risk. */
+function threatIntelRisk(intel: SkillThreatIntel | null | undefined, fallback: number): number {
+  if (!intel) return fallback;
+  // New grounded risk_level takes priority
+  if (intel.risk_level) {
+    if (intel.risk_level === 'HIGH') return 78;
+    if (intel.risk_level === 'MEDIUM') return 48;
+    return 18; // LOW
+  }
+  // Legacy risk_pct from older scans
+  if (intel.risk_pct != null) return intel.risk_pct;
+  return fallback;
+}
+
 export interface ClassifiedSkill {
   name: string;
   risk: number;
