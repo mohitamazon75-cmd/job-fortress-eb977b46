@@ -11,6 +11,30 @@ Deno.serve(async (req) => {
     const blocked = guardRequest(req, corsHeaders);
     if (blocked) return blocked;
 
+    // --- JWT validation ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header", code: "UNAUTHORIZED", status: "error" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token", code: "UNAUTHORIZED", status: "error" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    // --- end JWT validation ---
+
     const { assessmentId, platform } = await req.json();
 
     if (!assessmentId) {
