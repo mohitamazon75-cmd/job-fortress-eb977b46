@@ -70,7 +70,7 @@ export default function ResumeWeaponizerWidget({ report, scanId }: ResumeWeaponi
       if (err?.message?.includes('429') || err?.status === 429) {
         toast.error('Rate limited — please try again in a minute');
       } else if (err?.message?.includes('402') || err?.status === 402) {
-        toast.error('AI credits exhausted — contact support');
+        toast.error('This feature requires a Pro subscription');
       } else {
         toast.error('Failed to weaponize resume');
       }
