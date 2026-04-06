@@ -269,7 +269,6 @@ interface ReportCardProps {
   buttonStyle: "outline" | "filled";
   onNavigate: () => void;
   onUnlock: () => void;
-  LockIcon: React.ComponentType<{ size?: number; color?: string }>;
 }
 
 function ReportCard({
