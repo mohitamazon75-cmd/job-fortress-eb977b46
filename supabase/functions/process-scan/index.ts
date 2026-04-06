@@ -41,7 +41,6 @@ import {
   updateScan,
   buildDeterministicReport,
   normalizeFounderImmediateStep,
-  validateToolStatic,
   deduplicateReportText,
   runQualityEditor,
   assembleReport,
