@@ -101,7 +101,8 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
   );
   const liveTools = (enrichment.data?.tool_threats || []).slice(0, 3);
 
-  const automationRisk = report.automation_risk ?? report.determinism_index ?? 50;
+  // Use KG-corrected automation risk — NOT raw determinism_index
+  const automationRisk = breakdown.effectiveAutomationRisk;
   const moatSkills = report.moat_skills || [];
   const deadSkills = report.execution_skills_dead || [];
   const companyName = report.linkedin_company;
@@ -141,11 +142,10 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
 
   const marketModel = report.market_position_model;
 
-  // Peer bar: parse "top 48% est. percentile" → 48
-  const peerRaw = survivability?.peer_percentile_estimate ?? '';
-  const peerMatch = peerRaw.match(/(\d+)/);
-  const peerPct = peerMatch ? parseInt(peerMatch[1]) : null;
-  const peerBarWidth = peerPct ?? 50;
+  // Peer bar: derive from actual score, not raw agent estimate
+  // Score of 51 on 5-95 scale → normalize to 0-100 percentile
+  const peerPct = Math.max(5, Math.min(95, Math.round(((score - 5) / 90) * 100)));
+  const peerBarWidth = peerPct;
   const peerBarColor = score >= 70 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-400' : score >= 30 ? 'bg-orange-400' : 'bg-red-400';
 
   // At-risk tasks for free tease: top 3 skills by automation risk from skillAdjustments
@@ -262,8 +262,8 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           <span className="text-[11px] text-muted-foreground ml-auto">India · {freshnessLabel}</span>
         </div>
 
-        {/* Peer comparison bar — always shown when data available */}
-        {peerPct !== null && (
+        {/* Peer comparison bar — derived from career position score */}
+        {(
           <div className="mt-3 pt-3 border-t border-border">
             <div className="flex justify-between text-[11px] mb-1.5">
               <span className="text-muted-foreground">
