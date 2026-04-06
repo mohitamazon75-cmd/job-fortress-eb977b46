@@ -26,6 +26,8 @@ export interface ClassifiedSkill {
   actionTag: string;
   /** Deep threat intelligence from Agent 2A — null for safe/unmatched skills */
   threatIntel?: SkillThreatIntel | null;
+  /** Whether this skill was directly extracted from the resume or inferred from role profile */
+  source: 'extracted' | 'inferred';
 }
 
 function riskToMonths(risk: number): number {
