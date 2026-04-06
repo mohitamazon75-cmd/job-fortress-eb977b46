@@ -46,6 +46,8 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════════════════
     if (FIRECRAWL_API_KEY) {
       try {
+        const scrapeController = new AbortController();
+        const scrapeTimeout = setTimeout(() => scrapeController.abort(), 15_000);
         const scrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
           method: "POST",
           headers: {
@@ -53,7 +55,9 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ url: linkedinUrl, formats: ["markdown"] }),
+          signal: scrapeController.signal,
         });
+        clearTimeout(scrapeTimeout);
 
         if (scrapeResponse.ok) {
           const scrapeData = await scrapeResponse.json();
