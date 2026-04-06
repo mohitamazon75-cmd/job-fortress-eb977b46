@@ -519,6 +519,16 @@ Deno.serve(async (req) => {
       const profilerResult = await callAgentWithFallback(LOVABLE_API_KEY, "Agent1:Profiler", AGENT_1_PROFILER,
         agent1UserPrompt, PRO_MODEL, 0.1, 30_000);
       agent1 = profilerResult.data;
+      // Validate and clamp Agent 1 output ranges
+      if (agent1) {
+        const validated = validateAgentOutput("Agent1:Profiler", Agent1Schema, agent1);
+        if (validated) {
+          agent1 = validated;
+        } else {
+          console.warn("[Agent1:Profiler] Schema validation failed — using raw output with clamping");
+        }
+        clampAgent1Output(agent1);
+      }
       if (profilerResult.model_used !== "none") {
         console.log(`[Agent1:Profiler] Completed on ${profilerResult.model_used.split("/").pop()} (${profilerResult.latency_ms}ms, chain: ${profilerResult.fallback_chain.map(m => m.split("/").pop()).join(" → ")})`);
       }
