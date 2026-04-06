@@ -1,11 +1,24 @@
 import { motion } from 'framer-motion';
 import { ScanReport, normalizeTools } from '@/lib/scan-engine';
-import { Target, Clock, Flame, GraduationCap, TrendingUp, Swords } from 'lucide-react';
+import { Target, Clock, Flame, GraduationCap, TrendingUp, Swords, BookOpen, Video, Headphones, ExternalLink, ChevronDown } from 'lucide-react';
 import { computeStabilityScore } from '@/lib/stability-score';
 import DataProvenance from '@/components/cards/DataProvenance';
+import { useState } from 'react';
 
 interface DefensePlanCardProps {
   report: ScanReport;
+}
+
+interface WeekPlan {
+  week: number;
+  theme: string;
+  action: string;
+  deliverable: string;
+  effort_hours?: number;
+  fallback_action?: string;
+  books?: Array<{ title: string; author_or_platform: string; why_relevant: string }>;
+  courses?: Array<{ title: string; author_or_platform: string; why_relevant: string }>;
+  videos?: Array<{ title: string; author_or_platform: string; why_relevant: string }>;
 }
 
 export default function DefensePlanCard({ report }: DefensePlanCardProps) {
@@ -16,10 +29,15 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
   const skillGaps = report.score_breakdown?.skill_adjustments?.filter(s => s.automation_risk >= 50).slice(0, 3) || [];
   const tools = normalizeTools(report.ai_tools_replacing || []);
   const kgMatched = report.computation_method?.kg_skills_matched ?? (report.score_breakdown?.skill_adjustments?.length || 0);
-  const marketModel = report.market_position_model;
 
-  // Build 90-day path
-  const milestones = [
+  // Extract the AI-generated weekly action plan from Agent 2B
+  const weeklyPlan: WeekPlan[] = (report as any).weekly_action_plan || [];
+  const hasRichPlan = weeklyPlan.length > 0;
+
+  const [expandedWeek, setExpandedWeek] = useState<number | null>(0);
+
+  // Fallback milestones if no rich plan
+  const fallbackMilestones = [
     {
       phase: 'Week 1-2',
       icon: <Flame className="w-4 h-4" />,
@@ -54,6 +72,12 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
     },
   ];
 
+  const phaseColors = [
+    { color: 'text-destructive', border: 'border-destructive/20', bg: 'bg-destructive/[0.03]', icon: <Flame className="w-4 h-4" /> },
+    { color: 'text-prophet-gold', border: 'border-prophet-gold/20', bg: 'bg-prophet-gold/[0.03]', icon: <GraduationCap className="w-4 h-4" /> },
+    { color: 'text-primary', border: 'border-primary/20', bg: 'bg-primary/[0.03]', icon: <TrendingUp className="w-4 h-4" /> },
+    { color: 'text-prophet-green', border: 'border-prophet-green/20', bg: 'bg-prophet-green/[0.03]', icon: <TrendingUp className="w-4 h-4" /> },
+  ];
 
   return (
     <div className="space-y-5">
@@ -82,7 +106,7 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
         </motion.div>
       )}
 
-      {/* Judo Strategy — prominent callout */}
+      {/* Judo Strategy */}
       {judoStrategy?.recommended_tool && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -115,40 +139,155 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
         </motion.div>
       )}
 
-      {/* 90-Day Career Upgrade Path */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-xl border-2 border-border bg-card p-5"
-      >
-        <p className="text-xs font-semibold text-muted-foreground mb-4">
-          90-Day Career Upgrade Path
-        </p>
+      {/* Rich Weekly Plan from Agent 2B */}
+      {hasRichPlan ? (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-xl border-2 border-border bg-card overflow-hidden"
+        >
+          <div className="px-5 py-3.5 border-b border-border">
+            <p className="text-xs font-black uppercase tracking-[0.15em] text-foreground">
+              Your Personalized {weeklyPlan.length}-Week Plan
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              AI-generated from your exact scan data — with curated resources
+            </p>
+          </div>
 
-        <div className="space-y-4 relative">
-          <div className="absolute left-[18px] top-6 bottom-6 w-[2px] bg-border" />
+          <div className="divide-y divide-border">
+            {weeklyPlan.map((week, i) => {
+              const phase = phaseColors[Math.min(i, phaseColors.length - 1)];
+              const isOpen = expandedWeek === i;
+              const hasResources = (week.books?.length || 0) + (week.courses?.length || 0) + (week.videos?.length || 0) > 0;
 
-          {milestones.map((m, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + i * 0.15, duration: 0.4 }}
-              className={`rounded-xl border-2 ${m.borderColor} ${m.bgColor} p-4 relative ml-6`}
-            >
-              <div className={`absolute -left-[30px] top-4 w-5 h-5 rounded-full border-2 ${m.borderColor} bg-background flex items-center justify-center`}>
-                <span className={`${m.color}`}>{m.icon}</span>
-              </div>
-              <p className={`text-[10px] font-black uppercase tracking-widest ${m.color} mb-1`}>{m.phase}</p>
-              <p className="text-sm font-bold text-foreground leading-snug">{m.action}</p>
-              <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {m.detail}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
+              return (
+                <div key={i}>
+                  <button
+                    onClick={() => setExpandedWeek(isOpen ? null : i)}
+                    className="w-full flex items-start gap-3 px-5 py-4 text-left hover:bg-muted/20 transition-colors"
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${phase.bg} border ${phase.border}`}>
+                      <span className={phase.color}>{phase.icon}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${phase.color}`}>Week {week.week}</span>
+                        {week.effort_hours && (
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5" /> {week.effort_hours}h
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-bold text-foreground leading-snug">{week.theme}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{week.action}</p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground mt-1 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="px-5 pb-4 space-y-3"
+                    >
+                      {/* Deliverable */}
+                      {week.deliverable && (
+                        <div className="rounded-lg border border-primary/15 bg-primary/[0.03] px-3 py-2.5">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Deliverable</p>
+                          <p className="text-xs text-foreground leading-relaxed">{week.deliverable}</p>
+                        </div>
+                      )}
+
+                      {/* Resources */}
+                      {hasResources && (
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Curated Resources</p>
+                          
+                          {week.books?.map((b, j) => (
+                            <div key={`book-${j}`} className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2">
+                              <BookOpen className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-foreground">{b.title}</p>
+                                <p className="text-[11px] text-muted-foreground">{b.author_or_platform}</p>
+                                {b.why_relevant && <p className="text-[11px] text-muted-foreground/70 italic mt-0.5">{b.why_relevant}</p>}
+                              </div>
+                            </div>
+                          ))}
+
+                          {week.courses?.map((c, j) => (
+                            <div key={`course-${j}`} className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2">
+                              <GraduationCap className="w-3.5 h-3.5 text-prophet-gold mt-0.5 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-foreground">{c.title}</p>
+                                <p className="text-[11px] text-muted-foreground">{c.author_or_platform}</p>
+                                {c.why_relevant && <p className="text-[11px] text-muted-foreground/70 italic mt-0.5">{c.why_relevant}</p>}
+                              </div>
+                            </div>
+                          ))}
+
+                          {week.videos?.map((v, j) => (
+                            <div key={`video-${j}`} className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2">
+                              <Video className="w-3.5 h-3.5 text-prophet-cyan mt-0.5 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-foreground">{v.title}</p>
+                                <p className="text-[11px] text-muted-foreground">{v.author_or_platform}</p>
+                                {v.why_relevant && <p className="text-[11px] text-muted-foreground/70 italic mt-0.5">{v.why_relevant}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Fallback action */}
+                      {week.fallback_action && (
+                        <p className="text-[11px] text-muted-foreground italic">
+                          <span className="font-semibold">Can't do this?</span> {week.fallback_action}
+                        </p>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      ) : (
+        /* Fallback: static 90-day milestones */
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-xl border-2 border-border bg-card p-5"
+        >
+          <p className="text-xs font-semibold text-muted-foreground mb-4">
+            90-Day Career Upgrade Path
+          </p>
+          <div className="space-y-4 relative">
+            <div className="absolute left-[18px] top-6 bottom-6 w-[2px] bg-border" />
+            {fallbackMilestones.map((m, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 + i * 0.15, duration: 0.4 }}
+                className={`rounded-xl border-2 ${m.borderColor} ${m.bgColor} p-4 relative ml-6`}
+              >
+                <div className={`absolute -left-[30px] top-4 w-5 h-5 rounded-full border-2 ${m.borderColor} bg-background flex items-center justify-center`}>
+                  <span className={`${m.color}`}>{m.icon}</span>
+                </div>
+                <p className={`text-[10px] font-black uppercase tracking-widest ${m.color} mb-1`}>{m.phase}</p>
+                <p className="text-sm font-bold text-foreground leading-snug">{m.action}</p>
+                <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> {m.detail}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Expected outcome */}
       <motion.div
@@ -167,7 +306,7 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
           </p>
         )}
         <p className="text-[11px] text-muted-foreground/60 mt-2 italic">
-          Based on typical outcomes from users who closed similar skill gaps — individual results vary.
+          Projected from closing your top skill gaps — deterministic estimate, individual results vary.
         </p>
       </motion.div>
 

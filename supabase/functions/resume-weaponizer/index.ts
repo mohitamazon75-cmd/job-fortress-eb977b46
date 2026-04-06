@@ -172,7 +172,7 @@ Rewrite this person's resume to:
 The resume should make a hiring manager think: "This person is ALREADY adapting to AI — they're ahead of the curve."
 `;
 
-    const result = await callAgent(
+    const fallbackResult = await callAgentWithFallback(
       apiKey,
       "ResumeWeaponizer",
       SYSTEM_PROMPT,
@@ -181,6 +181,8 @@ The resume should make a hiring manager think: "This person is ALREADY adapting 
       0.5,
       60_000,
     );
+    const result = fallbackResult.data;
+    console.log(`[ResumeWeaponizer] Completed on ${fallbackResult.model_used} (${fallbackResult.latency_ms}ms, chain: ${fallbackResult.fallback_chain.join('→')})`);
 
     if (!result) {
       return new Response(JSON.stringify({ error: "AI analysis failed" }), {
