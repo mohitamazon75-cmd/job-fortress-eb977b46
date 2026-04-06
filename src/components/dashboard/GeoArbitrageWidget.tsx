@@ -49,7 +49,7 @@ export default function GeoArbitrageWidget({ geoArbitrage, tier2, pivotRole, cou
               <span className="text-xs font-bold text-foreground">{geoArbitrage.geo_probability_pct}%</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">Potential gain in 1 year</span>
+              <span className="text-xs text-muted-foreground">Expected gain in 1 year</span>
               <span className="text-sm font-black text-prophet-green">{formatCurrency(geoArbitrage.expected_value_12mo_inr, country)}</span>
             </div>
             <div className="flex justify-between items-center">

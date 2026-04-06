@@ -114,6 +114,9 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{moatSkills.length}</p>
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Moat Skills</p>
+            {moatSkills.length > 0 && moatSkills.length < 4 && (
+              <p className="text-[8px] text-prophet-gold mt-0.5">Score capped — need 4+</p>
+            )}
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{(() => {
