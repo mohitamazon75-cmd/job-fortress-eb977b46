@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
     if (!PERPLEXITY_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "PERPLEXITY_API_KEY not configured" }),
+        JSON.stringify({ error: "PERPLEXITY_API_KEY not configured", code: "CONFIG_ERROR", status: "error" }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
