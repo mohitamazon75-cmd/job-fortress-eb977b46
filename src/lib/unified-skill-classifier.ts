@@ -184,6 +184,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
         estimatedMonths: riskToMonths(baseRisk),
         actionTag: actionTag(baseRisk),
         threatIntel: intel,
+        source: 'inferred',
       });
     }
   }
