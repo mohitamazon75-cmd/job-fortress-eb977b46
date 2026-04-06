@@ -16,6 +16,21 @@ function stableHash(str: string): number {
   return hash;
 }
 
+/** Convert risk_level enum to numeric risk for display/calculation.
+ *  Falls back to legacy risk_pct if present, otherwise uses KG automation_risk. */
+function threatIntelRisk(intel: SkillThreatIntel | null | undefined, fallback: number): number {
+  if (!intel) return fallback;
+  // New grounded risk_level takes priority
+  if (intel.risk_level) {
+    if (intel.risk_level === 'HIGH') return 78;
+    if (intel.risk_level === 'MEDIUM') return 48;
+    return 18; // LOW
+  }
+  // Legacy risk_pct from older scans
+  if (intel.risk_pct != null) return intel.risk_pct;
+  return fallback;
+}
+
 export interface ClassifiedSkill {
   name: string;
   risk: number;
@@ -118,12 +133,12 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
     const toolName = intel?.threat_tool || toolMap.get(key) || (isDead ? (tools[0]?.tool_name || 'AI Tools') : null);
     results.push({
       name: sa.skill_name,
-      risk: intel?.risk_pct ?? sa.automation_risk,
-      status: classifyStatus(intel?.risk_pct ?? sa.automation_risk),
+      risk: threatIntelRisk(intel, sa.automation_risk),
+      status: classifyStatus(threatIntelRisk(intel, sa.automation_risk)),
       replacedBy: toolName,
       weight: sa.weight,
-      estimatedMonths: riskToMonths(intel?.risk_pct ?? sa.automation_risk),
-      actionTag: actionTag(intel?.risk_pct ?? sa.automation_risk),
+      estimatedMonths: riskToMonths(threatIntelRisk(intel, sa.automation_risk)),
+      actionTag: actionTag(threatIntelRisk(intel, sa.automation_risk)),
       threatIntel: intel,
       source: 'extracted',
     });
@@ -135,7 +150,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
     if (seenSkills.has(key)) continue;
     seenSkills.add(key);
     const intel = findThreatIntel(ds);
-    const baseRisk = intel?.risk_pct ?? (75 + (stableHash(ds) % 15));
+    const baseRisk = threatIntelRisk(intel, 75 + (stableHash(ds) % 15));
     results.push({
       name: ds,
       risk: baseRisk,
@@ -175,7 +190,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       if (seenSkills.has(key)) continue;
       seenSkills.add(key);
       const intel = findThreatIntel(skill);
-      const baseRisk = intel?.risk_pct ?? (isExecSkill(skill) ? Math.min(90, di + 10) : Math.max(10, Math.min(80, di)));
+      const baseRisk = threatIntelRisk(intel, isExecSkill(skill) ? Math.min(90, di + 10) : Math.max(10, Math.min(80, di)));
       results.push({
         name: skill,
         risk: baseRisk,

@@ -358,7 +358,10 @@ ${kgContext}`;
     if (seniorityJudoStrategy || seniorityDiet) {
       if (!mlObsolescence) mlObsolescence = {};
       if (seniorityJudoStrategy) mlObsolescence.judo_strategy = seniorityJudoStrategy;
-      if (seniorityDiet) mlObsolescence.weekly_survival_diet = seniorityDiet;
+      if (seniorityDiet) {
+        const { verifyDietResources } = await import("../_shared/diet-verification.ts");
+        mlObsolescence.weekly_survival_diet = verifyDietResources(seniorityDiet);
+      }
     }
   }
 

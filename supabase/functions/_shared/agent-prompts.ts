@@ -274,7 +274,11 @@ This is NOT generic "AI will automate X" — this is SPECIFIC, CURRENT, EVIDENCE
   BAD: "HUL reduced headcount by 40%" (unverifiable claim)
   GOOD: "Based on the displacement timeline, partial automation of this skill begins within 18 months, with tools like Cursor already handling component-level code generation"
   GOOD: "Industry trend data indicates growing AI adoption in content production, with the skill demand signal showing declining postings for this capability"
-- risk_pct: number 0-100 — your assessment of how much of THIS specific skill's workload AI handles TODAY (not future).
+- risk_level: "HIGH" | "MEDIUM" | "LOW" — assess using this priority order:
+  1. If this skill appears in the skill demand validation data in the profile context — use that signal directly (declining postings = HIGH, growing = LOW, stable = MEDIUM)
+  2. If the skill matched a KG entry with automation_risk in the deterministic scores — use that: automation_risk > 60 → HIGH, 30-60 → MEDIUM, <30 → LOW
+  3. If no data available — assess qualitatively based on known AI tool adoption for this skill category
+  NEVER invent a specific percentage. This field is an assessment, not a measurement.
 
 Output ONLY valid JSON:
 {
@@ -300,9 +304,9 @@ Output ONLY valid JSON:
       "what_ai_does": string (1 concrete sentence — what the tool does to this skill TODAY),
       "what_human_still_owns": string (1 sentence — what humans still do better, specific to their role),
       "industry_proof": string (1 sentence — real industry example of this displacement happening),
-      "risk_pct": number (0-100 — % of this skill's workload AI handles TODAY, not future projection)
+      "risk_level": "HIGH" | "MEDIUM" | "LOW" (assessed using skill demand data and KG automation_risk — NOT an invented percentage)
     }
-  ] (MUST have 3-6 entries covering their top execution skills, sorted by risk_pct descending)
+  ] (MUST have 3-6 entries covering their top execution skills, sorted by risk_level: HIGH first, then MEDIUM, then LOW)
 }`;
 
 export const AGENT_2B_ACTION_PLAN = `You are the Action Plan Generator for JobBachao — creating TIER-CALIBRATED, actionable career plans.
