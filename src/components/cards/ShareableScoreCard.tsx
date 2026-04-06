@@ -92,7 +92,7 @@ function useCardData(report: ScanReport) {
 
   return {
     score, role, industry, yearsExp, aiExposure, humanEdge,
-    salaryRiskLPA, peerPercentile, monthsRemaining,
+    salaryRiskLabel, peerPercentile, monthsRemaining,
     taskRows, totalTasks, automatedTasks, automationYear,
     moatSkills, buildSkills, date,
   };
@@ -110,7 +110,7 @@ function CaptureTarget({
 }) {
   const {
     score, role, industry, yearsExp, aiExposure, humanEdge,
-    salaryRiskLPA, peerPercentile, monthsRemaining,
+    salaryRiskLabel, peerPercentile, monthsRemaining,
     taskRows, totalTasks, automatedTasks, automationYear,
     moatSkills, buildSkills, date,
   } = data;
@@ -258,7 +258,7 @@ function CaptureTarget({
         {[
           { label: 'HUMAN EDGE', value: `${humanEdge}%`, sub: 'IRREPLACEABLE', color: C.safe },
           { label: 'AI EXPOSURE', value: `${aiExposure}%`, sub: 'AT RISK NOW', color: C.danger },
-          { label: 'SALARY RISK', value: salaryRiskLPA, sub: 'IMPACT ANNUALLY', color: C.warning },
+          { label: 'SALARY RISK', value: salaryRiskLabel, sub: 'IMPACT ANNUALLY', color: C.warning },
         ].map((stat, i) => (
           <div key={i} style={{
             flex: 1, padding: '16px 8px', textAlign: 'center',
@@ -437,7 +437,7 @@ export default function ShareableScoreCard({ report }: Props) {
   const [capturing, setCapturing] = useState(false);
 
   const data = useCardData(report);
-  const { score, role, automatedTasks, totalTasks, automationYear, salaryRiskLPA, date } = data;
+  const { score, role, automatedTasks, totalTasks, automationYear, salaryRiskLabel, date } = data;
 
   useEffect(() => { return () => { mountedRef.current = false }; }, []);
 
@@ -480,7 +480,7 @@ export default function ShareableScoreCard({ report }: Props) {
   }, [imageUrl]);
 
   // Share caption text
-  const caption = `"Your boss already knows your job is disappearing. Do you?"\n\nI just scanned my resume on JobBachao. ${automatedTasks} of my ${totalTasks || 5} tasks will be automated by ${automationYear}.\nMy AI displacement score: ${score}/100. ${salaryRiskLPA} of my salary is already at risk.\n\nTook 60 seconds. Check yours 👇\njobbachao.com`;
+  const caption = `"Your boss already knows your job is disappearing. Do you?"\n\nI just scanned my resume on JobBachao. ${automatedTasks} of my ${totalTasks || 5} tasks will be automated by ${automationYear}.\nMy AI displacement score: ${score}/100. ${salaryRiskLabel} of my salary is already at risk.\n\nTook 60 seconds. Check yours 👇\njobbachao.com`;
 
   const handleDownload = useCallback(async () => {
     const url = await ensureImage();
@@ -559,7 +559,7 @@ export default function ShareableScoreCard({ report }: Props) {
             <strong>"Your boss already knows your job is disappearing. Do you?"</strong>
             {'\n\n'}I just scanned my resume on JobBachao.{' '}
             <strong>{automatedTasks} of my {totalTasks || 5} tasks will be automated by {automationYear}.</strong>
-            {' '}My AI displacement score: {score}/100. {salaryRiskLPA} of my salary is already at risk.
+            {' '}My AI displacement score: {score}/100. {salaryRiskLabel} of my salary is already at risk.
             {'\n\n'}Took 60 seconds. Check yours 👇
             {'\n'}<span className="text-primary font-bold">jobbachao.com</span>
           </p>
