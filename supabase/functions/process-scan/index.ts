@@ -1145,7 +1145,9 @@ ${kgContext}`;
           await supabase.from("scans").update({ scan_status: "failed" }).eq("id", body.scanId);
         }
       }
-    } catch {}
+    } catch (recoveryErr) {
+      console.error("[Orchestrator] Recovery handler failed (scan may be stuck in processing):", recoveryErr);
+    }
 
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
