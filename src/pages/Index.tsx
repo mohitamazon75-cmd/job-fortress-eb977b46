@@ -103,6 +103,13 @@ const Index = () => {
   const routedScanId = searchParams.get('id');
   const { track } = useAnalytics();
   const { withMutex, isLocked } = useRequestMutex();
+  const readTestProUnlock = () => {
+    try {
+      return sessionStorage.getItem('jb_test_pro_unlock') === '1';
+    } catch {
+      return false;
+    }
+  };
   const [phase, setPhase] = useState<AppPhase>('hero');
   const [step, setStep] = useState(1);
   const detectCountry = () => {
