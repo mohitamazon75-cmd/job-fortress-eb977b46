@@ -13,6 +13,8 @@ function sleep(ms: number) {
 
 async function searchFirecrawl(apiKey: string, query: string): Promise<string[]> {
   try {
+    const fcController = new AbortController();
+    const fcTimeout = setTimeout(() => fcController.abort(), 15_000);
     const resp = await fetch("https://api.firecrawl.dev/v1/search", {
       method: "POST",
       headers: {
@@ -20,7 +22,9 @@ async function searchFirecrawl(apiKey: string, query: string): Promise<string[]>
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ query, limit: 5, lang: "en", country: "in", tbs: "qdr:m" }),
+      signal: fcController.signal,
     });
+    clearTimeout(fcTimeout);
     if (!resp.ok) return [];
     const data = await resp.json();
     return (data.data || [])
