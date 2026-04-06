@@ -146,33 +146,27 @@ export function computeScoreBreakdown(report: ScanReport): ScoreDecomposition {
   const seniorityProtection = SENIORITY_PROTECTION[tier] ?? 40;
 
   // ── Step 2: KG Floor Enforcement ──
-  // The server's deterministic engine already applies industry floors,
-  // sub-sector floors, and KG skill matching. When determinism_index
-  // is present, it IS the KG-corrected value — don't re-apply floors.
-  // Only apply client-side KG floors when using raw automation_risk
-  // (i.e., the AI agent's unverified estimate, no server pass).
+  // ALWAYS enforce KG disruption baselines as a hard floor, regardless
+  // of whether determinism_index came from the server. The server's DI
+  // can be unreliable (e.g., returning 22% for Marketing when KG says 65%).
+  // The KG floor is the last line of defense against score inflation.
   let effectiveAutomationRisk = aiAutomationRisk;
   let kgOverrideApplied = false;
 
-  const serverAlreadyCorrected = report.determinism_index != null;
-
-  if (!serverAlreadyCorrected) {
-    // Fallback: no server DI available, apply client-side KG floors
-    const kgBaseline = getKGBaseline(
-      report.role,
-      report.matched_job_family ?? (report as any).matchedJobFamily
-    );
-    
-    if (kgBaseline !== null) {
-      const minAllowedRisk = Math.max(0, kgBaseline - MAX_AI_OPTIMISM_DEVIATION);
-      if (aiAutomationRisk < minAllowedRisk) {
-        effectiveAutomationRisk = minAllowedRisk;
-        kgOverrideApplied = true;
-        console.log(
-          `[ScoreEngine] KG override: AI said risk=${aiAutomationRisk}% for "${report.role}", ` +
-          `but KG baseline=${kgBaseline}%. Snapped to ${effectiveAutomationRisk}%.`
-        );
-      }
+  const kgBaseline = getKGBaseline(
+    report.role,
+    report.matched_job_family ?? (report as any).matchedJobFamily
+  );
+  
+  if (kgBaseline !== null) {
+    const minAllowedRisk = Math.max(0, kgBaseline - MAX_AI_OPTIMISM_DEVIATION);
+    if (aiAutomationRisk < minAllowedRisk) {
+      effectiveAutomationRisk = minAllowedRisk;
+      kgOverrideApplied = true;
+      console.log(
+        `[ScoreEngine] KG override: AI/server said risk=${aiAutomationRisk}% for "${report.role}", ` +
+        `but KG baseline=${kgBaseline}%. Snapped to ${effectiveAutomationRisk}%.`
+      );
     }
   }
 
