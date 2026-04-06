@@ -13,6 +13,7 @@ import { useLiveEnrichment } from '@/hooks/use-live-enrichment';
 import DataProvenance from '@/components/cards/DataProvenance';
 import WhyThisScore from '@/components/cards/WhyThisScore';
 import FreeActionCard from '@/components/cards/FreeActionCard';
+import { getVibe } from '@/lib/get-vibe';
 
 // ═══════════════════════════════════════════════════════════════
 // MERGED: Score Reveal + Intelligence Profile in one scrollable view
@@ -23,79 +24,6 @@ interface AIDossierRevealProps {
   onComplete: () => void;
   scanId?: string;
   isProUser?: boolean;
-}
-
-// ── Intelligence Profile Vibe (from JobSafetyCard) ──
-type Vibe = {
-  emoji: string; label: string; color: string; bg: string; border: string;
-  headline: string; body: string; replaceability: string; bullets: string[];
-  warmIntro?: string;
-};
-
-function getVibe(score: number, report: ScanReport): Vibe {
-  const tier = inferSeniorityTier(report.seniority_tier);
-  const tierLabel = tier.replace('_', ' ').toLowerCase();
-  const moatSkills = (report.moat_skills || []).length;
-  const rawDemandTrend = report.market_position_model?.demand_trend ?? 'Stable';
-  const demandLabel = (() => {
-    const d = rawDemandTrend.toLowerCase().trim();
-    if (d.includes('rising') || d.includes('growing') || d.includes('high')) return 'strong';
-    if (d.includes('stable') || d.includes('steady')) return 'steady';
-    if (d.includes('declining') || d.includes('falling') || d.includes('weak')) return 'softening';
-    if (d.includes('pressure') || d.includes('competitive')) return 'under pressure';
-    return 'steady'; // Safe fallback — prevents "demand demand" text bug
-  })();
-  const automationRisk = report.automation_risk ?? report.determinism_index ?? 50;
-  const roleName = getVerbatimRole(report);
-  const talentDensity = report.market_position_model?.talent_density ?? 'moderate';
-
-  if (score >= 70) return {
-    emoji: '🛡️', label: 'Safe Zone', color: 'text-prophet-green', bg: 'bg-prophet-green/[0.06]', border: 'border-prophet-green/20',
-    headline: "Strong today — but the ground is shifting fast.",
-    warmIntro: `Right now, you're ahead. But AI capability is doubling every 8-12 months. The ${roleName}s who stay safe are the ones who see what's coming next.`,
-    body: `Only ~${Math.round(automationRisk)}% of your work overlaps with AI today — that's genuinely good. But 18 months ago, that number was under ${Math.max(5, Math.round(automationRisk * 0.5))}%. The tools replacing parts of your role are getting better quietly, and the professionals who lose ground are almost always the ones who assumed their position was permanent.`,
-    replaceability: "Today, replacing you would be hard. But AI-augmented competitors are learning to do 80% of what you do at 20% of the cost — your edge needs active maintenance.",
-    bullets: [
-      `Hiring demand is ${demandLabel} now — but ${demandLabel === 'strong' ? 'companies are already piloting AI alternatives for this exact role' : 'AI tools are eating into this category faster than hiring trends show'}`,
-      moatSkills >= 3 ? `${moatSkills} of your skills are still hard to automate — but 2 of them weren't at risk 2 years ago either. The "safe" list is shrinking.` : "Your judgment-heavy work protects you — but AI agents are starting to handle nuanced decisions too",
-      `Your defense plan maps exactly which ${moatSkills >= 1 ? 'of your moat skills have the shortest shelf life' : 'capabilities to build'} — so you stay ahead of the curve, not react to it`,
-    ],
-  };
-  if (score >= 50) return {
-    emoji: '⚡', label: 'Stay Sharp', color: 'text-primary', bg: 'bg-primary/[0.06]', border: 'border-primary/20',
-    headline: "You're in the danger zone where most people feel fine — until they're not.",
-    warmIntro: "This is the trickiest score range. You feel secure, your manager hasn't flagged anything — but this is exactly where silent displacement happens.",
-    body: `About ${Math.round(automationRisk)}% of ${roleName} tasks can be handled by AI today. That number was lower last quarter. The gap between 'doing fine' and 'being replaced by someone who uses AI' is closing faster than most people realize.`,
-    replaceability: "You're valued — but a younger professional who's mastered AI tools can now deliver your output in half the time. That's the real competition.",
-    bullets: [
-      `Market demand is ${demandLabel} — but companies are hiring fewer people for more output. AI-augmented teams are the new baseline.`,
-      moatSkills > 0 ? `${moatSkills} of your strengths are hard to replicate today — but without active investment, that number drops to zero within 2 years` : "You don't have a clear 'irreplaceable' skill yet — and that's the single biggest risk factor we flag",
-      "Your defense plan identifies the exact 1-2 moves that shift you from 'replaceable' to 'essential' — most people in your score range only need 90 days",
-    ],
-  };
-  if (score >= 30) return {
-    emoji: '🔥', label: 'Heads Up', color: 'text-prophet-gold', bg: 'bg-prophet-gold/[0.06]', border: 'border-prophet-gold/20',
-    headline: "Your role is more exposed than most — but you have a window.",
-    body: `Around ${Math.round(automationRisk)}% of ${roleName} tasks are exactly what AI is getting good at. The good news: you're seeing this before most people in your role even think about it.`,
-    replaceability: "This role could be backfilled faster than you'd like. But that's precisely why seeing it clearly now changes everything.",
-    bullets: [
-      'A significant portion of your daily work follows patterns AI can learn quickly',
-      moatSkills > 0 ? `You have ${moatSkills} unique strengths — lean into these hard, they're your margin` : "Right now, it's hard to point to one thing that makes you irreplaceable — let's fix that",
-      'Your defense plan shows the fastest path to making yourself irreplaceable — most people in your range can shift their score in 60-90 days',
-    ],
-  };
-  return {
-    emoji: '🚨', label: 'Act Now', color: 'text-destructive', bg: 'bg-destructive/[0.06]', border: 'border-destructive/20',
-    warmIntro: "You're not alone in this. 1 in 3 tech professionals in India scored under 40 this year. The ones who turned it around started with exactly this kind of honest picture.",
-    headline: "This is the warning your company won't give you.",
-    body: `Most ${roleName} day-to-day work maps onto what AI already does well — that's the structural reality. But knowing this puts you 6 months ahead of most people in your role.`,
-    replaceability: "This seat could be filled quickly. But you're here, looking at this clearly — and that's the whole point of doing this now.",
-    bullets: [
-      `~${Math.round(automationRisk)}% of your tasks overlap with AI capability — among the highest we see`,
-      "High talent supply means you're competing with more people and faster tools — the window to differentiate is now",
-      'Your defense plan is your 90-day escape route — it maps exactly how to pivot from "at risk" to "in demand"',
-    ],
-  };
 }
 
 // ── Dossier Loading Steps ──
