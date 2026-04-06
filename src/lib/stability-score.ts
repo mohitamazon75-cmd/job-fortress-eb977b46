@@ -182,11 +182,18 @@ export function computeScoreBreakdown(report: ScanReport): ScoreDecomposition {
     : Math.min(aiMoatScore, UNVERIFIED_MOAT_CAP);
 
   // ── Step 4: Market percentile reality check ──
+  // KG-linked cap: high-disruption roles shouldn't claim top-quartile market position.
+  // Formula: kgMarketCap = 100 - kgBaseline, clamped to [20, 55].
+  // E.g., Marketing (KG=65%) → cap at 35%; Doctor (KG=15%) → cap at 55%.
+  const kgMarketCap = kgBaseline !== null
+    ? Math.max(20, Math.min(55, 100 - kgBaseline))
+    : UNVERIFIED_MARKET_CAP;
   const hasCohortData = (report as any).cohort_size > 10
     || report.survivability?.peer_percentile_estimate;
-  const effectiveMarketPercentile = hasCohortData
-    ? aiMarketPercentile
-    : Math.min(aiMarketPercentile, UNVERIFIED_MARKET_CAP);
+  const effectiveMarketPercentile = Math.min(
+    aiMarketPercentile,
+    hasCohortData ? kgMarketCap : Math.min(kgMarketCap, UNVERIFIED_MARKET_CAP)
+  );
 
   // ── Step 5: Compute raw factor scores (0-100, higher = better) ──
   const rawAiResistance = Math.max(0, Math.min(100, 100 - effectiveAutomationRisk));
