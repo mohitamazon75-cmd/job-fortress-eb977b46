@@ -421,7 +421,6 @@ CONTENT VERIFICATION RULES (CRITICAL):
 - For books: use titles that are well-known bestsellers or from major publishers (HBR Press, Penguin, etc.). Include the REAL author name.
 - For podcasts: only name real, active podcasts (e.g. "How I Built This", "Masters of Scale", "The Tim Ferriss Show", "Lex Fridman Podcast"). NEVER invent podcast names.
 - For YouTube/videos: only name videos from well-known creators or official channels. Prefer the channel name over a specific video title if unsure.
-- Set content_verified to false if ANY recommendation might not be a real, currently-available title.
 - When unsure, use the CATEGORY descriptor instead: e.g., "Any McKinsey AI report from mckinsey.com" is safer than a specific invented report title.
 
 Output ONLY valid JSON:
@@ -431,24 +430,20 @@ Output ONLY valid JSON:
     "title": string,
     "author": string (real author name — REQUIRED),
     "action": string (what to do with it),
-    "time_commitment": string,
-    "content_verified": boolean (true = you are confident this title/author combination exists and is available; false = may be approximate)
+    "time_commitment": string
   },
   "watch": {
     "title": string,
     "channel_or_creator": string (real creator/channel name — REQUIRED),
     "action": string,
-    "time_commitment": string,
-    "content_verified": boolean
+    "time_commitment": string
   },
   "listen": {
     "title": string,
     "podcast_name": string (real podcast name — REQUIRED),
     "action": string,
-    "time_commitment": string,
-    "content_verified": boolean
-  },
-  "all_content_verified": boolean (true ONLY if ALL three items above have content_verified=true)
+    "time_commitment": string
+  }
 }`;
 
 export function buildSeniorityJudoPrompt(
