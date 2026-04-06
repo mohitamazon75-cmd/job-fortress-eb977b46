@@ -208,7 +208,7 @@ export default function ResultsChoose() {
             buttonStyle="filled"
             onNavigate={() => logAndNavigate("model_b_chosen", `/results/model-b?id=${analysisId}`)}
             onUnlock={() => navigate("/pricing")}
-            LockIcon={Rocket}
+            
           />
         </div>
 
