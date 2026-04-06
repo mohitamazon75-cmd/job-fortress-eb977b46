@@ -194,7 +194,7 @@ export default function CompetitiveLandscapeWidget({ currentRole, industry, curr
             >
               {/* AI Risk micro-bar */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-muted">
-                <div className={`h-full ${getRiskBarColor(t.ai_risk_pct)}`} style={{ width: `${t.ai_risk_pct}%` }} />
+                <div className={`h-full ${getRiskBarColor(transitionRiskNumeric(t))}`} style={{ width: `${transitionRiskNumeric(t)}%` }} />
               </div>
 
               <div className="p-3 pt-3.5">
