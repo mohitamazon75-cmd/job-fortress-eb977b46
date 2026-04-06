@@ -269,11 +269,11 @@ This is NOT generic "AI will automate X" — this is SPECIFIC, CURRENT, EVIDENCE
 - what_human_still_owns: ONE sentence on what humans STILL do better. This is the user's survival playbook.
   BAD: "Humans add creativity"
   GOOD: "Architecture decisions across microservices, debugging production incidents with incomplete logs, and cross-team API contract negotiations remain human-dependent"
-- industry_proof: ONE sentence citing a REAL, SPECIFIC example from their industry/company-tier.
-  BAD: "Companies are adopting AI"
-  GOOD: "Infosys cut 3,000 junior developer roles in 2025 after deploying GitHub Copilot enterprise-wide across delivery centers"
-  GOOD: "HUL's marketing team reduced content production headcount by 40% using AI-generated creatives in Q3 2025"
-  NOTE: Use REAL examples you're confident about. If unsure, use the pattern: "[Industry] companies in [geography] are already [specific adoption]"
+- industry_proof: ONE sentence describing the displacement pattern for this skill, grounded ONLY in the profile context provided above. Reference the skill demand signals, company health score, displacement timeline, or KG data already in the context. Do NOT invent industry statistics, company names, headcount figures, layoff counts, or percentage reductions. If no grounding data exists for this skill, use the pattern: "Industry trend data indicates [general directional statement]" — NEVER a specific claim. BANNED: citing specific companies cutting specific numbers of roles. BANNED: percentage reductions you cannot verify from the context.
+  BAD: "Infosys cut 3,000 junior developer roles in 2025" (fabricated statistic)
+  BAD: "HUL reduced headcount by 40%" (unverifiable claim)
+  GOOD: "Based on the displacement timeline, partial automation of this skill begins within 18 months, with tools like Cursor already handling component-level code generation"
+  GOOD: "Industry trend data indicates growing AI adoption in content production, with the skill demand signal showing declining postings for this capability"
 - risk_pct: number 0-100 — your assessment of how much of THIS specific skill's workload AI handles TODAY (not future).
 
 Output ONLY valid JSON:
