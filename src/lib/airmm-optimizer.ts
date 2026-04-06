@@ -6,7 +6,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { ScanReport } from './scan-engine';
-
+import { computeScoreBreakdown } from './stability-score';
 export type RiskTolerance = "LOW" | "MEDIUM" | "HIGH";
 
 export interface HumanCapital {
