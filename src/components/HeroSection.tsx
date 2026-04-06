@@ -245,10 +245,10 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto mb-10"
           >
             {[
-              { value: '95+', label: 'Job Families', icon: Network, color: 'hsl(var(--primary))' },
-              { value: '147+', label: 'Skill Vectors', icon: Zap, color: 'hsl(var(--prophet-cyan))' },
+              { value: '2', label: 'Full Reports', icon: BarChart3, color: 'hsl(var(--primary))' },
+              { value: '10+', label: 'Deliverables', icon: Zap, color: 'hsl(var(--prophet-cyan))' },
               { value: '200+', label: 'AI Tools Tracked', icon: Brain, color: 'hsl(var(--prophet-gold))' },
-              { value: '100%', label: 'Deterministic', icon: BarChart3, color: 'hsl(var(--prophet-green))' },
+              { value: '< 4 min', label: 'Deep Analysis', icon: Network, color: 'hsl(var(--prophet-green))' },
             ].map((stat, i) => {
               const Icon = stat.icon;
               return (
