@@ -195,7 +195,7 @@ function CaptureTarget({
       }}>
         <p style={{
           fontFamily: FONT_HEADLINE, fontSize: 24, fontWeight: 900,
-          color: C.white, lineHeight: 1.35, margin: 0,
+          color: C.text, lineHeight: 1.35, margin: 0,
           fontStyle: 'italic',
         }}>"{headline}"</p>
       </div>
@@ -245,7 +245,7 @@ function CaptureTarget({
         {/* Role & industry */}
         <p style={{
           fontFamily: FONT_HEADLINE, fontSize: 22, fontWeight: 900,
-          color: C.white, lineHeight: 1.3, margin: '18px 0 0',
+          color: C.text, lineHeight: 1.3, margin: '18px 0 0',
           wordBreak: 'break-word',
         }}>{role}</p>
         <p style={{
@@ -427,7 +427,7 @@ function CaptureTarget({
         <div>
           <p style={{
             fontFamily: FONT_HEADLINE, fontSize: 16, fontWeight: 900,
-            color: C.white, margin: 0, lineHeight: 1.3,
+            color: C.text, margin: 0, lineHeight: 1.3,
           }}>How safe is your job?</p>
           <p style={{
             fontSize: 11, color: C.muted, margin: '3px 0 0',
@@ -439,7 +439,7 @@ function CaptureTarget({
         }}>
           <span style={{
             fontFamily: FONT_BODY, fontSize: 13, fontWeight: 800,
-            color: C.white, letterSpacing: '0.02em',
+            color: C.text, letterSpacing: '0.02em',
           }}>Check Now →</span>
         </div>
       </div>
