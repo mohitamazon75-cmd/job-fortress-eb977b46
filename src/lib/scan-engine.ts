@@ -70,7 +70,8 @@ export interface SkillGap {
   importance_for_pivot: number;
   fastest_path: string;
   weeks_to_proficiency: number;
-  salary_unlock_inr_monthly: number;
+  salary_unlock_inr_monthly?: number; // deprecated — legacy scans may still have this
+  demand_signal?: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
 export interface LearningResource {

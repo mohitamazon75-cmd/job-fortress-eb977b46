@@ -357,7 +357,7 @@ Output ONLY valid JSON:
       "importance_for_pivot": float,
       "fastest_path": string,
       "weeks_to_proficiency": integer,
-      "salary_unlock_inr_monthly": integer
+      "demand_signal": "HIGH" | "MEDIUM" | "LOW" (assess from the LIVE SKILL DEMAND VALIDATION data in the profile context — HIGH if the skill appears in growing job postings, LOW if declining or niche, MEDIUM if stable or no demand data exists for this skill)
     }
   ],
   "cultural_risk_assessment": {

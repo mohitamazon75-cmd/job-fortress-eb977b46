@@ -134,7 +134,7 @@ export const Agent2BSchema = z.object({
     importance_for_pivot: z.number(),
     fastest_path: z.string(),
     weeks_to_proficiency: z.number(),
-    salary_unlock_inr_monthly: z.number().optional(),
+    demand_signal: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
   })).optional(),
 });
 

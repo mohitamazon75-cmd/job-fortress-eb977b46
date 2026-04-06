@@ -197,7 +197,7 @@ export function buildPivotOptions(report: ScanReport): PivotOption[] {
     pivots.push({
       id: 'pivot-upskill',
       label: `${gap.missing_skill} Specialist`,
-      targetIncome: Math.round(monthlySalary + (gap.salary_unlock_inr_monthly || monthlySalary * 0.3)),
+      targetIncome: Math.round(monthlySalary + (gap.salary_unlock_inr_monthly || (gap.demand_signal === 'HIGH' ? monthlySalary * 0.4 : gap.demand_signal === 'LOW' ? monthlySalary * 0.15 : monthlySalary * 0.3))),
       skillMatch: 0.45,
       learningMonths: gap.weeks_to_proficiency ? Math.ceil(gap.weeks_to_proficiency / 4) : 4,
       learningHoursTotal: (gap.weeks_to_proficiency || 16) * 8,
