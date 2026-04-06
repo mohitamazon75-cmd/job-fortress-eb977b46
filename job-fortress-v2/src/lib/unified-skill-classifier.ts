@@ -24,6 +24,8 @@ export interface ClassifiedSkill {
   weight?: number;
   estimatedMonths: number;
   actionTag: string;
+  /** Whether this skill was directly extracted from the resume or inferred from role profile */
+  source: 'extracted' | 'inferred';
 }
 
 // Power-curve formula mirroring server's OBSOLESCENCE_POWER_CURVE logic
