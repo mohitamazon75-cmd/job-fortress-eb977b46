@@ -89,6 +89,8 @@ Deno.serve(async (req) => {
 
     for (const job of batchJobs) {
       try {
+        const pxController = new AbortController();
+        const pxTimeout = setTimeout(() => pxController.abort(), 15_000);
         const resp = await fetch("https://api.perplexity.ai/chat/completions", {
           method: "POST",
           headers: {

@@ -90,9 +90,13 @@ Deno.serve(async (req: Request) => {
       );
     } else {
       const rzpAuth = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
+      const rzpController = new AbortController();
+      const rzpTimeout = setTimeout(() => rzpController.abort(), 15_000);
       const rzpResp = await fetch(`https://api.razorpay.com/v1/payments/${payment_id}`, {
         headers: { Authorization: `Basic ${rzpAuth}` },
+        signal: rzpController.signal,
       });
+      clearTimeout(rzpTimeout);
 
       if (!rzpResp.ok) {
         console.error("[activate-subscription] Razorpay API error:", await rzpResp.text());
