@@ -404,7 +404,20 @@ function CaptureTarget({
         </div>
       )}
 
-      {/* ── 8. CTA footer ── */}
+      {/* ── 8. Hope line — the emotional turn ── */}
+      <div style={{
+        margin: '0 28px 16px', padding: '14px 20px',
+        background: `${C.safe}08`, borderRadius: 8,
+        border: `1px solid ${C.safe}20`,
+        textAlign: 'center',
+      }}>
+        <p style={{
+          fontSize: 14, color: C.safe, fontWeight: 700,
+          margin: 0, fontStyle: 'italic', lineHeight: 1.5,
+        }}>{hopeLine}</p>
+      </div>
+
+      {/* ── 9. CTA footer ── */}
       <div style={{
         padding: '18px 28px',
         borderTop: `1px solid ${C.border}`,
@@ -414,7 +427,7 @@ function CaptureTarget({
           <p style={{
             fontFamily: FONT_HEADLINE, fontSize: 16, fontWeight: 900,
             color: C.white, margin: 0, lineHeight: 1.3,
-          }}>Can you beat this score?</p>
+          }}>How safe is your job?</p>
           <p style={{
             fontSize: 11, color: C.muted, margin: '3px 0 0',
           }}>Free · 60 seconds · No sign-up</p>
@@ -426,7 +439,7 @@ function CaptureTarget({
           <span style={{
             fontFamily: FONT_BODY, fontSize: 13, fontWeight: 800,
             color: C.white, letterSpacing: '0.02em',
-          }}>Scan Now →</span>
+          }}>Check Now →</span>
         </div>
       </div>
     </div>
