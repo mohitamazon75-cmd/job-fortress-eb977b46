@@ -274,7 +274,7 @@ interface ReportCardProps {
 function ReportCard({
   locked, loading, team, icon, teamColor, title, subtitle,
   description, pills, pillBg, pillColor, checklist, checkColor,
-  buttonLabel, buttonStyle, onNavigate, onUnlock, LockIcon,
+  buttonLabel, buttonStyle, onNavigate, onUnlock,
 }: ReportCardProps) {
   const isTeamB = team === "B";
   const cardBg = isTeamB
