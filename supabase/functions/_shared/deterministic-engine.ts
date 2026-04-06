@@ -1290,7 +1290,7 @@ export function extractReplacingTools(
   });
 
   for (const skill of uniqueSkills) {
-    const matched = matchSkillToKG(skill, skillRiskData);
+    const matched = matchSkillToKG(skill, skillRiskData, kgIndex);
     if (matched && matched.replacement_tools?.length > 0) {
       for (const toolName of matched.replacement_tools) {
         const key = toolName.toLowerCase().trim();
