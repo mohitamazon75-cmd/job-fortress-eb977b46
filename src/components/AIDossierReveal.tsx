@@ -262,8 +262,8 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           <span className="text-[11px] text-muted-foreground ml-auto">India · {freshnessLabel}</span>
         </div>
 
-        {/* Peer comparison bar — always shown when data available */}
-        {peerPct !== null && (
+        {/* Peer comparison bar — derived from career position score */}
+        {(
           <div className="mt-3 pt-3 border-t border-border">
             <div className="flex justify-between text-[11px] mb-1.5">
               <span className="text-muted-foreground">
