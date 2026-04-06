@@ -1515,6 +1515,19 @@ export function computeAll(
     }
   }
 
+  // 1b. KG Baseline Floor Enforcement
+  // The DI from calculateDeterminismIndex can underestimate risk when few skills
+  // match and executive moat reductions are applied. The jobBaseline from
+  // job_taxonomy.disruption_baseline is research-backed and should act as a floor
+  // (with a small tolerance for seniority-adjusted roles).
+  const isExecOrSeniorForFloor = profile.seniority_tier === 'EXECUTIVE' || profile.seniority_tier === 'SENIOR_LEADER';
+  const kgFloorTolerance = isExecOrSeniorForFloor ? 15 : 5; // Executives can deviate more from baseline
+  const kgMinDI = Math.max(CALIBRATION.DI_CLAMP_MIN, jobBaseline - kgFloorTolerance);
+  if (determinismIndex < kgMinDI) {
+    console.log(`[DeterministicEngine] KG floor enforcement: DI=${determinismIndex} < floor=${kgMinDI} (baseline=${jobBaseline}, tolerance=${kgFloorTolerance}). Snapping up.`);
+    determinismIndex = kgMinDI;
+  }
+
   // 2. Monthly Salary (Task 6: enhanced)
   const monthlySalary = estimateMonthlySalary(
     profile.estimated_monthly_salary_inr,

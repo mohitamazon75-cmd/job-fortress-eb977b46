@@ -5,6 +5,7 @@ import HinglishTooltip from '@/components/dashboard/HinglishTooltip';
 import { AlertTriangle, CheckCircle, Brain, Clock, Shield, ShieldCheck, TrendingDown, ArrowRight, Flame, Eye, Zap, ChevronDown, Info, FlaskConical, ExternalLink, Swords, Database } from 'lucide-react';
 import { getExecutiveLabel } from '@/lib/seniority-utils';
 import { formatCurrency, normalizeTools } from '@/lib/scan-engine';
+import { computeStabilityScore } from '@/lib/stability-score';
 import MLWakingState from '@/components/MLWakingState';
 import PanicIndexWidget from '@/components/PanicIndexWidget';
 import CompanyBenchmarkWidget from '@/components/CompanyBenchmarkWidget';
@@ -226,9 +227,18 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
                   ? 'Moderate — some protection, but room to strengthen'
                   : 'Low — many others can do what you do right now'}
               </p>
-              {report.survivability.peer_percentile_estimate && (
-                <p className="text-[11px] text-muted-foreground mt-0.5 font-semibold">{report.survivability.peer_percentile_estimate}</p>
-              )}
+              {/* Use score-derived peer positioning instead of raw agent estimate */}
+              {(() => {
+                const posScore = computeStabilityScore(report);
+                const derivedPct = Math.min(95, Math.max(5, Math.round(((posScore - 5) / 90) * 100)));
+                return (
+                  <p className="text-[11px] text-muted-foreground mt-0.5 font-semibold">
+                    {derivedPct > 50
+                      ? `Better protected than ${derivedPct}% of peers`
+                      : `More exposed than ${100 - derivedPct}% of peers`}
+                  </p>
+                );
+              })()}
             </div>
           )}
         </div>

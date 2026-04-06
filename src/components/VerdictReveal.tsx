@@ -29,7 +29,7 @@ function getPlainEnglishVerdict(score: number, report: ScanReport, isExec: boole
   if (score >= 55) return {
     headline: `You're in a decent spot, but stay sharp.`,
     body: `${score}% career position score — your ${displayRole} position is defensible today, but parts of your work are starting to overlap with AI. Now is the time to strengthen your edge.`,
-    hope: `You're better positioned than most. A few targeted skill upgrades could push your score above 70 — and unlock a ₹2-4L package premium.`,
+    hope: `You're better positioned than most. A few targeted skill upgrades could push your score above 70 — and unlock a 10-15% package premium.`,
     papa: `${firstName ? firstName + ', ' : ''}abhi job theek hai but dhyan rakhna padega. AI kuch kaam kar sakti hai jo tum karte ho. Lekin agar agle 3-6 months mein naye tools seekh lo, toh bahut aage nikal jaoge.`,
     color: 'text-primary',
     glow: 'hsl(var(--primary))',
