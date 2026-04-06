@@ -138,6 +138,7 @@ export function classifySkills(report: ScanReport): ClassifiedSkill[] {
       replacedBy: null,
       estimatedMonths: riskToMonths(baseRisk),
       actionTag: '💪 Double down',
+      source: 'extracted',
     });
   }
 
