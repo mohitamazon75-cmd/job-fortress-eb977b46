@@ -1092,6 +1092,7 @@ async function handleCompany(corsHeaders: any, supabase: any, body: any, locale:
   const ms6T = setTimeout(() => ms6Ctrl.abort(), 30_000);
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
+    signal: ms6Ctrl.signal,
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
@@ -1137,11 +1138,10 @@ Maximum 5 news items. No markdown.`,
       temperature: 0.2,
     }),
   });
+  clearTimeout(ms6T);
 
   if (!aiResp.ok) {
-    signal: ms6Ctrl.signal,
     return new Response(
-  clearTimeout(ms6T);
       JSON.stringify({ news: [], error: "AI synthesis failed" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
