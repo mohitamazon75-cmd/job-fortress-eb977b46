@@ -500,7 +500,8 @@ export default function ShareableScoreCard({ report }: Props) {
     }
   }, [imageUrl]);
 
-  const caption = `I just scanned my resume on JobBachao.\n\n${automatedTasks} of my ${totalTasks || 5} tasks will be automated by ${automationYear}.\nMy career safety score: ${score}/100.\n${salaryRiskLabel} salary at risk.\n\nCan you beat my score? 👇\njobbachao.com`;
+  const scoreEmoji = score >= 70 ? '🛡️' : score >= 40 ? '⚠️' : '🚨';
+  const caption = `${scoreEmoji} I just checked how replaceable I am by AI.\n\nResult: ${score}/100. ${automatedTasks} of my ${totalTasks || 5} tasks are already automatable.\n\nScary? Yes. But at least now I know.\n\nHow safe is YOUR job? 👇\njobbachao.com`;
 
   const handleDownload = useCallback(async () => {
     const url = await ensureImage();
