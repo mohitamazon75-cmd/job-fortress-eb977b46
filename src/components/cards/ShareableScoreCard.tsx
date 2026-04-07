@@ -210,8 +210,8 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
           ) : <span />}
         </div>
         <span>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>jobbachao.ai</span>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}> — check your score</span>
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.95)', fontWeight: 700 }}>jobbachao.ai</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', fontWeight: 500 }}> — check your score</span>
         </span>
       </div>
     </div>
