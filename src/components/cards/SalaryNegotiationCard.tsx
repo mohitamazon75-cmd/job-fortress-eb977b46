@@ -246,14 +246,7 @@ export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardP
               </div>
               <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">{s.context}</p>
               <p className="text-xs text-foreground/80 leading-relaxed italic bg-muted/50 rounded-lg p-3">
-                {s.script.split('[Your Target Company]').map((part, idx) => (
-                  <span key={idx}>
-                    {part}
-                    {idx < s.script.split('[Your Target Company]').length - 1 && (
-                      <span className="text-prophet-gold font-bold not-italic underline decoration-dashed">[Your Target Company]</span>
-                    )}
-                  </span>
-                ))}
+                {s.script}
               </p>
             </motion.div>
           ))}
