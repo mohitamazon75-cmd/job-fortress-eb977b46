@@ -14,7 +14,31 @@ interface ThankYouFooterProps {
   userId?: string;
 }
 
-export default function ThankYouFooter({ onStartOver, scanId, userId }: ThankYouFooterProps) {
+function SwitchModelCTA() {
+  const navigate = useNavigate();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.9 }}
+      className="flex flex-col items-center gap-2 pt-2"
+    >
+      <Button
+        onClick={() => navigate('/results/choose')}
+        className="gap-2 font-bold"
+        size="lg"
+      >
+        <ArrowRightLeft className="w-4 h-4" />
+        Try a Different Analysis Model
+      </Button>
+      <p className="text-[10px] text-muted-foreground/60">
+        See how a different AI perspective evaluates your career
+      </p>
+    </motion.div>
+  );
+}
+
+export default function ThankYouFooter({ scanId, userId }: ThankYouFooterProps) {
   const [rating, setRating] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(0);
