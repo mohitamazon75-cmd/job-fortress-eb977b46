@@ -1,13 +1,14 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Bot, User, Loader2, Lock } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Loader2, Lock, Crown, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
 import { SimpleMarkdown } from './SimpleMarkdown';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
-const MAX_QUESTIONS = 10;
+const MAX_QUESTIONS_PER_SCAN = 10;
+const MONTHLY_FREE_LIMIT = 5;
 
 const SUGGESTED_QUESTIONS = [
   "What's my biggest career risk right now?",
@@ -16,17 +17,92 @@ const SUGGESTED_QUESTIONS = [
   "Should I switch industries?",
 ];
 
+function getDaysUntilReset(resetAt: string | null): string {
+  if (!resetAt) return 'in 30 days';
+  const resetDate = new Date(resetAt);
+  resetDate.setDate(resetDate.getDate() + 30);
+  const days = Math.ceil((resetDate.getTime() - Date.now()) / 86400000);
+  if (days <= 0) return 'today';
+  if (days === 1) return 'tomorrow';
+  return `in ${days} days`;
+}
+
+function getResetDateLabel(resetAt: string | null): string {
+  if (!resetAt) return '';
+  const resetDate = new Date(resetAt);
+  resetDate.setDate(resetDate.getDate() + 30);
+  return resetDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+}
+
 export default function ReportChat({ scanId, accessToken, inline }: { scanId: string; accessToken?: string; inline?: boolean }) {
   const [open, setOpen] = useState(inline ? true : false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Count user questions sent
-  const questionCount = useMemo(() => messages.filter(m => m.role === 'user').length, [messages]);
-  const questionsLeft = MAX_QUESTIONS - questionCount;
-  const isExhausted = questionsLeft <= 0;
+  // Monthly usage state
+  const [isPro, setIsPro] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(true);
+  const [monthlyUsed, setMonthlyUsed] = useState(0);
+  const [monthlyRemaining, setMonthlyRemaining] = useState(MONTHLY_FREE_LIMIT);
+  const [resetAt, setResetAt] = useState<string | null>(null);
+  const [usageLoaded, setUsageLoaded] = useState(false);
+
+  // Per-scan count (local)
+  const scanQuestionCount = useMemo(() => messages.filter(m => m.role === 'user').length, [messages]);
+  const scanQuestionsLeft = MAX_QUESTIONS_PER_SCAN - scanQuestionCount;
+
+  // Effective limit: the most restrictive of monthly and per-scan
+  const isMonthlyExhausted = !isPro && !isAnonymous && monthlyRemaining <= 0;
+  const isScanExhausted = scanQuestionsLeft <= 0;
+  const isExhausted = isMonthlyExhausted || isScanExhausted;
+
+  // Usage bar color
+  const barColor = isPro ? 'bg-prophet-green' : monthlyUsed <= 2 ? 'bg-prophet-green' : monthlyUsed <= 4 ? 'bg-prophet-gold' : 'bg-destructive';
+  const barPct = isPro ? 0 : Math.min(100, (monthlyUsed / MONTHLY_FREE_LIMIT) * 100);
+
+  // Fetch initial usage on mount
+  useEffect(() => {
+    const fetchUsage = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsAnonymous(true);
+          setMonthlyRemaining(MONTHLY_FREE_LIMIT);
+          setUsageLoaded(true);
+          return;
+        }
+        setIsAnonymous(false);
+
+        const { data } = await supabase
+          .from('profiles')
+          .select('coach_questions_used, coach_usage_reset_at, subscription_tier, subscription_expires_at')
+          .eq('id', user.id)
+          .single();
+
+        if (data) {
+          const proActive = data.subscription_tier === 'pro' && 
+            data.subscription_expires_at && new Date(data.subscription_expires_at) > new Date();
+          setIsPro(!!proActive);
+          
+          // Check if reset needed (30 days)
+          const resetTime = data.coach_usage_reset_at ? new Date(data.coach_usage_reset_at) : new Date();
+          const needsReset = resetTime.getTime() < Date.now() - 30 * 24 * 60 * 60 * 1000;
+          const used = needsReset ? 0 : (data.coach_questions_used || 0);
+          
+          setMonthlyUsed(used);
+          setMonthlyRemaining(proActive ? 999 : Math.max(0, MONTHLY_FREE_LIMIT - used));
+          setResetAt(data.coach_usage_reset_at);
+        }
+      } catch (err) {
+        console.error('[ReportChat] Usage fetch error:', err);
+      }
+      setUsageLoaded(true);
+    };
+    fetchUsage();
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -34,8 +110,15 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
     }
   }, [messages, open]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || loading || isExhausted) return;
+    
+    // Pre-check monthly limit for free authenticated users
+    if (!isPro && !isAnonymous && monthlyRemaining <= 0) {
+      setShowLimitModal(true);
+      return;
+    }
+
     const userMsg: Msg = { role: 'user', content: text.trim() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
@@ -46,9 +129,6 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
     try {
       const CHAT_URL = `${SUPABASE_URL}/functions/v1/chat-report`;
 
-      // Step 1: Validate identity via getUser() (server-verified, tamper-proof).
-      // Step 2: getSession() is used ONLY to retrieve the access_token string for
-      // the Authorization header — NOT for auth validation (already done above).
       const { data: { user } } = await supabase.auth.getUser();
       const authToken = user
         ? (await supabase.auth.getSession()).data.session?.access_token
@@ -63,11 +143,35 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
         body: JSON.stringify({ messages: [...messages, userMsg], scanId, accessToken }),
       });
 
+      // Handle 402 — monthly limit reached
+      if (resp.status === 402) {
+        const err = await resp.json().catch(() => ({}));
+        if (err.code === 'COACH_LIMIT_REACHED') {
+          setMonthlyRemaining(0);
+          setMonthlyUsed(MONTHLY_FREE_LIMIT);
+          setShowLimitModal(true);
+          // Remove the user message we optimistically added
+          setMessages(prev => prev.slice(0, -1));
+          setLoading(false);
+          return;
+        }
+      }
+
       if (!resp.ok || !resp.body) {
         const err = await resp.json().catch(() => ({ error: 'Failed' }));
         setMessages(prev => [...prev, { role: 'assistant', content: err.error || 'Something went wrong. Please try again.' }]);
         setLoading(false);
         return;
+      }
+
+      // Read remaining count from response header
+      const remainingHeader = resp.headers.get('X-Coach-Questions-Remaining');
+      if (remainingHeader !== null) {
+        const remaining = parseInt(remainingHeader, 10);
+        if (!isNaN(remaining)) {
+          setMonthlyRemaining(remaining);
+          setMonthlyUsed(remaining >= 999 ? 0 : MONTHLY_FREE_LIMIT - remaining);
+        }
       }
 
       const reader = resp.body.getReader();
@@ -131,24 +235,133 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
       setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Please try again.' }]);
     }
     setLoading(false);
+  }, [loading, isExhausted, isPro, isAnonymous, monthlyRemaining, messages, scanId, accessToken]);
+
+  // ── Usage counter component ────────────────────────────────
+  const UsageCounter = () => {
+    if (!usageLoaded) return null;
+    if (isPro) {
+      return (
+        <div className="flex items-center gap-1.5 text-[10px] text-prophet-green font-bold">
+          <span>∞</span> Unlimited questions
+        </div>
+      );
+    }
+    if (isAnonymous) {
+      return null; // Don't show counter for anonymous users
+    }
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center justify-between text-[10px]">
+          <span className="text-muted-foreground font-semibold">
+            {monthlyUsed} of {MONTHLY_FREE_LIMIT} questions used this month
+          </span>
+          {resetAt && (
+            <span className="text-muted-foreground/60 flex items-center gap-0.5">
+              <Clock className="w-2.5 h-2.5" /> Resets {getDaysUntilReset(resetAt)}
+            </span>
+          )}
+        </div>
+        <div className="h-1 rounded-full bg-muted overflow-hidden">
+          <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${barPct}%` }} />
+        </div>
+      </div>
+    );
   };
 
-  // Inline mode: render chat directly without FAB/overlay
+  // ── Limit modal ────────────────────────────────────────────
+  const LimitModal = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="absolute inset-0 z-10 bg-background/90 backdrop-blur-sm flex items-center justify-center p-6"
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="rounded-2xl border-2 border-primary/20 bg-card p-6 text-center space-y-4 max-w-xs w-full shadow-lg"
+      >
+        <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+          <Lock className="w-7 h-7 text-destructive" />
+        </div>
+        <h3 className="text-base font-black text-foreground">
+          {isAnonymous ? "Sign up to continue" : "You've used your 5 free questions this month"}
+        </h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {isAnonymous
+            ? "Create a free account to track your monthly questions and save this conversation."
+            : `Your questions reset ${resetAt ? `on ${getResetDateLabel(resetAt)}` : 'in 30 days'}. Or unlock unlimited conversations with Pro.`
+          }
+        </p>
+        <div className="space-y-2">
+          {isAnonymous ? (
+            <button
+              onClick={() => { window.location.href = '/auth'; }}
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-black text-sm flex items-center justify-center gap-2"
+            >
+              Sign up free
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => { window.location.href = '/pricing'; }}
+                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-black text-sm flex items-center justify-center gap-2"
+              >
+                <Crown className="w-4 h-4" /> Unlock Pro →
+              </button>
+              <button
+                onClick={() => setShowLimitModal(false)}
+                className="w-full py-2.5 rounded-xl border border-border text-muted-foreground text-xs font-semibold hover:bg-muted/50 transition-colors"
+              >
+                Wait for reset — {getDaysUntilReset(resetAt)}
+              </button>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
+  // ── Header subtitle ────────────────────────────────────────
+  const headerSubtitle = isMonthlyExhausted
+    ? 'Monthly limit reached'
+    : isScanExhausted
+      ? 'Scan question limit reached'
+      : isPro
+        ? 'Unlimited questions · Grounded in your report data'
+        : isAnonymous
+          ? `${scanQuestionsLeft} question${scanQuestionsLeft === 1 ? '' : 's'} remaining · Grounded in your report data`
+          : `${Math.min(monthlyRemaining, scanQuestionsLeft)} question${Math.min(monthlyRemaining, scanQuestionsLeft) === 1 ? '' : 's'} remaining`;
+
+  const inputPlaceholder = isMonthlyExhausted
+    ? `Limit reached — resets ${getDaysUntilReset(resetAt)}`
+    : isScanExhausted
+      ? 'Question limit reached for this scan'
+      : `Ask about your career...`;
+
+  // Inline mode
   if (inline) {
     return (
-      <div className="rounded-2xl border border-border bg-card flex flex-col overflow-hidden" style={{ minHeight: '500px', maxHeight: '70vh' }}>
+      <div className="rounded-2xl border border-border bg-card flex flex-col overflow-hidden relative" style={{ minHeight: '500px', maxHeight: '70vh' }}>
+        <AnimatePresence>{showLimitModal && <LimitModal />}</AnimatePresence>
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border" style={{ background: 'var(--gradient-primary)' }}>
+        <div className="px-4 py-3 border-b border-border" style={{ background: 'var(--gradient-primary)' }}>
           <div className="flex items-center gap-2">
             <Bot className="w-5 h-5 text-primary-foreground" />
             <div>
               <p className="text-sm font-black text-primary-foreground">AI Career Coach</p>
-              <p className="text-[10px] text-primary-foreground/70">
-                {isExhausted ? 'Question limit reached' : `${questionsLeft} question${questionsLeft === 1 ? '' : 's'} remaining · Grounded in your report data`}
-              </p>
+              <p className="text-[10px] text-primary-foreground/70">{headerSubtitle}</p>
             </div>
           </div>
         </div>
+
+        {/* Usage counter */}
+        {!isPro && !isAnonymous && usageLoaded && (
+          <div className="px-4 py-2 border-b border-border bg-muted/30">
+            <UsageCounter />
+          </div>
+        )}
 
         {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -159,16 +372,24 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
                   <Bot className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <div className="bg-muted rounded-xl rounded-tl-sm px-3 py-2 text-sm text-foreground">
-                  I've analyzed your full career report. Ask me anything — your skills, risks, salary, pivots. I have <span className="font-bold">{MAX_QUESTIONS} questions</span> available.
+                  I've analyzed your full career report. Ask me anything — your skills, risks, salary, pivots.
+                  {isPro
+                    ? ' You have unlimited questions.'
+                    : isAnonymous
+                      ? ` You have ${MAX_QUESTIONS_PER_SCAN} questions available.`
+                      : ` You have ${monthlyRemaining} questions this month.`
+                  }
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1.5 ml-9">
-                {SUGGESTED_QUESTIONS.map((q) => (
-                  <button key={q} onClick={() => sendMessage(q)} className="text-[11px] px-2.5 py-1 rounded-full border border-primary/20 text-primary hover:bg-primary/5 transition-colors">
-                    {q}
-                  </button>
-                ))}
-              </div>
+              {!isExhausted && (
+                <div className="flex flex-wrap gap-1.5 ml-9">
+                  {SUGGESTED_QUESTIONS.map((q) => (
+                    <button key={q} onClick={() => sendMessage(q)} className="text-[11px] px-2.5 py-1 rounded-full border border-primary/20 text-primary hover:bg-primary/5 transition-colors">
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {messages.map((msg, i) => (
@@ -196,11 +417,17 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
         <div className="border-t border-border p-3">
           {isExhausted ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center py-1">
-              <Lock className="w-3 h-3" /> You've used all {MAX_QUESTIONS} questions
+              <Lock className="w-3 h-3" />
+              <span>{inputPlaceholder}</span>
+              {isMonthlyExhausted && (
+                <button onClick={() => setShowLimitModal(true)} className="text-primary font-bold hover:underline ml-1">
+                  Upgrade
+                </button>
+              )}
             </div>
           ) : (
             <form onSubmit={(e) => { e.preventDefault(); sendMessage(input); }} className="flex gap-2">
-              <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about your career..." disabled={loading}
+              <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={inputPlaceholder} disabled={loading}
                 className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
               <button type="submit" disabled={!input.trim() || loading} className="w-9 h-9 rounded-lg flex items-center justify-center text-primary-foreground disabled:opacity-50" style={{ background: 'var(--gradient-primary)' }}>
                 <Send className="w-4 h-4" />
@@ -212,6 +439,7 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
     );
   }
 
+  // FAB + overlay mode
   return (
     <>
       {/* FAB */}
@@ -227,9 +455,9 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
             title="Chat with your report"
           >
             <MessageCircle className="w-6 h-6" />
-            {questionsLeft > 0 && questionsLeft < MAX_QUESTIONS && (
+            {!isPro && !isAnonymous && monthlyRemaining > 0 && monthlyRemaining < MONTHLY_FREE_LIMIT && (
               <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-[10px] font-black text-primary-foreground flex items-center justify-center border-2 border-background">
-                {questionsLeft}
+                {monthlyRemaining}
               </span>
             )}
           </motion.button>
@@ -244,23 +472,30 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-[60] w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-4rem)] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-6 right-6 z-[60] w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-4rem)] rounded-2xl border border-border bg-card shadow-2xl flex flex-col overflow-hidden relative"
           >
+            <AnimatePresence>{showLimitModal && <LimitModal />}</AnimatePresence>
+            
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border" style={{ background: 'var(--gradient-primary)' }}>
               <div className="flex items-center gap-2">
                 <Bot className="w-5 h-5 text-primary-foreground" />
                 <div>
                   <p className="text-sm font-black text-primary-foreground">Career AI Advisor</p>
-                  <p className="text-[10px] text-primary-foreground/70">
-                    {isExhausted ? 'Question limit reached' : `${questionsLeft} question${questionsLeft === 1 ? '' : 's'} remaining`}
-                  </p>
+                  <p className="text-[10px] text-primary-foreground/70">{headerSubtitle}</p>
                 </div>
               </div>
               <button onClick={() => setOpen(false)} className="text-primary-foreground/70 hover:text-primary-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Usage counter */}
+            {!isPro && !isAnonymous && usageLoaded && (
+              <div className="px-4 py-2 border-b border-border bg-muted/30">
+                <UsageCounter />
+              </div>
+            )}
 
             {/* Messages */}
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -271,20 +506,28 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
                       <Bot className="w-4 h-4 text-primary-foreground" />
                     </div>
                     <div className="bg-muted rounded-xl rounded-tl-sm px-3 py-2 text-sm text-foreground">
-                      Hi! I've analyzed your career report. You have <span className="font-bold">{MAX_QUESTIONS} questions</span> — make them count! Ask me anything about your AI risk, skills, or career strategy.
+                      Hi! I've analyzed your career report.
+                      {isPro
+                        ? ' You have unlimited questions — ask me anything!'
+                        : isAnonymous
+                          ? ` You have ${MAX_QUESTIONS_PER_SCAN} questions — make them count!`
+                          : ` You have ${monthlyRemaining} questions this month — make them count!`
+                      }
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 ml-9">
-                    {SUGGESTED_QUESTIONS.map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => sendMessage(q)}
-                        className="text-[11px] px-2.5 py-1.5 rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors text-left"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
+                  {!isExhausted && (
+                    <div className="flex flex-wrap gap-1.5 ml-9">
+                      {SUGGESTED_QUESTIONS.map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => sendMessage(q)}
+                          className="text-[11px] px-2.5 py-1.5 rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors text-left"
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -315,23 +558,6 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
                   </div>
                 </div>
               )}
-
-              {/* Exhausted message */}
-              {isExhausted && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-2"
-                >
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-muted">
-                    <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-                  </div>
-                  <div className="bg-muted rounded-xl rounded-tl-sm px-3 py-2.5 text-sm text-muted-foreground">
-                    <p className="font-semibold text-foreground mb-1">You've used all {MAX_QUESTIONS} questions</p>
-                    <p className="text-xs">Run a new scan to get {MAX_QUESTIONS} more questions with fresh, updated analysis.</p>
-                  </div>
-                </motion.div>
-              )}
             </div>
 
             {/* Input */}
@@ -339,14 +565,19 @@ export default function ReportChat({ scanId, accessToken, inline }: { scanId: st
               {isExhausted ? (
                 <div className="flex items-center justify-center gap-2 py-1.5 text-xs text-muted-foreground">
                   <Lock className="w-3.5 h-3.5" />
-                  <span>Question limit reached — run a new scan for more</span>
+                  <span>{inputPlaceholder}</span>
+                  {isMonthlyExhausted && (
+                    <button onClick={() => setShowLimitModal(true)} className="text-primary font-bold hover:underline ml-1">
+                      Upgrade
+                    </button>
+                  )}
                 </div>
               ) : (
                 <form onSubmit={(e) => { e.preventDefault(); sendMessage(input); }} className="flex gap-2">
                   <input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={`Ask about your career... (${questionsLeft} left)`}
+                    placeholder={inputPlaceholder}
                     disabled={loading}
                     className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                   />
