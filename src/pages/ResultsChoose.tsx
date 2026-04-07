@@ -231,7 +231,7 @@ export default function ResultsChoose() {
             pillColor="#4338CA"
             checklist={["Live ATS scoring & optimization", "₹ salary negotiation anchors", "Pivot paths with real job matches"]}
             checkColor="#4F46E5"
-            buttonLabel="See aggressive analysis"
+            buttonLabel={modelBReady ? "See aggressive analysis ⚡" : "See aggressive analysis"}
             buttonStyle="filled"
             onNavigate={() => logAndNavigate("model_b_chosen", `/results/model-b?id=${analysisId}`)}
             onUnlock={() => navigate("/pricing")}
