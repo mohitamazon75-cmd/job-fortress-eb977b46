@@ -46,6 +46,8 @@ function safeFileName(str: string | null | undefined): string {
   return str
     .replace(/[^\w\s-]/g, '')  // strip non-word chars (removes non-ASCII)
     .replace(/\s+/g, '-')
+    .replace(/-{2,}/g, '-')    // collapse multiple dashes into one
+    .replace(/^-+|-+$/g, '')   // trim leading/trailing dashes
     .toLowerCase()
     .substring(0, 50) || 'career';
 }
@@ -612,7 +614,11 @@ export default function ShareableScoreCard({ report }: Props) {
     try {
       const html2canvas = (await import('html2canvas')).default;
       if (!mountedRef.current) return;
-      const canvas = await html2canvas(ref.current, { backgroundColor: '#080810', scale: 2, useCORS: true, logging: false, width: w, height: h });
+      const opts: Record<string, unknown> = { backgroundColor: '#080810', scale: 2, useCORS: true, logging: false, width: w, height: h };
+      // Portrait cards are very tall — hint html2canvas to avoid clipping
+      if (h > 1200) { opts.windowWidth = w; opts.windowHeight = h; }
+      const canvas = await html2canvas(ref.current, opts);
+      console.log('[ShareCard]', suffix || 'landscape', 'canvas:', canvas.width, 'x', canvas.height, '| scale:', canvas.width / w);
       if (!mountedRef.current) return;
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
