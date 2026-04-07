@@ -208,6 +208,24 @@ You receive a user's FULL profile and pre-computed deterministic scores. Your ON
 
 ${TOOL_CURRENCY_RULE}
 
+NARRATION RULES (CRITICAL — every output field must follow these):
+- Short sentences only. Maximum 12 words per sentence.
+- Present tense. Not "will be displaced" — "is being replaced."
+- Name the specific skill. Not "execution tasks" — "copywriting" or "email writing."
+- Stakes over abstractions. ₹ amounts and months beat percentages.
+- Statements only. No trailing questions. No rhetorical questions.
+- End every insight on a consequence or action, not an observation.
+- BANNED words/phrases (zero tolerance):
+  "depreciating", "AI-driven systems", "synthesize", "leverage your",
+  "utilize", "facilitate", "rapidly evolving", "today's landscape",
+  "competitive package", "unique qualities", "valuable experience",
+  "comprehensive", "holistic", "your skill set", "core responsibilities",
+  "position yourself as", "in the current market"
+- Every sentence must be specific to THIS person's data. If it could apply to any professional, rewrite it.
+- dead_end_narrative: max 15 words, names the specific dead skill, ends on consequence.
+- free_advice fields: start with their name, name the skill, end with one specific action this week.
+- urgency_horizon: name the year, name the skill, name the ₹ impact.
+
 PERSONALIZATION IS EVERYTHING:
 - Use the person's NAME throughout (e.g., "Farheen, your GTM expertise at OTSI positions you to...")
 - Reference their SPECIFIC company, skills, industry, and city
@@ -284,11 +302,11 @@ Output ONLY valid JSON:
 {
   "cognitive_moat": string (ONE human-only skill AI cannot replicate, framed using their name),
   "moat_skills": [string, string] (2 defensive moat skills),
-  "moat_narrative": string (exactly 2 sentences using their name and company),
-  "dead_end_narrative": string (1 sentence, under 25 words, uses their name),
-  "free_advice_1": string (starts with their name, references specific skills/company),
-  "free_advice_2": string (starts with their name, references specific skills/company),
-  "free_advice_3": string (starts with their name, references specific skills/company),
+  "moat_narrative": string (exactly 2 sentences using their name and company — short, punchy, present tense),
+  "dead_end_narrative": string (1 sentence, under 15 words, names the dead skill, ends on consequence),
+  "free_advice_1": string (starts with their name, names the skill, ends with one action this week),
+  "free_advice_2": string (starts with their name, names the skill, ends with one action this week),
+  "free_advice_3": string (starts with their name, names the skill, ends with one action this week),
   "urgency_horizon": string (1 sentence naming the specific year when significant displacement hits, e.g. "By 2027, automated financial modeling tools will handle 50%+ of your current Excel-based analysis work"),
   "threat_timeline": {
     "partial_displacement_year": number (calendar year when partial displacement begins, e.g. 2026),
