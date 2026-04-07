@@ -573,6 +573,7 @@ export default function ShareableScoreCard({ report }: Props) {
       {/* Hidden capture targets */}
       <CaptureTarget innerRef={cardRef} data={data} />
       <CaptureTargetSquare innerRef={squareRef} data={data} />
+      <CaptureTargetPortrait innerRef={portraitRef} data={data} />
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
