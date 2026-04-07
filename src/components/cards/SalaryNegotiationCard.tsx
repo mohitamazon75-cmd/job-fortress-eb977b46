@@ -20,32 +20,12 @@ export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardP
   const survivability = report.survivability;
   const marketPosition = report.market_position_model;
 
-  // India CTC structure (typical split) — only compute if salary data available
-  const annualCTC = (estimatedSalary || 0) * 12;
-  const basicPct = 0.40;
-  const hraPct = 0.20;
-  const specialPct = 0.25;
-  const variablePct = 0.15;
-  const ctcBreakdown = hasSalaryData ? {
-    basic: Math.round(annualCTC * basicPct),
-    hra: Math.round(annualCTC * hraPct),
-    special: Math.round(annualCTC * specialPct),
-    variable: Math.round(annualCTC * variablePct),
-    pf: Math.round(annualCTC * basicPct * 0.12),
-    gratuity: Math.round((annualCTC * basicPct * 15) / 26 / 12),
-  } : null;
-
   // Salary gap
   const annualBleed = salaryBleed * 12;
   const annualBleedLakhs = (annualBleed / 100000).toFixed(1);
-  const fiveYearLoss = report.total_5yr_loss_inr || salaryBleed * 60;
-  const fiveYearLossLakhs = (fiveYearLoss / 100000).toFixed(1);
 
   // Market leverage
-  // Security / credibility: never silently fall back to 50 for percentile — that's the median
-  // and drives "50% earn more — leverage the gap" advice for users with missing market data.
-  // Use null to represent "unavailable" and show a transparent data-gap state in the UI.
-  const leverageStatus = marketPosition?.leverage_status || 'moderate';
+  const demandTrend = marketPosition?.demand_trend || 'stable';
   const demandTrend = marketPosition?.demand_trend || 'stable';
   const percentile: number | null = marketPosition?.market_percentile ?? null;
   const hasPercentileData = percentile !== null;
