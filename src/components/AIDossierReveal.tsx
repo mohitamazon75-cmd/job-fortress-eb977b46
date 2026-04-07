@@ -437,7 +437,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           {/* Section 1: At Risk */}
           {topAtRisk.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-bold text-destructive">⚠️ What's at risk in your role right now</p>
+              <p className="text-xs font-bold text-destructive">⚠️ Already happening in your role</p>
               <div className="flex flex-wrap gap-1.5">
                 {topAtRisk.slice(0, 3).map((skill, i) => (
                   <span key={i} className="bg-destructive/10 text-destructive border border-destructive/20 rounded-full text-xs font-bold px-3 py-1">
