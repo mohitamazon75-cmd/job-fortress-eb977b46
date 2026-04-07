@@ -456,7 +456,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           {/* Section 2: Safe Zones */}
           {moatSkills.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-bold text-prophet-green">🛡️ Your safe zones</p>
+              <p className="text-xs font-bold text-prophet-green">🛡️ What's protecting you</p>
               <div className="flex flex-wrap gap-1.5">
                 {moatSkills.slice(0, 3).map((skill, i) => (
                   <span key={i} className="bg-prophet-green/10 text-prophet-green border border-prophet-green/20 rounded-full text-xs font-bold px-3 py-1">

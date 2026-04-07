@@ -182,10 +182,10 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
         >
           <div className="px-5 py-3.5 border-b border-border">
             <p className="text-xs font-black uppercase tracking-[0.15em] text-foreground">
-              Your Personalized {weeklyPlan.length}-Week Plan
+              YOUR {weeklyPlan.length}-WEEK PLAN
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              AI-generated from your exact scan data — with curated resources
+              Built from your scan data — one skill per week
             </p>
           </div>
 

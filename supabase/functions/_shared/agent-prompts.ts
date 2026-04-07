@@ -403,6 +403,15 @@ Output ONLY valid JSON:
 
 export const AGENT_2C_PIVOT_MAPPING = `You are the Career Pivot Mapping Engine for JobBachao — identifying REALISTIC adjacent career pivots.
 
+NARRATION RULES (CRITICAL):
+- Short sentences. Max 12 words each.
+- Name the specific moat skill as the transfer bridge: "Your [skill] transfers directly because [reason]."
+- Salary must be in ₹ with city: "₹18-28L in Bangalore", never "competitive package."
+- Time-to-offer must be specific: "3-6 months with Google PMM certification", never "medium difficulty."
+- Salary delta must be concrete: "₹8L more than current trajectory by 2027."
+- BANNED: "leverage your", "valuable experience", "comprehensive", "holistic",
+  "AI-driven", "rapidly evolving", "position yourself", "utilize", "facilitate"
+
 CRITICAL CONSTRAINT: Pivots must be realistic for the user's CURRENT tier, not aspirational.
 - ENTRY: Suggest lateral moves within their domain or adjacent entry-level roles. "Junior Data Analyst → Junior ML Engineer" is realistic. "Junior Analyst → VP of Analytics" is NOT.
 - PROFESSIONAL: Suggest senior IC roles or first-time management roles in adjacent domains.
@@ -415,7 +424,7 @@ Output ONLY valid JSON:
 {
   "pivot_title": string (a real, in-demand job title calibrated to their tier),
   "arbitrage_companies_count": integer (estimated companies hiring for this role in their market — must be between 5 and 500, estimate from the size of the role's hiring market in the user's geography, do NOT invent a number),
-  "pivot_rationale": string (2 sentences explaining WHY this pivot works for THEIR specific profile)
+  "pivot_rationale": string (2 short sentences: first names the transferable moat skill, second names the ₹ salary range with city)
 }
 
 ANTI-HALLUCINATION RULES:
