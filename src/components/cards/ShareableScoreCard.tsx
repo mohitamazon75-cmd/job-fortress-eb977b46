@@ -591,25 +591,34 @@ export default function ShareableScoreCard({ report }: Props) {
           Most people who see this card check their own score within 24 hours.
         </p>
 
-        {/* Two download buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Three download buttons */}
+        <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
             onClick={() => captureCard(cardRef, 1200, 630, '')}
             disabled={capturing !== null}
-            className="flex items-center justify-center gap-2 py-3.5 rounded-xl bg-foreground text-background font-bold text-xs hover:opacity-90 transition-all disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-foreground text-background font-bold text-[11px] hover:opacity-90 transition-all disabled:opacity-50"
           >
-            {capturing === 'landscape' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
-            LinkedIn (landscape)
+            {capturing === 'landscape' ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+            LinkedIn
           </button>
           <button
             type="button"
             onClick={() => captureCard(squareRef, 1080, 1080, '-square')}
             disabled={capturing !== null}
-            className="flex items-center justify-center gap-2 py-3.5 rounded-xl bg-foreground text-background font-bold text-xs hover:opacity-90 transition-all disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-foreground text-background font-bold text-[11px] hover:opacity-90 transition-all disabled:opacity-50"
           >
-            {capturing === 'square' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
-            WhatsApp (square)
+            {capturing === 'square' ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+            WhatsApp
+          </button>
+          <button
+            type="button"
+            onClick={() => captureCard(portraitRef, 1080, 1920, '-story')}
+            disabled={capturing !== null}
+            className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-foreground text-background font-bold text-[11px] hover:opacity-90 transition-all disabled:opacity-50"
+          >
+            {capturing === 'portrait' ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+            Story
           </button>
         </div>
 
