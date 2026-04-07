@@ -178,17 +178,17 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
       {/* Intelligence Profile Card */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
         className="rounded-2xl border-2 border-primary/20 bg-primary/[0.03] p-5">
-        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-primary mb-2">Your Intelligence Profile</p>
+        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-primary mb-2">YOUR RISK PROFILE</p>
         <p className="text-sm font-bold text-foreground leading-snug mb-3">{profileSummary}</p>
 
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{Math.max(0, 100 - Math.round(automationRisk))}%</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Still Yours</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">STILL YOURS</p>
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{Math.round(automationRisk)}%</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-destructive">Automated Now</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-destructive">AUTOMATED NOW</p>
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">
@@ -437,12 +437,12 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
       {!isProUser && (topAtRisk.length > 0 || moatSkills.length > 0) && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
           className="rounded-2xl border-2 border-border bg-card p-5 space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">AI Impact Snapshot</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">WHAT'S HAPPENING NOW</p>
 
           {/* Section 1: At Risk */}
           {topAtRisk.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-bold text-destructive">⚠️ Already happening in your role</p>
+              <p className="text-xs font-bold text-destructive">⚠️ Being automated right now</p>
               <div className="flex flex-wrap gap-1.5">
                 {topAtRisk.slice(0, 3).map((skill, i) => (
                   <span key={i} className="bg-destructive/10 text-destructive border border-destructive/20 rounded-full text-xs font-bold px-3 py-1">
@@ -456,7 +456,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           {/* Section 2: Safe Zones */}
           {moatSkills.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-bold text-prophet-green">🛡️ Your safe zones</p>
+              <p className="text-xs font-bold text-prophet-green">🛡️ What's protecting you</p>
               <div className="flex flex-wrap gap-1.5">
                 {moatSkills.slice(0, 3).map((skill, i) => (
                   <span key={i} className="bg-prophet-green/10 text-prophet-green border border-prophet-green/20 rounded-full text-xs font-bold px-3 py-1">
@@ -874,7 +874,7 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
                 className={`rounded-2xl border-2 ${scoreBg} p-6 text-center`}
               >
                 <p className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-3">
-                  Career Position Score
+                  YOUR POSITION
                 </p>
                 <motion.p
                   initial={{ scale: 0.5, opacity: 0 }}
@@ -908,7 +908,7 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
                     transition={{ delay: 0.6 }}
                     className="text-foreground/60 text-sm mt-3"
                   >
-                    {report.linkedin_name.split(' ')[0]}, here's your complete analysis
+                    {report.linkedin_name.split(' ')[0]}, this is what we found
                   </motion.p>
                 )}
               </motion.div>
