@@ -436,6 +436,7 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
                   <ConversionGateCard
                     report={report}
                     onUpgrade={(tier) => { setProModalDefaultTier(tier ?? 'year'); setShowProModal(true); }}
+                    scanId={scanId}
                   />
                 </ErrorBoundary>
                )}
