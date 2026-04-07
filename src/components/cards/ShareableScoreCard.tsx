@@ -1,9 +1,11 @@
 /**
- * ShareableScoreCard — Viral career risk report card (v8)
+ * ShareableScoreCard — Viral career risk report card (v9)
  *
- * CLASSIFIED DOCUMENT × VITAL SIGNS aesthetic.
- * 3-zone layout: tinted left panel + right content + bottom strip.
- * Visible preview + hidden 1200×630 capture target.
+ * FIX 1: Tier label + headline driven by determinism_index (DI), not composite score
+ * FIX 2: Salary < ₹8K shown as % not rupees; no sub-line clutter
+ * FIX 3: "AI DISPLACEMENT REPORT" forced single line
+ * FIX 4: Left panel left-aligned (data readout, not trophy)
+ * FIX 5: Headline 24px locked; body 14px at 60% opacity
  */
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -24,7 +26,7 @@ function safeFileName(str: string): string {
   return str.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase().substring(0, 50) || 'career';
 }
 
-/** Score color: higher score = higher risk = warmer color */
+/** Score color based on COMPOSITE stability score */
 function getScoreColor(score: number): string {
   if (score >= 70) return '#EF4444';
   if (score >= 50) return '#F97316';
@@ -32,18 +34,20 @@ function getScoreColor(score: number): string {
   return '#22C55E';
 }
 
-function getTierLabel(score: number): string {
-  if (score >= 70) return 'YOUR ROLE IS BEING REWRITTEN';
-  if (score >= 50) return 'AUTOMATION IS ALREADY HERE';
-  if (score >= 30) return 'THE WINDOW IS CLOSING';
+/** Tier label based on DETERMINISM INDEX (AI exposure) */
+function getTierLabel(di: number): string {
+  if (di >= 70) return 'YOUR ROLE IS BEING REWRITTEN';
+  if (di >= 50) return 'AUTOMATION IS ALREADY HERE';
+  if (di >= 30) return 'THE WINDOW IS CLOSING';
   return 'RARE. STAY THIS WAY.';
 }
 
-function getHeadline(score: number): string {
-  if (score >= 70) return 'Your job is being rewritten right now.';
-  if (score >= 50) return 'Half of what you do is already automated.';
-  if (score >= 30) return 'The window is closing. Most miss it.';
-  return 'You are rare. Stay this way.';
+/** Headline based on DETERMINISM INDEX */
+function getHeadline(di: number): string {
+  if (di >= 70) return 'Most of what you do is already automated.';
+  if (di >= 50) return 'Half of what you do is already automated.';
+  if (di >= 30) return 'AI is already inside your role.';
+  return 'You are still ahead of the curve.';
 }
 
 // ── Derive card data from report ──
@@ -76,10 +80,10 @@ function useCardData(report: ScanReport) {
 
 type CardData = ReturnType<typeof useCardData>;
 
-/** Build the stat blocks array, skipping nulls */
-function buildStats(data: CardData): { value: string; label: string; sub?: string }[] {
+/** Build stat blocks — FIX 2: salary < ₹8K → show % instead */
+function buildStats(data: CardData): { value: string; label: string }[] {
   const { deadSkills, monthsRemaining, salaryBleedMonthly, salaryDropPct, humanEdge } = data;
-  const stats: { value: string; label: string; sub?: string }[] = [];
+  const stats: { value: string; label: string }[] = [];
 
   if (deadSkills.length > 0)
     stats.push({ value: `${deadSkills.length} tasks`, label: 'BEING REPLACED' });
@@ -87,11 +91,8 @@ function buildStats(data: CardData): { value: string; label: string; sub?: strin
   if (monthsRemaining)
     stats.push({ value: `${monthsRemaining} mo`, label: 'UNTIL DISRUPTION' });
 
-  if (salaryBleedMonthly && salaryBleedMonthly > 0) {
-    const monthlyK = Math.round(salaryBleedMonthly / 1000);
-    const annualAmt = Math.round((salaryBleedMonthly * 12) / 1000);
-    const sub = salaryBleedMonthly < 5000 ? `₹${annualAmt}K/yr over 5 years` : undefined;
-    stats.push({ value: `₹${monthlyK}K/mo`, label: 'MONTHLY LOSS', sub });
+  if (salaryBleedMonthly && salaryBleedMonthly >= 8000) {
+    stats.push({ value: `₹${Math.round(salaryBleedMonthly / 1000)}K/mo`, label: 'MONTHLY LOSS' });
   } else if (salaryDropPct > 0) {
     stats.push({ value: `${salaryDropPct}%`, label: 'SALARY AT RISK' });
   }
@@ -111,8 +112,8 @@ const FONT_MONO = '"Courier New", Courier, monospace';
 function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivElement | null>; data: CardData }) {
   const { score, role, industry, aiExposure, monthsRemaining, topTask, topTaskPct } = data;
   const scoreColor = getScoreColor(score);
-  const tierLabel = getTierLabel(score);
-  const headline = getHeadline(score);
+  const tierLabel = getTierLabel(aiExposure);   // FIX 1: DI-based
+  const headline = getHeadline(aiExposure);      // FIX 1: DI-based
   const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   const stats = buildStats(data);
   const monthsStr = monthsRemaining ? `${monthsRemaining} months` : 'the next 2-3 years';
@@ -133,26 +134,31 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
       {/* Radial glow */}
       <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 50%, rgba(239,68,68,0.04) 0%, transparent 65%)', pointerEvents: 'none' }} />
 
-      {/* ── ZONE 1: Left panel (38%) ── */}
+      {/* ── ZONE 1: Left panel (38%) — FIX 4: left-aligned ── */}
       <div style={{
         position: 'absolute', left: 0, top: 0, width: '38%', height: '100%',
         background: `${scoreColor}14`, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', padding: '32px 24px',
+        alignItems: 'flex-start', justifyContent: 'center', padding: '32px 24px 32px 32px',
         boxSizing: 'border-box',
       }}>
-        <span style={{ fontFamily: FONT_MONO, fontSize: 11, fontWeight: 700, color: scoreColor, letterSpacing: '0.18em', textTransform: 'uppercase', position: 'absolute', top: 32, left: 32 }}>
+        {/* FIX 3: single line, smaller font, nowrap */}
+        <span style={{
+          fontFamily: FONT_MONO, fontSize: 8, fontWeight: 700, color: scoreColor,
+          letterSpacing: '0.1em', textTransform: 'uppercase',
+          position: 'absolute', top: 32, left: 32, whiteSpace: 'nowrap',
+        }}>
           AI DISPLACEMENT REPORT
         </span>
 
         <span style={{ fontSize: 200, fontWeight: 900, color: scoreColor, lineHeight: 0.85, letterSpacing: '-0.04em' }}>{score}</span>
-        <span style={{ fontSize: 14, fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: 18, textAlign: 'center', maxWidth: 340 }}>{tierLabel}</span>
+        <span style={{ fontSize: 14, fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: 18, maxWidth: 340 }}>{tierLabel}</span>
 
         <div style={{ width: 60, height: 1, background: `${scoreColor}88`, margin: '16px 0' }} />
 
-        <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', fontWeight: 600, textAlign: 'center' }}>{role}</span>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', marginTop: 4, textAlign: 'center' }}>{industry}</span>
+        <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>{role}</span>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', marginTop: 4 }}>{industry}</span>
 
-        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', position: 'absolute', bottom: 24 }}>{dateStr}</span>
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', position: 'absolute', bottom: 24, left: 32 }}>{dateStr}</span>
       </div>
 
       {/* ── ZONE 2: Right panel (62%) ── */}
@@ -160,10 +166,10 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
         position: 'absolute', left: '38%', top: 0, width: '62%', height: 578,
         display: 'flex', flexDirection: 'column', boxSizing: 'border-box',
       }}>
-        {/* TOP HALF — Headline */}
+        {/* TOP HALF — FIX 5: headline 24px, body 14px/60% */}
         <div style={{ flex: '0 0 45%', padding: '40px 48px 20px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <span style={{ fontSize: 26, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.3 }}>{headline}</span>
-          <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.75)', marginTop: 12, lineHeight: 1.5, maxWidth: 480, fontWeight: 500 }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.3 }}>{headline}</span>
+          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginTop: 12, lineHeight: 1.6, maxWidth: 440, fontWeight: 500 }}>
             {aiExposure}% of {roleStr} tasks are being automated. You have {monthsStr} before it hits your pay.
           </span>
         </div>
@@ -174,20 +180,17 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
           display: 'grid',
           gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
           gridTemplateRows: `repeat(${gridRows}, 1fr)`,
-          gap: 16,
-          alignContent: 'center',
+          gap: 16, alignContent: 'center',
         }}>
           {stats.map((s, i) => (
             <div key={i} style={{
               background: 'rgba(255,255,255,0.03)',
               borderTop: `3px solid ${scoreColor}`,
-              borderRadius: 6,
-              padding: 24,
+              borderRadius: 6, padding: 24,
               display: 'flex', flexDirection: 'column', justifyContent: 'center',
             }}>
               <span style={{ fontSize: 36, fontWeight: 800, color: '#FFFFFF', lineHeight: 1 }}>{s.value}</span>
               <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 8 }}>{s.label}</span>
-              {s.sub && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>{s.sub}</span>}
             </div>
           ))}
         </div>
@@ -219,13 +222,13 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CardPreviewVisible — responsive in-page preview of the card
+// CardPreviewVisible — responsive in-page preview
 // ═══════════════════════════════════════════════════════════════
 function CardPreviewVisible({ data }: { data: CardData }) {
   const { score, role, industry, aiExposure, monthsRemaining, topTask, topTaskPct } = data;
   const scoreColor = getScoreColor(score);
-  const tierLabel = getTierLabel(score);
-  const headline = getHeadline(score);
+  const tierLabel = getTierLabel(aiExposure);   // FIX 1: DI-based
+  const headline = getHeadline(aiExposure);      // FIX 1: DI-based
   const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   const stats = buildStats(data);
   const monthsStr = monthsRemaining ? `${monthsRemaining} months` : 'the next 2-3 years';
@@ -233,45 +236,42 @@ function CardPreviewVisible({ data }: { data: CardData }) {
 
   return (
     <div className="rounded-xl overflow-hidden border border-border/40" style={{ background: '#080810' }}>
-      {/* Left + Right flex layout */}
       <div className="flex flex-col sm:flex-row">
-        {/* LEFT PANEL */}
+        {/* LEFT PANEL — FIX 4: left-aligned */}
         <div
-          className="sm:w-[38%] w-full py-8 px-6 flex flex-col items-center justify-center relative"
+          className="sm:w-[38%] w-full py-8 px-6 flex flex-col items-start justify-center relative"
           style={{ background: `${scoreColor}14` }}
         >
-          <span className="text-[9px] sm:text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: scoreColor, fontFamily: FONT_MONO }}>
+          {/* FIX 3: nowrap single line */}
+          <span className="text-[7px] sm:text-[8px] font-bold tracking-[0.1em] uppercase whitespace-nowrap" style={{ color: scoreColor, fontFamily: FONT_MONO }}>
             AI DISPLACEMENT REPORT
           </span>
           <span className="text-[80px] sm:text-[100px] font-black leading-[0.85] tracking-tighter mt-2" style={{ color: scoreColor }}>
             {score}
           </span>
-          <span className="text-[10px] sm:text-[12px] font-extrabold tracking-[0.15em] uppercase text-center mt-3" style={{ color: 'rgba(255,255,255,0.9)' }}>
+          <span className="text-[10px] sm:text-[12px] font-extrabold tracking-[0.15em] uppercase mt-3" style={{ color: 'rgba(255,255,255,0.9)' }}>
             {tierLabel}
           </span>
           <div className="w-10 h-px my-3" style={{ background: `${scoreColor}88` }} />
-          <span className="text-xs sm:text-sm text-center font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{role}</span>
-          <span className="text-[10px] sm:text-xs italic text-center mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{industry}</span>
+          <span className="text-xs sm:text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{role}</span>
+          <span className="text-[10px] sm:text-xs italic mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{industry}</span>
           <span className="text-[9px] sm:text-[10px] mt-3" style={{ color: 'rgba(255,255,255,0.5)' }}>{dateStr}</span>
         </div>
 
-        {/* RIGHT PANEL */}
+        {/* RIGHT PANEL — FIX 5: headline larger, body smaller */}
         <div className="sm:w-[62%] w-full p-5 sm:p-6 flex flex-col gap-4">
-          {/* Headline */}
           <div>
-            <p className="text-sm sm:text-lg font-extrabold leading-snug" style={{ color: '#FFFFFF' }}>{headline}</p>
-            <p className="text-xs sm:text-sm mt-2 leading-relaxed font-medium" style={{ color: 'rgba(255,255,255,0.75)', maxWidth: 400 }}>
+            <p className="text-base sm:text-lg font-extrabold leading-snug" style={{ color: '#FFFFFF' }}>{headline}</p>
+            <p className="text-xs mt-2 leading-relaxed font-medium" style={{ color: 'rgba(255,255,255,0.6)', maxWidth: 400 }}>
               {aiExposure}% of {roleStr} tasks are being automated. You have {monthsStr} before it hits your pay.
             </p>
           </div>
 
-          {/* Stats grid */}
           <div className={`grid gap-2.5 ${stats.length >= 4 ? 'grid-cols-2' : stats.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {stats.map((s, i) => (
               <div key={i} className="rounded-md p-3 sm:p-4" style={{ background: 'rgba(255,255,255,0.03)', borderTop: `3px solid ${scoreColor}` }}>
                 <span className="text-lg sm:text-xl font-extrabold block" style={{ color: '#FFFFFF' }}>{s.value}</span>
                 <span className="text-[9px] sm:text-[10px] font-bold tracking-[0.12em] uppercase block mt-1" style={{ color: 'rgba(255,255,255,0.65)' }}>{s.label}</span>
-                {s.sub && <span className="text-[9px] block mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>{s.sub}</span>}
               </div>
             ))}
           </div>
@@ -360,22 +360,18 @@ export default function ShareableScoreCard({ report }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Hidden capture target */}
       <CaptureTarget innerRef={cardRef} data={data} />
 
-      {/* ── Visible UI ── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-2xl border border-border bg-card overflow-hidden p-5 space-y-4"
       >
-        {/* Card preview — visible before download */}
         <div className="space-y-2">
           <p className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase">Your shareable report card</p>
           <CardPreviewVisible data={data} />
         </div>
 
-        {/* Generate button */}
         <button
           type="button"
           onClick={handleGenerate}
@@ -389,7 +385,6 @@ export default function ShareableScoreCard({ report }: Props) {
           )}
         </button>
 
-        {/* Copy share text */}
         <button
           type="button"
           onClick={handleCopyText}
@@ -399,7 +394,6 @@ export default function ShareableScoreCard({ report }: Props) {
           {copied ? 'Copied!' : 'Copy Share Text'}
         </button>
 
-        {/* Share text preview */}
         <div className="rounded-xl bg-muted/30 border border-border p-4">
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Share text preview</p>
           <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-line">{shareText}</p>
