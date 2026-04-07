@@ -68,8 +68,8 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
       action: immediateStep?.action
         || `Search "${topDeadSkill} AI tools" on YouTube. Pick the top-rated free tool. Complete one real work task with it this week.`,
       why: isCrisis
-        ? `With ${monthsRemaining} months of runway, ${topDeadSkill} is already being automated — every week you delay costs you leverage.`
-        : `${topDeadSkill} has ${di}% AI exposure in ${industry}. Learning the AI alternative now makes you the person who leads the transition, not the person replaced by it.`,
+        ? `${monthsRemaining} months of runway left. ${topDeadSkill} is already being automated. Every week you wait, the gap widens.`
+        : `${topDeadSkill} has ${di}% AI exposure in ${industry}. Learn the AI alternative now. Be the one who leads the transition.`,
       outcome: `You will have hands-on experience with one AI tool that replaces ${topDeadSkill} — and proof you can adapt.`,
       detail: isCrisis ? '3-5 hours (this weekend)' : '2-4 hours',
       color: 'text-destructive',
