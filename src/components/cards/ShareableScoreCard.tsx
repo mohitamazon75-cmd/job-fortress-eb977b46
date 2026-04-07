@@ -284,13 +284,13 @@ function CardPreviewVisible({ data }: { data: CardData }) {
           {topTask && topTaskPct ? (
             <>
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: scoreColor }} />
-              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.6)' }}>{topTask}: {topTaskPct}% automated</span>
+              <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>{topTask}: {topTaskPct}% automated</span>
             </>
           ) : <span />}
         </div>
         <span>
-          <span className="text-[10px] sm:text-[11px] font-bold" style={{ color: 'rgba(255,255,255,0.8)' }}>jobbachao.ai</span>
-          <span className="text-[9px] sm:text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}> — check your score</span>
+          <span className="text-[11px] sm:text-[12px] font-bold" style={{ color: 'rgba(255,255,255,0.95)' }}>jobbachao.ai</span>
+          <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.65)' }}> — check your score</span>
         </span>
       </div>
     </div>
