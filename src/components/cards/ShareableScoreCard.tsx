@@ -525,9 +525,11 @@ export default function ShareableScoreCard({ report }: Props) {
 
   useEffect(() => { return () => { mountedRef.current = false }; }, []);
 
+  // Share text: use natural language for edge DI values (not "< 5%" or "95+%")
+  const shareTextDI = aiExposure <= 5 ? 'Less than 5%' : aiExposure >= 95 ? 'Over 95%' : `${aiExposure}%`;
   const diDisplay = formatDI(aiExposure);
   const monthsStr = formatMonths(monthsRemaining) || 'the next few years';
-  const shareText = `I just ran my AI displacement report.\nMy score: ${score}/100. ${diDisplay}% of my role is being automated.\nI have ${monthsStr} before it hits my compensation.\n\nCheck yours (it's free): jobbachao.ai\n\n#AIDisplacement #FutureOfWork #CareerRisk`;
+  const shareText = `I just ran my AI displacement report.\nMy score: ${score}/100. ${shareTextDI} of my role is being automated.\nI have ${monthsStr} before it hits my compensation.\n\nCheck yours (it's free): jobbachao.ai\n\n#AIDisplacement #FutureOfWork #CareerRisk`;
 
   const captureCard = useCallback(async (ref: React.RefObject<HTMLDivElement | null>, w: number, h: number, suffix: string) => {
     if (!ref.current) return;
