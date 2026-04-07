@@ -9,6 +9,10 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
   const c1 = cardData.card1_risk;
   if (!c1) return null;
 
+  const u = cardData.user || {};
+  const years = u.years_experience || "";
+  const disruptionYear = c1.disruption_year || "2027";
+
   const r = 36;
   const circumference = 2 * Math.PI * r;
   const offset = circumference * (1 - (c1.risk_score || 0) / 100);
@@ -33,24 +37,28 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
         sub={c1.subline || ""}
       />
       <CardBody>
-        {/* 3-part emotional structure */}
+        {/* Fear hook — "WHAT'S ALREADY HAPPENING" */}
         {c1.fear_hook && (
           <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.2)", borderRadius: 14, padding: "16px 18px", marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <span style={{ fontSize: 18 }}>🚨</span>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--mb-red)" }}>The uncomfortable truth</span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--mb-red)" }}>
+                {`THE ${disruptionYear} PROBLEM`}
+              </span>
             </div>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.7, margin: 0 }}>{c1.fear_hook}</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.7, margin: 0, whiteSpace: "pre-line" }}>{c1.fear_hook}</p>
           </div>
         )}
+        {/* Tough love — italic warning */}
         {c1.tough_love && (
           <div style={{ background: "var(--mb-amber-tint)", border: "1.5px solid rgba(139,90,0,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
-            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 800, color: "var(--mb-amber)", lineHeight: 1.6, margin: 0, fontStyle: "italic" }}>💡 {c1.tough_love}</p>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 800, color: "var(--mb-amber)", lineHeight: 1.6, margin: 0, fontStyle: "italic", whiteSpace: "pre-line" }}>💡 {c1.tough_love}</p>
           </div>
         )}
+        {/* Hope bridge — green advantage */}
         {c1.hope_bridge && (
           <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6, margin: 0 }}>✅ {c1.hope_bridge}</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}>✅ {c1.hope_bridge}</p>
           </div>
         )}
 
@@ -58,7 +66,7 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
         {c1.confrontation && (
           <div style={{ borderLeft: "4px solid var(--mb-red)", background: "linear-gradient(90deg, var(--mb-red-tint), transparent)", borderRadius: "0 12px 12px 0", padding: "14px 18px", marginBottom: 20 }}>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--mb-red)", marginBottom: 6 }}>⚔️ DIRECT CHALLENGE</div>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0 }}>{c1.confrontation}</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}>{c1.confrontation}</p>
           </div>
         )}
 
@@ -74,14 +82,16 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8, lineHeight: 1.3 }}>
               {c1.risk_score >= 70 ? "🔴 High risk — act now" : c1.risk_score >= 40 ? "🟡 Moderate — your framing costs you" : "🟢 Low risk — strong position"}
             </div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, fontWeight: 500 }}>Your automation risk is calibrated against <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{c1.india_average || 61}%</strong> India average for this role tier.</div>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, fontWeight: 500 }}>
+              India average for this role: <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{c1.india_average || 61}%</strong>. You're {(c1.risk_score || 0) > (c1.india_average || 61) ? "above" : "below"} it.
+            </div>
           </div>
         </div>
 
-        {/* Cost of Inaction — Loss Aversion Trigger */}
+        {/* Cost of Inaction */}
         {cost && (
           <>
-            <SectionLabel label="💸 What doing nothing costs you — real numbers" />
+            <SectionLabel label="💸 What doing nothing costs you" />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
               <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.25)", borderRadius: 14, padding: 16, textAlign: "center" }}>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 26, fontWeight: 800, color: "var(--mb-red)", marginBottom: 4 }}>{cost.monthly_loss_lpa}</div>
@@ -167,8 +177,8 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 22 }}>
           {[
             { value: `${c1.risk_score}%`, label: "Automation risk", color: "var(--mb-amber)" },
-            { value: c1.disruption_year, label: "Disruption window", color: "var(--mb-amber)" },
-            { value: c1.protective_skills_count, label: "Protective skills", color: "var(--mb-green)" },
+            { value: disruptionYear, label: "Hits your salary by", color: "var(--mb-amber)" },
+            { value: c1.protective_skills_count, label: "Skills protecting you", color: "var(--mb-green)" },
           ].map((s, i) => (
             <div key={i} style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
               <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 28, fontWeight: 800, color: s.color, marginBottom: 6 }}>{s.value}</div>
@@ -187,7 +197,7 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
           <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600 }}><strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>2,340</strong> professionals checked this month · India avg: <strong style={{ fontWeight: 800, color: "var(--mb-red)" }}>61%</strong></span>
         </div>
 
-        <InfoBox variant="amber" title="What India's live data says — April 2026" body={c1.india_data_insight || ""} />
+        <InfoBox variant="amber" title={`India market signal — ${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`} body={c1.india_data_insight || ""} />
         <CardNav onNext={onNext} nextLabel="See salary reality →" />
       </CardBody>
     </CardShell>

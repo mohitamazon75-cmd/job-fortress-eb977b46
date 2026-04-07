@@ -438,14 +438,23 @@ CARD 7 (Human Advantage) — PRIMARY TRIGGER: HOPE ANCHORING + IDENTITY REINFORC
 
 ═══ EMOTIONAL STRUCTURE (Required in EVERY card) ═══
 
+WRITING RULES — apply to ALL text fields:
+- Short sentences. Never more than 12 words per sentence.
+- Present tense. Not "will be" — "is being."
+- ₹ amounts and months beat percentages.
+- Name the skill. Not "execution tasks" — "copywriting."
+- The reader should feel seen, not lectured.
+- No MBA-speak: never use "depreciating", "AI-driven systems", "displacement susceptibility", "synthesize complex"
+- No trailing questions. End with statements.
+
 Replace generic "emotion_message" with this 3-part structure:
-- fear_hook: The uncomfortable truth they need to hear (2 sentences, specific to their resume)
-- tough_love: Direct, no-BS one-liner assessment 
-- hope_bridge: Their specific advantage that creates hope (1 sentence)
+- fear_hook: Name the actual skills. Use ₹0/month framing. End on "your employer will know this."
+- tough_love: "{X} years executing. The next {X} will reward people who direct." — personal.
+- hope_bridge: "{actual_moat_skill} is your shield. AI cannot replicate judgment."
 
 Also include:
-- confrontation: One sentence that directly challenges them based on resume evidence
-  Example: "You've managed ₹2Cr budgets but never owned a P&L. That's the gap that keeps you at Manager level."
+- confrontation: Directly challenge them. End with a specific action, not a question.
+  Example: "You've managed ₹2Cr budgets but never owned a P&L. Fix that this week. One case study. One number. One outcome you own."
 
 ═══ SCORING FRAMEWORK ═══
 - risk_score: Automation exposure (40%) + market demand trajectory (25%) + skill moat depth (20%) + seniority protection (15%)
@@ -507,22 +516,22 @@ ats_avg: integer 0-100
 jobbachao_score: integer 0-100
 
 card1_risk: {
-  headline: string (max 8 words — personalised, provocative),
-  subline: string (reference a specific credential),
-  fear_hook: string (2 sentences — the uncomfortable truth about their position, using specific data),
-  tough_love: string (1 brutal honest sentence — their biggest career weakness),
-  hope_bridge: string (1 sentence — their specific advantage that others don't have),
-  confrontation: string (1 sentence directly challenging them based on resume evidence),
+  headline: string (max 8 words — personalised, provocative, present tense),
+  subline: string (statement, NOT a question — use years + the specific skill being replaced, e.g. "12 years in. Copywriting is already being replaced."),
+  fear_hook: string (3 SHORT lines. Line 1: name the top 3 execution skills being automated, separated by periods. Line 2: "These are your top billed skills — and AI does all three for ₹0/month." Line 3: "By {disruption_year}, your employer will know this." — max 40 words total, NO jargon, NO "depreciating" or "AI-driven systems"),
+  tough_love: string (2 short lines. Line 1: "You've spent {years} years executing." Line 2: "The next {years} will reward people who direct." — personal, uses their actual years),
+  hope_bridge: string (2 short lines. Line 1: "{their_top_moat_skill} is your shield." Line 2: "AI cannot replicate judgment. It can only replicate execution." — name the actual skill, keep under 25 words),
+  confrontation: string (3 short sentences. End with a specific action: "Fix that this week. One case study. One number. One outcome you own." — never end with a question),
   emotion_message: string (combine fear_hook + hope_bridge for backward compatibility),
   risk_score: integer,
   india_average: 61,
-  disruption_year: string,
+  disruption_year: string (e.g. "2027"),
   protective_skills_count: integer,
   cost_of_inaction: {
     monthly_loss_lpa: string (₹ LPA they're leaving on table),
     six_month_loss: string (₹ amount),
     peer_gap_pct: string (e.g. "42% of peers have already upskilled"),
-    decay_narrative: string (2 sentences — what happens to their score in 6 months if they do nothing)
+    decay_narrative: string (2 SHORT sentences — what happens in 6 months, use ₹ amounts not percentages)
   },
   tasks_at_risk: string[] (exactly 5),
   tasks_safe: string[] (exactly 5),
@@ -532,7 +541,7 @@ card1_risk: {
     { company: string, role: string, score: integer, color: string, city: string, search_url: string }
   ],
   ats_missing_keywords: string[] (exactly 5),
-  india_data_insight: string (3 sentences using WEF + their situation)
+  india_data_insight: string (3 SHORT sentences using WEF + their situation, present tense)
 }
 
 card2_market: {
