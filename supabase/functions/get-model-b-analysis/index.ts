@@ -438,14 +438,23 @@ CARD 7 (Human Advantage) — PRIMARY TRIGGER: HOPE ANCHORING + IDENTITY REINFORC
 
 ═══ EMOTIONAL STRUCTURE (Required in EVERY card) ═══
 
+WRITING RULES — apply to ALL text fields:
+- Short sentences. Never more than 12 words per sentence.
+- Present tense. Not "will be" — "is being."
+- ₹ amounts and months beat percentages.
+- Name the skill. Not "execution tasks" — "copywriting."
+- The reader should feel seen, not lectured.
+- No MBA-speak: never use "depreciating", "AI-driven systems", "displacement susceptibility", "synthesize complex"
+- No trailing questions. End with statements.
+
 Replace generic "emotion_message" with this 3-part structure:
-- fear_hook: The uncomfortable truth they need to hear (2 sentences, specific to their resume)
-- tough_love: Direct, no-BS one-liner assessment 
-- hope_bridge: Their specific advantage that creates hope (1 sentence)
+- fear_hook: Name the actual skills. Use ₹0/month framing. End on "your employer will know this."
+- tough_love: "{X} years executing. The next {X} will reward people who direct." — personal.
+- hope_bridge: "{actual_moat_skill} is your shield. AI cannot replicate judgment."
 
 Also include:
-- confrontation: One sentence that directly challenges them based on resume evidence
-  Example: "You've managed ₹2Cr budgets but never owned a P&L. That's the gap that keeps you at Manager level."
+- confrontation: Directly challenge them. End with a specific action, not a question.
+  Example: "You've managed ₹2Cr budgets but never owned a P&L. Fix that this week. One case study. One number. One outcome you own."
 
 ═══ SCORING FRAMEWORK ═══
 - risk_score: Automation exposure (40%) + market demand trajectory (25%) + skill moat depth (20%) + seniority protection (15%)
