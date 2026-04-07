@@ -112,12 +112,10 @@ export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardP
   ];
 
   const handleCopy = (text: string, idx: number) => {
-    navigator.clipboard.writeText(text.replace(/"/g, ''));
+    navigator.clipboard.writeText(text);
     setCopiedIdx(idx);
     setTimeout(() => setCopiedIdx(null), 2000);
   };
-
-  const formatLakhs = (n: number) => (n / 100000).toFixed(1) + 'L';
 
   return (
     <div className="space-y-4">
