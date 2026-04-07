@@ -75,43 +75,103 @@ export default function SkillUpgradePlanCard({ report, scanId }: { report: ScanR
 
   // ── Pro gate: show upgrade teaser ────────────────────────────
   if (!isActive) {
+    const deadSkills = report.execution_skills_dead || [];
+    const skillGaps = report.score_breakdown?.skill_adjustments
+      ?.filter(s => s.automation_risk >= 50)
+      ?.sort((a, b) => b.automation_risk - a.automation_risk) || [];
+    const moatSkills = report.moat_skills || [];
+    const role = report.role || 'Professional';
+
+    // Build 3 free weeks from real scan data
+    const freeWeeks = [
+      {
+        week: 1,
+        skill: deadSkills[0] || skillGaps[0]?.skill_name || 'AI Fundamentals',
+        action: `Search: "${deadSkills[0] || skillGaps[0]?.skill_name || 'AI basics'} fundamentals" on YouTube`,
+        time: '3-4 hours',
+      },
+      {
+        week: 2,
+        skill: deadSkills[1] || skillGaps[1]?.skill_name || moatSkills[0] || 'Data Analysis',
+        action: `Complete: "${deadSkills[1] || skillGaps[1]?.skill_name || moatSkills[0] || 'Data analysis'} basics" on Coursera`,
+        time: '4-5 hours',
+      },
+      {
+        week: 3,
+        skill: moatSkills[0] || deadSkills[2] || 'Strategic Thinking',
+        action: `Practice: Apply ${moatSkills[0] || 'strategic thinking'} to one real project at work`,
+        time: '2-3 hours',
+      },
+    ];
+
+    const lockedWeeks = Array.from({ length: 9 }, (_, i) => i + 4);
+
     return (
       <>
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border-2 border-primary/30 bg-primary/[0.04] p-5 text-center space-y-3">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
-            <Lock className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-base font-black text-foreground">Pro Feature</h3>
-            <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-              Your personalized skill upgrade plan is a Pro feature. Unlock it to get AI-curated tools, industry buzzwords and learning resources for your exact role and skill profile.
+        <div className="space-y-4">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">
+              Your 12-Week Skill Upgrade Plan
             </p>
-          </div>
-          <div className="space-y-1.5 text-left max-w-xs mx-auto">
-            {[
-              'Tools reshaping your industry right now',
-              'Critical buzzwords to master',
-              'Curated weekend learning resources',
-              'Personalized to your role & skills',
-            ].map(f => (
-              <div key={f} className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-prophet-green flex-shrink-0" />
-                <span className="text-xs text-foreground/80">{f}</span>
+            <p className="text-xs text-muted-foreground">
+              Personalized for {role} — first 3 weeks free
+            </p>
+          </motion.div>
+
+          {/* Free weeks timeline */}
+          <div className="relative pl-6 space-y-3">
+            {/* Timeline vertical line */}
+            <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-primary/20" />
+
+            {freeWeeks.map((w, i) => (
+              <motion.div key={w.week} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.05 + i * 0.08 }}
+                className="relative rounded-xl border border-border bg-card p-4">
+                {/* Timeline dot */}
+                <div className="absolute -left-[19px] top-4 w-3 h-3 rounded-full bg-primary border-2 border-background" />
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">Week {w.week}</p>
+                  <span className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5" /> {w.time}
+                  </span>
+                </div>
+                <p className="text-xs font-bold text-foreground mb-0.5">{w.skill}</p>
+                <p className="text-[11px] text-muted-foreground">{w.action}</p>
+              </motion.div>
+            ))}
+
+            {/* Upgrade CTA between free and locked */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              className="relative rounded-xl border-2 border-primary/30 bg-primary/[0.04] p-4 text-center space-y-2">
+              <p className="text-sm font-black text-foreground">
+                Unlock your full 12-week roadmap →
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Includes specific resources, time estimates, and skill checkpoints
+              </p>
+              <button
+                onClick={() => setShowProModal(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-black text-xs hover:bg-primary/90 transition-colors"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                Unlock Full Plan
+              </button>
+            </motion.div>
+
+            {/* Locked weeks — blurred rows */}
+            {lockedWeeks.map((weekNum) => (
+              <div key={weekNum} className="relative rounded-xl border border-border/50 bg-muted/20 p-3 opacity-40 select-none">
+                <div className="absolute -left-[19px] top-3 w-3 h-3 rounded-full bg-muted border-2 border-background" />
+                <div className="flex items-center gap-2">
+                  <Lock className="w-3 h-3 text-muted-foreground" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Week {weekNum}</p>
+                </div>
+                <div className="mt-1 h-3 bg-muted/60 rounded w-3/4" />
               </div>
             ))}
           </div>
-          <button
-            onClick={() => setShowProModal(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-black text-sm hover:bg-primary/90 transition-colors"
-          >
-            <Zap className="w-4 h-4" />
-            Unlock Pro — from ₹300/mo
-          </button>
-          <p className="text-[11px] text-muted-foreground">
-            One upgrade · unlocks all 4 Pro cards in this report
-          </p>
-        </motion.div>
+        </div>
         <ProUpgradeModal
           isOpen={showProModal}
           onClose={() => setShowProModal(false)}
