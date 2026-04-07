@@ -766,13 +766,10 @@ const Index = () => {
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <div className="max-w-md text-center space-y-6">
             {errorScanStatus === 'checking' ? (
-              <>
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto animate-pulse">
-                  <span className="text-3xl">🔍</span>
-                </div>
-                <h1 className="text-2xl font-black text-foreground">Checking Analysis Status...</h1>
-                <p className="text-muted-foreground">Verifying if your analysis completed in the background.</p>
-              </>
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+                <p className="text-sm text-muted-foreground">Finalizing your report…</p>
+              </div>
             ) : errorScanStatus === 'processing' ? (
               <>
                 <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto">
