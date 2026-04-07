@@ -391,6 +391,7 @@ Output ONLY valid JSON:
 ANTI-HALLUCINATION RULES:
 - arbitrage_companies_count must be an integer between 5 and 500. Estimate from the size of the role's hiring market in the user's geography — do NOT invent a number.
 - pivot_title must be a REAL job title currently posted on LinkedIn, Naukri, or Indeed — not an aspirational fantasy.
+- If CURRENT ROLE MARKET SIGNAL data appears in the profile context: use market_health and posting_change_pct to calibrate urgency. Declining market health = frame pivot as urgent career protection, not optional exploration. Growing market health = frame as strategic positioning, not escape.
 
 NEGATIVE EXAMPLES (DO NOT produce pivots like these):
 - BAD: "Become a YouTube creator" (too vague, no timeline, no skill bridge)

@@ -802,6 +802,7 @@ No explanation, no markdown. Return ONLY the JSON.`;
       locale,
       scanCountry,
       primaryJob,
+      marketSignal,
       hasTimeBudget,
     });
 
