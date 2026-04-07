@@ -9,7 +9,7 @@ import ReferralCard from '@/components/ReferralCard';
 import confetti from 'canvas-confetti';
 
 interface ThankYouFooterProps {
-  onStartOver: () => void;
+  onStartOver?: () => void;
   scanId?: string;
   userId?: string;
 }
