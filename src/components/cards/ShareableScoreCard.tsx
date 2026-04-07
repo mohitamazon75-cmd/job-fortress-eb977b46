@@ -145,14 +145,14 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
         </span>
 
         <span style={{ fontSize: 200, fontWeight: 900, color: scoreColor, lineHeight: 0.85, letterSpacing: '-0.04em' }}>{score}</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: 18, textAlign: 'center', maxWidth: 340 }}>{tierLabel}</span>
+        <span style={{ fontSize: 14, fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: 18, textAlign: 'center', maxWidth: 340 }}>{tierLabel}</span>
 
-        <div style={{ width: 60, height: 1, background: `${scoreColor}66`, margin: '16px 0' }} />
+        <div style={{ width: 60, height: 1, background: `${scoreColor}88`, margin: '16px 0' }} />
 
-        <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.65)', fontWeight: 500, textAlign: 'center' }}>{role}</span>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', marginTop: 4, textAlign: 'center' }}>{industry}</span>
+        <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', fontWeight: 600, textAlign: 'center' }}>{role}</span>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', marginTop: 4, textAlign: 'center' }}>{industry}</span>
 
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', position: 'absolute', bottom: 24 }}>{dateStr}</span>
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', position: 'absolute', bottom: 24 }}>{dateStr}</span>
       </div>
 
       {/* ── ZONE 2: Right panel (62%) ── */}
@@ -162,8 +162,8 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
       }}>
         {/* TOP HALF — Headline */}
         <div style={{ flex: '0 0 45%', padding: '40px 48px 20px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <span style={{ fontSize: 24, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.3 }}>{headline}</span>
-          <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.55)', marginTop: 12, lineHeight: 1.5, maxWidth: 480 }}>
+          <span style={{ fontSize: 26, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.3 }}>{headline}</span>
+          <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.75)', marginTop: 12, lineHeight: 1.5, maxWidth: 480, fontWeight: 500 }}>
             {aiExposure}% of {roleStr} tasks are being automated. You have {monthsStr} before it hits your pay.
           </span>
         </div>
@@ -186,8 +186,8 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
               display: 'flex', flexDirection: 'column', justifyContent: 'center',
             }}>
               <span style={{ fontSize: 36, fontWeight: 800, color: '#FFFFFF', lineHeight: 1 }}>{s.value}</span>
-              <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 8 }}>{s.label}</span>
-              {s.sub && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>{s.sub}</span>}
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 8 }}>{s.label}</span>
+              {s.sub && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>{s.sub}</span>}
             </div>
           ))}
         </div>
@@ -205,13 +205,13 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
           {topTask && topTaskPct ? (
             <>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: scoreColor }} />
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)' }}>{topTask}: {topTaskPct}% automated</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{topTask}: {topTaskPct}% automated</span>
             </>
           ) : <span />}
         </div>
         <span>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>jobbachao.ai</span>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}> — check your score</span>
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.95)', fontWeight: 700 }}>jobbachao.ai</span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', fontWeight: 500 }}> — check your score</span>
         </span>
       </div>
     </div>
@@ -246,21 +246,21 @@ function CardPreviewVisible({ data }: { data: CardData }) {
           <span className="text-[80px] sm:text-[100px] font-black leading-[0.85] tracking-tighter mt-2" style={{ color: scoreColor }}>
             {score}
           </span>
-          <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.15em] uppercase text-center mt-3" style={{ color: 'rgba(255,255,255,0.7)' }}>
+          <span className="text-[10px] sm:text-[12px] font-extrabold tracking-[0.15em] uppercase text-center mt-3" style={{ color: 'rgba(255,255,255,0.9)' }}>
             {tierLabel}
           </span>
-          <div className="w-10 h-px my-3" style={{ background: `${scoreColor}66` }} />
-          <span className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.6)' }}>{role}</span>
-          <span className="text-[10px] italic text-center mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{industry}</span>
-          <span className="text-[9px] mt-3" style={{ color: 'rgba(255,255,255,0.25)' }}>{dateStr}</span>
+          <div className="w-10 h-px my-3" style={{ background: `${scoreColor}88` }} />
+          <span className="text-xs sm:text-sm text-center font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{role}</span>
+          <span className="text-[10px] sm:text-xs italic text-center mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{industry}</span>
+          <span className="text-[9px] sm:text-[10px] mt-3" style={{ color: 'rgba(255,255,255,0.5)' }}>{dateStr}</span>
         </div>
 
         {/* RIGHT PANEL */}
         <div className="sm:w-[62%] w-full p-5 sm:p-6 flex flex-col gap-4">
           {/* Headline */}
           <div>
-            <p className="text-sm sm:text-base font-extrabold leading-snug" style={{ color: '#FFFFFF' }}>{headline}</p>
-            <p className="text-xs sm:text-sm mt-2 leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 400 }}>
+            <p className="text-sm sm:text-lg font-extrabold leading-snug" style={{ color: '#FFFFFF' }}>{headline}</p>
+            <p className="text-xs sm:text-sm mt-2 leading-relaxed font-medium" style={{ color: 'rgba(255,255,255,0.75)', maxWidth: 400 }}>
               {aiExposure}% of {roleStr} tasks are being automated. You have {monthsStr} before it hits your pay.
             </p>
           </div>
@@ -270,8 +270,8 @@ function CardPreviewVisible({ data }: { data: CardData }) {
             {stats.map((s, i) => (
               <div key={i} className="rounded-md p-3 sm:p-4" style={{ background: 'rgba(255,255,255,0.03)', borderTop: `3px solid ${scoreColor}` }}>
                 <span className="text-lg sm:text-xl font-extrabold block" style={{ color: '#FFFFFF' }}>{s.value}</span>
-                <span className="text-[8px] sm:text-[9px] font-semibold tracking-[0.12em] uppercase block mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</span>
-                {s.sub && <span className="text-[8px] block mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.sub}</span>}
+                <span className="text-[9px] sm:text-[10px] font-bold tracking-[0.12em] uppercase block mt-1" style={{ color: 'rgba(255,255,255,0.65)' }}>{s.label}</span>
+                {s.sub && <span className="text-[9px] block mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>{s.sub}</span>}
               </div>
             ))}
           </div>
@@ -284,13 +284,13 @@ function CardPreviewVisible({ data }: { data: CardData }) {
           {topTask && topTaskPct ? (
             <>
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: scoreColor }} />
-              <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.6)' }}>{topTask}: {topTaskPct}% automated</span>
+              <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>{topTask}: {topTaskPct}% automated</span>
             </>
           ) : <span />}
         </div>
         <span>
-          <span className="text-[10px] sm:text-[11px] font-bold" style={{ color: 'rgba(255,255,255,0.8)' }}>jobbachao.ai</span>
-          <span className="text-[9px] sm:text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}> — check your score</span>
+          <span className="text-[11px] sm:text-[12px] font-bold" style={{ color: 'rgba(255,255,255,0.95)' }}>jobbachao.ai</span>
+          <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.65)' }}> — check your score</span>
         </span>
       </div>
     </div>
