@@ -10,6 +10,7 @@ import { createTokenTrackingTransform } from "../_shared/token-tracker.ts";
 const CHAT_RATE_LIMIT = 30;
 const CHAT_RATE_WINDOW_MS = 60 * 60 * 1000;
 const MAX_QUESTIONS_PER_SCAN = 10;
+const MONTHLY_FREE_LIMIT = 5;
 
 async function checkChatRateLimit(ip: string, sb: any): Promise<boolean> {
   const windowStart = new Date(Date.now() - CHAT_RATE_WINDOW_MS).toISOString();
