@@ -183,16 +183,20 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
 
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
+            <p className="text-lg font-black text-foreground tabular-nums">{Math.max(0, 100 - Math.round(automationRisk))}%</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Still Yours</p>
+          </div>
+          <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{Math.round(automationRisk)}%</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Exposure Index</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-destructive">Automated Now</p>
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
-            <p className="text-lg font-black text-foreground tabular-nums">{moatSkills.length}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Moat Skills</p>
-          </div>
-          <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
-            <p className="text-lg font-black text-foreground tabular-nums">{tools.length}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Tools Competing</p>
+            <p className="text-lg font-black text-foreground tabular-nums">
+              {report.salary_bleed_monthly && report.salary_bleed_monthly > 0
+                ? `₹${Math.round(report.salary_bleed_monthly / 1000)}K`
+                : `~${Math.round(automationRisk * 0.4)}%`}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Monthly Loss</p>
           </div>
         </div>
 
