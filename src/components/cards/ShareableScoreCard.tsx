@@ -618,7 +618,6 @@ export default function ShareableScoreCard({ report }: Props) {
       // Portrait cards are very tall — hint html2canvas to avoid clipping
       if (h > 1200) { opts.windowWidth = w; opts.windowHeight = h; }
       const canvas = await html2canvas(ref.current, opts);
-      console.log('[ShareCard]', suffix || 'landscape', 'canvas:', canvas.width, 'x', canvas.height, '| scale:', canvas.width / w);
       if (!mountedRef.current) return;
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
