@@ -245,6 +245,25 @@ ${skillDemandResults.length > 0 ? `
 LIVE SKILL DEMAND VALIDATION:
 ${skillDemandResults.map((d: any) => `- ${d.skill_name}: ${d.demand_signal.toUpperCase()} (adjustment: ${d.adjustment > 0 ? '+' : ''}${d.adjustment}) — ${d.evidence}`).join("\n")}
 NOTE: These skill risk adjustments are already factored into the DI score. Use this context to give more specific, evidence-backed advice.` : ''}
+${input.marketSignal ? `
+CURRENT ROLE MARKET SIGNAL (live data for ${detectedRole}):
+- Market Health: ${input.marketSignal.market_health?.toUpperCase() || 'UNKNOWN'}
+- Job Posting Trend: ${
+    input.marketSignal.posting_change_pct != null 
+      ? `${input.marketSignal.posting_change_pct > 0 ? '+' : ''}${input.marketSignal.posting_change_pct.toFixed(1)}% (30-day change)`
+      : 'No data'
+  }
+- AI Displacement Mentions: ${
+    input.marketSignal.ai_job_mentions_pct != null
+      ? `${input.marketSignal.ai_job_mentions_pct.toFixed(1)}% of postings mention AI`
+      : 'No data'
+  }
+- Avg Salary Trend: ${
+    input.marketSignal.avg_salary_change_pct != null
+      ? `${input.marketSignal.avg_salary_change_pct > 0 ? '+' : ''}${input.marketSignal.avg_salary_change_pct.toFixed(1)}% YoY`
+      : 'No data'
+  }
+USE THIS: If market_health is 'declining' or posting_change_pct < -10, treat the current role as a strong PUSH factor — pivots are urgent, not optional.` : ''}
 
 ${kgContext}`;
 
