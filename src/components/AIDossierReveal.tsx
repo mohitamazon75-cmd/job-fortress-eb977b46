@@ -858,7 +858,7 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="text-muted-foreground text-xs font-bold uppercase tracking-[0.15em] mt-2"
+              className="text-muted-foreground text-sm font-bold uppercase tracking-[0.15em] mt-2"
             >
               how safe is your job from AI
             </motion.p>
@@ -866,15 +866,15 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="text-foreground/60 text-[13px] leading-relaxed mt-3 max-w-xs mx-auto"
+              className="text-foreground text-[14px] sm:text-[15px] leading-relaxed mt-3 max-w-sm mx-auto font-medium"
             >
               {careerScore >= 70
-                ? `${careerScore} out of 100 — you're protected today, but this number was higher last year. AI capability is accelerating, and even safe roles are seeing erosion. Your defense plan shows exactly what's coming.`
+                ? <><strong>{careerScore} out of 100</strong> — you're protected today, but this number was higher last year. AI capability is accelerating, and even safe roles are seeing erosion. <strong>Your defense plan shows exactly what's coming.</strong></>
                 : careerScore >= 50
-                ? `${careerScore} out of 100 — you're in the zone where most people feel fine until it's too late. AI-augmented professionals are already competing for roles like yours. Time to act.`
+                ? <><strong>{careerScore} out of 100</strong> — you're in the zone where most people feel fine until it's too late. AI-augmented professionals are already competing for roles like yours. <strong>Time to act.</strong></>
                 : careerScore >= 30
-                ? `${careerScore} out of 100 — a significant chunk of your role is vulnerable to automation. You'll want to act on the plan below.`
-                : `${careerScore} out of 100 — your role has high overlap with AI capabilities. The good news: the steps below can change this.`
+                ? <><strong>{careerScore} out of 100</strong> — a significant chunk of your role is vulnerable to automation. <strong>You'll want to act on the plan below.</strong></>
+                : <><strong>{careerScore} out of 100</strong> — your role has high overlap with AI capabilities. <strong>The good news: the steps below can change this.</strong></>
               }
             </motion.p>
             {report.linkedin_name && report.linkedin_name !== 'Professional' && (
