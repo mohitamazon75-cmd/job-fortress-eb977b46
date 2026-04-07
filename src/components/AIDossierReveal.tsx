@@ -437,7 +437,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
       {!isProUser && (topAtRisk.length > 0 || moatSkills.length > 0) && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
           className="rounded-2xl border-2 border-border bg-card p-5 space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">AI Impact Snapshot</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">WHAT'S HAPPENING NOW</p>
 
           {/* Section 1: At Risk */}
           {topAtRisk.length > 0 && (
