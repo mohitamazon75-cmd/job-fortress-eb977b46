@@ -469,6 +469,17 @@ const Index = () => {
         track('scan_complete', { scanId: id });
         navigate(`/results/choose?id=${id}`);
 
+        // Pre-warm Model B analysis in background so it's cached when user reaches it
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          const uid = user?.id || null;
+          if (uid) {
+            console.debug('[PreWarm] Triggering Model B analysis in background for', id);
+            supabase.functions.invoke('get-model-b-analysis', {
+              body: { analysis_id: id, user_id: uid, resume_filename: 'Your Resume' },
+            }).catch(() => {}); // Non-fatal — just pre-warming cache
+          }
+        }).catch(() => {});
+
         // Referral conversion: if user arrived via a referral link, log the conversion
         try {
           const refCode = sessionStorage.getItem('jb_ref_code');
