@@ -9,7 +9,7 @@ interface SalaryNegotiationCardProps {
 
 export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardProps) {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-  const [showCTCBreakdown, setShowCTCBreakdown] = useState(false);
+  
 
   const salaryBleed = report.salary_bleed_monthly || 0;
   const estimatedSalary = report.estimated_monthly_salary_inr;
