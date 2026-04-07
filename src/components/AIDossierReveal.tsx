@@ -178,7 +178,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
       {/* Intelligence Profile Card */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
         className="rounded-2xl border-2 border-primary/20 bg-primary/[0.03] p-5">
-        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-primary mb-2">Your Intelligence Profile</p>
+        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-primary mb-2">YOUR RISK PROFILE</p>
         <p className="text-sm font-bold text-foreground leading-snug mb-3">{profileSummary}</p>
 
         <div className="grid grid-cols-3 gap-2 mb-3">
