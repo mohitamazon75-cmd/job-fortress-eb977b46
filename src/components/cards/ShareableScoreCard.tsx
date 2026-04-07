@@ -534,7 +534,7 @@ export default function ShareableScoreCard({ report }: Props) {
 
   const captureCard = useCallback(async (ref: React.RefObject<HTMLDivElement | null>, w: number, h: number, suffix: string) => {
     if (!ref.current) return;
-    setCapturing(suffix === '' ? 'landscape' : 'square');
+    setCapturing(suffix === '' ? 'landscape' : suffix === '-square' ? 'square' : 'portrait');
     try {
       const html2canvas = (await import('html2canvas')).default;
       if (!mountedRef.current) return;
