@@ -181,7 +181,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
         </div>
 
         {/* Kanban */}
-        <SectionLabel label="Application pipeline tracker" />
+        <SectionLabel label="Your pipeline — track applications here" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10, marginBottom: 18 }}>
           {cols.map((col) => (
             <div key={col.key} style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 12, minHeight: 80 }}>

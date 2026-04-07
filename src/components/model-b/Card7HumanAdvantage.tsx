@@ -76,7 +76,7 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
         </div>
 
         {/* Advantages */}
-        <SectionLabel label="Irreplaceable advantages — extracted from your actual resume" />
+        <SectionLabel label="What AI cannot take from you" />
         {advantages.map((a: any, i: number) => {
           const ic = iconMap[a.icon_type] || iconMap.revenue;
           return (

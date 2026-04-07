@@ -50,7 +50,7 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         ))}
 
         <div style={{ marginTop: 18 }}>
-          <InfoBox variant="green" title="The insight specific to your numbers" body={c2.key_insight || ""} />
+          <InfoBox variant="green" title="Your numbers vs. the market" body={c2.key_insight || ""} />
         </div>
 
         {/* Quote box */}

@@ -93,7 +93,7 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
         </div>
 
         {c3.upgrade_path && (
-          <InfoBox variant="navy" title="🎯 Your specific upgrade path" body={c3.upgrade_path} />
+          <InfoBox variant="navy" title="🎯 This week — one thing" body={c3.upgrade_path} />
         )}
 
         <CardNav onBack={onBack} onNext={onNext} />
