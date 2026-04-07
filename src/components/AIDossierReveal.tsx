@@ -183,16 +183,20 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
 
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
+            <p className="text-lg font-black text-foreground tabular-nums">{Math.max(0, 100 - Math.round(automationRisk))}%</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Still Yours</p>
+          </div>
+          <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{Math.round(automationRisk)}%</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Exposure Index</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-destructive">Automated Now</p>
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
-            <p className="text-lg font-black text-foreground tabular-nums">{moatSkills.length}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Moat Skills</p>
-          </div>
-          <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
-            <p className="text-lg font-black text-foreground tabular-nums">{tools.length}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Tools Competing</p>
+            <p className="text-lg font-black text-foreground tabular-nums">
+              {report.salary_bleed_monthly && report.salary_bleed_monthly > 0
+                ? `₹${Math.round(report.salary_bleed_monthly / 1000)}K`
+                : `~${Math.round(automationRisk * 0.4)}%`}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Monthly Loss</p>
           </div>
         </div>
 
@@ -433,7 +437,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           {/* Section 1: At Risk */}
           {topAtRisk.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-bold text-destructive">⚠️ What's at risk in your role right now</p>
+              <p className="text-xs font-bold text-destructive">⚠️ Already happening in your role</p>
               <div className="flex flex-wrap gap-1.5">
                 {topAtRisk.slice(0, 3).map((skill, i) => (
                   <span key={i} className="bg-destructive/10 text-destructive border border-destructive/20 rounded-full text-xs font-bold px-3 py-1">
@@ -836,58 +840,66 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
         <div className="max-w-lg mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
           {/* ═══ HERO SCORE — inline, not a separate phase ═══ */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', damping: 20 }}
-            className={`rounded-2xl border-2 ${scoreBg} p-6 text-center`}
-          >
-            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-3">
-              Career Position Score
-            </p>
-            <motion.p
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: 'spring', damping: 15, stiffness: 100, delay: 0.1 }}
-              className={`text-[72px] sm:text-[96px] font-black leading-none ${scoreColor} tabular-nums`}
-            >
-              {displayScore}
-              <span className="text-[22px] sm:text-[30px] text-muted-foreground">/100</span>
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-muted-foreground text-sm font-bold uppercase tracking-[0.15em] mt-2"
-            >
-              how safe is your job from AI
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="text-foreground text-[14px] sm:text-[15px] leading-relaxed mt-3 max-w-sm mx-auto font-medium"
-            >
-              {careerScore >= 70
-                ? <><strong>{careerScore} out of 100</strong> — you're protected today, but this number was higher last year. AI capability is accelerating, and even safe roles are seeing erosion. <strong>Your defense plan shows exactly what's coming.</strong></>
-                : careerScore >= 50
-                ? <><strong>{careerScore} out of 100</strong> — you're in the zone where most people feel fine until it's too late. AI-augmented professionals are already competing for roles like yours. <strong>Time to act.</strong></>
-                : careerScore >= 30
-                ? <><strong>{careerScore} out of 100</strong> — a significant chunk of your role is vulnerable to automation. <strong>You'll want to act on the plan below.</strong></>
-                : <><strong>{careerScore} out of 100</strong> — your role has high overlap with AI capabilities. <strong>The good news: the steps below can change this.</strong></>
-              }
-            </motion.p>
-            {report.linkedin_name && report.linkedin_name !== 'Professional' && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="text-foreground/60 text-sm mt-3"
+          {(() => {
+            const roleName = report.matched_job_family || report.role || 'your role';
+            const industryName = report.industry || 'your industry';
+            const aiExposure = Math.round(report.determinism_index ?? 50);
+            const monthsLeft = report.months_remaining;
+            const tierLabel = careerScore >= 70 ? 'YOUR ROLE IS BEING REWRITTEN'
+              : careerScore >= 50 ? 'AUTOMATION IS ALREADY HERE'
+              : careerScore >= 30 ? 'THE WINDOW IS CLOSING'
+              : 'RARE. STAY THIS WAY.';
+            const monthsStr = monthsLeft ? `${monthsLeft} months` : 'the next 2–3 years';
+            const openingLine = `${aiExposure}% of what a ${roleName} does daily is being automated right now. You have ${monthsStr} before it hits your salary.`;
+
+            return (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: 'spring', damping: 20 }}
+                className={`rounded-2xl border-2 ${scoreBg} p-6 text-center`}
               >
-                {report.linkedin_name.split(' ')[0]}, here's your complete analysis
-              </motion.p>
-            )}
-          </motion.div>
+                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-3">
+                  Career Position Score
+                </p>
+                <motion.p
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', damping: 15, stiffness: 100, delay: 0.1 }}
+                  className={`text-[72px] sm:text-[96px] font-black leading-none ${scoreColor} tabular-nums`}
+                >
+                  {displayScore}
+                  <span className="text-[22px] sm:text-[30px] text-muted-foreground">/100</span>
+                </motion.p>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className={`text-sm font-black uppercase tracking-[0.15em] mt-2 ${scoreColor}`}
+                >
+                  {tierLabel}
+                </motion.p>
+                <motion.p
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="text-foreground text-[14px] sm:text-[15px] leading-relaxed mt-3 max-w-sm mx-auto font-medium"
+                >
+                  <strong>{openingLine}</strong>
+                </motion.p>
+                {report.linkedin_name && report.linkedin_name !== 'Professional' && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                    className="text-foreground/60 text-sm mt-3"
+                  >
+                    {report.linkedin_name.split(' ')[0]}, here's your complete analysis
+                  </motion.p>
+                )}
+              </motion.div>
+            );
+          })()}
 
           {/* ═══ INTELLIGENCE PROFILE — appears with staggered delay ═══ */}
           <motion.div
