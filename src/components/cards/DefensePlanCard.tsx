@@ -291,17 +291,20 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
           </div>
         </motion.div>
       ) : (
-        /* Fallback: static 90-day milestones */
+        /* Fallback: enhanced 90-day milestones with WHY + OUTCOME */
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-xl border-2 border-border bg-card p-5"
+          className="rounded-xl border-2 border-border bg-card overflow-hidden"
         >
-          <p className="text-xs font-semibold text-muted-foreground mb-4">
-            90-Day Career Upgrade Path
-          </p>
-          <div className="space-y-4 relative">
+          <div className="px-5 py-3.5 border-b border-border">
+            <p className="text-xs font-black uppercase tracking-[0.15em] text-foreground">
+              {isCrisis ? '🚨 Crisis-Mode Action Plan' : '90-Day Career Upgrade Path'}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{urgencyLabel}</p>
+          </div>
+          <div className="p-5 space-y-4 relative">
             <div className="absolute left-[18px] top-6 bottom-6 w-[2px] bg-border" />
             {fallbackMilestones.map((m, i) => (
               <motion.div
@@ -315,8 +318,17 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
                   <span className={`${m.color}`}>{m.icon}</span>
                 </div>
                 <p className={`text-[10px] font-black uppercase tracking-widest ${m.color} mb-1`}>{m.phase}</p>
-                <p className="text-sm font-bold text-foreground leading-snug">{m.action}</p>
-                <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
+                <p className="text-sm font-bold text-foreground leading-snug">{m.title}</p>
+                <p className="text-xs text-foreground/80 mt-1.5 leading-relaxed">{m.action}</p>
+                <div className="mt-2.5 rounded-lg bg-muted/30 px-3 py-2 space-y-1.5">
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    <span className="font-bold text-foreground">Why now:</span> {m.why}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    <span className="font-bold text-prophet-green">After this:</span> {m.outcome}
+                  </p>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
                   <Clock className="w-3 h-3" /> {m.detail}
                 </p>
               </motion.div>
