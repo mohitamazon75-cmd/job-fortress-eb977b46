@@ -683,6 +683,38 @@ export default function ShareableScoreCard({ report }: Props) {
       <CaptureTargetSquare innerRef={squareRef} data={data} />
       <CaptureTargetPortrait innerRef={portraitRef} data={data} />
 
+      {/* Timed nudge banner */}
+      {showNudge && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="rounded-xl overflow-hidden flex items-center gap-3 px-4 py-3"
+          style={{ background: '#0C0C18', borderLeft: `4px solid ${scoreColor}` }}
+        >
+          <span className="text-sm flex-1">
+            <span className="mr-1.5">📊</span>
+            <span className="font-semibold text-foreground">Your displacement card is ready to share</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => captureCard(cardRef, 1200, 630, '')}
+            className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+            style={{ background: `${scoreColor}22`, color: scoreColor }}
+          >
+            Generate My Card →
+          </button>
+          <button
+            type="button"
+            onClick={dismissNudge}
+            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors text-sm leading-none p-1"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </motion.div>
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
