@@ -192,11 +192,16 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">
-              {report.salary_bleed_monthly && report.salary_bleed_monthly > 0
+              {report.salary_bleed_monthly && report.salary_bleed_monthly >= 8000
                 ? `₹${Math.round(report.salary_bleed_monthly / 1000)}K`
-                : `~${Math.round(automationRisk * 0.4)}%`}
+                : (() => {
+                    const pct = Math.round(automationRisk * 0.4);
+                    return pct > 0 ? `~${Math.min(60, pct)}%` : '—';
+                  })()}
             </p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Monthly Loss</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {report.salary_bleed_monthly && report.salary_bleed_monthly >= 8000 ? 'Monthly Loss' : 'Salary at Risk'}
+            </p>
           </div>
         </div>
 
@@ -844,13 +849,22 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
             const roleName = report.matched_job_family || report.role || 'your role';
             const industryName = report.industry || 'your industry';
             const aiExposure = Math.round(report.determinism_index ?? 50);
-            const monthsLeft = report.months_remaining;
+            const monthsLeft = (report.months_remaining != null && report.months_remaining > 0) ? report.months_remaining : null;
+            // Tier labels here use COMPOSITE careerScore (intentional — dossier shows overall position)
             const tierLabel = careerScore >= 70 ? 'YOUR ROLE IS BEING REWRITTEN'
               : careerScore >= 50 ? 'AUTOMATION IS ALREADY HERE'
               : careerScore >= 30 ? 'THE WINDOW IS CLOSING'
               : 'RARE. STAY THIS WAY.';
-            const monthsStr = monthsLeft ? `${monthsLeft} months` : 'the next 2–3 years';
-            const openingLine = `${aiExposure}% of what a ${roleName} does daily is being automated right now. You have ${monthsStr} before it hits your salary.`;
+            // Format months: >24 → years, null → fallback text
+            const monthsStr = monthsLeft == null ? 'the next 2–3 years'
+              : monthsLeft < 24 ? `${monthsLeft} months`
+              : monthsLeft < 36 ? '~2 years'
+              : monthsLeft < 48 ? '~3 years'
+              : monthsLeft < 60 ? '~4 years'
+              : '5+ years';
+            // DI display: 0 → "< 5", 100 → "95+"
+            const diDisplay = aiExposure <= 0 ? '< 5' : aiExposure >= 100 ? '95+' : `${aiExposure}`;
+            const openingLine = `${diDisplay}% of what a ${roleName} does daily is being automated right now. You have ${monthsStr} before it hits your salary.`;
 
             return (
               <motion.div
