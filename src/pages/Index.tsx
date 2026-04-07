@@ -194,6 +194,18 @@ const Index = () => {
 
   useEffect(() => {
     if (!routedScanId || scanReport) return;
+    // Fast path: if navigated here with cached report in state (e.g. from choice screen), skip DB
+    const navState = location.state as { cachedReport?: ScanReport; cachedScanId?: string } | null;
+    if (navState?.cachedReport && navState?.cachedScanId === routedScanId) {
+      setScanId(routedScanId);
+      setScanReport(navState.cachedReport);
+      setMoneyShotSeen(false);
+      setPhase('reveal');
+      // Clear navigation state to prevent stale re-use on refresh
+      window.history.replaceState({}, '', window.location.href);
+      return;
+    }
+
     if (hydrationAttemptedRef.current === routedScanId) return;
 
     hydrationAttemptedRef.current = routedScanId;
