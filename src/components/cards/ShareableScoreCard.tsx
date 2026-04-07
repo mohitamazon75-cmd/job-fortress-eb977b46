@@ -516,8 +516,9 @@ function CardPreviewVisible({ data }: { data: CardData }) {
 export default function ShareableScoreCard({ report }: Props) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const squareRef = useRef<HTMLDivElement | null>(null);
+  const portraitRef = useRef<HTMLDivElement | null>(null);
   const mountedRef = useRef(true);
-  const [capturing, setCapturing] = useState<'landscape' | 'square' | null>(null);
+  const [capturing, setCapturing] = useState<'landscape' | 'square' | 'portrait' | null>(null);
   const [copied, setCopied] = useState(false);
 
   const data = useCardData(report);
