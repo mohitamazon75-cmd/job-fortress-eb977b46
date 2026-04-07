@@ -34,6 +34,11 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
   const immediateStep = report.immediate_next_step;
   const judoStrategy = report.judo_strategy;
   const moatSkills = report.moat_skills || [];
+  const deadSkills = (report as any).execution_skills_dead || [];
+  const monthsRemaining = report.months_remaining ?? 48;
+  const role = report.role || 'your role';
+  const industry = report.industry || 'your industry';
+  const di = report.determinism_index ?? 50;
   const skillGaps = report.score_breakdown?.skill_adjustments?.filter(s => s.automation_risk >= 50).slice(0, 3) || [];
   const tools = normalizeTools(report.ai_tools_replacing || []);
   const kgMatched = report.computation_method?.kg_skills_matched ?? (report.score_breakdown?.skill_adjustments?.length || 0);
@@ -44,36 +49,56 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
 
   const [expandedWeek, setExpandedWeek] = useState<number | null>(0);
 
-  // Fallback milestones if no rich plan
+  // Urgency framing based on months_remaining
+  const isCrisis = monthsRemaining < 24;
+  const isSteady = monthsRemaining >= 24 && monthsRemaining <= 48;
+  const urgencyLabel = isCrisis ? 'URGENT — Act within days' : isSteady ? 'Strategic pace — steady action' : 'Long horizon — build methodically';
+
+  const topDeadSkill = deadSkills[0] || skillGaps[0]?.skill_name || 'your most automated task';
+  const secondDeadSkill = deadSkills[1] || skillGaps[1]?.skill_name || 'routine workflows';
+  const topMoat = moatSkills[0] || 'your core human skill';
+  const judoTool = judoStrategy?.recommended_tool || 'the leading AI tool for your role';
+
+  // Enhanced fallback milestones with WHY + OUTCOME + urgency
   const fallbackMilestones = [
     {
-      phase: 'Week 1-2',
+      phase: isCrisis ? 'Week 1 (Start Today)' : 'Week 1-2',
       icon: <Flame className="w-4 h-4" />,
-      action: immediateStep?.action || judoStrategy?.recommended_tool
-        ? `Learn ${judoStrategy?.recommended_tool || 'the key AI tool for your role'}`
-        : `Master one AI tool that complements your ${moatSkills[0] || 'core'} skill`,
-      detail: immediateStep?.time_required || '2-4 hours',
+      title: `Replace ${topDeadSkill} with AI`,
+      action: immediateStep?.action
+        || `Search "${topDeadSkill} AI tools" on YouTube. Pick the top-rated free tool. Complete one real work task with it this week.`,
+      why: isCrisis
+        ? `With ${monthsRemaining} months of runway, ${topDeadSkill} is already being automated — every week you delay costs you leverage.`
+        : `${topDeadSkill} has ${di}% AI exposure in ${industry}. Learning the AI alternative now makes you the person who leads the transition, not the person replaced by it.`,
+      outcome: `You will have hands-on experience with one AI tool that replaces ${topDeadSkill} — and proof you can adapt.`,
+      detail: isCrisis ? '3-5 hours (this weekend)' : '2-4 hours',
       color: 'text-destructive',
       borderColor: 'border-destructive/20',
       bgColor: 'bg-destructive/[0.03]',
     },
     {
-      phase: 'Week 3-6',
+      phase: isCrisis ? 'Week 2-4' : 'Week 3-6',
       icon: <GraduationCap className="w-4 h-4" />,
+      title: `Get certified in ${topMoat} + AI`,
       action: skillGaps[0]
-        ? `Get certified in ${skillGaps[0].skill_name} augmentation`
-        : 'Complete a micro-certification in AI-augmented workflows',
-      detail: '10-15 hours total',
+        ? `Search "AI for ${skillGaps[0].skill_name}" on Coursera or LinkedIn Learning. Complete a micro-certification that proves you can augment ${skillGaps[0].skill_name} with AI tools.`
+        : `Complete a micro-certification in AI-augmented ${topMoat} workflows. Search Coursera for "${topMoat} AI" and pick one under 15 hours.`,
+      why: `${topMoat} is your strongest moat — but only if you can prove you use AI to amplify it. A certification makes this visible to hiring managers and your current leadership.`,
+      outcome: `You will have a credential that says "${role} who uses AI for ${topMoat}" — a rare and valuable combination in ${industry}.`,
+      detail: isCrisis ? '10-12 hours (2 weekends)' : '10-15 hours total',
       color: 'text-prophet-gold',
       borderColor: 'border-prophet-gold/20',
       bgColor: 'bg-prophet-gold/[0.03]',
     },
     {
-      phase: 'Week 7-12',
+      phase: isCrisis ? 'Week 5-8' : 'Week 7-12',
       icon: <TrendingUp className="w-4 h-4" />,
+      title: `Become the ${topMoat} + AI expert in ${industry}`,
       action: (judoStrategy as any)?.career_positioning
-        || `Position yourself as the ${moatSkills[0] || 'domain'} + AI expert on your team`,
-      detail: 'Ongoing — build visible proof',
+        || `Write one LinkedIn post showing how you used ${judoTool} to improve a ${topMoat} outcome. Present an "AI workflow" in your next team meeting. Volunteer to lead your team's AI adoption for ${topMoat}-related tasks.`,
+      why: `In ${industry}, the people who survive AI disruption are the ones who publicly demonstrate they've adapted. Visibility converts skill into job security.`,
+      outcome: `Your team and network see you as the "${topMoat} + AI" person — the one who adapted first. This is your moat.`,
+      detail: isCrisis ? 'Ongoing — one visible action per week' : 'Ongoing — build visible proof',
       color: 'text-prophet-green',
       borderColor: 'border-prophet-green/20',
       bgColor: 'bg-prophet-green/[0.03]',
