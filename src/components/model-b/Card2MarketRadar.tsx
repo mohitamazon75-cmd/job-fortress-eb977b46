@@ -35,7 +35,7 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           </div>
         )}
 
-        <SectionLabel label="India salary benchmarks · Your role tier · 2025–26" />
+        <SectionLabel label="WHAT THEY'RE ACTUALLY PAYING · Your role tier" />
 
         {(c2.salary_bands || []).map((band: any, i: number) => (
           <div key={i} style={{ marginBottom: 14 }}>
