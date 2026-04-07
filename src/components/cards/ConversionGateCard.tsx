@@ -1,13 +1,25 @@
-import React from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, FileText, DollarSign, Rocket, Users, Brain, ChevronRight, Sparkles, Target } from 'lucide-react';
+import { Shield, FileText, DollarSign, Rocket, Users, Brain, ChevronRight, Sparkles, Target, X } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { computeStabilityScore } from '@/lib/stability-score';
 import { classifySkills } from '@/lib/unified-skill-classifier';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
+import { Skeleton } from '@/components/ui/skeleton';
+import ErrorBoundary from '@/components/ErrorBoundary';
+
+// Lazy load the heavy card components — only loaded when drawer opens
+const DefensePlanCard = lazy(() => import('@/components/cards/DefensePlanCard'));
+const ResumeWeaponizerCard = lazy(() => import('@/components/cards/ResumeWeaponizerCard'));
+const SalaryNegotiationCard = lazy(() => import('@/components/cards/SalaryNegotiationCard'));
+const SkillUpgradePlanCard = lazy(() => import('@/components/cards/SkillUpgradePlanCard'));
+const PeerComparisonPreviewCard = lazy(() => import('@/components/cards/PeerComparisonPreviewCard'));
+const CoachOptInCard = lazy(() => import('@/components/cards/CoachOptInCard'));
 
 interface ConversionGateCardProps {
   report: ScanReport;
   onUpgrade: (defaultTier?: 'year' | 'month') => void;
+  scanId?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,16 +140,53 @@ function getHeadline(score: number): { headline: string; subtext: string } {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Feature Tile Component
+// Skeleton loader for lazy card content
 // ─────────────────────────────────────────────────────────────────────────────
 
-function FeatureTileComponent({ tile, index }: { tile: FeatureTile; index: number }) {
+function CardSkeleton() {
   return (
-    <motion.div
+    <div className="space-y-4 p-4">
+      <Skeleton className="h-6 w-3/4" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+      <Skeleton className="h-32 w-full rounded-xl" />
+      <Skeleton className="h-4 w-2/3" />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Drawer content renderer — maps tile ID to the real card component
+// ─────────────────────────────────────────────────────────────────────────────
+
+function DrawerCardContent({ tileId, report, scanId }: { tileId: string; report: ScanReport; scanId?: string }) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<CardSkeleton />}>
+        {tileId === 'defense-plan' && <DefensePlanCard report={report} />}
+        {tileId === 'ats-resume' && <ResumeWeaponizerCard report={report} scanId={scanId} />}
+        {tileId === 'salary-scripts' && <SalaryNegotiationCard report={report} />}
+        {tileId === 'skill-roadmap' && <SkillUpgradePlanCard report={report} scanId={scanId} />}
+        {tileId === 'peer-comparison' && <PeerComparisonPreviewCard report={report} />}
+        {tileId === 'ai-coach' && <CoachOptInCard report={report} scanId={scanId} />}
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature Tile Component (now clickable)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FeatureTileComponent({ tile, index, onOpen }: { tile: FeatureTile; index: number; onOpen: () => void }) {
+  return (
+    <motion.button
+      type="button"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 + index * 0.06 }}
-      className="rounded-xl border border-border bg-card p-4 space-y-3 hover:border-primary/20 transition-colors"
+      onClick={onOpen}
+      className="rounded-xl border border-border bg-card p-4 space-y-3 hover:border-primary/30 transition-colors text-left w-full group cursor-pointer"
     >
       {/* Icon + Title */}
       <div className="flex items-start gap-3">
@@ -160,11 +209,11 @@ function FeatureTileComponent({ tile, index }: { tile: FeatureTile; index: numbe
       </p>
 
       {/* Navigate hint */}
-      <div className="flex items-center gap-1 text-[11px] font-semibold text-primary pt-1">
+      <div className="flex items-center gap-1 text-[11px] font-semibold text-primary pt-1 group-hover:gap-2 transition-all">
         <span>Explore in detail</span>
         <ChevronRight className="w-3 h-3" />
       </div>
-    </motion.div>
+    </motion.button>
   );
 }
 
@@ -172,71 +221,108 @@ function FeatureTileComponent({ tile, index }: { tile: FeatureTile; index: numbe
 // Main Component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ConversionGateCard({ report, onUpgrade }: ConversionGateCardProps) {
+export default function ConversionGateCard({ report, onUpgrade, scanId }: ConversionGateCardProps) {
   const score = computeStabilityScore(report);
   const { headline, subtext } = getHeadline(score);
   const tiles = buildFeatureTiles(report);
+  const [openTileId, setOpenTileId] = useState<string | null>(null);
+  const openTile = tiles.find(t => t.id === openTileId);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="space-y-6"
-    >
-      {/* ── Header ── */}
-      <div className="space-y-3">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
-          <span className="text-xs font-bold text-primary uppercase tracking-wide">
-            Your Career Defense Package
-          </span>
-        </motion.div>
-
-        <motion.h2
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="text-2xl sm:text-3xl font-black text-foreground leading-tight"
-        >
-          {headline}
-        </motion.h2>
-
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-sm text-muted-foreground leading-relaxed"
-        >
-          {subtext}
-        </motion.p>
-      </div>
-
-      {/* ── Feature Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-        {tiles.map((tile, index) => (
-          <FeatureTileComponent key={tile.id} tile={tile} index={index} />
-        ))}
-      </div>
-
-      {/* ── Summary bar ── */}
+    <>
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="flex items-center gap-3 rounded-xl border border-primary/15 bg-primary/[0.03] p-4"
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="space-y-6"
       >
-        <Target className="w-5 h-5 text-primary flex-shrink-0" />
-        <p className="text-xs text-muted-foreground leading-relaxed flex-1">
-          <span className="font-bold text-foreground">Navigate through each card</span> using the Next button below.
-          Every tool is personalized to your {report.role || 'role'} profile and current market data.
-        </p>
+        {/* ── Header ── */}
+        <div className="space-y-3">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-bold text-primary uppercase tracking-wide">
+              Your Career Defense Package
+            </span>
+          </motion.div>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="text-2xl sm:text-3xl font-black text-foreground leading-tight"
+          >
+            {headline}
+          </motion.h2>
+
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-sm text-muted-foreground leading-relaxed"
+          >
+            {subtext}
+          </motion.p>
+        </div>
+
+        {/* ── Feature Grid ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {tiles.map((tile, index) => (
+            <FeatureTileComponent
+              key={tile.id}
+              tile={tile}
+              index={index}
+              onOpen={() => setOpenTileId(tile.id)}
+            />
+          ))}
+        </div>
+
+        {/* ── Summary bar ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="flex items-center gap-3 rounded-xl border border-primary/15 bg-primary/[0.03] p-4"
+        >
+          <Target className="w-5 h-5 text-primary flex-shrink-0" />
+          <p className="text-xs text-muted-foreground leading-relaxed flex-1">
+            <span className="font-bold text-foreground">Tap any card above</span> to explore the full tool.
+            Every tool is personalized to your {report.role || 'role'} profile and current market data.
+          </p>
+        </motion.div>
       </motion.div>
-    </motion.div>
+
+      {/* ── Bottom Sheet Drawer ── */}
+      <Drawer open={!!openTileId} onOpenChange={(open) => { if (!open) setOpenTileId(null); }}>
+        <DrawerContent className="max-h-[90vh] overflow-hidden">
+          <DrawerHeader className="pb-2">
+            <div className="flex items-center gap-3">
+              {openTile && (
+                <div className={`flex-shrink-0 p-2 rounded-lg border ${openTile.accentClass}`}>
+                  {openTile.icon}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <DrawerTitle className="text-lg font-black text-foreground">
+                  {openTile?.title || 'Loading...'}
+                </DrawerTitle>
+                <DrawerDescription className="text-xs text-muted-foreground mt-0.5">
+                  Personalized for {report.role || 'your role'}
+                </DrawerDescription>
+              </div>
+            </div>
+          </DrawerHeader>
+          <div className="overflow-y-auto px-4 pb-8 max-h-[75vh]">
+            {openTileId && (
+              <DrawerCardContent tileId={openTileId} report={report} scanId={scanId} />
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }
