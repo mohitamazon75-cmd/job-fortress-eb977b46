@@ -63,15 +63,15 @@ export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardP
         ? '📅 Mid-year review window opens in ' + (8 - currentMonth) + ' month(s)'
         : '📅 Year-end appraisal cycle starts in ' + (14 - currentMonth) + ' month(s)';
 
+  const di = report.determinism_index ?? 50;
+  const topMoat = moatSkills[0] || 'my core specialisation';
+  const secondMoat = moatSkills[1] || 'cross-functional leadership';
   const salaryRef = hasSalaryData && salaryBleed >= 8000
     ? `₹${(salaryBleed / 1000).toFixed(1)}K/month`
     : null;
   const salaryFraming = salaryRef
     ? `My research shows ${role} roles are experiencing ${salaryRef} salary compression from AI adoption`
     : `Research shows ${role} roles with ${di}% AI exposure are being repriced in ${industry}`;
-  const di = report.determinism_index ?? 50;
-  const topMoat = moatSkills[0] || 'my core specialisation';
-  const secondMoat = moatSkills[1] || 'cross-functional leadership';
 
   const scripts = [
     {
