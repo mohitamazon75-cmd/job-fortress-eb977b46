@@ -162,8 +162,8 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
       }}>
         {/* TOP HALF — Headline */}
         <div style={{ flex: '0 0 45%', padding: '40px 48px 20px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <span style={{ fontSize: 24, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.3 }}>{headline}</span>
-          <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.55)', marginTop: 12, lineHeight: 1.5, maxWidth: 480 }}>
+          <span style={{ fontSize: 26, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.3 }}>{headline}</span>
+          <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.75)', marginTop: 12, lineHeight: 1.5, maxWidth: 480, fontWeight: 500 }}>
             {aiExposure}% of {roleStr} tasks are being automated. You have {monthsStr} before it hits your pay.
           </span>
         </div>
