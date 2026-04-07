@@ -14,6 +14,8 @@ export default function ResultsChoose() {
   const analysisId = searchParams.get("id");
   const [userId, setUserId] = useState<string | null>(null);
   const { isActive, loading: subLoading } = useSubscription();
+  const [cachedReport, setCachedReport] = useState<any>(null);
+  const [modelBReady, setModelBReady] = useState(false);
 
   useEffect(() => {
     if (!analysisId) { navigate("/", { replace: true }); return; }
@@ -23,14 +25,39 @@ export default function ResultsChoose() {
       supabase.functions.invoke("log-ab-event", {
         body: { analysis_id: analysisId, user_id: uid, event_type: "choice_shown" },
       });
+
+      // Pre-fetch Model A report for instant re-entry
+      supabase
+        .from("scans")
+        .select("final_json_report")
+        .eq("id", analysisId)
+        .single()
+        .then(({ data: scan }) => {
+          if (scan?.final_json_report) setCachedReport(scan.final_json_report);
+        });
+
+      // Check if Model B is already cached (pre-warmed)
+      if (uid) {
+        supabase
+          .from("model_b_results")
+          .select("id, card_data")
+          .eq("analysis_id", analysisId)
+          .not("card_data", "is", null)
+          .maybeSingle()
+          .then(({ data: mbResult }) => {
+            if (mbResult?.card_data && Object.keys(mbResult.card_data as object).length > 5) {
+              setModelBReady(true);
+            }
+          });
+      }
     });
   }, [analysisId, navigate]);
 
-  const logAndNavigate = async (eventType: string, path: string) => {
+  const logAndNavigate = async (eventType: string, path: string, state?: any) => {
     await supabase.functions.invoke("log-ab-event", {
       body: { analysis_id: analysisId, user_id: userId, event_type: eventType },
     });
-    navigate(path);
+    navigate(path, { state });
   };
 
   if (!analysisId) return null;
