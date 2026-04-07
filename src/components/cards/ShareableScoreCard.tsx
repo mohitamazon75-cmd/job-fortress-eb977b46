@@ -246,13 +246,13 @@ function CardPreviewVisible({ data }: { data: CardData }) {
           <span className="text-[80px] sm:text-[100px] font-black leading-[0.85] tracking-tighter mt-2" style={{ color: scoreColor }}>
             {score}
           </span>
-          <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.15em] uppercase text-center mt-3" style={{ color: 'rgba(255,255,255,0.7)' }}>
+          <span className="text-[10px] sm:text-[12px] font-extrabold tracking-[0.15em] uppercase text-center mt-3" style={{ color: 'rgba(255,255,255,0.9)' }}>
             {tierLabel}
           </span>
-          <div className="w-10 h-px my-3" style={{ background: `${scoreColor}66` }} />
-          <span className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.6)' }}>{role}</span>
-          <span className="text-[10px] italic text-center mt-1" style={{ color: 'rgba(255,255,255,0.35)' }}>{industry}</span>
-          <span className="text-[9px] mt-3" style={{ color: 'rgba(255,255,255,0.25)' }}>{dateStr}</span>
+          <div className="w-10 h-px my-3" style={{ background: `${scoreColor}88` }} />
+          <span className="text-xs sm:text-sm text-center font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>{role}</span>
+          <span className="text-[10px] sm:text-xs italic text-center mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>{industry}</span>
+          <span className="text-[9px] sm:text-[10px] mt-3" style={{ color: 'rgba(255,255,255,0.5)' }}>{dateStr}</span>
         </div>
 
         {/* RIGHT PANEL */}
