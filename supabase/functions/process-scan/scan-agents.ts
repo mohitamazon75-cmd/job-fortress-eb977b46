@@ -80,6 +80,9 @@ export interface AgentOrchestrationInput {
   /** Primary job taxonomy match */
   primaryJob: any;
 
+  /** Current role market signal from market_signals table */
+  marketSignal: MarketSignalRow | null;
+
   /** Time budget checker — returns true if enough time remains */
   hasTimeBudget: (msNeeded: number) => boolean;
 }
