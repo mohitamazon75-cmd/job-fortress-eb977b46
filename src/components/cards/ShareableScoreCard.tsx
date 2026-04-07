@@ -186,8 +186,8 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
               display: 'flex', flexDirection: 'column', justifyContent: 'center',
             }}>
               <span style={{ fontSize: 36, fontWeight: 800, color: '#FFFFFF', lineHeight: 1 }}>{s.value}</span>
-              <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 8 }}>{s.label}</span>
-              {s.sub && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>{s.sub}</span>}
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 8 }}>{s.label}</span>
+              {s.sub && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>{s.sub}</span>}
             </div>
           ))}
         </div>
