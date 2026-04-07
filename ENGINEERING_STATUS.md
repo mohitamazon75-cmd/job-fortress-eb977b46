@@ -165,3 +165,30 @@ process-scan/index.ts (963 lines — orchestrator)
 **Combined system score: 8.5/10**
 
 ✅ Full audit cycle complete — architecture + LLM layer
+
+---
+
+### Feature Cards Status (post-build 2026-04-07)
+
+**ConversionGateCard — 6 interactive tiles:**
+
+| Feature | Status | Free Preview | Pro Full Access |
+|---------|--------|-------------|-----------------|
+| 90-Day Defense Plan | ✅ Live | Full plan visible | Same |
+| ATS Resume Rewrite | ✅ Live | Summary + keywords + skills to remove | Full rewrite + cover letter |
+| Salary Negotiation Scripts | ✅ Live | All 5 scripts | Same |
+| Skill Upgrade Roadmap | ✅ Live | 3 weeks + locked rows | Full 12 weeks |
+| Peer Benchmarking | ✅ Live | Full cohort data | Same |
+| AI Career Coach | ✅ Live | 5 questions/month | Unlimited |
+
+**AI Coach usage limits:**
+- Free users: 5 questions per month
+- Reset: rolling 30 days from first question
+- Tracked in: profiles.coach_questions_used
+- Reset function: check_and_increment_coach_usage()
+- Pro bypass: subscription_tier = 'pro' + valid expiry
+
+**Share Card:**
+- 3 formats: LinkedIn (1200×627), WhatsApp (1080×1080), Story (1080×1920)
+- Timed nudge: 12s after result loads
+- Logic source: determinism_index (not composite score)
