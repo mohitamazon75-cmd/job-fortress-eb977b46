@@ -594,13 +594,35 @@ export default function ShareableScoreCard({ report }: Props) {
   const squareRef = useRef<HTMLDivElement | null>(null);
   const portraitRef = useRef<HTMLDivElement | null>(null);
   const mountedRef = useRef(true);
+  const hasDownloadedRef = useRef(false);
+  const nudgeDismissedRef = useRef(false);
   const [capturing, setCapturing] = useState<'landscape' | 'square' | 'portrait' | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showNudge, setShowNudge] = useState(false);
 
   const data = useCardData(report);
   const { score, role, aiExposure, monthsRemaining } = data;
+  const scoreColor = getCompositeColor(score);
 
   useEffect(() => { return () => { mountedRef.current = false }; }, []);
+
+  // Timed nudge: show after 12s if no download triggered
+  useEffect(() => {
+    const showTimer = setTimeout(() => {
+      if (!mountedRef.current || hasDownloadedRef.current || nudgeDismissedRef.current) return;
+      setShowNudge(true);
+    }, 12000);
+    return () => clearTimeout(showTimer);
+  }, []);
+
+  // Auto-dismiss nudge after 8s
+  useEffect(() => {
+    if (!showNudge) return;
+    const hideTimer = setTimeout(() => {
+      if (mountedRef.current) setShowNudge(false);
+    }, 8000);
+    return () => clearTimeout(hideTimer);
+  }, [showNudge]);
 
   // Share text: use natural language for edge DI values (not "< 5%" or "95+%")
   const shareTextDI = aiExposure <= 5 ? 'Less than 5%' : aiExposure >= 95 ? 'Over 95%' : `${aiExposure}%`;
@@ -610,6 +632,8 @@ export default function ShareableScoreCard({ report }: Props) {
 
   const captureCard = useCallback(async (ref: React.RefObject<HTMLDivElement | null>, w: number, h: number, suffix: string) => {
     if (!ref.current) return;
+    hasDownloadedRef.current = true;
+    setShowNudge(false);
     setCapturing(suffix === '' ? 'landscape' : suffix === '-square' ? 'square' : 'portrait');
     try {
       const html2canvas = (await import('html2canvas')).default;
@@ -618,7 +642,6 @@ export default function ShareableScoreCard({ report }: Props) {
       // Portrait cards are very tall — hint html2canvas to avoid clipping
       if (h > 1200) { opts.windowWidth = w; opts.windowHeight = h; }
       const canvas = await html2canvas(ref.current, opts);
-      console.log('[ShareCard]', suffix || 'landscape', 'canvas:', canvas.width, 'x', canvas.height, '| scale:', canvas.width / w);
       if (!mountedRef.current) return;
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
@@ -648,12 +671,49 @@ export default function ShareableScoreCard({ report }: Props) {
     setTimeout(() => setCopied(false), 2000);
   }, [shareText]);
 
+  const dismissNudge = useCallback(() => {
+    nudgeDismissedRef.current = true;
+    setShowNudge(false);
+  }, []);
+
   return (
     <div className="space-y-4">
       {/* Hidden capture targets */}
       <CaptureTarget innerRef={cardRef} data={data} />
       <CaptureTargetSquare innerRef={squareRef} data={data} />
       <CaptureTargetPortrait innerRef={portraitRef} data={data} />
+
+      {/* Timed nudge banner */}
+      {showNudge && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="rounded-xl overflow-hidden flex items-center gap-3 px-4 py-3"
+          style={{ background: '#0C0C18', borderLeft: `4px solid ${scoreColor}` }}
+        >
+          <span className="text-sm flex-1">
+            <span className="mr-1.5">📊</span>
+            <span className="font-semibold text-foreground">Your displacement card is ready to share</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => captureCard(cardRef, 1200, 630, '')}
+            className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
+            style={{ background: `${scoreColor}22`, color: scoreColor }}
+          >
+            Generate My Card →
+          </button>
+          <button
+            type="button"
+            onClick={dismissNudge}
+            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors text-sm leading-none p-1"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </motion.div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
