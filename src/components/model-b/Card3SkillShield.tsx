@@ -79,7 +79,7 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
         </div>
 
         {/* Skills */}
-        <SectionLabel label="Skills from your resume — honest assessment" />
+        <SectionLabel label="WHAT'S KEEPING YOU EMPLOYED — honest assessment" />
         <div style={{ marginBottom: 18 }}>
           {(c3.skills || []).map((skill: any, i: number) => {
             const badge = skillBadgeMap[skill.level] || skillBadgeMap.buildable;
@@ -93,7 +93,7 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
         </div>
 
         {c3.upgrade_path && (
-          <InfoBox variant="navy" title="🎯 Your specific upgrade path" body={c3.upgrade_path} />
+          <InfoBox variant="navy" title="🎯 This week — one thing" body={c3.upgrade_path} />
         )}
 
         <CardNav onBack={onBack} onNext={onNext} />

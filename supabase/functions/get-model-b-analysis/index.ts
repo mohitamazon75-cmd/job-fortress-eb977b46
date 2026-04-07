@@ -545,97 +545,121 @@ card1_risk: {
 }
 
 card2_market: {
-  headline: string, subline: string,
-  fear_hook: string, tough_love: string, hope_bridge: string, confrontation: string,
+  headline: string (max 8 words — name the industry, present tense),
+  subline: string (statement with ₹ amount or % change — "₹18-28L roles growing 23% in Bangalore"),
+  fear_hook: string (2 SHORT sentences — name the city, the % direction, the ₹ impact),
+  tough_love: string (1 sentence — name what they're missing in ₹ terms),
+  hope_bridge: string (1 sentence — name their specific positioning advantage),
+  confrontation: string (1 sentence — end with one action this week),
   emotion_message: string,
   salary_bands: [
-    { role: string, range: string (₹ LPA), color: "navy"|"green"|"amber"|"red", bar_pct: integer 20-100 }
+    { role: string, range: string (₹ LPA — specific numbers like "₹18-28L"), color: "navy"|"green"|"amber"|"red", bar_pct: integer 20-100 }
   ] (exactly 6 — include their current role, show aspirational roles FIRST to anchor high),
-  key_insight: string (3-4 sentences using their achievements to justify positioning),
-  market_quote: string, market_quote_source: string
+  key_insight: string (3 SHORT sentences — name the city, the ₹ amount, their specific achievement. No "competitive" — use numbers),
+  market_quote: string (short, punchy), market_quote_source: string
 }
 
 card3_shield: {
-  headline: string, subline: string,
-  fear_hook: string, tough_love: string, hope_bridge: string, confrontation: string,
+  headline: string (max 8 words — name their top protective skill),
+  subline: string (statement — "[skill] keeps you employed. Here's how long."),
+  fear_hook: string (2 SHORT sentences — name the gap skill, how long before it matters),
+  tough_love: string (1 sentence — "Learn [skill] in 30 days. After that, it costs you ₹4L/year."),
+  hope_bridge: string (1 sentence — "[skill name] is your shield. It protects you until [year]."),
+  confrontation: string (1 sentence — "This week: [one specific action]. Not three. One."),
   emotion_message: string,
   shield_score: integer, green_arc_pct: integer, amber_arc_pct: integer,
   badge_text: string,
-  shield_body: string (2 sentences with evidence),
-  skills: [ { name: string, level: "best-in-class"|"strong"|"buildable"|"critical-gap", note: string } ] (8-12 skills),
-  upgrade_path: string (2 sentences — specific recommendation)
+  shield_body: string (2 SHORT sentences — name skills by name, state protection years),
+  skills: [ { name: string, level: "best-in-class"|"strong"|"buildable"|"critical-gap", note: string (max 8 words — "Protects until 2029" or "Learn in 30 days") } ] (8-12 skills),
+  upgrade_path: string (2 SHORT sentences — "This week: [action]. Result: [outcome].")
 }
 
 card4_pivot: {
-  headline: string, subline: string,
-  fear_hook: string, tough_love: string, hope_bridge: string, confrontation: string,
+  headline: string (max 8 words — present tense, name the direction),
+  subline: string (statement — "₹8L more per year. Here's the route."),
+  fear_hook: string (2 SHORT sentences — timeline and ₹ cost of staying),
+  tough_love: string (1 sentence — name the transferable skill),
+  hope_bridge: string (1 sentence — "[Role] pays ₹X-XL in [City]. You're 3 months away."),
+  confrontation: string (1 sentence — end with one action),
   emotion_message: string,
-  current_band: string, pivot_year1: string, director_band: string,
+  current_band: string (₹ LPA), pivot_year1: string (₹ LPA), director_band: string (₹ LPA),
   pivots: [
-    { role: string, salary: string, match_pct: integer, why_fit: string, color: "green"|"navy"|"teal", match_label: string, location: string, search_url: string,
-      fomo_signal: string (e.g. "3 people from your network moved here last quarter") }
+    { role: string, salary: string (₹ LPA with city), salary_range: string, match_pct: integer, why_fit: string (1 SHORT sentence naming transferable skill), color: "green"|"navy"|"teal", match_label: string (time-to-offer: "3-6 months"), location: string, search_url: string,
+      fomo_signal: string (specific with numbers) }
   ] (exactly 4),
+  pivot_explanations: [ { title: string, body: string (2 SHORT sentences) } ] (exactly 4),
   negotiation: {
-    intro: string,
-    open_with: string, accept: string, walk_away: string, best_case: string,
-    pivot_phrase: string (one-liner referencing their metrics)
-  }
+    intro: string (1 SHORT sentence),
+    open_with: string (₹ amount), accept: string, walk_away: string, best_case: string,
+    pivot_phrase: string (one-liner with their specific metric)
+  },
+  community_quote: string, community_quote_source: string
 }
 
 card5_jobs: {
-  headline: string, subline: string,
-  fear_hook: string, tough_love: string, hope_bridge: string,
+  headline: string (max 8 words — present tense, name the count),
+  subline: string (statement — "Your [skill] matches 4 of these."),
+  fear_hook: string (2 SHORT sentences — urgency with numbers),
+  tough_love: string, hope_bridge: string (1 sentence — name their specific fit),
   emotion_message: string,
   active_count: integer, senior_count: integer, strong_match_count: integer,
   job_matches: [
     {
-      company: string, role: string, salary: string, location: string,
-      match_color: "green"|"navy"|"amber", match_label: string, why_fit: string,
-      tags: string[], days_posted: integer 1-14, applicant_count: integer,
+      company: string, role: string, salary: string (₹ amount — "₹15-22L fixed", never "competitive"), location: string,
+      match_color: "green"|"navy"|"amber", match_label: string,
+      why_fit: string (1 SHORT sentence using their actual moat skill),
+      tags: string[] (include company tier: "MNC"|"Unicorn"|"Startup"),
+      days_posted: integer 1-14, applicant_count: integer,
       is_urgent: boolean, apply_evidence: string,
-      company_context: string,
-      urgency_narrative: string (2 sentences — why they must act NOW, referencing applicant count + their edge),
+      company_context: string (1 SHORT sentence),
+      urgency_narrative: string (2 SHORT sentences — why NOW),
       search_url: string
     }
   ] (exactly 5)
 }
 
 card6_blindspots: {
-  headline: string, subline: string,
-  fear_hook: string, tough_love: string, hope_bridge: string, confrontation: string,
+  headline: string (max 8 words — direct),
+  subline: string (statement — "3 gaps. All fixable. Start with #1."),
+  fear_hook: string (2 SHORT sentences — name the gap costing them most in ₹),
+  tough_love: string, hope_bridge: string, confrontation: string (end with one action),
   emotion_message: string,
   blind_spots: [
     { 
-      number: integer, title: string, body: string, fix: string,
+      number: integer, title: string (specific — "P&L ownership" not "leadership skills"),
+      body: string (2 SHORT sentences — cost + who has it),
+      fix: string (one action, one week),
       severity: "CRITICAL"|"SERIOUS"|"MODERATE",
-      peer_benchmark: string (e.g. "78% of Senior Managers have this skill. You don't."),
+      peer_benchmark: string (specific with % and level),
       resource_url: string
     }
   ] (exactly 4),
   interview_prep: [
     { 
       question: string, framework: string,
-      answer: string (STAR format with their actual metrics, 4-5 sentences),
+      answer: string (STAR format, their actual metrics, 3-4 SHORT sentences, present tense),
       star_labels: string[],
-      psychological_hook: string (1 sentence — why interviewers ask this and how to psychologically frame the answer)
+      psychological_hook: string (1 SHORT sentence)
     }
   ] (exactly 5)
 }
 
 card7_human: {
-  headline: string, subline: string,
-  fear_hook: string, tough_love: string, hope_bridge: string,
+  headline: string (max 8 words — name their edge),
+  subline: string (statement — "AI does execution. You do [their thing]."),
+  fear_hook: string (1 SHORT sentence — urgency),
+  tough_love: string, hope_bridge: string (1 sentence — name their #1 irreplaceable skill),
   emotion_message: string,
   advantages: [
-    { title: string, body: string, proof_label: string, icon_type: "revenue"|"people"|"globe"|"shield", score: integer 60-98 }
+    { title: string, body: string (2 SHORT sentences — ₹ or months impact), proof_label: string, icon_type: "revenue"|"people"|"globe"|"shield", score: integer 60-98 }
   ] (exactly 5),
-  insights: string[] (exactly 5 — daily human-edge insights, personal to their career),
+  insights: string[] (exactly 5 — SHORT, max 15 words each),
   score_tags: string[] (4 tags),
-  manifesto: string (3 powerful sentences — why THIS person matters, reference their specific achievements),
+  manifesto: string (3 SHORT sentences — name achievements, present tense, end on next action),
   twenty_four_hour_mission: {
-    action: string (ONE specific action for TODAY — tied to their #1 advantage),
-    why: string (1 sentence — why this specific action matters NOW),
-    expected_result: string (what they'll gain from doing this)
+    action: string (ONE action — name the tool, skill, output),
+    why: string (1 SHORT sentence — ₹ or timeline impact),
+    expected_result: string (specific with ₹ number)
   },
   whatsapp_message: string,
   score_card_text: string

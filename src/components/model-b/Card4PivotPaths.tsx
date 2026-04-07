@@ -62,7 +62,7 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
             <div key={i} onClick={() => setSelectedPivot(i)} style={{ background: bg, border: `2px solid ${bc}`, borderRadius: 14, padding: "16px 18px", marginBottom: 10, cursor: "pointer", transition: "border-color 150ms" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 5 }}>
                 <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)" }}>{p.role}</span>
-                <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 12, whiteSpace: "nowrap", background: pivotBg(p.color), color: variantColor(p.color), fontFamily: "'DM Sans', sans-serif" }}>{p.match_label}</span>
+                <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 12, whiteSpace: "nowrap", background: pivotBg(p.color), color: variantColor(p.color), fontFamily: "'DM Sans', sans-serif" }}>{p.match_label || "Fastest route"}</span>
               </div>
               <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600, marginBottom: 6 }}>{p.salary_range || p.salary} · {p.location}</div>
               <div style={{ height: 4, borderRadius: 2, background: variantColor(p.color), width: `${p.match_pct}%`, marginBottom: 8, transition: "width 0.6s ease" }} />

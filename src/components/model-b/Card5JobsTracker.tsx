@@ -118,7 +118,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
                     });
                   }}
                   style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, padding: "10px 18px", borderRadius: 12, background: "var(--mb-navy)", color: "white", border: "none", cursor: "pointer", minHeight: 48, boxShadow: "0 3px 12px rgba(27,47,85,0.25)", transition: "all 150ms", letterSpacing: "0.02em" }}
-                >Apply tailored →</button>
+                >Apply on Naukri ↗</button>
               </div>
 
               {/* Live job links */}
@@ -130,7 +130,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
                   onClick={() => logEvent("job_link_clicked", { platform: "naukri", job_company: job.company, job_role: job.role })}
                   style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
                 >
-                  🔍 Search on Naukri
+                  🔍 Naukri ↗
                 </a>
                 <a
                   href={linkedinUrl}
@@ -139,7 +139,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
                   onClick={() => logEvent("job_link_clicked", { platform: "linkedin", job_company: job.company, job_role: job.role })}
                   style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
                 >
-                  💼 Search on LinkedIn
+                  💼 LinkedIn ↗
                 </a>
                 <button
                   onClick={() => { addItem("saved", `${job.company} · ${job.role}`); }}
@@ -181,7 +181,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
         </div>
 
         {/* Kanban */}
-        <SectionLabel label="Application pipeline tracker" />
+        <SectionLabel label="Your pipeline — track applications here" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10, marginBottom: 18 }}>
           {cols.map((col) => (
             <div key={col.key} style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 12, minHeight: 80 }}>
