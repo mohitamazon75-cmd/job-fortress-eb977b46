@@ -46,6 +46,8 @@ function safeFileName(str: string | null | undefined): string {
   return str
     .replace(/[^\w\s-]/g, '')  // strip non-word chars (removes non-ASCII)
     .replace(/\s+/g, '-')
+    .replace(/-{2,}/g, '-')    // collapse multiple dashes into one
+    .replace(/^-+|-+$/g, '')   // trim leading/trailing dashes
     .toLowerCase()
     .substring(0, 50) || 'career';
 }
