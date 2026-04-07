@@ -92,45 +92,107 @@ export default function ResumeWeaponizerCard({ report, scanId }: { report: ScanR
     </button>
   );
 
-  // ── Pro gate: show upgrade teaser ────────────────────────────
+  // ── Pro gate: show FREE preview with real scan data ────────────────────────────
   if (showUpgrade) {
+    const moatSkills = report.moat_skills || [];
+    const strategicSkills = (report as any).strategic_skills || [];
+    const deadSkills = report.execution_skills_dead || [];
+    const industry = report.industry || 'your industry';
+    const allMoats = [...moatSkills, ...strategicSkills].filter(Boolean);
+    const atsKeywords = allMoats.slice(0, 5);
+    const skillsToRemove = deadSkills.slice(0, 3);
+
+    // Build a free professional summary from scan data — no LLM needed
+    const topMoat = allMoats[0] || 'cross-functional expertise';
+    const secondMoat = allMoats[1] || 'stakeholder management';
+    const humanEdge = allMoats[2] || 'strategic thinking';
+    const freeSummary = `Experienced ${role} with a track record in ${topMoat} and ${secondMoat}. Known for ${humanEdge} — capabilities that remain difficult to automate. Currently positioned for roles in ${industry} where these skills create measurable impact.`;
+
     return (
       <>
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border-2 border-primary/30 bg-primary/[0.04] p-5 text-center space-y-3">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
-            <Lock className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-base font-black text-foreground">Pro Feature</h3>
-            <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-              ATS Resume Rewrite is a Pro feature. Unlock it to get your resume rewritten specifically against the automation threats found in your scan.
+        <div className="space-y-4">
+          {/* Free professional summary */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border-2 border-primary/20 bg-card p-4 space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+              Your AI-Proof Summary — Free Preview
             </p>
-          </div>
-          <div className="space-y-1.5 text-left max-w-xs mx-auto">
-            {[
-              'Counters your exact automation threats',
-              'Injects ATS-critical keywords from your scan',
-              'STAR format experience bullets',
-              'Cover letter opening hook',
-            ].map(f => (
-              <div key={f} className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-prophet-green flex-shrink-0" />
-                <span className="text-xs text-foreground/80">{f}</span>
+            <div className="rounded-lg border border-border bg-muted/30 p-3 font-mono text-xs text-foreground/80 leading-relaxed border-l-2 border-l-primary/40">
+              {freeSummary}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => copyToClipboard(freeSummary, 'free-summary')}
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors">
+                {copiedId === 'free-summary' ? <><Check className="w-3 h-3" /> Copied!</> : <><Copy className="w-3 h-3" /> Copy Summary</>}
+              </button>
+            </div>
+          </motion.div>
+
+          {/* ATS keywords to ADD */}
+          {atsKeywords.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+              className="rounded-xl border border-prophet-green/20 bg-prophet-green/[0.03] p-4 space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-prophet-green">
+                ✓ Top ATS Keywords to Include
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {atsKeywords.map((kw, i) => (
+                  <span key={i} className="text-xs font-bold px-2.5 py-1 rounded-full border border-prophet-green/25 bg-prophet-green/5 text-prophet-green">
+                    +{kw}
+                  </span>
+                ))}
               </div>
-            ))}
-          </div>
-          <button
-            onClick={() => setShowProModal(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-black text-sm hover:bg-primary/90 transition-colors"
-          >
-            <Zap className="w-4 h-4" />
-            Unlock Pro — from ₹300/mo
-          </button>
-          <p className="text-[11px] text-muted-foreground">
-            One upgrade · unlocks all 4 Pro cards in this report
-          </p>
-        </motion.div>
+            </motion.div>
+          )}
+
+          {/* Skills to REMOVE */}
+          {skillsToRemove.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              className="rounded-xl border border-destructive/20 bg-destructive/[0.03] p-4 space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-destructive">
+                ✗ Skills to Remove or De-Emphasize
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {skillsToRemove.map((sk, i) => (
+                  <span key={i} className="text-xs font-bold px-2.5 py-1 rounded-full border border-destructive/25 bg-destructive/5 text-destructive line-through">
+                    {sk}
+                  </span>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">
+                These skills are increasingly automated — listing them can lower your perceived value.
+              </p>
+            </motion.div>
+          )}
+
+          {/* Upgrade CTA */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+            className="rounded-xl border-2 border-primary/30 bg-primary/[0.04] p-5 text-center space-y-3">
+            <p className="text-sm font-black text-foreground">
+              Get your full AI-optimized resume rewrite →
+            </p>
+            <div className="space-y-1.5 text-left max-w-xs mx-auto">
+              {[
+                'Complete STAR-format experience bullets',
+                'Cover letter opening hook',
+                '50+ ATS keywords injected',
+                'Skills-to-add & skills-to-remove analysis',
+              ].map(f => (
+                <div key={f} className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-prophet-green flex-shrink-0" />
+                  <span className="text-xs text-foreground/80">{f}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowProModal(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-black text-sm hover:bg-primary/90 transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              Unlock Full Rewrite
+            </button>
+          </motion.div>
+        </div>
         <ProUpgradeModal
           isOpen={showProModal}
           onClose={() => setShowProModal(false)}
