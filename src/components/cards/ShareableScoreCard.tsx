@@ -203,8 +203,12 @@ function buildStatsWithHero(data: CardData): { hero: StatBlock; rest: StatBlock[
     all.push({ value: displayPct, label: 'SALARY AT RISK' });
   }
 
-  // "Still Yours" — only show if between 20-85%
-  if (humanEdgeRaw >= 20 && humanEdgeRaw <= 85) {
+  // "Still Yours" — show if between 20-90%
+  // For safe users (DI < 30): always show if fewer than 2 stats available
+  const isSafeTier = aiExposure < 30;
+  const stillYoursInRange = humanEdgeRaw >= 20 && humanEdgeRaw <= 90;
+  const needsStillYoursForMinStats = isSafeTier && all.length < 2 && humanEdgeRaw > 0;
+  if (stillYoursInRange || needsStillYoursForMinStats) {
     all.push({ value: `${humanEdgeRaw}%`, label: 'STILL YOURS' });
   }
 
@@ -507,13 +511,88 @@ function CardPreviewVisible({ data }: { data: CardData }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// CaptureTargetPortrait — hidden 1080×1920 (story format)
+// ═══════════════════════════════════════════════════════════════
+function CaptureTargetPortrait({ innerRef, data }: { innerRef: React.RefObject<HTMLDivElement | null>; data: CardData }) {
+  const { score, role, industry, aiExposure, monthsRemaining, topTask, topTaskPct } = data;
+  const scoreColor = getCompositeColor(score);
+  const tierLabel = getTierLabel(aiExposure);
+  const headline = getHeadline(aiExposure);
+  const { hero, rest } = buildStatsWithHero(data);
+  const monthsStr = formatMonths(monthsRemaining) || 'the next 2–3 years';
+  const roleStr = role || 'your role';
+  const industryStr = industry || 'your industry';
+  const diDisplay = formatDI(aiExposure);
+  const displayRole = truncateRole(role || 'Professional', 35);
+
+  // Combine hero + rest into a flat array for 2x2 grid
+  const allStats = [hero, ...rest].slice(0, 4);
+  // Pad to even number for grid
+  while (allStats.length < 2) allStats.push({ value: `${diDisplay}%`, label: 'AI EXPOSURE' });
+
+  return (
+    <div ref={innerRef as React.RefObject<HTMLDivElement>} style={{ position: 'absolute', left: -9999, top: -9999, width: 1080, height: 1920, background: '#080810', fontFamily: FONT, boxSizing: 'border-box', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 25%, rgba(239,68,68,0.04) 0%, transparent 65%)', pointerEvents: 'none' }} />
+
+      {/* TOP ZONE — score + identity (640px) */}
+      <div style={{ height: 640, background: `${scoreColor}14`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 64px', boxSizing: 'border-box' }}>
+        <span style={{ fontFamily: FONT_MONO, fontSize: 10, fontWeight: 700, color: scoreColor, letterSpacing: '0.1em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>AI DISPLACEMENT REPORT</span>
+        <span style={{ fontSize: 280, fontWeight: 900, color: scoreColor, lineHeight: 0.85, letterSpacing: '-0.04em', marginTop: 8 }}>{score}</span>
+        <span style={{ fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 24, textAlign: 'center' }}>{tierLabel}</span>
+        <div style={{ width: 60, height: 1, background: `${scoreColor}88`, margin: '20px 0' }} />
+        <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.65)', fontWeight: 600, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{displayRole}</span>
+        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', marginTop: 6, textAlign: 'center' }}>{industryStr}</span>
+      </div>
+
+      {/* MIDDLE ZONE — headline + stats (860px) */}
+      <div style={{ height: 860, padding: '48px 64px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <span style={{ fontSize: 36, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2, textAlign: 'center', maxWidth: 900 }}>{headline}</span>
+        <span style={{ fontSize: 18, color: 'rgba(255,255,255,0.55)', marginTop: 24, lineHeight: 1.6, maxWidth: 800, textAlign: 'center', fontWeight: 500 }}>
+          {diDisplay}% of {roleStr} tasks are being automated. You have {monthsStr} before it hits your pay.
+        </span>
+
+        {/* 2x2 stats grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginTop: 48, width: '100%', maxWidth: 800 }}>
+          {allStats.map((s, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.04)', borderTop: `3px solid ${scoreColor}`, borderRadius: 8, padding: '32px 24px 28px', textAlign: 'center', minHeight: 120 }}>
+              <span style={{ fontSize: i === 0 ? 56 : 48, fontWeight: 900, color: '#FFFFFF', lineHeight: 1, display: 'block' }}>{s.value}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 12, display: 'block' }}>{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* BOTTOM ZONE — CTA (420px) */}
+      <div style={{ height: 420, background: 'rgba(255,255,255,0.03)', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 64px', boxSizing: 'border-box' }}>
+        {/* AI Exposure bar */}
+        <div style={{ width: '100%', maxWidth: 800 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.15em', textTransform: 'uppercase', display: 'block', marginBottom: 8, textAlign: 'center' }}>AI EXPOSURE</span>
+          <div style={{ width: '100%', height: 10, borderRadius: 5, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+            <div style={{ width: `${clamp(aiExposure, 2, 98)}%`, height: '100%', borderRadius: 5, background: scoreColor }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>{diDisplay}% automated</span>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>{aiExposure >= 100 ? '< 5' : aiExposure <= 0 ? '95+' : `${100 - aiExposure}`}% human</span>
+          </div>
+        </div>
+
+        <span style={{ fontSize: 28, fontWeight: 800, color: scoreColor, marginTop: 48, textAlign: 'center' }}>→ jobbachao.ai</span>
+        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginTop: 12, textAlign: 'center' }}>Check your AI displacement score</span>
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 16, textAlign: 'center' }}>#AIDisplacement #FutureOfWork</span>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Main Component
 // ═══════════════════════════════════════════════════════════════
 export default function ShareableScoreCard({ report }: Props) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const squareRef = useRef<HTMLDivElement | null>(null);
+  const portraitRef = useRef<HTMLDivElement | null>(null);
   const mountedRef = useRef(true);
-  const [capturing, setCapturing] = useState<'landscape' | 'square' | null>(null);
+  const [capturing, setCapturing] = useState<'landscape' | 'square' | 'portrait' | null>(null);
   const [copied, setCopied] = useState(false);
 
   const data = useCardData(report);
@@ -521,13 +600,15 @@ export default function ShareableScoreCard({ report }: Props) {
 
   useEffect(() => { return () => { mountedRef.current = false }; }, []);
 
-  const diDisplay = formatDI(aiExposure);
+  // Share text: use natural language for edge DI values (not "< 5%" or "95+%")
+  const shareTextDI = aiExposure <= 5 ? 'Less than 5%' : aiExposure >= 95 ? 'Over 95%' : `${aiExposure}%`;
+  const _diDisplay = formatDI(aiExposure); // used by sub-components via data prop
   const monthsStr = formatMonths(monthsRemaining) || 'the next few years';
-  const shareText = `I just ran my AI displacement report.\nMy score: ${score}/100. ${diDisplay}% of my role is being automated.\nI have ${monthsStr} before it hits my compensation.\n\nCheck yours (it's free): jobbachao.ai\n\n#AIDisplacement #FutureOfWork #CareerRisk`;
+  const shareText = `I just ran my AI displacement report.\nMy score: ${score}/100. ${shareTextDI} of my role is being automated.\nI have ${monthsStr} before it hits my compensation.\n\nCheck yours (it's free): jobbachao.ai\n\n#AIDisplacement #FutureOfWork #CareerRisk`;
 
   const captureCard = useCallback(async (ref: React.RefObject<HTMLDivElement | null>, w: number, h: number, suffix: string) => {
     if (!ref.current) return;
-    setCapturing(suffix === '' ? 'landscape' : 'square');
+    setCapturing(suffix === '' ? 'landscape' : suffix === '-square' ? 'square' : 'portrait');
     try {
       const html2canvas = (await import('html2canvas')).default;
       if (!mountedRef.current) return;
@@ -566,6 +647,7 @@ export default function ShareableScoreCard({ report }: Props) {
       {/* Hidden capture targets */}
       <CaptureTarget innerRef={cardRef} data={data} />
       <CaptureTargetSquare innerRef={squareRef} data={data} />
+      <CaptureTargetPortrait innerRef={portraitRef} data={data} />
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -583,25 +665,34 @@ export default function ShareableScoreCard({ report }: Props) {
           Most people who see this card check their own score within 24 hours.
         </p>
 
-        {/* Two download buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Three download buttons */}
+        <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
             onClick={() => captureCard(cardRef, 1200, 630, '')}
             disabled={capturing !== null}
-            className="flex items-center justify-center gap-2 py-3.5 rounded-xl bg-foreground text-background font-bold text-xs hover:opacity-90 transition-all disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-foreground text-background font-bold text-[11px] hover:opacity-90 transition-all disabled:opacity-50"
           >
-            {capturing === 'landscape' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
-            LinkedIn (landscape)
+            {capturing === 'landscape' ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+            LinkedIn
           </button>
           <button
             type="button"
             onClick={() => captureCard(squareRef, 1080, 1080, '-square')}
             disabled={capturing !== null}
-            className="flex items-center justify-center gap-2 py-3.5 rounded-xl bg-foreground text-background font-bold text-xs hover:opacity-90 transition-all disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-foreground text-background font-bold text-[11px] hover:opacity-90 transition-all disabled:opacity-50"
           >
-            {capturing === 'square' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
-            WhatsApp (square)
+            {capturing === 'square' ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+            WhatsApp
+          </button>
+          <button
+            type="button"
+            onClick={() => captureCard(portraitRef, 1080, 1920, '-story')}
+            disabled={capturing !== null}
+            className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-foreground text-background font-bold text-[11px] hover:opacity-90 transition-all disabled:opacity-50"
+          >
+            {capturing === 'portrait' ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileDown className="w-3 h-3" />}
+            Story
           </button>
         </div>
 
