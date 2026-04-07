@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { IndianRupee, TrendingUp, TrendingDown, Copy, Check, ArrowUpRight, Calendar, AlertTriangle, Zap, Briefcase, BarChart3, ArrowLeftRight, Crosshair, Home, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Copy, Check, ArrowUpRight, Calendar, AlertTriangle, Zap, Briefcase, Crosshair, X, Star, Handshake } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { useState } from 'react';
 
@@ -9,7 +9,7 @@ interface SalaryNegotiationCardProps {
 
 export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardProps) {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-  const [showCTCBreakdown, setShowCTCBreakdown] = useState(false);
+  
 
   const salaryBleed = report.salary_bleed_monthly || 0;
   const estimatedSalary = report.estimated_monthly_salary_inr;
@@ -20,32 +20,11 @@ export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardP
   const survivability = report.survivability;
   const marketPosition = report.market_position_model;
 
-  // India CTC structure (typical split) — only compute if salary data available
-  const annualCTC = (estimatedSalary || 0) * 12;
-  const basicPct = 0.40;
-  const hraPct = 0.20;
-  const specialPct = 0.25;
-  const variablePct = 0.15;
-  const ctcBreakdown = hasSalaryData ? {
-    basic: Math.round(annualCTC * basicPct),
-    hra: Math.round(annualCTC * hraPct),
-    special: Math.round(annualCTC * specialPct),
-    variable: Math.round(annualCTC * variablePct),
-    pf: Math.round(annualCTC * basicPct * 0.12),
-    gratuity: Math.round((annualCTC * basicPct * 15) / 26 / 12),
-  } : null;
-
   // Salary gap
   const annualBleed = salaryBleed * 12;
   const annualBleedLakhs = (annualBleed / 100000).toFixed(1);
-  const fiveYearLoss = report.total_5yr_loss_inr || salaryBleed * 60;
-  const fiveYearLossLakhs = (fiveYearLoss / 100000).toFixed(1);
 
   // Market leverage
-  // Security / credibility: never silently fall back to 50 for percentile — that's the median
-  // and drives "50% earn more — leverage the gap" advice for users with missing market data.
-  // Use null to represent "unavailable" and show a transparent data-gap state in the UI.
-  const leverageStatus = marketPosition?.leverage_status || 'moderate';
   const demandTrend = marketPosition?.demand_trend || 'stable';
   const percentile: number | null = marketPosition?.market_percentile ?? null;
   const hasPercentileData = percentile !== null;
@@ -63,52 +42,59 @@ export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardP
         ? '📅 Mid-year review window opens in ' + (8 - currentMonth) + ' month(s)'
         : '📅 Year-end appraisal cycle starts in ' + (14 - currentMonth) + ' month(s)';
 
-  // India-specific negotiation scripts
+  const di = report.determinism_index ?? 50;
+  const topMoat = moatSkills[0] || 'my core specialisation';
+  const secondMoat = moatSkills[1] || 'cross-functional leadership';
+  const salaryRef = hasSalaryData && salaryBleed >= 8000
+    ? `₹${(salaryBleed / 1000).toFixed(1)}K/month`
+    : null;
+  const salaryFraming = salaryRef
+    ? `My research shows ${role} roles are experiencing ${salaryRef} salary compression from AI adoption`
+    : `Research shows ${role} roles with ${di}% AI exposure are being repriced in ${industry}`;
+
   const scripts = [
     {
-      label: 'Appraisal Meeting Opener',
+      label: 'Annual Performance Review',
       icon: Briefcase,
-      context: isAppraisalSeason ? '🔥 USE NOW — Appraisal season is live' : 'For your next review meeting',
-      script: `"Sir/Ma'am, I've been tracking market data for ${role} roles in ${industry}. Naukri and LinkedIn salary insights show the current market CTC for someone with ${(moatSkills?.[0] ?? 'my specialization')} and ${(moatSkills?.[1] ?? 'cross-functional ability')} is trending ${isHighDemand ? '15-25% above' : '10-15% above'} my current package. I'd like to discuss aligning my compensation — especially the fixed component — with this data."`,
-      tag: 'Fixed CTC Focus',
+      context: isAppraisalSeason ? '🔥 USE NOW — Appraisal season is live' : 'For your next annual review',
+      script: `Sir/Ma'am, I want to discuss my compensation at this review. ${salaryFraming} — I want to discuss how my ${topMoat} differentiates me from that trend. My ${topMoat} capability is specifically what clients and stakeholders say they cannot get from AI tools. Combined with my ${secondMoat}, I believe a ${isHighDemand ? '20-25%' : '15-18%'} revision would align my CTC with market benchmarks on Naukri and AmbitionBox for ${role} professionals in ${industry}.`,
+      tag: 'Annual Review',
     },
     {
-      label: 'Counter When Offered Low Hike',
-      icon: BarChart3,
-      context: 'When they offer 5-8% instead of market rate',
-      script: `"Thank you for the ${isHighDemand ? '8%' : '5%'} offer. However, ${role} professionals in ${industry} with similar skills are commanding ₹${annualBleedLakhs}L more annually based on role benchmarks from Naukri and AmbitionBox for ${role} professionals in ${industry}. A ${isHighDemand ? '20-25%' : '15-18%'} revision would bring me to market median, and I believe my contributions justify that."`,
-      tag: 'Data Counter',
-    },
-    {
-      label: 'Variable Pay → Fixed Conversion',
-      icon: ArrowLeftRight,
-      context: 'India-specific: Push variable into fixed CTC',
-      script: `"I understand budget constraints on the fixed component. One thing I'd like to discuss — currently ${variablePct * 100}% of my CTC is variable/performance-linked. Given my consistent delivery, could we convert ${Math.round(variablePct * 50)}% of the variable into fixed? This doesn't increase the overall CTC but gives me more stability, and it shows the company's confidence in my output."`,
-      tag: 'CTC Structure',
-    },
-    {
-      label: 'Competing Offer Leverage',
+      label: 'Counter-Offer (You Have Another Offer)',
       icon: Crosshair,
-      context: 'When you have (or can credibly reference) another offer',
-      script: `"I want to be transparent — I've been approached by [Your Target Company] for a ${role} position at a ${isHighDemand ? '30-40%' : '20-25%'} premium. I prefer staying here because of [team/project/growth]. But the gap of ₹${annualBleedLakhs}L per year is significant. Can we find a middle ground — perhaps a one-time retention bonus or an accelerated promotion timeline?"`,
-      tag: 'Retention Counter',
+      context: 'When you have a competing offer in hand',
+      script: `I want to be transparent — I have received an offer for a ${role} position at a ${isHighDemand ? '30-40%' : '20-25%'} premium over my current CTC. I genuinely prefer to stay because of the team and the projects here. However, ${salaryFraming}, and the gap of ₹${annualBleedLakhs}L per year is significant. My ${topMoat} and ${secondMoat} are difficult to replace in the current market. Can we discuss a retention package — whether that is a revised fixed CTC, a one-time retention bonus, or an accelerated promotion timeline?`,
+      tag: 'Counter-Offer',
     },
     {
-      label: 'WFH/Benefits Trade',
-      icon: Home,
-      context: 'When salary hike is capped — negotiate beyond CTC',
-      script: `"If the salary band is truly maxed, I'd like to explore total rewards — could we look at 2-3 additional WFH days, a learning budget of ₹50K-1L for upskilling in ${(moatSkills?.[0] ?? 'AI tools')}, or an ESOP refresh? These don't hit the salary budget but significantly increase my effective compensation and retention motivation."`,
-      tag: 'Beyond CTC',
+      label: 'New Job — Offer Negotiation Opener',
+      icon: ArrowUpRight,
+      context: 'First salary discussion at a new company',
+      script: `Thank you for the offer — I am excited about this ${role} opportunity. Before I sign, I would like to discuss the compensation structure. Based on market data from Naukri, LinkedIn, and AmbitionBox, ${role} professionals in ${industry} with demonstrated ${topMoat} and ${secondMoat} are commanding CTC packages ${isHighDemand ? '20-30%' : '10-20%'} above what is offered here. My ${topMoat} capability is AI-resistant and directly impacts business outcomes. I would be comfortable at a fixed CTC of ₹${hasSalaryData ? ((estimatedSalary || 0) * 12 * 1.2 / 100000).toFixed(1) : 'X'}L, which reflects the current market median for this skill profile.`,
+      tag: 'Offer Negotiation',
+    },
+    {
+      label: 'Promotion Conversation (Same Company)',
+      icon: Star,
+      context: 'When you deserve a level jump, not just a hike',
+      script: `I would like to discuss my career trajectory here. Over the past year, I have consistently delivered beyond my current level — especially in ${topMoat} and ${secondMoat}, which are the two capabilities our team needs most as AI reshapes ${industry}. ${salaryFraming}, and professionals who combine domain expertise with AI-augmented workflows are being promoted faster. I believe I am ready for the next level, and I would like to align both my title and compensation accordingly. A ${isHighDemand ? '25-35%' : '18-25%'} revision with a title change would reflect my actual contribution.`,
+      tag: 'Promotion Ask',
+    },
+    {
+      label: 'Freelance / Consulting Rate Discussion',
+      icon: Handshake,
+      context: 'Setting your rate for project-based or consulting work',
+      script: `For this ${role} engagement in ${industry}, my consulting rate is ₹${hasSalaryData ? Math.round((estimatedSalary || 0) * 2 / 1000) : 'XX'}K per day. This reflects the market premium for ${topMoat} expertise — a capability that AI tools cannot replicate and that directly impacts project outcomes. My ${secondMoat} background means I deliver both strategic direction and execution without needing additional coordination layers. For a retainer arrangement of 10+ days per month, I can offer a 15% reduction on the day rate. I am happy to start with a 2-week trial engagement so you can validate the ROI before committing longer term.`,
+      tag: 'Consulting Rate',
     },
   ];
 
   const handleCopy = (text: string, idx: number) => {
-    navigator.clipboard.writeText(text.replace(/"/g, ''));
+    navigator.clipboard.writeText(text);
     setCopiedIdx(idx);
     setTimeout(() => setCopiedIdx(null), 2000);
   };
-
-  const formatLakhs = (n: number) => (n / 100000).toFixed(1) + 'L';
 
   return (
     <div className="space-y-4">
@@ -239,14 +225,7 @@ export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardP
               </div>
               <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">{s.context}</p>
               <p className="text-xs text-foreground/80 leading-relaxed italic bg-muted/50 rounded-lg p-3">
-                {s.script.split('[Your Target Company]').map((part, idx) => (
-                  <span key={idx}>
-                    {part}
-                    {idx < s.script.split('[Your Target Company]').length - 1 && (
-                      <span className="text-prophet-gold font-bold not-italic underline decoration-dashed">[Your Target Company]</span>
-                    )}
-                  </span>
-                ))}
+                {s.script}
               </p>
             </motion.div>
           ))}
