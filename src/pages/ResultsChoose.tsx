@@ -201,7 +201,7 @@ export default function ResultsChoose() {
             checkColor="#111"
             buttonLabel="See conservative analysis"
             buttonStyle="outline"
-            onNavigate={() => logAndNavigate("model_a_chosen", `/?id=${analysisId}`)}
+            onNavigate={() => logAndNavigate("model_a_chosen", `/?id=${analysisId}`, { cachedReport, cachedScanId: analysisId })}
             onUnlock={() => navigate("/pricing")}
             
           />
