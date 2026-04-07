@@ -10,6 +10,7 @@ import { createTokenTrackingTransform } from "../_shared/token-tracker.ts";
 const CHAT_RATE_LIMIT = 30;
 const CHAT_RATE_WINDOW_MS = 60 * 60 * 1000;
 const MAX_QUESTIONS_PER_SCAN = 10;
+const MONTHLY_FREE_LIMIT = 5;
 
 async function checkChatRateLimit(ip: string, sb: any): Promise<boolean> {
   const windowStart = new Date(Date.now() - CHAT_RATE_WINDOW_MS).toISOString();
@@ -188,6 +189,36 @@ Deno.serve(async (req: Request) => {
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+    // ── Monthly per-user coach limit ─────────────────────────
+    let monthlyQuestionsRemaining = MONTHLY_FREE_LIMIT;
+    if (jwtUserId) {
+      try {
+        const { data: usageData, error: usageError } = await sb
+          .rpc('check_and_increment_coach_usage', { _user_id: jwtUserId });
+
+        if (usageError) {
+          // Log but don't block — usage tracking failure should not break the product
+          console.error('[chat-report] Usage check failed:', usageError.message);
+        } else if (usageData && usageData.length > 0 && !usageData[0].allowed) {
+          return new Response(
+            JSON.stringify({
+              error: 'Monthly question limit reached',
+              code: 'COACH_LIMIT_REACHED',
+              questions_used: usageData[0].questions_used,
+              questions_remaining: 0,
+              status: 'error',
+            }),
+            { status: 402, headers: { ...cors, "Content-Type": "application/json" } }
+          );
+        } else if (usageData?.[0]) {
+          monthlyQuestionsRemaining = usageData[0].questions_remaining;
+        }
+      } catch (err) {
+        console.error('[chat-report] Usage check exception:', err);
+        // Non-fatal — allow the request
+      }
+    }
+
     if (scanId && UUID_RE.test(scanId)) {
       const questionCheck = await checkScanQuestionLimit(scanId, sb);
       if (!questionCheck.allowed) {
@@ -334,7 +365,11 @@ USER CAREER REPORT CONTEXT:
     );
 
     return new Response(trackedStream, {
-      headers: { ...cors, "Content-Type": "text/event-stream" },
+      headers: {
+        ...cors,
+        "Content-Type": "text/event-stream",
+        "X-Coach-Questions-Remaining": String(monthlyQuestionsRemaining),
+      },
     });
   } catch (e) {
     console.error("chat-report error:", e);
