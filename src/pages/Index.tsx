@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import HeroSection from '@/components/HeroSection';
 import SocialProofSection from '@/components/SocialProofSection';
 import InputMethodStep from '@/components/InputMethodStep';
@@ -99,6 +99,7 @@ function AuthAutoAdvance({ onReady }: { onReady: () => void }) {
 
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const routedScanId = searchParams.get('id');
   const { track } = useAnalytics();
@@ -193,6 +194,18 @@ const Index = () => {
 
   useEffect(() => {
     if (!routedScanId || scanReport) return;
+    // Fast path: if navigated here with cached report in state (e.g. from choice screen), skip DB
+    const navState = location.state as { cachedReport?: ScanReport; cachedScanId?: string } | null;
+    if (navState?.cachedReport && navState?.cachedScanId === routedScanId) {
+      setScanId(routedScanId);
+      setScanReport(navState.cachedReport);
+      setMoneyShotSeen(false);
+      setPhase('reveal');
+      // Clear navigation state to prevent stale re-use on refresh
+      window.history.replaceState({}, '', window.location.href);
+      return;
+    }
+
     if (hydrationAttemptedRef.current === routedScanId) return;
 
     hydrationAttemptedRef.current = routedScanId;
@@ -455,6 +468,17 @@ const Index = () => {
         setMoneyShotSeen(false);
         track('scan_complete', { scanId: id });
         navigate(`/results/choose?id=${id}`);
+
+        // Pre-warm Model B analysis in background so it's cached when user reaches it
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          const uid = user?.id || null;
+          if (uid) {
+            console.debug('[PreWarm] Triggering Model B analysis in background for', id);
+            supabase.functions.invoke('get-model-b-analysis', {
+              body: { analysis_id: id, user_id: uid, resume_filename: 'Your Resume' },
+            }).catch(() => {}); // Non-fatal — just pre-warming cache
+          }
+        }).catch(() => {});
 
         // Referral conversion: if user arrived via a referral link, log the conversion
         try {
