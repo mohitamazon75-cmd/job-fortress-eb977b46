@@ -205,7 +205,7 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
           {topTask && topTaskPct ? (
             <>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: scoreColor }} />
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)' }}>{topTask}: {topTaskPct}% automated</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{topTask}: {topTaskPct}% automated</span>
             </>
           ) : <span />}
         </div>
