@@ -270,8 +270,8 @@ function CardPreviewVisible({ data }: { data: CardData }) {
             {stats.map((s, i) => (
               <div key={i} className="rounded-md p-3 sm:p-4" style={{ background: 'rgba(255,255,255,0.03)', borderTop: `3px solid ${scoreColor}` }}>
                 <span className="text-lg sm:text-xl font-extrabold block" style={{ color: '#FFFFFF' }}>{s.value}</span>
-                <span className="text-[8px] sm:text-[9px] font-semibold tracking-[0.12em] uppercase block mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>{s.label}</span>
-                {s.sub && <span className="text-[8px] block mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.sub}</span>}
+                <span className="text-[9px] sm:text-[10px] font-bold tracking-[0.12em] uppercase block mt-1" style={{ color: 'rgba(255,255,255,0.65)' }}>{s.label}</span>
+                {s.sub && <span className="text-[9px] block mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>{s.sub}</span>}
               </div>
             ))}
           </div>
