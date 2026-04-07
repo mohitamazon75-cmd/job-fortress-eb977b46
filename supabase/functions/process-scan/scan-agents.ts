@@ -21,7 +21,8 @@ import {
   buildSeniorityJudoPrompt,
   buildSeniorityDietPrompt,
 } from "../_shared/agent-prompts.ts";
-import { validateOutputForTier, validateToolStatic } from "../_shared/scan-report-builder.ts";
+import { validateOutputForTier } from "../_shared/scan-helpers.ts";
+import { validateToolStatic } from "../_shared/scan-report-builder.ts";
 import { getPreviousScore } from "../_shared/score-history.ts";
 import { getKG } from "../_shared/riskiq-knowledge-graph.ts";
 import { estimateMonthlySalary, calculateGeoArbitrage, type MarketSignalRow } from "../_shared/deterministic-engine.ts";
