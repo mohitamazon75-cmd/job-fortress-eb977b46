@@ -343,7 +343,7 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
             </>
           ) : <span />}
         </div>
-        <span style={{ fontSize: 14, fontWeight: 800, color: scoreColor }}>→ jobbachao.ai</span>
+        <span style={{ fontSize: 14, fontWeight: 800, color: scoreColor }}>→ jobbachao.com</span>
       </div>
     </div>
   );
@@ -421,7 +421,7 @@ function CaptureTargetSquare({ innerRef, data }: { innerRef: React.RefObject<HTM
             </>
           ) : <span />}
         </div>
-        <span style={{ fontSize: 14, fontWeight: 800, color: scoreColor }}>→ jobbachao.ai</span>
+        <span style={{ fontSize: 14, fontWeight: 800, color: scoreColor }}>→ jobbachao.com</span>
       </div>
     </div>
   );
@@ -506,7 +506,7 @@ function CardPreviewVisible({ data }: { data: CardData }) {
             </>
           ) : <span />}
         </div>
-        <span className="text-sm font-extrabold" style={{ color: scoreColor }}>→ jobbachao.ai</span>
+        <span className="text-sm font-extrabold" style={{ color: scoreColor }}>→ jobbachao.com</span>
       </div>
     </div>
   );
@@ -578,7 +578,7 @@ function CaptureTargetPortrait({ innerRef, data }: { innerRef: React.RefObject<H
           </div>
         </div>
 
-        <span style={{ fontSize: 28, fontWeight: 800, color: scoreColor, marginTop: 48, textAlign: 'center' }}>→ jobbachao.ai</span>
+        <span style={{ fontSize: 28, fontWeight: 800, color: scoreColor, marginTop: 48, textAlign: 'center' }}>→ jobbachao.com</span>
         <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginTop: 12, textAlign: 'center' }}>Check your AI displacement score</span>
         <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 16, textAlign: 'center' }}>#AIDisplacement #FutureOfWork</span>
       </div>
@@ -628,7 +628,7 @@ export default function ShareableScoreCard({ report }: Props) {
   const shareTextDI = aiExposure <= 5 ? 'Less than 5%' : aiExposure >= 95 ? 'Over 95%' : `${aiExposure}%`;
   const _diDisplay = formatDI(aiExposure); // used by sub-components via data prop
   const monthsStr = formatMonths(monthsRemaining) || 'the next few years';
-  const shareText = `I just ran my AI displacement report.\nMy score: ${score}/100. ${shareTextDI} of my role is being automated.\nI have ${monthsStr} before it hits my compensation.\n\nCheck yours (it's free): jobbachao.ai\n\n#AIDisplacement #FutureOfWork #CareerRisk`;
+  const shareText = `I just ran my AI displacement report.\nMy score: ${score}/100. ${shareTextDI} of my role is being automated.\nI have ${monthsStr} before it hits my compensation.\n\nCheck yours (it's free): jobbachao.com\n\n#AIDisplacement #FutureOfWork #CareerRisk`;
 
   const captureCard = useCallback(async (ref: React.RefObject<HTMLDivElement | null>, w: number, h: number, suffix: string) => {
     if (!ref.current) return;
