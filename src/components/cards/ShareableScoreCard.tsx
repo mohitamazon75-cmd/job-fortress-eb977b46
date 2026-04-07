@@ -203,8 +203,12 @@ function buildStatsWithHero(data: CardData): { hero: StatBlock; rest: StatBlock[
     all.push({ value: displayPct, label: 'SALARY AT RISK' });
   }
 
-  // "Still Yours" — only show if between 20-85%
-  if (humanEdgeRaw >= 20 && humanEdgeRaw <= 85) {
+  // "Still Yours" — show if between 20-90%
+  // For safe users (DI < 30): always show if fewer than 2 stats available
+  const isSafeTier = aiExposure < 30;
+  const stillYoursInRange = humanEdgeRaw >= 20 && humanEdgeRaw <= 90;
+  const needsStillYoursForMinStats = isSafeTier && all.length < 2 && humanEdgeRaw > 0;
+  if (stillYoursInRange || needsStillYoursForMinStats) {
     all.push({ value: `${humanEdgeRaw}%`, label: 'STILL YOURS' });
   }
 
