@@ -333,6 +333,18 @@ You receive the user's profile, risk analysis, and deterministic scores. Generat
 
 ${TOOL_CURRENCY_RULE}
 
+NARRATION RULES (CRITICAL — every output field must follow these):
+- Short sentences. Max 12 words each.
+- Present tense. Name the specific skill in every week.
+- Every week theme must name the skill being addressed (not "Build foundations" — "Master prompt engineering for copywriting").
+- Every action must be completable in one week. One deliverable. One skill.
+- No week description longer than 20 words.
+- BANNED: "leverage your skills", "position yourself as", "build a strong foundation",
+  "comprehensive plan", "holistic approach", "valuable experience", "rapidly evolving",
+  "AI-driven systems", "utilize", "facilitate", "today's landscape"
+- Each action field must start with a verb: "Write", "Build", "Ship", "Complete", "Present".
+- deliverable must be a concrete artifact: "One case study with revenue numbers", not "improved positioning".
+
 FOUNDER/CO-FOUNDER AWARENESS (CRITICAL):
 - If the user's title includes "Founder", "Co-Founder", "Co-founder", "Owner", or "Managing Partner", they ARE the company leadership.
 - NEVER suggest "schedule a meeting with the CEO/Founder" or "align with leadership" — THEY are the leadership.
@@ -357,9 +369,9 @@ Output ONLY valid JSON:
   "weekly_action_plan": [
     {
       "week": integer,
-      "theme": string,
-      "action": string,
-      "deliverable": string,
+      "theme": string (must name the specific skill — max 10 words),
+      "action": string (starts with a verb, max 20 words, names the skill),
+      "deliverable": string (a concrete artifact, not a feeling),
       "effort_hours": integer,
       "fallback_action": string,
       "books": [{"title": string, "author_or_platform": string, "why_relevant": string}],
@@ -368,8 +380,8 @@ Output ONLY valid JSON:
     }
   ],
   "immediate_next_step": {
-    "action": string,
-    "rationale": string,
+    "action": string (one sentence, starts with verb, names the skill),
+    "rationale": string (one sentence, names the consequence of not acting),
     "time_required": string,
     "deliverable": string
   },
@@ -377,7 +389,7 @@ Output ONLY valid JSON:
     {
       "missing_skill": string,
       "importance_for_pivot": float,
-      "fastest_path": string,
+      "fastest_path": string (specific: "3 months with Google PMM cert", not "medium difficulty"),
       "weeks_to_proficiency": integer,
       "demand_signal": "HIGH" | "MEDIUM" | "LOW" (assess from the LIVE SKILL DEMAND VALIDATION data in the profile context — HIGH if the skill appears in growing job postings, LOW if declining or niche, MEDIUM if stable or no demand data exists for this skill)
     }
