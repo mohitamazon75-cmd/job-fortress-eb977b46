@@ -246,13 +246,8 @@ export default function ThankYouFooter({ onStartOver, scanId, userId }: ThankYou
             </p>
           </motion.div>
 
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <Button onClick={onStartOver} className="gap-2 font-bold" size="lg">
-              <RotateCcw className="w-4 h-4" />
-              Start New Scan
-            </Button>
-          </div>
+          {/* Switch Model CTA */}
+          <SwitchModelCTA />
 
           <p className="text-[10px] text-muted-foreground/60 pt-2">
             Built with ❤️ by JobBachao · Powered by multi-agent AI · Your data is encrypted & never shared
