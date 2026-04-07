@@ -594,13 +594,35 @@ export default function ShareableScoreCard({ report }: Props) {
   const squareRef = useRef<HTMLDivElement | null>(null);
   const portraitRef = useRef<HTMLDivElement | null>(null);
   const mountedRef = useRef(true);
+  const hasDownloadedRef = useRef(false);
+  const nudgeDismissedRef = useRef(false);
   const [capturing, setCapturing] = useState<'landscape' | 'square' | 'portrait' | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showNudge, setShowNudge] = useState(false);
 
   const data = useCardData(report);
   const { score, role, aiExposure, monthsRemaining } = data;
+  const scoreColor = getCompositeColor(score);
 
   useEffect(() => { return () => { mountedRef.current = false }; }, []);
+
+  // Timed nudge: show after 12s if no download triggered
+  useEffect(() => {
+    const showTimer = setTimeout(() => {
+      if (!mountedRef.current || hasDownloadedRef.current || nudgeDismissedRef.current) return;
+      setShowNudge(true);
+    }, 12000);
+    return () => clearTimeout(showTimer);
+  }, []);
+
+  // Auto-dismiss nudge after 8s
+  useEffect(() => {
+    if (!showNudge) return;
+    const hideTimer = setTimeout(() => {
+      if (mountedRef.current) setShowNudge(false);
+    }, 8000);
+    return () => clearTimeout(hideTimer);
+  }, [showNudge]);
 
   // Share text: use natural language for edge DI values (not "< 5%" or "95+%")
   const shareTextDI = aiExposure <= 5 ? 'Less than 5%' : aiExposure >= 95 ? 'Over 95%' : `${aiExposure}%`;
@@ -610,6 +632,8 @@ export default function ShareableScoreCard({ report }: Props) {
 
   const captureCard = useCallback(async (ref: React.RefObject<HTMLDivElement | null>, w: number, h: number, suffix: string) => {
     if (!ref.current) return;
+    hasDownloadedRef.current = true;
+    setShowNudge(false);
     setCapturing(suffix === '' ? 'landscape' : suffix === '-square' ? 'square' : 'portrait');
     try {
       const html2canvas = (await import('html2canvas')).default;
@@ -646,6 +670,11 @@ export default function ShareableScoreCard({ report }: Props) {
     toast.success('Share text copied!');
     setTimeout(() => setCopied(false), 2000);
   }, [shareText]);
+
+  const dismissNudge = useCallback(() => {
+    nudgeDismissedRef.current = true;
+    setShowNudge(false);
+  }, []);
 
   return (
     <div className="space-y-4">
