@@ -110,9 +110,37 @@ Deno.serve(async (req) => {
       }),
     ]);
 
-    // Deduplicate & compile raw listings
+    // Deduplicate & compile raw listings — filter out generic search/listing pages
     const urlSeen = new Set<string>();
     const rawListings: { title: string; url: string; snippet: string; source: string }[] = [];
+
+    /** Check if a URL points to a specific job posting vs a generic search page */
+    const isSpecificJobUrl = (url: string): boolean => {
+      try {
+        const u = new URL(url);
+        const path = u.pathname + u.search;
+        // Naukri individual jobs have /job-listing- or /jobs-in- with jobId param or /job/
+        if (u.hostname.includes("naukri.com")) {
+          return /\/job-listing|\/job\/|jobId=|\/jobs\/\d/.test(path);
+        }
+        // LinkedIn individual jobs have /jobs/view/ or /jobs/\d+
+        if (u.hostname.includes("linkedin.com")) {
+          return /\/jobs\/view\/|\/jobs\/\d+/.test(path);
+        }
+        // Indeed individual jobs have /viewjob or /rc/clk or jk= param
+        if (u.hostname.includes("indeed")) {
+          return /\/viewjob|\/rc\/clk|[?&]jk=/.test(path);
+        }
+        // Glassdoor individual jobs have /job-listing/
+        if (u.hostname.includes("glassdoor")) {
+          return /\/job-listing\/|\/Jobs\/.*-SRCH/.test(path);
+        }
+        // For other domains, assume specific if URL path is deep enough
+        return u.pathname.split("/").filter(Boolean).length >= 3;
+      } catch {
+        return true; // if URL parsing fails, keep it
+      }
+    };
 
     const addResults = (results: any, source: string) => {
       for (const r of results?.results || []) {
@@ -123,12 +151,16 @@ Deno.serve(async (req) => {
           url: r.url,
           snippet: (r.content || "").slice(0, 400),
           source,
-        });
+          isSpecific: isSpecificJobUrl(r.url),
+        } as any);
       }
     };
     addResults(directJobs, "direct");
     addResults(pivotJobs, "pivot");
     addResults(skillJobs, "skill-match");
+
+    // Sort: specific job URLs first, then generic ones
+    rawListings.sort((a, b) => ((b as any).isSpecific ? 1 : 0) - ((a as any).isSpecific ? 1 : 0));
 
     console.log(`[BestFitJobs] Found ${rawListings.length} raw listings`);
 

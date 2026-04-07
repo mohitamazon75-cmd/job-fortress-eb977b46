@@ -304,10 +304,39 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
                             </div>
                           </div>
                         )}
-                        <a href={job.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-black hover:bg-primary/90 transition-colors">
-                          Apply Now <ExternalLink className="w-3 h-3" />
-                        </a>
+                        {(() => {
+                          // Build a targeted search URL as fallback if the original URL is a generic listing page
+                          const buildTargetedUrl = (url: string, title: string, company: string) => {
+                            try {
+                              const u = new URL(url);
+                              const host = u.hostname;
+                              // Check if URL is a specific job post
+                              if (host.includes('naukri.com') && /\/job-listing|\/job\/|jobId=/.test(u.pathname + u.search)) return url;
+                              if (host.includes('linkedin.com') && /\/jobs\/view\/|\/jobs\/\d+/.test(u.pathname)) return url;
+                              if (host.includes('indeed') && /\/viewjob|\/rc\/clk|[?&]jk=/.test(u.pathname + u.search)) return url;
+                              // Generic URL — build a targeted search instead
+                              const query = `${title} ${company}`.trim();
+                              if (host.includes('naukri.com')) {
+                                return `https://www.naukri.com/jobs-in-india?k=${encodeURIComponent(query).replace(/%20/g, '+')}`;
+                              }
+                              if (host.includes('linkedin.com')) {
+                                return `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(query)}&f_TPR=r604800&sortBy=DD`;
+                              }
+                              if (host.includes('indeed')) {
+                                return `https://www.indeed.co.in/jobs?q=${encodeURIComponent(query)}`;
+                              }
+                            } catch { /* fall through */ }
+                            return url;
+                          };
+                          const targetUrl = buildTargetedUrl(job.url, job.title, job.company);
+                          const isDirectLink = targetUrl === job.url;
+                          return (
+                            <a href={targetUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-black hover:bg-primary/90 transition-colors">
+                              {isDirectLink ? 'Apply Now' : 'Search This Role'} <ExternalLink className="w-3 h-3" />
+                            </a>
+                          );
+                        })()}
                       </div>
                     </motion.div>
                   )}
