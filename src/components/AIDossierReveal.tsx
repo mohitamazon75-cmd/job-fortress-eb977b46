@@ -874,7 +874,7 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
                 className={`rounded-2xl border-2 ${scoreBg} p-6 text-center`}
               >
                 <p className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground mb-3">
-                  Career Position Score
+                  YOUR POSITION
                 </p>
                 <motion.p
                   initial={{ scale: 0.5, opacity: 0 }}
