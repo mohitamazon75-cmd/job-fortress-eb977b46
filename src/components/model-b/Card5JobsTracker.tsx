@@ -139,7 +139,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
                   onClick={() => logEvent("job_link_clicked", { platform: "linkedin", job_company: job.company, job_role: job.role })}
                   style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
                 >
-                  💼 Search on LinkedIn
+                  💼 LinkedIn ↗
                 </a>
                 <button
                   onClick={() => { addItem("saved", `${job.company} · ${job.role}`); }}
