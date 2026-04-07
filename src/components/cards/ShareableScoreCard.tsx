@@ -149,10 +149,10 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
 
         <div style={{ width: 60, height: 1, background: `${scoreColor}88`, margin: '16px 0' }} />
 
-        <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.65)', fontWeight: 500, textAlign: 'center' }}>{role}</span>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', marginTop: 4, textAlign: 'center' }}>{industry}</span>
+        <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', fontWeight: 600, textAlign: 'center' }}>{role}</span>
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', marginTop: 4, textAlign: 'center' }}>{industry}</span>
 
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', position: 'absolute', bottom: 24 }}>{dateStr}</span>
+        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', position: 'absolute', bottom: 24 }}>{dateStr}</span>
       </div>
 
       {/* ── ZONE 2: Right panel (62%) ── */}
