@@ -118,7 +118,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
                     });
                   }}
                   style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, padding: "10px 18px", borderRadius: 12, background: "var(--mb-navy)", color: "white", border: "none", cursor: "pointer", minHeight: 48, boxShadow: "0 3px 12px rgba(27,47,85,0.25)", transition: "all 150ms", letterSpacing: "0.02em" }}
-                >Apply tailored →</button>
+                >Apply on Naukri ↗</button>
               </div>
 
               {/* Live job links */}
