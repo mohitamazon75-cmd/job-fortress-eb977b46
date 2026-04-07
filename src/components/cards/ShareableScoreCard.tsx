@@ -259,8 +259,8 @@ function CardPreviewVisible({ data }: { data: CardData }) {
         <div className="sm:w-[62%] w-full p-5 sm:p-6 flex flex-col gap-4">
           {/* Headline */}
           <div>
-            <p className="text-sm sm:text-base font-extrabold leading-snug" style={{ color: '#FFFFFF' }}>{headline}</p>
-            <p className="text-xs sm:text-sm mt-2 leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 400 }}>
+            <p className="text-sm sm:text-lg font-extrabold leading-snug" style={{ color: '#FFFFFF' }}>{headline}</p>
+            <p className="text-xs sm:text-sm mt-2 leading-relaxed font-medium" style={{ color: 'rgba(255,255,255,0.75)', maxWidth: 400 }}>
               {aiExposure}% of {roleStr} tasks are being automated. You have {monthsStr} before it hits your pay.
             </p>
           </div>
