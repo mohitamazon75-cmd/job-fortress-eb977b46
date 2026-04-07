@@ -1306,6 +1306,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          coach_questions_used: number | null
+          coach_usage_reset_at: string | null
           created_at: string | null
           display_name: string | null
           email: string | null
@@ -1316,6 +1318,8 @@ export type Database = {
           subscription_tier: string | null
         }
         Insert: {
+          coach_questions_used?: number | null
+          coach_usage_reset_at?: string | null
           created_at?: string | null
           display_name?: string | null
           email?: string | null
@@ -1326,6 +1330,8 @@ export type Database = {
           subscription_tier?: string | null
         }
         Update: {
+          coach_questions_used?: number | null
+          coach_usage_reset_at?: string | null
           created_at?: string | null
           display_name?: string | null
           email?: string | null
@@ -1874,6 +1880,14 @@ export type Database = {
       }
     }
     Functions: {
+      check_and_increment_coach_usage: {
+        Args: { _user_id: string }
+        Returns: {
+          allowed: boolean
+          questions_remaining: number
+          questions_used: number
+        }[]
+      }
       cleanup_expired_cache: { Args: never; Returns: undefined }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
       delete_email: {
