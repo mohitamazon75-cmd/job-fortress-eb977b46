@@ -184,11 +184,11 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{Math.max(0, 100 - Math.round(automationRisk))}%</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Still Yours</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">STILL YOURS</p>
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">{Math.round(automationRisk)}%</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-destructive">Automated Now</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-destructive">AUTOMATED NOW</p>
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">
