@@ -26,7 +26,6 @@ export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardP
 
   // Market leverage
   const demandTrend = marketPosition?.demand_trend || 'stable';
-  const demandTrend = marketPosition?.demand_trend || 'stable';
   const percentile: number | null = marketPosition?.market_percentile ?? null;
   const hasPercentileData = percentile !== null;
   const isHighDemand = demandTrend === 'growing' || demandTrend === 'booming';
