@@ -365,7 +365,11 @@ USER CAREER REPORT CONTEXT:
     );
 
     return new Response(trackedStream, {
-      headers: { ...cors, "Content-Type": "text/event-stream" },
+      headers: {
+        ...cors,
+        "Content-Type": "text/event-stream",
+        "X-Coach-Questions-Remaining": String(monthlyQuestionsRemaining),
+      },
     });
   } catch (e) {
     console.error("chat-report error:", e);
