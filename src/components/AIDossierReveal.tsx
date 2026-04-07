@@ -908,7 +908,7 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
                     transition={{ delay: 0.6 }}
                     className="text-foreground/60 text-sm mt-3"
                   >
-                    {report.linkedin_name.split(' ')[0]}, here's your complete analysis
+                    {report.linkedin_name.split(' ')[0]}, this is what we found
                   </motion.p>
                 )}
               </motion.div>
