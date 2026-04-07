@@ -63,7 +63,7 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-navy)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--mb-navy)", animation: "mbPulse 2.5s infinite" }} />
-              Today's human edge · 4 Apr 2026
+              Today's human edge · {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
             </div>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, fontWeight: 800, color: "var(--mb-navy)" }}>{insightIndex + 1} / {Math.max(insights.length, 1)}</span>
           </div>

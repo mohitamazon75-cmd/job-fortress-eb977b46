@@ -21,7 +21,7 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         {/* 3-part emotional structure */}
         {c2.fear_hook && (
           <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.7, margin: 0 }}>🚨 {c2.fear_hook}</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.7, margin: 0, whiteSpace: "pre-line" }}>🚨 {c2.fear_hook}</p>
           </div>
         )}
         {c2.confrontation && (
