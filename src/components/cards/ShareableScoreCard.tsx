@@ -145,9 +145,9 @@ function CaptureTarget({ innerRef, data }: { innerRef: React.RefObject<HTMLDivEl
         </span>
 
         <span style={{ fontSize: 200, fontWeight: 900, color: scoreColor, lineHeight: 0.85, letterSpacing: '-0.04em' }}>{score}</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: 18, textAlign: 'center', maxWidth: 340 }}>{tierLabel}</span>
+        <span style={{ fontSize: 14, fontWeight: 800, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: 18, textAlign: 'center', maxWidth: 340 }}>{tierLabel}</span>
 
-        <div style={{ width: 60, height: 1, background: `${scoreColor}66`, margin: '16px 0' }} />
+        <div style={{ width: 60, height: 1, background: `${scoreColor}88`, margin: '16px 0' }} />
 
         <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.65)', fontWeight: 500, textAlign: 'center' }}>{role}</span>
         <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic', marginTop: 4, textAlign: 'center' }}>{industry}</span>
