@@ -24,7 +24,7 @@ import {
 import { validateOutputForTier, validateToolStatic } from "../_shared/scan-report-builder.ts";
 import { getPreviousScore } from "../_shared/score-history.ts";
 import { getKG } from "../_shared/riskiq-knowledge-graph.ts";
-import { estimateMonthlySalary, calculateGeoArbitrage } from "../_shared/deterministic-engine.ts";
+import { estimateMonthlySalary, calculateGeoArbitrage, type MarketSignalRow } from "../_shared/deterministic-engine.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
