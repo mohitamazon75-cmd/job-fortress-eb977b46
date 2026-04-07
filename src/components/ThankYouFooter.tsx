@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Star, RotateCcw, Share2, Link2, Check, Mail, CalendarClock, Zap } from 'lucide-react';
+import { Heart, Star, Share2, Link2, Check, Mail, CalendarClock, Zap, ArrowRightLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
