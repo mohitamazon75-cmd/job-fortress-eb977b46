@@ -192,11 +192,16 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">
-              {report.salary_bleed_monthly && report.salary_bleed_monthly > 0
+              {report.salary_bleed_monthly && report.salary_bleed_monthly >= 8000
                 ? `₹${Math.round(report.salary_bleed_monthly / 1000)}K`
-                : `~${Math.round(automationRisk * 0.4)}%`}
+                : (() => {
+                    const pct = Math.round(automationRisk * 0.4);
+                    return pct > 0 ? `~${Math.min(60, pct)}%` : '—';
+                  })()}
             </p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Monthly Loss</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {report.salary_bleed_monthly && report.salary_bleed_monthly >= 8000 ? 'Monthly Loss' : 'Salary at Risk'}
+            </p>
           </div>
         </div>
 
