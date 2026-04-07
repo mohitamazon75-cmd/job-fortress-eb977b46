@@ -99,6 +99,7 @@ function AuthAutoAdvance({ onReady }: { onReady: () => void }) {
 
 const Index = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const routedScanId = searchParams.get('id');
   const { track } = useAnalytics();
