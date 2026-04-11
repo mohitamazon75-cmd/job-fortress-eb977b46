@@ -149,10 +149,9 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
                 </button>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--mb-green)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--mb-green)" }} />
-                Posted {job.days_posted} days ago · {job.applicant_count} applicants
-                {job.is_urgent && <span style={{ fontSize: 11, fontWeight: 800, background: "var(--mb-red-tint)", color: "var(--mb-red)", padding: "4px 10px", borderRadius: 10, marginLeft: 4, border: "1.5px solid rgba(174,40,40,0.25)" }}>🔥 Urgent</span>}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--mb-ink3)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                <span style={{ fontSize: 11 }}>🔍</span>
+                Search live openings on Naukri and LinkedIn above
               </div>
               {/* Urgency narrative */}
               {job.urgency_narrative && (

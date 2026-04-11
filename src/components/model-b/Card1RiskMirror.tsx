@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { CardShell, CardHead, CardBody, Badge, LivePill, EmotionStrip, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   cardData: any;
@@ -7,11 +9,27 @@ interface Props {
 
 export default function Card1RiskMirror({ cardData, onNext }: Props) {
   const c1 = cardData.card1_risk;
+  const u = cardData.user || {};
+  const disruptionYear = c1?.disruption_year || "2027";
+
+  // Fetch real scan count for social proof
+  const [scanCount, setScanCount] = useState<number | null>(null);
+  useEffect(() => {
+    supabase
+      .from("scans")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      .then(({ count }) => {
+        if (count !== null && count >= 10) {
+          setScanCount(Math.floor(count / 10) * 10);
+        }
+      });
+  }, []);
+
   if (!c1) return null;
 
-  const u = cardData.user || {};
-  const years = u.years_experience || "";
-  const disruptionYear = c1.disruption_year || "2027";
+
+
 
   const r = 36;
   const circumference = 2 * Math.PI * r;
@@ -94,19 +112,14 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
             <SectionLabel label="💸 What doing nothing costs you" />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
               <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.25)", borderRadius: 14, padding: 16, textAlign: "center" }}>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 26, fontWeight: 800, color: "var(--mb-red)", marginBottom: 4 }}>{cost.monthly_loss_lpa}</div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 26, fontWeight: 800, color: "var(--mb-red)", marginBottom: 4 }}>{cost.annual_gap_pct || cost.monthly_loss_lpa}</div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "var(--mb-red)", fontFamily: "'DM Sans', sans-serif" }}>Left on table annually</div>
               </div>
               <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.25)", borderRadius: 14, padding: 16, textAlign: "center" }}>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 26, fontWeight: 800, color: "var(--mb-red)", marginBottom: 4 }}>{cost.six_month_loss}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--mb-red)", fontFamily: "'DM Sans', sans-serif" }}>6-month inaction cost</div>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 26, fontWeight: 800, color: "var(--mb-red)", marginBottom: 4 }}>{cost.six_month_gap_pct || cost.six_month_loss}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--mb-red)", fontFamily: "'DM Sans', sans-serif" }}>6-month earning power lost</div>
               </div>
             </div>
-            {cost.peer_gap_pct && (
-              <div style={{ background: "var(--mb-amber-tint)", border: "1.5px solid rgba(139,90,0,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-amber)", margin: 0 }}>📊 {cost.peer_gap_pct}</p>
-              </div>
-            )}
             {cost.decay_narrative && (
               <div style={{ borderLeft: "3px solid var(--mb-red)", padding: "10px 16px", marginBottom: 20, borderRadius: "0 10px 10px 0", background: "rgba(174,40,40,0.03)" }}>
                 <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--mb-ink2)", lineHeight: 1.7, margin: 0 }}>{cost.decay_narrative}</p>
@@ -188,14 +201,16 @@ export default function Card1RiskMirror({ cardData, onNext }: Props) {
         </div>
 
         {/* Social proof */}
+        {scanCount && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, marginBottom: 18 }}>
           <div style={{ display: "flex" }}>
             {avatars.map((a, i) => (
               <div key={i} style={{ width: 26, height: 26, borderRadius: "50%", background: a.bg, color: a.color, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", fontSize: 9, fontWeight: 800, border: "2px solid white", marginLeft: i > 0 ? -6 : 0 }}>{a.initials}</div>
             ))}
           </div>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600 }}><strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>2,340</strong> professionals checked this month · India avg: <strong style={{ fontWeight: 800, color: "var(--mb-red)" }}>61%</strong></span>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600 }}><strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{scanCount}+</strong> professionals checked this month · India avg: <strong style={{ fontWeight: 800, color: "var(--mb-red)" }}>{c1.india_average || 61}%</strong></span>
         </div>
+        )}
 
         <InfoBox variant="amber" title={`India market signal — ${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`} body={c1.india_data_insight || ""} />
         <CardNav onNext={onNext} nextLabel="See salary reality →" />
