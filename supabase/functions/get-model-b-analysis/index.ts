@@ -93,6 +93,7 @@ Deno.serve(async (req) => {
     }
 
     const resumeText = extractResumeText(scan);
+    const userCity = extractCity(scan);
 
     if (!resumeText || resumeText.length < 20) {
       return new Response(
@@ -129,7 +130,7 @@ Deno.serve(async (req) => {
     // ─── Launch background AI processing ───
     const processPromise = processAnalysis(
       supabase, LOVABLE_API_KEY, analysis_id, user_id,
-      resume_filename, resumeText
+      resume_filename, resumeText, userCity
     );
 
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
@@ -172,10 +173,11 @@ async function processAnalysis(
   userId: string,
   resumeFilename: string,
   resumeText: string,
+  userCity: string,
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
-  const userPrompt = buildUserPrompt(resumeText);
+  const userPrompt = buildUserPrompt(resumeText, userCity);
 
   let cardData: Record<string, unknown> | null = null;
   let geminiRaw: unknown = null;
