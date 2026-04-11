@@ -115,8 +115,8 @@ export default function AdvancedBeta() {
       setPhase("analyzing");
       setError("");
       setDossier("");
-      setBluffData(null);
-      setFakeItData(null);
+
+
 
       try {
         const { data, error: fnError } = await supabase.functions.invoke("riskiq-analyse", {
@@ -175,10 +175,8 @@ export default function AdvancedBeta() {
     setError("");
     setDossier("");
     setDossierLoading(false);
-    setBluffData(null);
-    setBluffLoading(false);
-    setFakeItData(null);
-    setFakeItLoading(false);
+
+
   }, []);
 
   switch (phase) {
