@@ -503,12 +503,15 @@ Also include:
 - Job matches must use real Indian companies with realistic current openings
 - Interview answers must use STAR framework with the candidate's actual metrics
 - Never use phrases like "your resume shows" — state evidence directly
+- NEVER default to Bangalore. Use the user's actual city from their resume. If no city is found, use "India" as location.
+- NEVER fabricate statistics like peer percentages, applicant counts, or days-posted numbers. You have NO access to live job board data.
+- For cost_of_inaction: use PERCENTAGE of package (e.g. "10-15%"), NOT absolute ₹ amounts. You do NOT know their salary.
 
 ═══ LIVE LINKS ═══
 For every ATS score entry, job match, and pivot role, include a "search_url" field:
 https://www.naukri.com/jobs-in-{city-lowercase}?k={role-keywords-plus-separated}&experience={years}
 Examples:
-- https://www.naukri.com/jobs-in-bangalore?k=head+demand+generation&experience=10
+- https://www.naukri.com/jobs-in-hyderabad?k=head+demand+generation&experience=10
 - https://www.naukri.com/jobs-in-mumbai?k=marketing+director+saas&experience=12
 Do NOT use role slugs in the path. Use ONLY /jobs-in-{city}?k={keywords} format.
 
