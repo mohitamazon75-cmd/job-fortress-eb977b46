@@ -41,6 +41,11 @@ export default function PromptModal({ isOpen, onClose, title, promptText }: Prom
   }, [isOpen]);
 
   const generateContent = useCallback(async () => {
+    if (!promptText?.trim()) {
+      setError("No prompt available. Please try a different action.");
+      setGenerated(true);
+      return;
+    }
     setLoading(true);
     setError("");
     setContent("");
@@ -95,7 +100,6 @@ export default function PromptModal({ isOpen, onClose, title, promptText }: Prom
             if (delta) {
               accumulated += delta;
               setContent(accumulated);
-              // Auto-scroll
               if (bodyRef.current) {
                 bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
               }
@@ -125,6 +129,11 @@ export default function PromptModal({ isOpen, onClose, title, promptText }: Prom
             }
           } catch {}
         }
+      }
+
+      // Guard: if stream completed but no content was extracted
+      if (!accumulated.trim()) {
+        setError("AI returned an empty response. Please try again.");
       }
     } catch (e: any) {
       if (e.name !== "AbortError") {
