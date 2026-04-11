@@ -341,6 +341,39 @@ function extractResumeText(scan: Record<string, unknown>): string {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// City extraction from scan data
+// ═══════════════════════════════════════════════════════════════
+function extractCity(scan: Record<string, unknown>): string {
+  // Try metro_tier field first (sometimes contains city name)
+  // Try final_json_report for location data
+  if (scan.final_json_report) {
+    const report = typeof scan.final_json_report === "string"
+      ? JSON.parse(scan.final_json_report as string)
+      : scan.final_json_report;
+    
+    // Check common location fields in the report
+    const city = report.city || report.location || report.metro_city 
+      || report.user_city || report.profile_city || "";
+    if (city && String(city).length > 1) return String(city);
+    
+    // Check nested profile data
+    if (report.profile?.city) return String(report.profile.city);
+    if (report.profile?.location) return String(report.profile.location);
+    
+    // Try to find city in raw text
+    const rawText = report.raw_text || report.resume_text || "";
+    if (rawText) {
+      const indianCities = ["Hyderabad", "Bangalore", "Bengaluru", "Mumbai", "Delhi", "Chennai", "Pune", "Kolkata", "Ahmedabad", "Noida", "Gurugram", "Gurgaon", "Jaipur", "Kochi", "Chandigarh", "Indore", "Lucknow", "Coimbatore", "Trivandrum", "Thiruvananthapuram"];
+      for (const c of indianCities) {
+        if (String(rawText).toLowerCase().includes(c.toLowerCase())) return c;
+      }
+    }
+  }
+  
+  return "India"; // Unknown — do NOT default to Bangalore
+}
+
+// ═══════════════════════════════════════════════════════════════
 // AI Response parsing
 // ═══════════════════════════════════════════════════════════════
 function parseAIResponse(rawText: string): Record<string, unknown> {
