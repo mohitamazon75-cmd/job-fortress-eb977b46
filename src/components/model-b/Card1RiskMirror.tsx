@@ -9,11 +9,24 @@ interface Props {
 
 export default function Card1RiskMirror({ cardData, onNext }: Props) {
   const c1 = cardData.card1_risk;
-  if (!c1) return null;
-
   const u = cardData.user || {};
-  const years = u.years_experience || "";
-  const disruptionYear = c1.disruption_year || "2027";
+  const disruptionYear = c1?.disruption_year || "2027";
+
+  // Fetch real scan count for social proof
+  const [scanCount, setScanCount] = useState<number | null>(null);
+  useEffect(() => {
+    supabase
+      .from("scans")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      .then(({ count }) => {
+        if (count !== null && count >= 10) {
+          setScanCount(Math.floor(count / 10) * 10);
+        }
+      });
+  }, []);
+
+  if (!c1) return null;
 
   // Fetch real scan count for social proof
   const [scanCount, setScanCount] = useState<number | null>(null);
