@@ -521,21 +521,25 @@ OUTPUT: Return ONLY a valid JSON object. No markdown fences. Start with {`;
 // ═══════════════════════════════════════════════════════════════
 // USER PROMPT — Full Schema with Psychology Fields
 // ═══════════════════════════════════════════════════════════════
-function buildUserPrompt(resumeText: string): string {
+function buildUserPrompt(resumeText: string, userCity: string): string {
+  const cityInstruction = userCity === "India"
+    ? "Location unknown. Use 'India' as location. Do not default to any specific city. Show companies from multiple Indian metros."
+    : `The user is based in ${userCity}. Prioritize companies and job matches in ${userCity} and nearby metros. Only use Bangalore/Mumbai if the user is actually located there.`;
+
   return `Analyse this resume for the Indian job market in April 2026. Apply the FULL psychological framework.
 
 RESUME:
 ${resumeText}
 
+USER LOCATION: ${userCity}
+${cityInstruction}
+
 INDIA MARKET CONTEXT (cite specific numbers in your analysis):
 - India B2B SaaS market: $16.5B (2026), growing 26% CAGR
-- AI automation risk average for Indian professionals: 61%
 - Average CPL India B2B: ₹800–₹2,000. Sub-₹100 CPL is exceptional (80x+ efficient)
 - Salary bands India 2026: Marketing Manager (10+ yrs) ₹18-28 LPA, Head of Demand Gen ₹22-35 LPA, VP Marketing ₹30-50 LPA, CMO ₹45-80 LPA
-- Top hiring B2B SaaS India 2026: Freshworks (Bangalore), Chargebee (Bangalore), Zoho (Chennai/Remote), BrowserStack (Mumbai), Sarvam AI (Bangalore), Postman (Bangalore), Razorpay (Bangalore)
 - WEF: 63 of every 100 Indian workers need retraining by 2030
 - LinkedIn India: 45% increase in "AI + Marketing" job postings YoY
-- Average Indian professional checks career tools after a bad performance review or layoff news
 
 PSYCHOLOGICAL CALIBRATION:
 - This person is likely feeling anxious about AI disruption — validate that anxiety, then channel it into action
@@ -562,14 +566,13 @@ card1_risk: {
   confrontation: string (3 short sentences. End with a specific action: "Fix that this week. One case study. One number. One outcome you own." — never end with a question),
   emotion_message: string (combine fear_hook + hope_bridge for backward compatibility),
   risk_score: integer,
-  india_average: 61,
+  india_average: integer (role-specific average — compute based on the role's actual automation exposure. Do NOT hardcode 61.),
   disruption_year: string (e.g. "2027"),
   protective_skills_count: integer,
   cost_of_inaction: {
-    monthly_loss_lpa: string (₹ LPA they're leaving on table),
-    six_month_loss: string (₹ amount),
-    peer_gap_pct: string (e.g. "42% of peers have already upskilled"),
-    decay_narrative: string (2 SHORT sentences — what happens in 6 months, use ₹ amounts not percentages)
+    annual_gap_pct: string (percentage of package left on table annually, e.g. "10-15% of package"),
+    six_month_gap_pct: string (percentage earning power lost in 6 months, e.g. "5-8% earning power"),
+    decay_narrative: string (2 SHORT sentences — what happens in 6 months. Use percentages not absolute ₹ amounts. You do NOT know their salary.)
   },
   tasks_at_risk: string[] (exactly 5),
   tasks_safe: string[] (exactly 5),
@@ -647,8 +650,7 @@ card5_jobs: {
       match_color: "green"|"navy"|"amber", match_label: string,
       why_fit: string (1 SHORT sentence using their actual moat skill),
       tags: string[] (include company tier: "MNC"|"Unicorn"|"Startup"),
-      days_posted: integer 1-14, applicant_count: integer,
-      is_urgent: boolean, apply_evidence: string,
+      apply_evidence: string,
       company_context: string (1 SHORT sentence),
       urgency_narrative: string (2 SHORT sentences — why NOW),
       search_url: string
