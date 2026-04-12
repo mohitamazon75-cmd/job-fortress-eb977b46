@@ -625,7 +625,7 @@ card4_pivot: {
   emotion_message: string,
   current_band: string (₹ LPA), pivot_year1: string (₹ LPA), director_band: string (₹ LPA),
   pivots: [
-    { role: string, salary: string (₹ LPA with city), salary_range: string, match_pct: integer, why_fit: string (1 SHORT sentence naming transferable skill), color: "green"|"navy"|"teal", match_label: string (time-to-offer: "3-6 months"), location: string, search_url: string,
+    { role: string (CLEAN searchable job title — e.g. "Marketing Director SaaS", never include company name or region), salary: string (₹ LPA with city), salary_range: string, match_pct: integer, why_fit: string (1 SHORT sentence naming transferable skill), color: "green"|"navy"|"teal", match_label: string (time-to-offer: "3-6 months"), location: string (city name only), search_url: string,
       fomo_signal: string (specific with numbers) }
   ] (exactly 4),
   pivot_explanations: [ { title: string, body: string (2 SHORT sentences) } ] (exactly 4),
