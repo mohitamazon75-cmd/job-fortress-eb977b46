@@ -16,18 +16,39 @@ function useKanban() {
   return { state, addItem };
 }
 
+/** 
+ * Clean an LLM-generated role string into searchable job keywords.
+ * Strips company names, region qualifiers, and overly specific modifiers.
+ */
+function cleanRoleForSearch(role: string, company?: string): string {
+  let clean = role;
+  // Remove company name if embedded in role
+  if (company) {
+    clean = clean.replace(new RegExp(company.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+  }
+  // Remove region/geography qualifiers that break job searches
+  clean = clean
+    .replace(/\b(europe|asia|apac|emea|global|india|americas|north america|south asia|middle east|africa|latam)\b/gi, '')
+    .replace(/[^\w\s&]/g, ' ')  // strip special chars except &
+    .replace(/\s+/g, ' ')
+    .trim();
+  // If over-cleaned, fall back to original minus special chars
+  if (clean.split(/\s+/).length < 2) {
+    clean = role.replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  return clean;
+}
+
 /** Build a live job search URL for Naukri/LinkedIn */
 function buildJobSearchUrl(role: string, company: string, location: string, platform: "naukri" | "linkedin"): string {
-  const roleKeywords = role.replace(/[^\w\s]/g, "").trim();
+  const roleKeywords = cleanRoleForSearch(role, company);
   const city = (location || "India").split(",")[0].trim();
   if (platform === "naukri") {
-    // Naukri: use /keyword-jobs-in-city format for direct results
     const keywords = roleKeywords.toLowerCase().replace(/\s+/g, "-");
     const citySlug = city.toLowerCase().replace(/\s+/g, "-");
     return `https://www.naukri.com/${keywords}-jobs-in-${citySlug}`;
   }
-  // LinkedIn: use keywords + location for targeted search, past week filter
-  return `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(roleKeywords)}&location=${encodeURIComponent(city + ", India")}&f_TPR=r604800&sortBy=DD`;
+  return `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(roleKeywords)}&location=${encodeURIComponent(city)}&f_TPR=r604800&sortBy=DD`;
 }
 
 export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId }: { cardData: any; onBack: () => void; onNext: () => void; analysisId?: string | null }) {

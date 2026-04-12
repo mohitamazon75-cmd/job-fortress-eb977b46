@@ -646,7 +646,7 @@ card5_jobs: {
   active_count: integer, senior_count: integer, strong_match_count: integer,
   job_matches: [
     {
-      company: string, role: string, salary: string (₹ amount — "₹15-22L fixed", never "competitive"), location: string,
+      company: string, role: string (CLEAN searchable job title — e.g. "Head of Demand Generation", NOT "Vice President Marketing Europe Zycus". Never include company name or region in the role field.), salary: string (₹ amount — "₹15-22L fixed", never "competitive"), location: string (city name only — e.g. "Hyderabad", "Mumbai"),
       match_color: "green"|"navy"|"amber", match_label: string,
       why_fit: string (1 SHORT sentence using their actual moat skill),
       tags: string[] (include company tier: "MNC"|"Unicorn"|"Startup"),
