@@ -184,17 +184,18 @@ RULES:
     const raw = aiData.choices?.[0]?.message?.content || "";
 
     let parsed;
-    try {
-      const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, raw];
-      parsed = JSON.parse(jsonMatch[1]!.trim());
-    } catch {
-      // Try extracting raw JSON object
-      const rawJsonMatch = raw.match(/\{[\s\S]*\}/);
-      if (!rawJsonMatch) {
-        console.error("[market-radar] Failed to parse AI response:", raw.slice(0, 500));
-        return json({ error: "Failed to parse AI response" }, 500);
-      }
-      parsed = JSON.parse(rawJsonMatch[0]);
+    // Try multiple extraction strategies
+    const strategies = [
+      () => { const m = raw.match(/```(?:json)?\s*([\s\S]*?)```/); return m ? JSON.parse(m[1].trim()) : null; },
+      () => { const m = raw.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; },
+      () => JSON.parse(raw.trim()),
+    ];
+    for (const strategy of strategies) {
+      try { parsed = strategy(); if (parsed) break; } catch { /* try next */ }
+    }
+    if (!parsed) {
+      console.error("[market-radar] Failed to parse AI response:", raw.slice(0, 500));
+      return json({ error: "Failed to parse AI response" }, 500);
     }
 
     return json({
