@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Radar, AlertTriangle, Briefcase,
   Cpu, Newspaper, DollarSign, Flame, ChevronRight, RefreshCw,
-  Sparkles, Target, TrendingUp, Share2, Copy, Check, Users,
+  Sparkles, Target, TrendingUp, Share2, Check, Users,
   ExternalLink, Clock
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
