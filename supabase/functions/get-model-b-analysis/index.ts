@@ -625,7 +625,7 @@ card4_pivot: {
   emotion_message: string,
   current_band: string (₹ LPA), pivot_year1: string (₹ LPA), director_band: string (₹ LPA),
   pivots: [
-    { role: string, salary: string (₹ LPA with city), salary_range: string, match_pct: integer, why_fit: string (1 SHORT sentence naming transferable skill), color: "green"|"navy"|"teal", match_label: string (time-to-offer: "3-6 months"), location: string, search_url: string,
+    { role: string (CLEAN searchable job title — e.g. "Marketing Director SaaS", never include company name or region), salary: string (₹ LPA with city), salary_range: string, match_pct: integer, why_fit: string (1 SHORT sentence naming transferable skill), color: "green"|"navy"|"teal", match_label: string (time-to-offer: "3-6 months"), location: string (city name only), search_url: string,
       fomo_signal: string (specific with numbers) }
   ] (exactly 4),
   pivot_explanations: [ { title: string, body: string (2 SHORT sentences) } ] (exactly 4),
@@ -646,7 +646,7 @@ card5_jobs: {
   active_count: integer, senior_count: integer, strong_match_count: integer,
   job_matches: [
     {
-      company: string, role: string, salary: string (₹ amount — "₹15-22L fixed", never "competitive"), location: string,
+      company: string, role: string (CLEAN searchable job title — e.g. "Head of Demand Generation", NOT "Vice President Marketing Europe Zycus". Never include company name or region in the role field.), salary: string (₹ amount — "₹15-22L fixed", never "competitive"), location: string (city name only — e.g. "Hyderabad", "Mumbai"),
       match_color: "green"|"navy"|"amber", match_label: string,
       why_fit: string (1 SHORT sentence using their actual moat skill),
       tags: string[] (include company tier: "MNC"|"Unicorn"|"Startup"),
