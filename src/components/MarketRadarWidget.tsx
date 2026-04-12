@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Radar, AlertTriangle, Briefcase,
   Cpu, Newspaper, DollarSign, Flame, ChevronRight, RefreshCw,
-  Sparkles, Target, TrendingUp, Share2, Copy, Check, Users
+  Sparkles, Target, TrendingUp, Share2, Copy, Check, Users,
+  ExternalLink, Clock
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,9 +17,11 @@ interface Signal {
   urgency: string;
   headline: string;
   body: string;
-  source_hint: string;
+  source_hint?: string; // legacy
+  source?: string; // new grounded source
   action_item: string;
-  relevance_score: number;
+  relevance_score?: number; // legacy, no longer generated
+  urgency_reason?: string;
 }
 
 interface HotSkill {
@@ -50,6 +53,8 @@ interface RadarData {
   market_pulse: MarketPulse;
   closing_verdict?: ClosingVerdict;
   one_liner: string;
+  citations?: string[];
+  generated_at?: string;
 }
 
 interface Props {
@@ -60,8 +65,13 @@ interface Props {
   onComplete?: () => void;
 }
 
-const CACHE_KEY = 'jb_market_radar';
+const CACHE_KEY_PREFIX = 'jb_market_radar';
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+function buildCacheKey(role: string, industry: string): string {
+  const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30);
+  return `${CACHE_KEY_PREFIX}_${clean(role)}_${clean(industry || 'tech')}`;
+}
 
 const categoryConfig: Record<string, { icon: React.ElementType; gradient: string; label: string }> = {
   AI_TOOL: { icon: Cpu, gradient: 'from-violet-500 to-purple-600', label: 'AI Tool' },
@@ -79,11 +89,28 @@ const threatColors: Record<string, string> = {
   CRITICAL: 'bg-red-500/10 text-red-600 border-red-500/20',
 };
 
+const urgencyBorderColors: Record<string, string> = {
+  HIGH: 'border-l-4 border-l-red-400',
+  MEDIUM: 'border-l-4 border-l-amber-400',
+  LOW: 'border-l-4 border-l-border',
+};
+
 const verdictColors: Record<string, { bg: string; border: string; text: string; emoji: string }> = {
   AHEAD: { bg: 'from-emerald-500/10 to-green-500/5', border: 'border-emerald-500/20', text: 'text-emerald-700', emoji: '🏆' },
   ON_TRACK: { bg: 'from-blue-500/10 to-indigo-500/5', border: 'border-blue-500/20', text: 'text-blue-700', emoji: '✅' },
   AT_RISK: { bg: 'from-amber-500/10 to-orange-500/5', border: 'border-amber-500/20', text: 'text-amber-700', emoji: '⚠️' },
 };
+
+function getTimeAgo(isoString?: string): string {
+  if (!isoString) return '';
+  const diff = Date.now() - new Date(isoString).getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  if (hours < 1) return 'Just now';
+  if (hours === 1) return '1 hour ago';
+  if (hours < 24) return `${hours} hours ago`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? '1 day ago' : `${days} days ago`;
+}
 
 const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, onComplete }) => {
   const [data, setData] = useState<RadarData | null>(null);
@@ -91,18 +118,41 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
   const [error, setError] = useState<string | null>(null);
   const [expandedSignal, setExpandedSignal] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  const [scanCount, setScanCount] = useState<number | null>(null);
+  const [isCached, setIsCached] = useState(false);
+
+  // Fetch real scan count
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const { count } = await supabase
+          .from('scans')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', thirtyDaysAgo);
+        if (count !== null && count >= 10) {
+          setScanCount(Math.floor(count / 10) * 10);
+        }
+      } catch {}
+    };
+    fetchCount();
+  }, []);
+
+  const cacheKey = buildCacheKey(role, industry);
 
   const fetchRadar = useCallback(async (force = false) => {
     setLoading(true);
     setError(null);
+    setIsCached(false);
 
     if (!force) {
       try {
-        const cached = sessionStorage.getItem(CACHE_KEY);
+        const cached = sessionStorage.getItem(cacheKey);
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Date.now() - (parsed.ts || 0) < CACHE_TTL) {
             setData(parsed.data);
+            setIsCached(true);
             setLoading(false);
             return;
           }
@@ -120,7 +170,7 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
 
       setData(result as RadarData);
       try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data: result, ts: Date.now() }));
+        sessionStorage.setItem(cacheKey, JSON.stringify({ data: result, ts: Date.now() }));
       } catch {}
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to load radar';
@@ -128,7 +178,7 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
     } finally {
       setLoading(false);
     }
-  }, [role, industry, skills, country]);
+  }, [role, industry, skills, country, cacheKey]);
 
   useEffect(() => {
     if (role) fetchRadar();
@@ -211,6 +261,8 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
   const threat = data.threat_level || 'MEDIUM';
   const verdict = data.closing_verdict;
   const verdictStyle = verdictColors[verdict?.status || 'ON_TRACK'] || verdictColors.ON_TRACK;
+  const generatedAt = data.generated_at;
+  const hasCitations = (data.citations || []).length > 0;
 
   return (
     <motion.div
@@ -235,9 +287,29 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
                 </p>
               </div>
             </div>
-            <Badge className={`${threatColors[threat]} border text-[10px] font-bold px-2.5 py-0.5`}>
-              {threat === 'LOW' ? '🟢' : threat === 'MEDIUM' ? '🟡' : threat === 'HIGH' ? '🟠' : '🔴'} {threat}
-            </Badge>
+            <div className="flex flex-col items-end gap-1.5">
+              <Badge className={`${threatColors[threat]} border text-[10px] font-bold px-2.5 py-0.5`}>
+                {threat === 'LOW' ? '🟢' : threat === 'MEDIUM' ? '🟡' : threat === 'HIGH' ? '🟠' : '🔴'} {threat}
+              </Badge>
+              {/* Freshness indicator */}
+              <div className="flex items-center gap-1">
+                {generatedAt && (
+                  <span className="text-[9px] text-muted-foreground/60 flex items-center gap-0.5">
+                    <Clock className="w-2.5 h-2.5" />
+                    {getTimeAgo(generatedAt)}
+                    {isCached && ' (cached)'}
+                  </span>
+                )}
+                {isCached && (
+                  <button
+                    onClick={() => fetchRadar(true)}
+                    className="text-[9px] text-primary font-semibold hover:underline"
+                  >
+                    Refresh
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           <p className="text-xs text-muted-foreground leading-relaxed mb-3">{data.threat_level_reason}</p>
@@ -249,12 +321,14 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
         </CardContent>
       </Card>
 
-      {/* Signals */}
+      {/* Signals — with urgency-based left border */}
       <div className="space-y-2.5">
         {(data.signals || []).map((signal, i) => {
           const config = categoryConfig[signal.category] || categoryConfig.INDUSTRY_NEWS;
           const Icon = config.icon;
           const isExpanded = expandedSignal === i;
+          const urgencyBorder = urgencyBorderColors[signal.urgency] || urgencyBorderColors.LOW;
+          const signalSource = signal.source || signal.source_hint;
 
           return (
             <motion.div
@@ -264,7 +338,7 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
               transition={{ delay: i * 0.1 }}
             >
               <Card
-                className={`border-border/40 cursor-pointer transition-all duration-300 hover:shadow-md hover:border-primary/20 group ${isExpanded ? 'ring-1 ring-primary/20 shadow-md' : ''}`}
+                className={`${urgencyBorder} border-border/40 cursor-pointer transition-all duration-300 hover:shadow-md hover:border-primary/20 group ${isExpanded ? 'ring-1 ring-primary/20 shadow-md' : ''}`}
                 onClick={() => setExpandedSignal(isExpanded ? null : i)}
               >
                 <CardContent className="py-3 px-4">
@@ -282,9 +356,6 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
                             <Flame className="w-3 h-3" /> URGENT
                           </span>
                         )}
-                        <span className="ml-auto text-[9px] text-muted-foreground font-mono">
-                          {signal.relevance_score}% match
-                        </span>
                       </div>
                       <p className="text-[13px] font-bold text-foreground leading-snug group-hover:text-primary transition-colors">
                         {signal.headline}
@@ -311,9 +382,11 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
                                 </div>
                               </div>
                             </div>
-                            <p className="text-[10px] text-muted-foreground/60 mt-2 italic">
-                              📎 {signal.source_hint}
-                            </p>
+                            {signalSource && (
+                              <p className="text-[10px] text-muted-foreground/60 mt-2 italic">
+                                📎 {signalSource}
+                              </p>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -389,6 +462,33 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
         )}
       </div>
 
+      {/* Citations — real sources from Tavily */}
+      {hasCitations && (
+        <Card className="border-border/40">
+          <CardContent className="py-3 px-4">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">📎 Sources</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {data.citations!.map((url, i) => {
+                let domain = '';
+                try { domain = new URL(url).hostname.replace('www.', ''); } catch { domain = url; }
+                return (
+                  <a
+                    key={i}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-primary/70 hover:text-primary hover:underline flex items-center gap-0.5 transition-colors"
+                  >
+                    <ExternalLink className="w-2.5 h-2.5" />
+                    {domain}
+                  </a>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Closing Verdict — The Grand Finale */}
       {verdict && (
         <motion.div
@@ -435,16 +535,18 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
                   </div>
                 </div>
 
-                {/* Subtle referral nudge */}
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.5 }}
-                  className="text-[10px] text-muted-foreground/50 flex items-center justify-center gap-1"
-                >
-                  <Users className="w-3 h-3" />
-                  2,847 professionals scanned their careers this week
-                </motion.p>
+                {/* Real social proof */}
+                {scanCount !== null && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.5 }}
+                    className="text-[10px] text-muted-foreground/50 flex items-center justify-center gap-1"
+                  >
+                    <Users className="w-3 h-3" />
+                    {scanCount}+ professionals scanned their careers this month
+                  </motion.p>
+                )}
 
                 {/* Continue CTA */}
                 {onComplete && (
