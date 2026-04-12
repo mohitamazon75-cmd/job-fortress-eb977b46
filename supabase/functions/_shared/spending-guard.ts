@@ -30,6 +30,7 @@ const FUNCTION_COST_WEIGHTS: Record<string, number> = {
   "startup-autopsy": 0.20,
   "run-pivot-analysis": 0.12,
   "coach-nudge": 0.05,
+  "market-radar": 0.15,
 };
 
 const DAILY_BUDGET_USD = 2500; // Viral-scale daily limit

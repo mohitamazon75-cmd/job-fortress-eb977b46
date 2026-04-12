@@ -1,42 +1,88 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
+import { tavilySearchParallel, buildSearchContext, extractCitations } from "../_shared/tavily-search.ts";
+import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
+import { logTokenUsage } from "../_shared/token-tracker.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const LOVABLE_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return handleCorsPreFlight(req);
+  const cors = getCorsHeaders(req);
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
   try {
-    const { role, industry, skills, country } = await req.json();
-    if (!role) {
-      return new Response(JSON.stringify({ error: "role is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!LOVABLE_API_KEY) {
+      console.error("[market-radar] LOVABLE_API_KEY not set");
+      return json({ error: "AI not configured" }, 500);
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const blocked = guardRequest(req, cors);
+    if (blocked) return blocked;
+
+    const { userId: _jwtUserId, blocked: jwtBlocked } = await validateJwtClaims(req, cors);
+    if (jwtBlocked) return jwtBlocked;
+
+    const { role, industry, skills, country } = await req.json();
+    if (!role) return json({ error: "role is required" }, 400);
+
+    // Spending guard
+    const spendCheck = await checkDailySpending("market-radar");
+    if (!spendCheck.allowed) return buildSpendingBlockedResponse(cors, spendCheck);
 
     const topSkills = (skills || []).slice(0, 8).join(", ");
     const region = country || "India";
     const today = new Date().toISOString().split("T")[0];
 
-    const systemPrompt = `You are the world's most elite career intelligence analyst — a personal Bloomberg Terminal for careers.
-Today is ${today}. You have access to the latest AI tool releases, funding rounds, layoffs, hiring freezes, salary benchmarks, and skill demand data from the past 7-30 days.
+    // ═══ Parallel Tavily searches for REAL market intelligence ═══
+    const searches = [
+      {
+        query: `${role} ${industry || "technology"} hiring layoffs news ${region} 2025 2026`,
+        maxResults: 5,
+        searchDepth: "basic" as const,
+        days: 30,
+        topic: "news" as const,
+      },
+      {
+        query: `${role} salary trends AI tools automation ${region} 2025 2026`,
+        maxResults: 5,
+        searchDepth: "basic" as const,
+        days: 60,
+      },
+      {
+        query: `most in-demand skills ${role} ${industry || "technology"} ${region} 2026`,
+        maxResults: 5,
+        searchDepth: "basic" as const,
+        days: 60,
+      },
+    ];
 
-Your mission: Deliver a career intelligence briefing so specific, so timely, and so personally relevant that the reader thinks "How does this tool know exactly what I need to hear right now?"
+    const [newsResults, salaryResults, skillResults] = await tavilySearchParallel(searches, 15000);
+    const newsCtx = newsResults ? buildSearchContext(newsResults.results, 5) : "";
+    const salaryCtx = salaryResults ? buildSearchContext(salaryResults.results, 5) : "";
+    const skillCtx = skillResults ? buildSearchContext(skillResults.results, 5) : "";
+    const citations = [
+      ...extractCitations(newsResults?.results || []),
+      ...extractCitations(salaryResults?.results || []),
+      ...extractCitations(skillResults?.results || []),
+    ].slice(0, 8);
+
+    const hasSearchData = !!(newsCtx || salaryCtx || skillCtx);
+
+    const systemPrompt = `You are the world's most elite career intelligence analyst — a personal Bloomberg Terminal for careers.
+Today is ${today}. You synthesize REAL market data provided below into actionable career intelligence.
 
 TONE: Confident, urgent but empowering. Like a trusted mentor who reads every tech newsletter so you don't have to. Never alarmist — always pair threats with opportunity.
 
-ACCURACY RULES:
-- Only reference tools, companies, and trends you are confident exist as of early 2026
-- If referencing a specific announcement, include approximate timing
-- Never invent funding amounts, percentages, or statistics — use directional language if uncertain
-- For ${region}-specific data, prioritize local sources (Naukri, Economic Times, MCA filings) over global ones`;
+CRITICAL ACCURACY RULES:
+- ONLY reference tools, companies, events, and trends that appear in the LIVE MARKET DATA provided below
+- If the search data mentions a specific company, tool, or event — you may reference it with the source
+- NEVER invent funding amounts, hiring numbers, or statistics
+- NEVER fabricate percentage changes (use directional language: "Rising fast", "Growing", "Stable", "Declining")
+- For companies hiring: ONLY list companies found in the search results. If none found, say "Check Naukri and LinkedIn for latest openings"
+- ${region}-specific data only — do not default to Bangalore or any other city unless search results mention it`;
 
     const userPrompt = `Generate a personalized career intelligence briefing for:
 - Role: ${role}
@@ -44,115 +90,123 @@ ACCURACY RULES:
 - Key Skills: ${topSkills}
 - Region: ${region}
 
-This is the FINAL card in a comprehensive career analysis. The user has just spent 10+ minutes going through their risk score, skill gaps, pivot paths, and defense plans. This card must:
-1. Validate the journey they just took ("you now know more about your career trajectory than 99% of professionals")
-2. Give them FRESH, CURRENT intel they can act on THIS WEEK
-3. End with something so valuable they want to share this tool with colleagues
+${hasSearchData ? `LIVE MARKET DATA (from web search — use these as your ONLY source of facts):
+
+=== INDUSTRY NEWS & HIRING ===
+${newsCtx || "No recent news found."}
+
+=== SALARY & AI DISRUPTION ===
+${salaryCtx || "No recent salary data found."}
+
+=== SKILL DEMAND TRENDS ===
+${skillCtx || "No recent skill trends found."}` : "NOTE: Web search data unavailable. Use only information you are highly confident about from your training data. Mark all claims as 'Based on industry analysis' rather than citing specific sources."}
 
 Return a JSON object with this EXACT structure:
 {
   "briefing_date": "${today}",
   "threat_level": "LOW" | "MEDIUM" | "HIGH" | "CRITICAL",
-  "threat_level_reason": "One punchy line. Reference a specific tool, company, or trend. Make it feel like inside knowledge.",
+  "threat_level_reason": "One punchy line referencing a specific finding from the search data above.",
   "signals": [
     {
       "category": "AI_TOOL" | "INDUSTRY_NEWS" | "SALARY_SHIFT" | "SKILL_TREND" | "LAYOFF_ALERT" | "OPPORTUNITY",
       "urgency": "HIGH" | "MEDIUM" | "LOW",
-      "headline": "Specific, scroll-stopping headline (max 80 chars). Name the tool/company.",
-      "body": "2-3 sentences. Include specific names, dates, numbers where confident. End with direct impact on THIS ${role} in ${region}.",
-      "source_hint": "Publication or data source with approximate date",
+      "headline": "Specific, scroll-stopping headline (max 80 chars). Must reference something from the search data.",
+      "body": "2-3 sentences. Reference specific names/events from the search data. End with direct impact on THIS ${role} in ${region}.",
+      "source": "The publication or website name from the search results (e.g., 'Economic Times, March 2026'). If no specific source, say 'Industry analysis'.",
       "action_item": "One specific, doable-today action. Start with a verb. Be concrete enough that they can do it in 15 minutes.",
-      "relevance_score": 85-100
+      "urgency_reason": "Why this urgency level — one line."
     }
   ],
   "hot_skill_of_the_week": {
-    "skill": "Specific skill name trending RIGHT NOW for this role",
-    "why_now": "What happened in the past 2 weeks that made this skill suddenly critical",
-    "demand_change": "+XX% in 30 days (use directional estimate)",
-    "learn_signal": "One specific free resource with platform name. Must be a real course/tutorial."
+    "skill": "Specific skill name trending for this role — from search data",
+    "why_now": "What happened recently that made this skill critical — reference search data",
+    "demand_change": "Rising fast" | "Growing" | "Stable" | "Declining",
+    "learn_signal": "One specific free resource with platform name. Must be a real course/tutorial that exists."
   },
   "market_pulse": {
     "hiring_sentiment": "Expanding" | "Stable" | "Contracting" | "Mixed",
-    "avg_salary_trend": "Up X%" | "Flat" | "Down X%",
-    "top_hiring_companies": ["Company1", "Company2", "Company3"],
-    "emerging_role": "A specific new role title that didn't exist 12 months ago, relevant to this user's skills"
+    "avg_salary_trend": "Trending up" | "Flat" | "Trending down" | "Mixed signals",
+    "top_hiring_companies": ["Only companies found in search results"],
+    "emerging_role": "A specific role title relevant to this user's skills — must be grounded in search data"
   },
   "closing_verdict": {
     "status": "AHEAD" | "ON_TRACK" | "AT_RISK",
-    "message": "A 2-sentence personalized verdict. First sentence: where they stand relative to the market. Second sentence: the ONE thing that will make the biggest difference in the next 90 days. Make it feel like a personal advisor speaking directly to them.",
-    "share_hook": "A compelling reason to share this with a colleague (e.g., 'Your team lead needs to see the [specific signal] — it affects their role even more than yours')"
+    "message": "A 2-sentence personalized verdict. First: where they stand. Second: the ONE thing to focus on next 90 days.",
+    "share_hook": "A compelling reason to share this with a colleague"
   },
-  "one_liner": "A memorable, shareable career fortune cookie. Witty, specific to ${role}. The kind of line someone screenshots and posts on LinkedIn."
+  "one_liner": "A memorable, shareable career insight specific to ${role}. Screenshot-worthy."
 }
 
 RULES:
 - Generate exactly 5 signals, covering at least 4 different categories
-- Signal #1 MUST be the single most impactful development for THIS specific role in the past 7 days
-- Every signal MUST reference real, verifiable tools/companies/trends from 2025-2026
-- Sort signals: HIGH urgency first, then by relevance_score descending
+- Signal #1 MUST be the single most impactful finding from the search data
+- EVERY signal must be grounded in the search data provided. If search data is sparse, generate fewer signals (minimum 3) rather than fabricating.
+- Sort signals: HIGH urgency first
 - Action items must be completable in under 15 minutes
-- The closing_verdict.message should feel like it was written by someone who just reviewed their entire career profile
-- The share_hook should create genuine FOMO for colleagues who haven't used this tool
-- one_liner should be screenshot-worthy`;
+- DO NOT include relevance_score or any fabricated percentages
+- top_hiring_companies: ONLY from search results. If none found, return ["Check Naukri", "Check LinkedIn"]
+- demand_change: ONLY use the 4 allowed directional values, NEVER percentages`;
 
-    const aiCtrl = new AbortController();
-    const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45000);
+
+    const aiResp = await fetch(LOVABLE_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.7,
+        temperature: 0.3,
+        max_tokens: 3000,
       }),
-      signal: aiCtrl.signal,
+      signal: controller.signal,
     });
-    clearTimeout(aiT);
 
-    if (!response.ok) {
-      const status = response.status;
-      if (status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited, please try again later." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("[market-radar] AI error:", status, t);
-      throw new Error(`AI gateway error: ${status}`);
+    clearTimeout(timeout);
+
+    if (!aiResp.ok) {
+      const status = aiResp.status;
+      const errBody = await aiResp.text();
+      console.error("[market-radar] AI error:", status, errBody.slice(0, 500));
+      if (status === 429) return json({ error: "Rate limited, please try again later." }, 429);
+      if (status === 402) return json({ error: "AI credits exhausted." }, 402);
+      return json({ error: "AI synthesis failed", status }, 502);
     }
 
-    const aiData = await response.json();
+    const aiData = await aiResp.json();
+    logTokenUsage("market-radar", null, "google/gemini-2.5-pro", aiData);
     const raw = aiData.choices?.[0]?.message?.content || "";
 
     let parsed;
-    try {
-      const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, raw];
-      parsed = JSON.parse(jsonMatch[1]!.trim());
-    } catch {
+    // Try multiple extraction strategies
+    const strategies = [
+      () => { const m = raw.match(/```(?:json)?\s*([\s\S]*?)```/); return m ? JSON.parse(m[1].trim()) : null; },
+      () => { const m = raw.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; },
+      () => JSON.parse(raw.trim()),
+    ];
+    for (const strategy of strategies) {
+      try { parsed = strategy(); if (parsed) break; } catch { /* try next */ }
+    }
+    if (!parsed) {
       console.error("[market-radar] Failed to parse AI response:", raw.slice(0, 500));
-      throw new Error("Failed to parse AI response");
+      return json({ error: "Failed to parse AI response" }, 500);
     }
 
-    return new Response(JSON.stringify(parsed), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return json({
+      ...parsed,
+      citations,
+      source: "gemini-2.5-pro + tavily",
+      generated_at: new Date().toISOString(),
     });
   } catch (e: unknown) {
     console.error("[market-radar] Error:", e);
     const msg = e instanceof Error ? e.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: msg }, 500);
   }
 });
