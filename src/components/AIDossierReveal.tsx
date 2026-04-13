@@ -134,7 +134,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
     { label: 'Income Resilience', current: breakdown.rawIncomeStability, projected: dynamicBoost(breakdown.rawIncomeStability, 0.15), icon: <TrendingUp className="w-3 h-3" /> },
     { label: 'Role Moat', current: breakdown.rawHumanEdge, projected: dynamicBoost(breakdown.rawHumanEdge, 0.25), icon: <Zap className="w-3 h-3" /> },
     { label: 'Market Mobility', current: breakdown.rawMarketPosition, projected: dynamicBoost(breakdown.rawMarketPosition, 0.12), icon: <BarChart3 className="w-3 h-3" /> },
-    { label: 'Seniority Shield', current: breakdown.rawSeniorityShield, projected: breakdown.rawSeniorityShield, icon: <Shield className="w-3 h-3" /> },
+    { label: 'Career Capital', current: breakdown.rawSeniorityShield, projected: dynamicBoost(breakdown.rawSeniorityShield, 0.15), icon: <Shield className="w-3 h-3" /> },
   ];
 
   const getBarColor = (v: number) => v >= 65 ? 'bg-prophet-green' : v >= 40 ? 'bg-prophet-gold' : 'bg-destructive';

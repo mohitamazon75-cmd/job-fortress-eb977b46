@@ -122,22 +122,22 @@ export default function FearScoreDecay({ report, enrichment }: Props) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
           className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${
-            driftDelta! > 0
+            (driftDelta ?? 0) > 0
               ? 'bg-prophet-green/[0.06] border-prophet-green/20'
               : 'bg-destructive/[0.06] border-destructive/20'
           }`}
         >
-          {driftDelta! > 0
+          {(driftDelta ?? 0) > 0
             ? <TrendingUp className="w-3.5 h-3.5 text-prophet-green flex-shrink-0" />
             : <TrendingDown className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
           }
           <p className="text-[11px] leading-snug">
-            <span className={`font-black ${driftDelta! > 0 ? 'text-prophet-green' : 'text-destructive'}`}>
-              {driftDelta! > 0 ? `↑ +${driftDelta} points` : `↓ ${driftDelta} points`}
+            <span className={`font-black ${(driftDelta ?? 0) > 0 ? 'text-prophet-green' : 'text-destructive'}`}>
+              {(driftDelta ?? 0) > 0 ? `↑ +${driftDelta ?? 0} points` : `↓ ${driftDelta ?? 0} points`}
             </span>
             <span className="text-muted-foreground">
               {' '}since your last scan{priorDaysAgo != null ? ` (${priorDaysAgo}d ago)` : ''} —{' '}
-              {driftDelta! > 0
+              {(driftDelta ?? 0) > 0
                 ? 'your actions are working. Keep going.'
                 : 'AI adoption in your role is accelerating. Time to move.'}
             </span>

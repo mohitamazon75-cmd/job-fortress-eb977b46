@@ -21,7 +21,7 @@ const REPORT_A = [
   {
     icon: Brain,
     title: 'AI Impact Dossier',
-    desc: '5-factor breakdown: Automation Risk, Market Demand, Moat Strength, Supply Pressure, Seniority Shield.',
+    desc: '5-factor breakdown: Automation Risk, Market Demand, Moat Strength, Supply Pressure, Career Capital.',
   },
 ];
 

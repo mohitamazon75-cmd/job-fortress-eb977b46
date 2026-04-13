@@ -97,7 +97,7 @@ export function SeniorityProtectionCard({ report }: IntelligenceProofCardsProps)
     >
       <div className="flex items-center gap-2 mb-3">
         <ShieldCheck className="w-4 h-4 text-prophet-green" />
-        <p className="text-[10px] font-black uppercase tracking-widest text-prophet-green">Seniority Shield</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-prophet-green">Career Capital</p>
       </div>
       <p className="text-sm text-foreground leading-relaxed">
         As a <span className="font-black text-primary">{current.label} (Tier {Object.keys(SENIORITY_LABELS).indexOf(tier) + 1})</span>,
@@ -135,7 +135,7 @@ export function SeniorityProtectionCard({ report }: IntelligenceProofCardsProps)
         </div>
       </div>
       <p className="text-[11px] text-muted-foreground mt-2">
-        📊 <span className="font-bold">Computed</span> · Seniority contributes {breakdown.seniorityShield >= 0 ? '+' : ''}{breakdown.seniorityShield.toFixed(1)} points to your final score (10% weight)
+        📊 <span className="font-bold">Computed</span> · Career Capital contributes {breakdown.seniorityShield >= 0 ? '+' : ''}{breakdown.seniorityShield.toFixed(1)} points to your final score (10% weight)
       </p>
     </motion.div>
   );

@@ -183,7 +183,7 @@ export default function VerdictReveal({ report, onComplete }: VerdictRevealProps
     { label: 'Market Position', value: breakdown.marketPosition, color: breakdown.marketPosition >= 0 ? 'bg-prophet-green/70' : 'bg-destructive/70' },
     { label: 'Human Edge', value: breakdown.humanEdge, color: breakdown.humanEdge >= 0 ? 'bg-prophet-green/70' : 'bg-destructive/70' },
     { label: 'Income Stability', value: breakdown.incomeStability, color: breakdown.incomeStability >= 0 ? 'bg-prophet-green/70' : 'bg-destructive/70' },
-    { label: 'Seniority Shield', value: breakdown.seniorityShield, color: 'bg-primary/70' },
+    { label: 'Career Capital', value: breakdown.seniorityShield, color: 'bg-primary/70' },
   ];
   const maxAbs = Math.max(...waterfallItems.map(w => Math.abs(w.value)), 1);
 
@@ -233,7 +233,7 @@ export default function VerdictReveal({ report, onComplete }: VerdictRevealProps
                       { Icon: BarChart3, iconColor: 'text-primary', bgColor: 'bg-primary/15', name: 'Market Position', weight: '25%', desc: 'Demand for your skill set' },
                       { Icon: Gem, iconColor: 'text-prophet-gold', bgColor: 'bg-prophet-gold/15', name: 'Human Edge', weight: '20%', desc: 'Skills AI can\'t replicate' },
                       { Icon: Banknote, iconColor: 'text-prophet-green', bgColor: 'bg-prophet-green/15', name: 'Income Stability', weight: '15%', desc: 'Salary resilience under disruption' },
-                      { Icon: Star, iconColor: 'text-primary', bgColor: 'bg-primary/15', name: 'Seniority Shield', weight: '10%', desc: 'Career-stage protection factor' },
+                      { Icon: Star, iconColor: 'text-primary', bgColor: 'bg-primary/15', name: 'Career Capital', weight: '10%', desc: 'Dynamic moat depth, experience & adaptability' },
                     ].map((factor, i) => (
                       <motion.div
                         key={factor.name}
