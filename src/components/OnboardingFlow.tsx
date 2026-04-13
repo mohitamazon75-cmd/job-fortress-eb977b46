@@ -234,7 +234,7 @@ export default function OnboardingFlow({
                       key={ind}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => { if (ind !== industry) onSelectIndustry(ind); }}
+                      onClick={() => onSelectIndustry(ind)}
                       className={`p-4 rounded-xl border text-left font-medium transition-all duration-200 flex items-center gap-3 ${
                         industry === ind
                           ? 'border-primary bg-primary/5 text-foreground shadow-sm ring-2 ring-primary/20'
@@ -311,7 +311,7 @@ export default function OnboardingFlow({
                     key={exp.value}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => { if (exp.value !== yearsExperience) onSelectExperience(exp.value); }}
+                    onClick={() => onSelectExperience(exp.value)}
                     className={`p-6 rounded-xl border text-center transition-all duration-200 ${
                       yearsExperience === exp.value
                         ? 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary/20'

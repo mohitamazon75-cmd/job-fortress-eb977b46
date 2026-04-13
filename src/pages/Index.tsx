@@ -666,8 +666,20 @@ const Index = () => {
       {phase === 'auth-gate' && (
         <AuthGuard
           fallback={
-            <div className="min-h-screen bg-background flex items-center justify-center">
-              <div className="animate-pulse text-muted-foreground">Checking authentication...</div>
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
+              {/* Branded loading — shown during anonymous auth resolution (~3-4s) */}
+              <div className="flex flex-col items-center gap-3 animate-pulse">
+                <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
+                  <span className="text-2xl font-black text-primary/40">JB</span>
+                </div>
+                <div className="space-y-1.5 text-center">
+                  <div className="h-2.5 w-40 rounded-full bg-muted-foreground/20" />
+                  <div className="h-2 w-28 rounded-full bg-muted-foreground/10 mx-auto" />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest">
+                Securing your session…
+              </p>
             </div>
           }
         >

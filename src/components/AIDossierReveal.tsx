@@ -301,6 +301,53 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         )}
       </motion.div>
 
+      {/* FIX 4: AI Impact Snapshot + Action Card shown FIRST for free users — 
+          Psychological order: Fear (score) → Hope (moat + action) → Curiosity (blurred details).
+          Moving these above the blur walls captures the hope peak before users hit friction. */}
+      {!isProUser && (topAtRisk.length > 0 || moatSkills.length > 0) && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+          className="rounded-2xl border-2 border-border bg-card p-5 space-y-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">WHAT'S HAPPENING NOW</p>
+          {topAtRisk.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-destructive">⚠️ Being automated right now</p>
+              <div className="flex flex-wrap gap-1.5">
+                {topAtRisk.slice(0, 3).map((skill, i) => (
+                  <span key={i} className="bg-destructive/10 text-destructive border border-destructive/20 rounded-full text-xs font-bold px-3 py-1">{skill}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {moatSkills.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-prophet-green">🛡️ What's protecting you</p>
+              <div className="flex flex-wrap gap-1.5">
+                {moatSkills.slice(0, 3).map((skill, i) => (
+                  <span key={i} className="bg-prophet-green/10 text-prophet-green border border-prophet-green/20 rounded-full text-xs font-bold px-3 py-1">{skill}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="pt-2 border-t border-border/50 flex items-center gap-1.5">
+            <Lock className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-semibold">Full dossier in your defense plan →</span>
+          </div>
+        </motion.div>
+      )}
+
+      {/* #1 Action Card — immediately after hope section, capitalise on the peak */}
+      {!isProUser && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+          <FreeActionCard
+            score={score}
+            roleName={matchedFamily}
+            moatSkills={moatSkills}
+            primaryVulnerability={survivability?.primary_vulnerability}
+            onUpgrade={onUpgrade ?? (() => {})}
+          />
+        </motion.div>
+      )}
+
       {/* Narrative Verdict — blurred for free users */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
         className={`rounded-2xl border-2 ${vibe.border} ${vibe.bg} p-5 ${!isProUser ? 'relative overflow-hidden' : ''}`}>
@@ -439,60 +486,23 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         </motion.div>
       )}
 
-      {/* AI Impact Snapshot — free users: auto-opened, top 2 sections with pills */}
-      {!isProUser && (topAtRisk.length > 0 || moatSkills.length > 0) && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
-          className="rounded-2xl border-2 border-border bg-card p-5 space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">WHAT'S HAPPENING NOW</p>
-
-          {/* Section 1: At Risk */}
-          {topAtRisk.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-bold text-destructive">⚠️ Being automated right now</p>
-              <div className="flex flex-wrap gap-1.5">
-                {topAtRisk.slice(0, 3).map((skill, i) => (
-                  <span key={i} className="bg-destructive/10 text-destructive border border-destructive/20 rounded-full text-xs font-bold px-3 py-1">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Section 2: Safe Zones */}
-          {moatSkills.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-bold text-prophet-green">🛡️ What's protecting you</p>
-              <div className="flex flex-wrap gap-1.5">
-                {moatSkills.slice(0, 3).map((skill, i) => (
-                  <span key={i} className="bg-prophet-green/10 text-prophet-green border border-prophet-green/20 rounded-full text-xs font-bold px-3 py-1">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Fade-out teaser */}
-          <div className="pt-2 border-t border-border/50 flex items-center gap-1.5">
-            <Lock className="w-3 h-3 text-muted-foreground" />
-            <span className="text-[10px] text-muted-foreground font-semibold">Full dossier in your defense plan →</span>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Free Action Card — "#1 Move This Month" */}
-      {!isProUser && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}>
-          <FreeActionCard
-            score={score}
-            roleName={matchedFamily}
-            moatSkills={moatSkills}
-            primaryVulnerability={survivability?.primary_vulnerability}
-            onUpgrade={onUpgrade ?? (() => {})}
-          />
-        </motion.div>
-      )}
+      {/* FIX 3: Model B deep-analysis entry point — 7-card career intelligence report.
+          Most valuable Pro content. Zero users discover it without this link. */}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38 }}
+        className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black text-primary uppercase tracking-widest mb-0.5">7-Card Deep Analysis</p>
+          <p className="text-[11px] text-muted-foreground leading-snug">
+            ATS keywords · live job matches · pivot paths · blind spots · your human advantage
+          </p>
+        </div>
+        <a
+          href={`/results/model-b${scanId ? `?id=${scanId}` : ''}`}
+          className="flex-shrink-0 flex items-center gap-1 text-xs font-black text-primary hover:text-primary/80 transition-colors"
+        >
+          See all 7 →
+        </a>
+      </motion.div>
 
       {/* Data Provenance */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
