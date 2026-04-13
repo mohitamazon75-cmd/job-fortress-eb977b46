@@ -43,11 +43,18 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
   const liveTools = (enrichment.data?.tool_threats || []).slice(0, 3);
 
   // AIRMM dimensions: current + projected after defense plan
+  // HIGH-11 fix: projections are now proportional to skill gap count rather than fixed %.
+  // More skill gaps = more room to improve; fewer gaps = smaller delta. Still a model estimate.
   const topGapRisk = (() => {
     const risks = skillAdjustments.slice(0, 3).map(s => s.automation_risk);
     return risks.length > 0 ? Math.max(...risks) : 40;
   })();
-  const projectionBoost = (base: number, boostPct: number) => Math.min(95, Math.round(base + (100 - base) * boostPct));
+  const skillGapCount = (report.skill_gap_map || []).length;
+  const projectionBoost = (base: number, maxBoostPct: number) => {
+    // Scale boost by skill gap count: 0 gaps → no boost, 5+ gaps → full boost
+    const gapMultiplier = Math.min(1, skillGapCount / 5);
+    return Math.min(95, Math.round(base + (100 - base) * maxBoostPct * gapMultiplier));
+  };
 
   const airmm = [
     { label: 'AI Resistance', current: breakdown.rawAiResistance, projected: projectionBoost(breakdown.rawAiResistance, 0.25), icon: <Shield className="w-3 h-3" /> },
@@ -105,27 +112,49 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
         <p className="text-[11px] font-black uppercase tracking-[0.25em] text-primary mb-2">Your Intelligence Profile</p>
         <p className="text-sm font-bold text-foreground leading-snug mb-3">{profileSummary}</p>
 
-        {/* Key stats row */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
-            <p className="text-lg font-black text-foreground tabular-nums">{Math.round(automationRisk)}%</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Exposure Index</p>
-          </div>
-          <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
-            <p className="text-lg font-black text-foreground tabular-nums">{moatSkills.length}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Moat Skills</p>
-            {moatSkills.length > 0 && moatSkills.length < 4 && (
-              <p className="text-[8px] text-prophet-gold mt-0.5">Score capped — need 4+</p>
-            )}
-          </div>
-          <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
-            <p className="text-lg font-black text-foreground tabular-nums">{(() => {
-              const moatSet = new Set((report.moat_skills || []).map(s => s.toLowerCase()));
-              return tools.filter(t => !moatSet.has((t.automates_task || '').toLowerCase())).length;
-            })()}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Tools Competing</p>
-          </div>
-        </div>
+
+        {/* Key stats row
+            CRITICAL-4: renamed "Task Overlap" → "AI Exposure" — DI is a composite displacement index,
+            not a raw task-overlap %. "AI Exposure" is more honest framing.
+            HIGH-2: execution-only tools (excludes moat/strategic skill tools).
+            CRITICAL-3: moat skill count shows progress toward 4-skill verification threshold. */}
+        {(() => {
+          // HIGH-2 fix: only count tools derived from execution skills, not moat/strategic skills
+          // Moat skills are protection — counting their tools as "competing" contradicts the moat narrative
+          const moatSkillNorms = new Set((report.moat_skills || []).map(s => s.toLowerCase().trim()));
+          const executionOnlyTools = tools.filter(t => {
+            const task = (t.automates_task || '').toLowerCase().trim();
+            return !moatSkillNorms.has(task);
+          });
+          // CRITICAL-3 fix: show progress toward 4-skill verification threshold
+          const moatVerified = moatSkills.length >= 4;
+          return (
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
+                <p className="text-lg font-black text-foreground tabular-nums">{Math.round(automationRisk)}%</p>
+                {/* CRITICAL-4: "AI Exposure" replaces "Task Overlap with AI" — the value is a
+                    composite displacement index, not a literal task-overlap percentage */}
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">AI Exposure</p>
+              </div>
+              <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
+                <p className="text-lg font-black text-foreground tabular-nums">
+                  {moatSkills.length}
+                  {/* CRITICAL-3: show /4 target so users understand the verification threshold */}
+                  <span className={`text-xs font-bold ml-0.5 ${moatVerified ? 'text-prophet-green' : 'text-muted-foreground'}`}>
+                    /{moatVerified ? '✓' : '4'}
+                  </span>
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Moat Skills</p>
+              </div>
+              <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
+                {/* HIGH-2: count only tools for execution tasks — moat-skill tools excluded */}
+                <p className="text-lg font-black text-foreground tabular-nums">{executionOnlyTools.length}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Execution Threats</p>
+              </div>
+            </div>
+          );
+        })()}
+
 
         {/* What makes you hard to replace vs what's at risk */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

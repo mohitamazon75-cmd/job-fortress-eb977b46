@@ -305,12 +305,24 @@ export function calculateScoreVariability(
   determinismIndex: number,
   matchedCount: number,
   monthlySalary: number,
-  marketSignal: MarketSignalRow | null
+  marketSignal: MarketSignalRow | null,
+  industryFloor?: number
 ): ScoreVariability {
+  // STAT-2 fix: asymmetric confidence intervals that respect:
+  //   1. The bounded nature of DI (cannot go below 0 or above 100)
+  //   2. The industry floor (DI cannot meaningfully go below the structural floor)
+  //   3. Empirical skew: high-DI roles have more downside certainty;
+  //      low-DI roles have more upside uncertainty
   const diBaseMargin = CALIBRATION.CONFIDENCE_BASE_MARGIN;
   const diMargin = matchedCount > 0 ? Math.round(diBaseMargin / Math.sqrt(matchedCount)) : diBaseMargin;
-  const diLow = Math.max(1, determinismIndex - diMargin);
-  const diHigh = Math.min(99, determinismIndex + diMargin);
+
+  // Low bound: constrained by industry floor — even best-case can't go below the structural floor
+  const floor = Math.max(1, industryFloor ?? 0);
+  const diLow = Math.max(floor, determinismIndex - diMargin);
+
+  // High bound: at DI > 70 (high disruption), upside risk is amplified (disruption accelerates)
+  const amplifier = determinismIndex > 70 ? 1.3 : 1.0;
+  const diHigh = Math.min(99, determinismIndex + Math.round(diMargin * amplifier));
 
   const timelineLow = calculateObsolescenceTimeline(diHigh, marketSignal);
   const timelineHigh = calculateObsolescenceTimeline(diLow, marketSignal);

@@ -146,7 +146,7 @@ function drawFateCard(canvas: HTMLCanvasElement, report: ScanReport) {
   const moatScore = report.moat_score;
   const urgencyScore = (report as any).urgency_score;
   const stats = [
-    { label: 'MONTHS LEFT', value: `${report.months_remaining}`, icon: '⏱' },
+    { label: 'ACT BY (MO)', value: `${report.months_remaining}`, icon: '⏱' },
     { label: moatScore ? 'UNIQUENESS' : 'AI THREATS', value: moatScore ? `${moatScore}%` : `${(report.ai_tools_replacing || []).length}`, icon: moatScore ? '🛡' : '🤖' },
     { label: urgencyScore ? 'AI SPEED' : 'RESILIENCE', value: urgencyScore ? `${urgencyScore}%` : `${personalResilience}%`, icon: urgencyScore ? '⚡' : '🛡' },
   ];

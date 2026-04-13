@@ -41,10 +41,13 @@ export function getExecutiveLabel(
   key: string,
   tier: SeniorityTier
 ): string {
+  // CRITICAL-6 fix: single canonical name for the core score across all tiers.
+  // "Career Position Score" is the product-wide standard — no alternate names.
+  // Only the *sub-label* (description below the number) differs by tier.
   if (!isExecutiveTier(tier)) {
     const defaults: Record<string, string> = {
       'automation_risk': 'Career Position Score',
-      'time_left': 'Time Left',
+      'time_left': 'Action Window',       // NARRATION-7: not "Time Left" (implies expiry)
       'your_protection': 'Your Protection',
       'career_risk_score': 'Career Position',
       'chapter_2_title': "Here's What To Do",
@@ -59,10 +62,10 @@ export function getExecutiveLabel(
   }
 
   const executiveLabels: Record<string, string> = {
-    'automation_risk': 'Strategic Position Index',
-    'time_left': 'Transition Window',
-    'your_protection': 'Competitive Moat Strength',
-    'career_risk_score': 'Strategic Position',
+    'automation_risk': 'Career Position Score',  // CRITICAL-6: same name, different sub-label in UI
+    'time_left': 'Action Window',                // NARRATION-7: not "Transition Window"
+    'your_protection': 'Strategic Moat Strength',
+    'career_risk_score': 'Career Position',
     'chapter_2_title': 'Recommended Action',
     'disruption_message': 'has a market repositioning opportunity',
     'chapter_1_title': 'Strategic Assessment',
@@ -147,7 +150,7 @@ export function getVerdictMessage(
     return `is well-positioned strategically. Your ${moatSkills[0] || 'leadership'} moat provides strong organizational value.`;
   }
   if (position >= 40) {
-    return `has a ${monthsRemaining}-month repositioning window. Strategic moves now will strengthen your organizational leverage.`;
+    return `has a ${monthsRemaining}-month adaptation window. Strategic moves now will strengthen your organizational leverage.`;
   }
-  return `has a ${monthsRemaining}-month window to reposition. The roles replacing yours require the organizational judgment you already possess.`;
+  return `has a ${monthsRemaining}-month window to act. The roles replacing yours require the organizational judgment you already possess.`;
 }

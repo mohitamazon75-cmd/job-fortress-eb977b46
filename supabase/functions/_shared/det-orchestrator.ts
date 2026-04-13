@@ -326,7 +326,9 @@ export function computeAll(
   };
 
   // Score Variability
-  const score_variability = calculateScoreVariability(determinismIndex, diResult.matchedCount, monthlySalary, marketSignal);
+  // Score Variability — pass jobBaseline as industryFloor so asymmetric CI
+  // respects the structural floor (STAT-2 fix in det-scoring.ts)
+  const score_variability = calculateScoreVariability(determinismIndex, diResult.matchedCount, monthlySalary, marketSignal, jobBaseline);
 
   // Moat & Urgency
   const moat_score = calculateMoatScore(profile, skillRiskData, diResult.matchedCount);
