@@ -124,15 +124,15 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
               {isExec ? (
                 <>
                   has a <span className="underline decoration-primary decoration-4 underline-offset-4">Career Position Score of {displayScoreValue}</span>{' '}
-                  with a <span className="underline decoration-primary decoration-4 underline-offset-4">{report.months_remaining}-month repositioning window</span>.
+                  — your <span className="underline decoration-primary decoration-4 underline-offset-4">adaptation window opens within {report.months_remaining} months</span>.
                   {displayScoreValue >= 60 && ((report.moat_indicators?.length ?? 0) > 0 || moatSkills.length > 0) && (
                     <span className="text-prophet-green"> Your {report.moat_indicators?.[0] || moatSkills[0]} provides strong organizational leverage.</span>
                   )}
                 </>
               ) : (
                 <>
-                  has a <span className={`underline decoration-4 underline-offset-4 ${displayScoreValue >= 50 ? 'decoration-primary' : 'decoration-prophet-gold'}`}>Career Position Score of {displayScoreValue}/100</span> with an estimated{' '}
-                  <span className="underline decoration-prophet-gold decoration-4 underline-offset-4">{report.months_remaining}-month</span> window before major shifts.
+                  has a <span className={`underline decoration-4 underline-offset-4 ${displayScoreValue >= 50 ? 'decoration-primary' : 'decoration-prophet-gold'}`}>Career Position Score of {displayScoreValue}/100</span> — adaptation window{' '}
+                  <span className="underline decoration-prophet-gold decoration-4 underline-offset-4">opens within {report.months_remaining} months</span>.
                   {displayScoreValue < 35 && moatSkills.length > 0 && (
                     <span className="text-prophet-green"> But the roles replacing yours pay more, and you already have {moatSkills.length} of the skills needed. Let's close the gap.</span>
                   )}
@@ -186,23 +186,32 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
               <ChevronDown className={`w-2.5 h-2.5 transition-transform duration-200 ${riskMethodOpen ? 'rotate-180' : ''}`} />
             </button>
           </div>
+          {/* NARRATION-7 fix: months_remaining is the YELLOW ZONE start — the point at which
+              you should have already begun adapting. It is NOT a role-expiry date.
+              Framed as "action window opens in" to prevent the misleading "X months left" reading. */}
           <div className="rounded-xl border border-border bg-background p-4">
             <div className="flex items-center gap-1.5 mb-1">
               <Clock className="w-3.5 h-3.5 text-prophet-gold" />
               <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                {getExecutiveLabel('time_left', seniorityTier)}
+                Action Window
               </span>
               <HinglishTooltip en={strings.tooltip_months_remaining} hi={locale === 'hi' ? strings.tooltip_months_remaining : undefined} locale={locale} />
             </div>
             <p className="text-[11px] text-muted-foreground mb-1.5 leading-snug">
-              Months before AI significantly changes how your role works
+              When meaningful AI-driven role changes begin — your preparation window starts now
             </p>
-            <p className="text-3xl font-black text-prophet-gold">{report.months_remaining}<span className="text-base"> months</span></p>
+            <p className="text-3xl font-black text-prophet-gold">{report.months_remaining}<span className="text-base"> mo to adapt</span></p>
             {ci && (
-              <p className="text-[11px] text-muted-foreground mt-0.5 font-semibold">Range: {ci.months_range.low}–{ci.months_range.high} months</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 font-semibold">
+                Estimated range: {ci.months_range.low}–{ci.months_range.high} months
+              </p>
             )}
             <p className="text-[10px] text-muted-foreground mt-1">
-              {(report.months_remaining || 18) <= 12 ? 'Urgent — changes likely within a year' : (report.months_remaining || 18) <= 24 ? 'Moderate — you have time to prepare' : 'Longer runway — use it to build ahead'}
+              {(report.months_remaining || 18) <= 12
+                ? 'Urgent — adaptation window is narrow. Act now.'
+                : (report.months_remaining || 18) <= 24
+                ? 'Moderate — you have time, but the window is shrinking'
+                : 'Longer runway — use it to build strategically ahead of the curve'}
             </p>
           </div>
           {report.survivability && (
@@ -367,11 +376,15 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {isExec ? (
+            // CRITICAL-9 fix: for exec tier the risk is NOT gradual monthly salary erosion —
+            // it's a sudden restructuring event (severance + 12-24mo re-hire gap at lower comp).
+            // The salary_bleed model applies task-automation math that is wrong for exec level.
+            // Reframe to: what does a restructuring event actually cost?
             clampedRisk > 65
-              ? `${userName !== 'Professional' ? userName + ', within' : 'Within'} ${report.months_remaining} months, ${report.industry} leaders who haven't integrated AI into their strategic toolkit will face board-level pressure. Your organizational leverage erodes by ${formatCurrency(report.salary_bleed_monthly, country)}/mo in unrealized efficiency gains. Competitors with AI-augmented leadership will move faster.`
+              ? `${userName !== 'Professional' ? userName + ', your' : 'Your'} function is at meaningful risk of being restructured under an AI-augmented leadership model within ${report.months_remaining} months. The financial exposure is not gradual — it is a single restructuring event: severance, plus 12–18 months of comp gap during your next search, at a salary potentially 20–30% below your current level. Competitors with AI-literate leadership will consolidate functions faster.`
               : clampedRisk > 40
-              ? `Your ${report.months_remaining}-month window is comfortable but not infinite. Monthly organizational cost of inaction: ${formatCurrency(report.salary_bleed_monthly, country)}. The risk isn't replacement — it's being outmaneuvered by AI-literate peers at the same level.`
-              : `Your strategic position is strong. Monthly pressure: ${formatCurrency(report.salary_bleed_monthly, country)}. Stay ahead by leading AI adoption rather than being dragged into it.`
+              ? `Your ${report.months_remaining}-month adaptation window is real. The risk for ${seniorityTier.replace('_', ' ').toLowerCase()} leaders is not task replacement — it is being passed over for roles, board seats, and advisory positions in favour of AI-fluent peers. The financial consequence lands as a lump sum at career transition, not as monthly erosion.`
+              : `Your strategic position is strong. The primary risk is opportunity cost — organisations that integrate AI at the leadership level are pulling ahead on operational efficiency. Staying visible as an AI transformation leader is your most effective hedge.`
           ) : (
             clampedRisk > 65
               ? `Within ${report.months_remaining} months, ${displayRole} roles in ${report.industry} will see ${Math.round(clampedRisk * 0.6)}% of current tasks automated. Your monthly earning potential drops by ${formatCurrency(report.salary_bleed_monthly, country)}/mo. In 5 years, cumulative loss reaches ${report.total_5yr_loss_inr ? formatCurrency(report.total_5yr_loss_inr, country) : formatCurrency(report.salary_bleed_monthly * 60, country)}. Companies are already consolidating teams.`

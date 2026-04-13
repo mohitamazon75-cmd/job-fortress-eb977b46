@@ -61,6 +61,22 @@ export function getVibe(score: number, report: ScanReport): Vibe {
   const talentDensity = report.market_position_model?.talent_density ?? 'moderate';
   const riskPct = Math.round(automationRisk);
 
+  // NARRATION-1 fix: when the KG floor overrides the ML model's estimate, the
+  // narrative must not claim "X% of your tasks can be done by AI" as a measured
+  // fact — that number is a structural industry floor, not a task-by-task count.
+  // We build two context strings: one for the body (explains the risk source) and
+  // one for bullets (shorter phrasing). This ensures the narrative is always
+  // factually consistent with the displayed "AI Exposure" metric.
+  const { kgOverrideApplied } = breakdown;
+  // riskSource: used in body copy where we'd otherwise say "X% of tasks overlap with AI"
+  const riskSource = kgOverrideApplied
+    ? `Industry data for ${roleName} roles shows a structural AI exposure of ${riskPct}% — this reflects the documented automation baseline for this role category, which our scoring engine enforces as a floor regardless of any individual profile signals.`
+    : `${riskPct}% of ${roleName} tasks can already be done by AI — and that number is rising every quarter.`;
+  // riskBullet: tighter phrasing for bullet points
+  const riskBullet = kgOverrideApplied
+    ? `Structural AI exposure for this role category: ${riskPct}% (industry-calibrated floor, not an individual task count)`
+    : `~${riskPct}% task overlap with AI capabilities — measured against your actual skill profile`;
+
   // ── TIER 1: SAFE ZONE (70+) ──────────────────────────────
   if (score >= 70) return {
     emoji: '🛡️', label: 'Safe Zone',
@@ -69,7 +85,9 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `You're safe today. But "today" has a shelf life.`,
     warmIntro: `Take a breath — your career isn't on fire. But the smoke is closer than you think.`,
 
-    body: `Here's what keeps us up at night for people like you: 18 months ago, only ~${Math.max(5, Math.round(riskPct * 0.5))}% of ${roleName} work overlapped with AI. Today it's ${riskPct}%. That number doesn't go backwards. The professionals who lose their "safe" status are always the ones who assumed it was permanent.`,
+    body: kgOverrideApplied
+      ? `Here's what keeps us up at night for people like you: ${riskSource} The professionals who lose their "safe" status are always the ones who assumed it was permanent.`
+      : `Here's what keeps us up at night for people like you: 18 months ago, only ~${Math.max(5, Math.round(riskPct * 0.5))}% of ${roleName} work overlapped with AI. Today it's ${riskPct}%. That number doesn't go backwards. The professionals who lose their "safe" status are always the ones who assumed it was permanent.`,
 
     hope: `${moatSkills >= 3 ? `Your ${moatSkills} moat skills — the judgment-heavy, relationship-dependent ones — are genuinely hard to automate today.` : 'Your work requires real human judgment, and that creates natural protection.'} ${talentDensity === 'scarce' ? 'The talent pool for your profile is thin — that\'s real leverage.' : `As a ${tierLabel}, you carry institutional knowledge that doesn't live in any document.`}`,
 
@@ -92,7 +110,7 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `This is the danger zone where careers quietly die.`,
     warmIntro: `This is the trickiest score range. You feel secure, your manager hasn't flagged anything — but this is exactly where silent displacement happens.`,
 
-    body: `${riskPct}% of ${roleName} tasks can already be done by AI. That number was lower last quarter. Right now, a 25-year-old with ChatGPT, Claude, and a weekend course can deliver what took you years to master — in half the time. That's not an insult. That's the new math your boss is doing quietly.`,
+    body: `${riskSource} Right now, a 25-year-old with ChatGPT, Claude, and a weekend course can deliver what took you years to master — in half the time. That's not an insult. That's the new math your boss is doing quietly.`,
 
     hope: `${moatSkills > 0 ? `You have ${moatSkills} skills that are genuinely hard to replicate — these are your lifeline. ` : ''}The gap between "valued" and "irreplaceable" is usually just 1-2 skills. You're not far from the safe zone — but you need to move deliberately.`,
 
@@ -115,7 +133,7 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `Your career is bleeding — and you might not feel it yet.`,
     warmIntro: `We know this is uncomfortable. But the people who recover from this score range are always the ones who saw it clearly first.`,
 
-    body: `~${riskPct}% of what you do every day is exactly what AI is built to replace. Hiring demand is ${demand}. That means more people competing for fewer seats, while machines quietly take over the routine work. If you do nothing for the next 6 months, this score drops further — and the options narrow.`,
+    body: `${riskSource} Hiring demand is ${demand}. That means more people competing for fewer seats, while machines quietly take over the routine work. If you do nothing for the next 6 months, this score drops further — and the options narrow.`,
 
     hope: `${moatSkills > 0 ? `You have ${moatSkills} unique strengths that still separate you from the crowd — that's your foundation to build on. ` : ''}You're seeing this before 90% of people in your role even think about it. That awareness gap is worth more than any single skill — if you act on it now.`,
 
@@ -138,7 +156,7 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `This is the warning your company will never give you.`,
     warmIntro: `You're not alone. 1 in 3 professionals in your category scored under 30 this year. The ones who turned it around started with exactly this kind of honest picture.`,
 
-    body: `Most ${roleName} day-to-day work maps directly onto what AI already does — well, fast, and for a fraction of your salary. High talent supply + routine tasks + ${demand} demand = the math isn't in your favor. Every month you wait, the options get fewer and the competition gets stronger.`,
+    body: `${riskSource} High talent supply + routine tasks + ${demand} demand = the math isn't in your favor. Every month you wait, the options get fewer and the competition gets stronger.`,
 
     hope: `But here's what matters: you're looking at this right now. You have 6 months of runway that most people in your role don't even know they're burning through. ${moatSkills > 0 ? `And you still have ${moatSkills} skills that create real differentiation — that's your starting point.` : 'The defense plan below maps your fastest path to building a genuine moat.'}`,
 
@@ -147,7 +165,7 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     replaceability: `This seat could be filled quickly. But you're here, looking at this clearly, while your peers are scrolling LinkedIn pretending everything is fine. That's the whole point.`,
 
     bullets: [
-      `~${riskPct}% of your tasks overlap with AI capabilities — one of the highest we see`,
+      riskBullet,
       `Talent supply is high — you're competing with more people AND machines simultaneously`,
       `Your defense plan is your escape route — the people who act on it within 7 days see the fastest score improvements`,
     ],
