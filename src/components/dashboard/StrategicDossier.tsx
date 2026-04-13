@@ -34,8 +34,8 @@ type TierVocab = {
 function getVocabulary(tier: SeniorityTier): TierVocab {
   if (isExecutiveTier(tier)) {
     return {
-      positionLabel: 'Strategic Position',
-      windowLabel: 'Transition Window',
+      positionLabel: 'Career Position',
+      windowLabel: 'Action Window',       // CRITICAL-6/NARRATION-7: matches seniority-utils + DiagnosisTab
       strengthLabel: 'Competitive Moat',
       actionSectionTitle: 'This Week\'s Move',
       planTitle: '30-Day Strategic Plan',
@@ -102,7 +102,7 @@ function generateSummary(
     if (position >= 60) {
       return `${namePrefix} combination of ${moat.toLowerCase()} expertise and ${industry} leadership${company ? ` at ${company}` : ''} positions you in the upper tier of professionals in this market${metroContext ? ` (${metroContext})` : ''}. Your primary consideration is not replacement — it's ensuring your strategic value is visible as organizations restructure around AI. Window to strengthen position: ${months} months.`;
     }
-    return `${namePrefix} ${role} experience${company ? ` at ${company}` : ''} provides a foundation, but the ${industry} landscape is shifting${metroContext ? ` across ${metroContext} markets` : ''}. Organizational restructuring is consolidating roles like yours. Your ${moat.toLowerCase()} expertise is your strongest lever — but it needs to be more visible. Repositioning window: ${months} months.`;
+    return `${namePrefix} ${role} experience${company ? ` at ${company}` : ''} provides a foundation, but the ${industry} landscape is shifting${metroContext ? ` across ${metroContext} markets` : ''}. Organizational restructuring is consolidating roles like yours. Your ${moat.toLowerCase()} expertise is your strongest lever — but it needs to be more visible. Adaptation window opens in: ${months} months.`;
   }
 
   if (tier === 'MANAGER') {
@@ -185,7 +185,7 @@ export default function StrategicDossier({ report, scanId, enrichment, enrichmen
         <ul className="space-y-2.5">
           <li className="flex items-start gap-2.5 text-sm text-dossier-fg leading-relaxed">
             <span className="text-dossier-position font-bold flex-shrink-0">1.</span>
-            Your {displayRole} role has a <span className="font-semibold">{report.months_remaining}-month window</span> before significant market shift in {report.industry}.
+            Your {displayRole} role's adaptation window opens within <span className="font-semibold">{report.months_remaining} months</span> — the point at which AI-driven market shifts will begin meaningfully affecting {report.industry} roles.
           </li>
           <li className="flex items-start gap-2.5 text-sm text-dossier-fg leading-relaxed">
             <span className="text-dossier-position font-bold flex-shrink-0">2.</span>
@@ -341,7 +341,7 @@ export default function StrategicDossier({ report, scanId, enrichment, enrichmen
               return `Within the next ${report.months_remaining}-month action window, ${Math.round(clampedRisk * 0.6)}% of current ${displayRole} tasks will be automated in ${report.industry}. Estimated annual earning pressure: ~${salaryDropPct}% of current package. 5-year cumulative impact: up to ${fiveYearPct}% of lifetime earnings at risk. ${isExec ? 'The primary risk is organizational restructuring that consolidates your function — not task-level replacement.' : 'Companies are already consolidating teams.'}`;
             }
             if (clampedRisk > 40) {
-              return `Your role has a ${report.months_remaining}-month window before meaningful market shift. Estimated annual earning erosion: ~${salaryDropPct}% of package. The risk is not sudden replacement — it's gradual irrelevance as AI-augmented ${isExec ? 'peers and restructured orgs' : 'peers'} outperform.`;
+              return `Adaptation window opens within ${report.months_remaining} months — when AI-driven shifts will meaningfully affect this role. Estimated annual earning erosion: ~${salaryDropPct}% of package. The risk is not sudden replacement — it's gradual irrelevance as AI-augmented ${isExec ? 'peers and restructured orgs' : 'peers'} outperform.`;
             }
             return `Your position is currently stable, but ${report.industry} is shifting. Estimated annual salary pressure: ~${salaryDropPct}% of package. ${isExec ? 'The primary leadership risk is organizational restructuring — early adopters of AI governance will define the new structure.' : 'Complacency is the primary risk — peers who upskill will pull ahead.'}`;
           })()}
