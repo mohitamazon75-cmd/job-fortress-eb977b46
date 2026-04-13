@@ -127,6 +127,45 @@ export function clampAgent1Output(data: any): void {
   }
 }
 
+// STEP 2 (BUG-3 fix): Cross-signal consistency gate.
+// Three independent signals can contradict: Agent1 categorical (HIGH/MEDIUM/LOW),
+// DI composite (0–100), and ML continuous (0–100). This function detects contradictions
+// and logs them — enabling future auto-resolution without blocking the scan.
+export function checkAutomationSignalConsistency(
+  automatable_task_ratio: string | null | undefined,
+  determinism_index: number | null | undefined,
+  ml_automation_risk: number | null | undefined,
+): { consistent: boolean; warning: string | null } {
+  if (!automatable_task_ratio || determinism_index == null) {
+    return { consistent: true, warning: null };
+  }
+
+  // Map categorical → numeric range expectations
+  const RATIO_RANGES: Record<string, { min: number; max: number }> = {
+    HIGH:   { min: 55, max: 100 },  // Agent1 says 60%+ tasks automatable
+    MEDIUM: { min: 25, max: 70 },   // Agent1 says 30-60% tasks automatable
+    LOW:    { min: 0,  max: 40  },  // Agent1 says <30% tasks automatable
+  };
+  const range = RATIO_RANGES[automatable_task_ratio];
+  if (!range) return { consistent: true, warning: null };
+
+  const diOutOfRange = determinism_index < range.min || determinism_index > range.max;
+  const mlOutOfRange = ml_automation_risk != null &&
+    (ml_automation_risk < range.min - 10 || ml_automation_risk > range.max + 10);
+
+  if (diOutOfRange || mlOutOfRange) {
+    const warning = [
+      `Agent1 says ${automatable_task_ratio} (expect DI ${range.min}–${range.max})`,
+      `but DI=${determinism_index}`,
+      ml_automation_risk != null ? `ML=${ml_automation_risk}` : null,
+    ].filter(Boolean).join(', ');
+    console.warn(`[ConsistencyGate] Automation signal contradiction: ${warning}`);
+    return { consistent: false, warning };
+  }
+
+  return { consistent: true, warning: null };
+}
+
 // ═══ Agent 2A (Risk Analysis) Output Schema ═══
 export const Agent2ASchema = z.object({
   cognitive_moat: z.string(),

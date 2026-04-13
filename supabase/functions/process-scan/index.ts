@@ -44,7 +44,7 @@ import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
 import { callAgent, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
 import { callAgentWithFallback } from "../_shared/model-fallback.ts";
 import { recordScoreHistory, getPreviousScore } from "../_shared/score-history.ts";
-import { Agent1Schema, clampAgent1Output, validateAgentOutput } from "../_shared/zod-schemas.ts";
+import { Agent1Schema, clampAgent1Output, validateAgentOutput, checkAutomationSignalConsistency } from "../_shared/zod-schemas.ts";
 import { getPromptVersion } from "../_shared/prompt-versions.ts";
 import { findCachedScan } from "../_shared/scan-cache.ts";
 import { MAX_CONCURRENT_SCANS, MODELS } from "../_shared/constants.ts";
@@ -58,6 +58,10 @@ import {
 } from "../_shared/scan-report-builder.ts";
 import { fetchCompanyHealth, type CompanyHealthResult } from "../_shared/company-health.ts";
 import { validateSkillDemand, type SkillDemandResult } from "../_shared/skill-demand-validator.ts";
+// STEP 1 (BUG-2 fix): Import KG live-update helpers so every scan uses the latest
+// market-signal-derived calibration constants, not just the static TypeScript defaults.
+import { loadCalibrationConfig } from "../_shared/kg-overrides.ts";
+import { CALIBRATION } from "../_shared/det-utils.ts";
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -187,6 +191,15 @@ Deno.serve(async (req) => {
     const scanCountry = scan.country || "IN";
     const locale = getLocale(scanCountry);
     console.log(`[Orchestrator] Starting scan ${scanId}, industry: ${scan.industry}, country: ${scanCountry}, hasResume: ${hasResume}, model: ${activeModel}, forceRefresh: ${!!forceRefresh}`);
+
+    // STEP 1 (BUG-2 fix): Apply live calibration constants from DB before any scoring runs.
+    // loadCalibrationConfig patches the CALIBRATION object in-place with DB-stored overrides.
+    // This ensures market-signal-derived tuning (written by kg-node-updater) reaches every scan.
+    // Non-fatal: if the table is empty or unreachable, defaults remain unchanged.
+    const { patched: calibPatched } = await loadCalibrationConfig(supabase, CALIBRATION as unknown as Record<string, number>);
+    if (calibPatched > 0) {
+      console.log(`[Orchestrator] Applied ${calibPatched} live calibration constant(s) from DB`);
+    }
 
     // ══════════════════════════════════════════════════════════
     // STEP 1: CACHE CHECK
@@ -770,6 +783,15 @@ No explanation, no markdown. Return ONLY the JSON.`;
 
     const det = computeAll(profileInput, allSkillRiskRows, skillMapRows, primaryJob, marketSignal, !!scan.linkedin_url, companyTier, scan.metro_tier || null, null, agent1?.industry || resolvedIndustry, scanCountry, companyHealthResult?.score ?? null, detectedSubSector, profile_completeness_pct, profile_gaps);
     console.log(`[Orchestrator] DI=${det.determinism_index}, SS=${det.survivability.score}, quality=${det.data_quality.overall}${companyHealthResult ? `, companyHealth=${companyHealthResult.score}` : ''}${skillDemandResults.length > 0 ? `, skillsValidated=${skillDemandResults.length}` : ''}${detectedSubSector ? `, subSector=${detectedSubSector}` : ''}`);
+
+    // STEP 2 (BUG-3 fix): Check for contradictions between Agent1 categorical signal,
+    // the deterministic DI, and the ML automation_risk (if available).
+    // Non-fatal: logs a warning but never blocks the scan.
+    checkAutomationSignalConsistency(
+      agent1?.automatable_task_ratio,
+      det.determinism_index,
+      null, // ML risk not yet computed at this point — checked again in report assembly
+    );
 
     // ══════════════════════════════════════════════════════════
     // STEPS 7+8+9: PARALLEL AGENT ORCHESTRATION (extracted to scan-agents.ts)

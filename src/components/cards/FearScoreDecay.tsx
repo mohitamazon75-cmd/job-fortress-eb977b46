@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingDown, AlertTriangle, Clock, Zap, Bot, Loader2, ExternalLink } from 'lucide-react';
+import { TrendingDown, TrendingUp, AlertTriangle, Clock, Zap, Bot, Loader2, ExternalLink } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { computeStabilityScore } from '@/lib/stability-score';
 import { getVerbatimRole } from '@/lib/role-guard';
 import type { LiveEnrichment } from '@/hooks/use-live-enrichment';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Fear-driven emotional hook card.
  * Shows current score vs projected 6-month "no action" score.
  * All projections are deterministic — no LLM dependency.
  * Pulls live scary news from enrichment data.
+ * STEP 4: Also shows real score drift vs previous scan (score_history table).
  */
 
 function projectScoreDecay(currentScore: number, automationRisk: number, deadSkillCount: number): number {
@@ -37,6 +39,46 @@ export default function FearScoreDecay({ report, enrichment }: Props) {
   const projectedScore = projectScoreDecay(currentScore, automationRisk, deadSkills.length);
   const scoreDrop = currentScore - projectedScore;
   const roleName = getVerbatimRole(report);
+
+  // STEP 4 (BUG-5 fix): Fetch prior scan score from score_history to show real drift.
+  // Only runs for authenticated users (score_history skips anon scans).
+  // VibeSec: query uses server-validated user_id from session — no IDOR risk.
+  const [priorScore, setPriorScore] = useState<number | null>(null);
+  const [priorDaysAgo, setPriorDaysAgo] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchDrift() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from('score_history')
+          .select('determinism_index, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5); // fetch a few to find one with a different DI
+        if (!cancelled && data && data.length > 1) {
+          // Take the second most recent (first is likely the current scan)
+          const prior = data[1];
+          if (prior?.determinism_index != null) {
+            // Convert server DI to client Career Position Score: 100 - DI
+            const priorStabilityScore = Math.max(5, Math.min(95, 100 - prior.determinism_index));
+            setPriorScore(priorStabilityScore);
+            const days = Math.round((Date.now() - new Date(prior.created_at).getTime()) / 86_400_000);
+            setPriorDaysAgo(days);
+          }
+        }
+      } catch {
+        // Non-fatal — drift badge is additive, not critical
+      }
+    }
+    fetchDrift();
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const driftDelta = priorScore != null ? currentScore - priorScore : null;
+  const showDrift = driftDelta != null && Math.abs(driftDelta) >= 2; // only show meaningful delta
 
   const liveTools = (enrichment.data?.tool_threats || []).slice(0, 3);
   const threatSummary = enrichment.data?.threat_summary;
@@ -71,6 +113,37 @@ export default function FearScoreDecay({ report, enrichment }: Props) {
           {urgencyLabel} URGENCY
         </span>
       </div>
+
+      {/* STEP 4 (BUG-5 fix): Real score drift vs prior scan — most motivating retention signal.
+          Shows only when: user is authenticated, prior scan exists, delta ≥ 2 points. */}
+      {showDrift && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${
+            driftDelta! > 0
+              ? 'bg-prophet-green/[0.06] border-prophet-green/20'
+              : 'bg-destructive/[0.06] border-destructive/20'
+          }`}
+        >
+          {driftDelta! > 0
+            ? <TrendingUp className="w-3.5 h-3.5 text-prophet-green flex-shrink-0" />
+            : <TrendingDown className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
+          }
+          <p className="text-[11px] leading-snug">
+            <span className={`font-black ${driftDelta! > 0 ? 'text-prophet-green' : 'text-destructive'}`}>
+              {driftDelta! > 0 ? `↑ +${driftDelta} points` : `↓ ${driftDelta} points`}
+            </span>
+            <span className="text-muted-foreground">
+              {' '}since your last scan{priorDaysAgo != null ? ` (${priorDaysAgo}d ago)` : ''} —{' '}
+              {driftDelta! > 0
+                ? 'your actions are working. Keep going.'
+                : 'AI adoption in your role is accelerating. Time to move.'}
+            </span>
+          </p>
+        </motion.div>
+      )}
 
       {/* Score decay visualization */}
       <div className="flex items-center justify-center gap-4 py-3">

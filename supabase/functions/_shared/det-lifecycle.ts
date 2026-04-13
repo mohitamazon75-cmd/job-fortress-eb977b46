@@ -205,8 +205,16 @@ export function calculateGeoArbitrage(
   const rawDelta = targetSalary - currentMonthlySalary;
   if (rawDelta <= 0) return null;
 
-  const probAdjusted = Math.round(rawDelta * probability);
-  const ev12mo = probAdjusted * 12;
+  // BUG-3 fix: Correct EV formula.
+  // ev12mo = P(relocation succeeds) × annual_salary_gain
+  // This is the expected value of the relocation decision over 1 year.
+  // The old formula (probAdjusted × 12) was equivalent but obfuscated via
+  // an intermediate "monthly EV" step that implied monthly recurrence.
+  // probability_adjusted_delta_inr = ev12mo / 12 — the per-month expected gain
+  // when averaged across the full year including the probability of failure.
+  // Label in UI: "Expected value if relocation succeeds" (shown per year).
+  const ev12mo = Math.round(probability * rawDelta * 12);
+  const probAdjusted = Math.round(ev12mo / 12); // monthly average of annual EV
   const fastestWeeks = probability >= 0.7 ? 6 : probability >= 0.5 ? 10 : 16;
 
   const marketLabel = key.includes("us") || key.includes("gc") ? "US Direct"

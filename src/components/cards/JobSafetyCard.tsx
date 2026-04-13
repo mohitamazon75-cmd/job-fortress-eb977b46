@@ -61,7 +61,7 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
     { label: 'Income Resilience', current: breakdown.rawIncomeStability, projected: projectionBoost(breakdown.rawIncomeStability, 0.12), icon: <TrendingUp className="w-3 h-3" /> },
     { label: 'Role Moat', current: breakdown.rawHumanEdge, projected: projectionBoost(breakdown.rawHumanEdge, 0.18), icon: <Zap className="w-3 h-3" /> },
     { label: 'Market Mobility', current: breakdown.rawMarketPosition, projected: projectionBoost(breakdown.rawMarketPosition, 0.10), icon: <BarChart3 className="w-3 h-3" /> },
-    { label: 'Seniority Shield', current: breakdown.rawSeniorityShield, projected: breakdown.rawSeniorityShield, icon: <Shield className="w-3 h-3" /> },
+    { label: 'Career Capital', current: breakdown.rawSeniorityShield, projected: projectionBoost(breakdown.rawSeniorityShield, 0.15), icon: <Shield className="w-3 h-3" /> },
   ];
 
   const getBarColor = (v: number) => v >= 65 ? 'bg-prophet-green' : v >= 40 ? 'bg-prophet-gold' : 'bg-destructive';
@@ -243,7 +243,7 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">AIRMM™ Framework</p>
         </div>
         <p className="text-[10px] text-muted-foreground mb-1">
-         <span className="font-bold">A</span>I Resistance · <span className="font-bold">I</span>ncome Resilience · <span className="font-bold">R</span>ole Moat · <span className="font-bold">M</span>arket Mobility · Seniority Shield
+         <span className="font-bold">A</span>I Resistance · <span className="font-bold">I</span>ncome Resilience · <span className="font-bold">R</span>ole Moat · <span className="font-bold">M</span>arket Mobility · Career Capital
         </p>
         <p className="text-[10px] text-muted-foreground mb-1">Current position → illustrative projections after closing your top skill gaps</p>
         <p className="text-[9px] text-muted-foreground/60 mb-4 italic">Projections are directional estimates based on typical skill-gap closure patterns, not guarantees.</p>

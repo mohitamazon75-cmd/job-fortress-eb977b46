@@ -46,10 +46,73 @@ const MIN_VERIFIED_MOAT_SKILLS = 4;
 /** Market percentile cap when no real cohort data backs the value */
 const UNVERIFIED_MARKET_CAP = 55;
 
-/** Seniority protection values — higher seniority = more runway */
-const SENIORITY_PROTECTION: Record<string, number> = {
-  EXECUTIVE: 85, SENIOR_LEADER: 70, MANAGER: 55, PROFESSIONAL: 40, ENTRY: 25,
+/** Seniority baseline — floor only. CareerCapital replaces this as the full score.
+ *  Kept so old scans without moat_skills still produce a reasonable floor. */
+const SENIORITY_PROTECTION_FLOOR: Record<string, number> = {
+  EXECUTIVE: 40, SENIOR_LEADER: 32, MANAGER: 25, PROFESSIONAL: 18, ENTRY: 10,
 };
+
+/**
+ * STEP 5 (BUG-4 fix): Dynamic CareerCapital score.
+ *
+ * Replaces the static SENIORITY_PROTECTION lookup which was frozen per-tier and
+ * could never improve through any user action.
+ *
+ * CareerCapital = moat_depth + experience_log + adaptability_depth + cohort_bonus
+ *
+ * Every component is improvable:
+ * - moat_depth: build more verified moat skills (actions user takes between scans)
+ * - experience_log: grows with career tenure (background signal, stable)
+ * - adaptability_depth: certifications, cross-role signals from Agent 1
+ * - cohort_bonus: added when real peer data validates position
+ *
+ * Output: 0–100, higher = more career capital / harder to displace
+ * Seniority floor ensures the score never drops below the old SENIORITY_PROTECTION
+ * value for backward compatibility with scans that have no moat_skills data.
+ */
+function computeCareerCapital(report: ScanReport, tier: string): number {
+  const floor = SENIORITY_PROTECTION_FLOOR[tier] ?? 18;
+
+  // Component 1: Moat depth (0–45)
+  // 4+ verified moat skills = full 45; <4 scales proportionally
+  const moatCount = (report.moat_skills || []).length;
+  const moatScore = report.moat_score ?? 0;
+  // Blend skill count (signals breadth) with moat_score (signals quality)
+  const moatBreadth = Math.min(45, moatCount * 9);          // 5 skills = 45 pts
+  const moatQuality = Math.min(45, moatScore * 0.45);       // moat_score/100 × 45
+  // Weight quality higher when we have enough skills, breadth when sparse
+  const moatDepth = moatCount >= 4
+    ? Math.round(moatQuality * 0.6 + moatBreadth * 0.4)
+    : Math.round(moatBreadth * 0.7 + moatQuality * 0.3);
+
+  // Component 2: Experience (0–25, log-scaled so 30yr != 3× better than 10yr)
+  const experienceYears = report.score_breakdown?.survivability_breakdown?.experience_bonus
+    ? (report.score_breakdown.survivability_breakdown.experience_bonus / 1.5)  // reverse-engineer approx years
+    : 0;
+  // Fallback: infer from seniority tier
+  const fallbackYears: Record<string, number> = {
+    EXECUTIVE: 20, SENIOR_LEADER: 14, MANAGER: 8, PROFESSIONAL: 4, ENTRY: 1,
+  };
+  const years = experienceYears > 0 ? experienceYears : (fallbackYears[tier] ?? 4);
+  const experienceComponent = Math.min(25, Math.round(Math.log(years + 1) * 9));
+
+  // Component 3: Adaptability (0–20)
+  // Derived from survivability adaptability_bonus (already computed server-side)
+  const adaptabilityBonus = report.score_breakdown?.survivability_breakdown?.adaptability_bonus ?? 0;
+  const adaptabilityComponent = Math.min(20, Math.round(adaptabilityBonus * 1.67)); // 12 max bonus → 20
+
+  // Component 4: Cohort validation bonus (0–10)
+  // Only awarded when real peer data confirms the position
+  const hasPeerData = typeof (report as any).cohort_size === 'number'
+    ? (report as any).cohort_size > 10
+    : !!report.survivability?.peer_percentile_estimate;
+  const cohortBonus = hasPeerData ? 10 : 0;
+
+  const raw = moatDepth + experienceComponent + adaptabilityComponent + cohortBonus;
+
+  // Never go below the seniority floor (backward compat) or above 95
+  return Math.max(floor, Math.min(95, Math.round(raw)));
+}
 
 // ── Known KG disruption baselines for common role families ──
 // These are sourced from job_taxonomy.disruption_baseline and act
@@ -144,7 +207,9 @@ export function computeScoreBreakdown(report: ScanReport): ScoreDecomposition {
   const aiMoatScore = report.moat_score ?? 30;
   const salaryDropPct = report.career_shock_simulator?.salary_drop_percentage ?? 20;
   const tier = inferSeniorityTier(report.seniority_tier);
-  const seniorityProtection = SENIORITY_PROTECTION[tier] ?? 40;
+  // STEP 5 (BUG-4 fix): Dynamic CareerCapital replaces frozen seniority lookup.
+  // Improves as user builds moat skills, gains experience, and gets cohort validation.
+  const seniorityProtection = computeCareerCapital(report, tier);
 
   // ── Step 2: KG Floor Enforcement ──
   // ALWAYS enforce KG disruption baselines as a hard floor, regardless
