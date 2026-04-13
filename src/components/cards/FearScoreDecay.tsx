@@ -43,24 +43,34 @@ export default function FearScoreDecay({ report, enrichment }: Props) {
   // STEP 4 (BUG-5 fix): Fetch prior scan score from score_history to show real drift.
   // Only runs for authenticated users (score_history skips anon scans).
   // VibeSec: query uses server-validated user_id from session — no IDOR risk.
+  // QA fixes: filter by industry (prevents cross-role comparison) + exclude current DI
   const [priorScore, setPriorScore] = useState<number | null>(null);
   const [priorDaysAgo, setPriorDaysAgo] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    const currentDI = report.determinism_index ?? null;
+    const currentIndustry = report.industry ?? null;
+
     async function fetchDrift() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        const { data } = await supabase
+        let query = supabase
           .from('score_history')
           .select('determinism_index, created_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(5); // fetch a few to find one with a different DI
-        if (!cancelled && data && data.length > 1) {
-          // Take the second most recent (first is likely the current scan)
-          const prior = data[1];
+          .limit(10);
+        // Filter by industry to avoid comparing across different role scans
+        if (currentIndustry) query = query.eq('industry', currentIndustry);
+        const { data } = await query;
+        if (!cancelled && data && data.length > 0) {
+          // Find the most recent prior entry that differs from the current DI
+          const prior = data.find(row =>
+            row.determinism_index != null &&
+            (currentDI == null || row.determinism_index !== currentDI)
+          );
           if (prior?.determinism_index != null) {
             // Convert server DI to client Career Position Score: 100 - DI
             const priorStabilityScore = Math.max(5, Math.min(95, 100 - prior.determinism_index));

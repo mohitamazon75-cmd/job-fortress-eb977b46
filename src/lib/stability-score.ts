@@ -46,10 +46,11 @@ const MIN_VERIFIED_MOAT_SKILLS = 4;
 /** Market percentile cap when no real cohort data backs the value */
 const UNVERIFIED_MARKET_CAP = 55;
 
-/** Seniority baseline — floor only. CareerCapital replaces this as the full score.
- *  Kept so old scans without moat_skills still produce a reasonable floor. */
+/** Seniority baseline — floor only. CareerCapital adds dynamic components on top.
+ *  Floor set to match old SENIORITY_PROTECTION for industry-only (sparse) scans,
+ *  so existing users without LinkedIn data don't see a sudden score drop. */
 const SENIORITY_PROTECTION_FLOOR: Record<string, number> = {
-  EXECUTIVE: 40, SENIOR_LEADER: 32, MANAGER: 25, PROFESSIONAL: 18, ENTRY: 10,
+  EXECUTIVE: 72, SENIOR_LEADER: 58, MANAGER: 44, PROFESSIONAL: 30, ENTRY: 18,
 };
 
 /**
