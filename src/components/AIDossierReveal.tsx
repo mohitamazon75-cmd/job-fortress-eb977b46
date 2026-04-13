@@ -200,7 +200,13 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
                   })()}
             </p>
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              {report.salary_bleed_monthly && report.salary_bleed_monthly >= 8000 ? 'Monthly Loss' : 'Salary at Risk'}
+              {/* CRITICAL-9: exec risk is restructuring (lump sum), not monthly bleed.
+                  Use 'Comp Risk' for exec — broad enough to cover both models. */}
+              {isExec
+                ? 'Comp Risk'
+                : report.salary_bleed_monthly && report.salary_bleed_monthly >= 8000
+                  ? 'Monthly Loss'
+                  : 'Salary at Risk'}
             </p>
           </div>
         </div>

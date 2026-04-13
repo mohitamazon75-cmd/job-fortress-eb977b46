@@ -189,7 +189,7 @@ function buildStatsWithHero(data: CardData): { hero: StatBlock; rest: StatBlock[
   // Months stat — only if we have valid data
   const monthsStat = formatMonthsStat(monthsRemaining);
   if (monthsStat) {
-    all.push({ value: monthsStat, label: 'UNTIL DISRUPTION' });
+    all.push({ value: monthsStat, label: 'ACT BY' });
   }
 
   // Tasks stat — only if > 0
@@ -225,7 +225,7 @@ function buildStatsWithHero(data: CardData): { hero: StatBlock; rest: StatBlock[
   // Pick hero by alarm priority
   let heroIdx = 0;
   if (monthsRemaining && monthsRemaining <= 36) {
-    const idx = all.findIndex(s => s.label === 'UNTIL DISRUPTION');
+    const idx = all.findIndex(s => s.label === 'ACT BY');
     if (idx >= 0) heroIdx = idx;
   } else if (taskCount > 0 && (!monthsRemaining || monthsRemaining > 48)) {
     const idx = all.findIndex(s => s.label === 'BEING REPLACED');
