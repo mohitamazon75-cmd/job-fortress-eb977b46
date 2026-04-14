@@ -209,8 +209,8 @@ Return JSON:
                 console.warn(`[weekly-brief] JSON parse failed for scan ${scan.id}`);
               }
             }
-          } catch (e) {
-            if (e.name === "AbortError") {
+          } catch (e: unknown) {
+            if (e instanceof Error && e.name === "AbortError") {
               console.warn(`[weekly-brief] Perplexity timed out for scan ${scan.id}`);
             } else {
               console.warn(`[weekly-brief] Perplexity error for scan ${scan.id}:`, e);

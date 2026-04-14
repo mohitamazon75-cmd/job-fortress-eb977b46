@@ -18,7 +18,8 @@ export type FunnelEvent =
   | 'micro_feedback'
   | 'return_visit'
   | 'error_view'
-  | 'pro_upgrade_click';
+  | 'pro_upgrade_click'
+  | 'rescan_from_upgrade_card';
 
 interface QueuedEvent {
   event_type: FunnelEvent;

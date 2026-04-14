@@ -74,10 +74,9 @@ export function logTokenUsage(
         total_tokens: totalTokens,
         estimated_cost_usd: estimatedCost,
       })
-      .then(({ error }) => {
+      .then(({ error }: { error: { message: string } | null }) => {
         if (error) console.warn("[TokenTrack] DB insert error:", error.message);
-      })
-      .catch(() => {});
+      });
   } catch {
     // Never throw — this is telemetry
   }
