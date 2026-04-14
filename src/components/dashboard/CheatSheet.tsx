@@ -4,6 +4,7 @@ import { Sparkles, Zap, BookOpen, Video, GraduationCap, Newspaper, ExternalLink,
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport } from '@/lib/scan-engine';
 import { getVerbatimRole } from '@/lib/role-guard';
+import { buildResourceUrl, sanitizeExternalUrl } from '@/lib/resource-links';
 
 interface CheatSheetProps {
   report: ScanReport;
@@ -309,7 +310,7 @@ export default function CheatSheet({ report, scanId, country }: CheatSheetProps)
             {data.citations.slice(0, 6).map((url, i) => {
               const domain = new URL(url).hostname.replace('www.', '');
               return (
-                <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                <a key={i} href={sanitizeExternalUrl(url, domain)} target="_blank" rel="noopener noreferrer"
                   className="text-[11px] text-muted-foreground/40 hover:text-primary transition-colors underline">
                   {domain}
                 </a>
@@ -341,14 +342,14 @@ function HomeworkCard({ icon, label, title, subtitle, why, url, color, bgColor }
     >
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-bold">{label}</span>
-        {url && (
-          <a href={url} target="_blank" rel="noopener noreferrer"
+        {(url || title) && (
+          <a href={buildResourceUrl(title, subtitle, label.includes('Video') ? 'video' : label.includes('Course') ? 'course' : label.includes('Blog') ? 'blog' : 'book', url)} target="_blank" rel="noopener noreferrer"
             className="opacity-0 group-hover:opacity-100 transition-opacity">
             <ExternalLink className={`w-3.5 h-3.5 ${color}`} />
           </a>
         )}
       </div>
-      <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+      <a href={buildResourceUrl(title, subtitle, label.includes('Video') ? 'video' : label.includes('Course') ? 'course' : label.includes('Blog') ? 'blog' : 'book', url)} target="_blank" rel="noopener noreferrer" className="block">
         <h4 className={`text-sm font-black ${color} mb-0.5 hover:underline`}>{title}</h4>
       </a>
       {subtitle && <p className="text-[10px] text-muted-foreground mb-2">{subtitle}</p>}

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { CalendarDays, CheckCircle, BookOpen, GraduationCap, Play, Loader2 } from 'lucide-react';
 import { type WeeklyAction } from '@/lib/scan-engine';
 import { type LiveEnrichment } from '@/hooks/use-live-enrichment';
+import { buildResourceUrl } from '@/lib/resource-links';
 
 interface WeeklyActionPlanProps {
   actions: WeeklyAction[];
@@ -16,19 +17,6 @@ export default function WeeklyActionPlan({ actions, role, industry, enrichment, 
   if (!actions?.length) return null;
 
   const dotColors = ['bg-primary', 'bg-prophet-cyan', 'bg-prophet-gold', 'bg-prophet-green'];
-
-  const resolveExternalUrl = (url: string) => {
-    if (!url) return '#';
-    return /^https?:\/\//i.test(url) ? url : `https://${url.replace(/^\/+/, '')}`;
-  };
-
-  const buildSafeUrl = (url: string, fallbackQuery: string, type?: 'book' | 'course' | 'video') => {
-    if (url && /^https?:\/\//i.test(url)) return url;
-    // Generate search-based URLs by resource type
-    if (type === 'book') return `https://www.amazon.in/s?k=${encodeURIComponent(fallbackQuery)}`;
-    if (type === 'video') return `https://www.youtube.com/results?search_query=${encodeURIComponent(fallbackQuery)}`;
-    return `https://www.google.com/search?q=${encodeURIComponent(fallbackQuery || url)}`;
-  };
 
   // Distribute enrichment resources across weeks
   const booksPerWeek = enrichment?.books ? Math.ceil(enrichment.books.length / actions.length) : 0;
@@ -111,7 +99,7 @@ export default function WeeklyActionPlan({ actions, role, industry, enrichment, 
 
                     {weekBooks.map((b: any, bi: number) => {
                       const searchQuery = `${b.title} ${b.author_or_platform || b.author || ''}`;
-                      const bookUrl = buildSafeUrl(b.url, searchQuery, 'book');
+                      const bookUrl = buildResourceUrl(b.title, b.author_or_platform || b.author || '', 'book', b.url);
                       return (
                         <div key={`b-${bi}`} className="flex items-start gap-2 text-xs">
                           <BookOpen className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
@@ -128,7 +116,7 @@ export default function WeeklyActionPlan({ actions, role, industry, enrichment, 
 
                     {weekCourses.map((c: any, ci: number) => {
                       const searchQuery = `${c.title} ${c.author_or_platform || c.platform || ''} course`;
-                      const courseUrl = buildSafeUrl(c.url, searchQuery, 'course');
+                      const courseUrl = buildResourceUrl(c.title, c.author_or_platform || c.platform || '', 'course', c.url);
                       return (
                         <div key={`c-${ci}`} className="flex items-start gap-2 text-xs">
                           <GraduationCap className="w-3 h-3 text-prophet-gold mt-0.5 flex-shrink-0" />
@@ -147,7 +135,7 @@ export default function WeeklyActionPlan({ actions, role, industry, enrichment, 
 
                     {weekVideos.map((v: any, vi: number) => {
                       const searchQuery = `${v.title} ${v.author_or_platform || v.channel || ''}`;
-                      const videoUrl = buildSafeUrl(v.url, searchQuery, 'video');
+                      const videoUrl = buildResourceUrl(v.title, v.author_or_platform || v.channel || '', 'video', v.url);
                       return (
                         <div key={`v-${vi}`} className="flex items-start gap-2 text-xs">
                           <Play className="w-3 h-3 text-prophet-red mt-0.5 flex-shrink-0" />

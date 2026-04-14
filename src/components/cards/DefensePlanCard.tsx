@@ -21,13 +21,7 @@ interface WeekPlan {
   videos?: Array<{ title: string; author_or_platform: string; why_relevant: string; url?: string }>;
 }
 
-const buildSearchUrl = (title: string, author: string, type: 'book' | 'course' | 'video', url?: string) => {
-  if (url && /^https?:\/\//i.test(url)) return url;
-  const query = `${title} ${author}`.trim();
-  if (type === 'book') return `https://www.amazon.in/s?k=${encodeURIComponent(query)}`;
-  if (type === 'video') return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-  return `https://www.google.com/search?q=${encodeURIComponent(query + ' course')}`;
-};
+import { buildResourceUrl } from '@/lib/resource-links';
 
 export default function DefensePlanCard({ report }: DefensePlanCardProps) {
   const score = computeStabilityScore(report);
@@ -240,7 +234,7 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Curated Resources</p>
                           
                           {week.books?.map((b, j) => (
-                            <a key={`book-${j}`} href={buildSearchUrl(b.title, b.author_or_platform, 'book', (b as any).url)} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2 hover:bg-muted/50 transition-colors group cursor-pointer">
+                            <a key={`book-${j}`} href={buildResourceUrl(b.title, b.author_or_platform || '', 'book', (b as any).url)} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2 hover:bg-muted/50 transition-colors group cursor-pointer">
                               <BookOpen className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-bold text-primary group-hover:underline">{b.title}</p>
@@ -252,7 +246,7 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
                           ))}
 
                           {week.courses?.map((c, j) => (
-                            <a key={`course-${j}`} href={buildSearchUrl(c.title, c.author_or_platform, 'course', (c as any).url)} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2 hover:bg-muted/50 transition-colors group cursor-pointer">
+                            <a key={`course-${j}`} href={buildResourceUrl(c.title, c.author_or_platform || '', 'course', (c as any).url)} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2 hover:bg-muted/50 transition-colors group cursor-pointer">
                               <GraduationCap className="w-3.5 h-3.5 text-prophet-gold mt-0.5 flex-shrink-0" />
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-bold text-prophet-gold group-hover:underline">{c.title}</p>
@@ -264,7 +258,7 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
                           ))}
 
                           {week.videos?.map((v, j) => (
-                            <a key={`video-${j}`} href={buildSearchUrl(v.title, v.author_or_platform, 'video', (v as any).url)} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2 hover:bg-muted/50 transition-colors group cursor-pointer">
+                            <a key={`video-${j}`} href={buildResourceUrl(v.title, v.author_or_platform || '', 'video', (v as any).url)} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2 hover:bg-muted/50 transition-colors group cursor-pointer">
                               <Video className="w-3.5 h-3.5 text-prophet-cyan mt-0.5 flex-shrink-0" />
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-bold text-prophet-cyan group-hover:underline">{v.title}</p>

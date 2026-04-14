@@ -59,8 +59,9 @@ Return ONLY a JSON object (no markdown, no explanation, no text before or after)
 
 CRITICAL RULES for resources:
 - Include exactly 3 FREE resources
-- URLs MUST be real, working URLs to official sites (e.g. coursera.org, youtube.com, docs.microsoft.com, cloud.google.com, freecodecamp.org)
-- Never invent URLs. Use well-known platform URLs you are confident exist.
+- For the url field: ONLY use platform HOMEPAGE or SEARCH URLs. NEVER invent a specific article path.
+  SAFE examples: "https://www.coursera.org/search?query=cursor+ai", "https://www.youtube.com/results?search_query=cursor+ai+tutorial", "https://docs.cursor.com"
+  UNSAFE: "https://www.coursera.org/learn/cursor-ai-2025" (specific paths get hallucinated and 404)
 - type must be one of: "course", "video", "docs"
 - Focus on the LATEST 2025-2026 version of ${tool_name}`;
 

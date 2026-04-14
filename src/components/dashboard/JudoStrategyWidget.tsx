@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Zap, ArrowUp, Clock, Sparkles, Star, ExternalLink, Newspaper, Lightbulb, TrendingUp } from 'lucide-react';
 import type { WeeklyIntel } from '@/hooks/use-judo-intel';
+import { buildResourceUrl } from '@/lib/resource-links';
 
 interface GitHubValidation {
   verified: boolean;
@@ -149,7 +150,7 @@ export default function JudoStrategyWidget({ strategy, githubStars: legacyStars,
                   <ExternalLink className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
                   <div>
                     <a
-                      href={weeklyIntel.tutorial.url}
+                      href={buildResourceUrl(weeklyIntel.tutorial.title, weeklyIntel.tutorial.platform || '', 'course', weeklyIntel.tutorial.url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs font-semibold text-foreground hover:text-primary underline underline-offset-2 transition-colors"

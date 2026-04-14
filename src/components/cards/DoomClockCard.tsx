@@ -13,6 +13,7 @@ import { classifySkills, type ClassifiedSkill } from '@/lib/unified-skill-classi
 import CohortInsightBadge from '@/components/cards/CohortInsightBadge';
 import { useTrack } from '@/hooks/use-track';
 import { supabase } from '@/integrations/supabase/client';
+import { buildResourceUrl, sanitizeExternalUrl } from '@/lib/resource-links';
 
 interface Props {
   report: ScanReport;
@@ -338,7 +339,7 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
                         {learningData.resources.map((r, i) => (
                           <a
                             key={i}
-                            href={r.url}
+                            href={buildResourceUrl(r.title, '', r.type as 'book' | 'course' | 'video', r.url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
@@ -369,7 +370,7 @@ function SkillThreatRow({ skill, index }: { skill: ClassifiedSkill; index: numbe
                     {/* Credential */}
                     {learningData?.top_credential && learningData.top_credential.url && (
                       <a
-                        href={learningData.top_credential.url}
+                        href={buildResourceUrl(learningData.top_credential.name, '', 'course', learningData.top_credential.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}

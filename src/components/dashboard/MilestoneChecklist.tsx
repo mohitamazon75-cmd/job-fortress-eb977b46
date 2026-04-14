@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CheckCircle2, Circle, Lock, ExternalLink, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { sanitizeExternalUrl } from '@/lib/resource-links';
 
 interface Milestone {
   id: string;
@@ -279,7 +280,7 @@ export default function MilestoneChecklist({ userId, scanId }: MilestoneChecklis
                                   </p>
                                   {milestone.resource_url && (
                                     <a
-                                      href={milestone.resource_url}
+                                      href={sanitizeExternalUrl(milestone.resource_url, milestone.milestone_label)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-[11px] text-prophet-blue hover:underline flex items-center gap-1 mt-1 group"

@@ -5,6 +5,7 @@ import { type ScanReport } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/use-subscription';
 import ProUpgradeModal from '@/components/ProUpgradeModal';
+import { buildResourceUrl } from '@/lib/resource-links';
 
 interface AITool {
   name: string;
@@ -201,7 +202,7 @@ export default function InterviewCheatSheetCard({ report, scanId }: { report: Sc
                   {item.author && <p className="text-[10px] text-muted-foreground">by {item.author}</p>}
                   <p className="text-[10px] text-muted-foreground mt-0.5">{item.why}</p>
                   {item.url && (
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline inline-flex items-center gap-0.5 mt-0.5">
+                    <a href={buildResourceUrl(item.title, item.author || '', type as any, item.url)} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline inline-flex items-center gap-0.5 mt-0.5">
                       <ExternalLink className="w-2.5 h-2.5" /> Open
                     </a>
                   )}

@@ -184,7 +184,7 @@ Each "why_relevant" must explain why THIS resource matters for THEIR situation.
 Return JSON:
 {
   "books": [{ "title": string, "author": string, "year": number, "why_relevant": string }],
-  "courses": [{ "title": string, "platform": string, "url": string, "why_relevant": string }],
+  "courses": [{ "title": string, "platform": string, "why_relevant": string }],
   "videos": [{ "title": string, "channel": string, "why_relevant": string }]
 }
 Provide exactly 4 books, 4 courses, 4 videos. ALL must be REAL.`

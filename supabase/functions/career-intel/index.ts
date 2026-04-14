@@ -479,10 +479,10 @@ ${seniorityCtx === "EXECUTIVE" || seniorityCtx === "SENIOR_LEADER" ? "Focus on s
 Return JSON:
 {
   "advantage_plan": {
-    "books": [{ "title": string, "author": string, "url": string, "why": string }],
-    "videos": [{ "title": string, "author": string, "url": string, "why": string }],
-    "courses": [{ "title": string, "author": string, "url": string, "why": string }],
-    "blogs": [{ "title": string, "author": string, "url": string, "why": string }]
+    "books": [{ "title": string, "author": string, "why": string }],
+    "videos": [{ "title": string, "author": string, "why": string }],
+    "courses": [{ "title": string, "author": string, "why": string }],
+    "blogs": [{ "title": string, "author": string, "why": string }]
   }
 }
 Each category must have exactly 3 items. All resources must be real and from the search data where possible.`;

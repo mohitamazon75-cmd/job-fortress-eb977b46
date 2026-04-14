@@ -5,6 +5,7 @@ import { type ScanReport } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/use-subscription';
 import ProUpgradeModal from '@/components/ProUpgradeModal';
+import { buildResourceUrl } from '@/lib/resource-links';
 
 interface AITool {
   name: string;
@@ -379,7 +380,7 @@ export default function SkillUpgradePlanCard({ report, scanId }: { report: ScanR
                 <p className="text-[11px] text-foreground/70 mt-1.5 leading-relaxed">{item.why}</p>
                 {item.url && (
                   <>
-                    <a href={item.url} target="_blank" rel="noopener noreferrer"
+                    <a href={buildResourceUrl(item.title, (item as any).author || (item as any).platform || '', (item as any).type || 'course', item.url)} target="_blank" rel="noopener noreferrer"
                       className={`inline-flex items-center gap-1 mt-2 text-[11px] font-bold ${config.accent} hover:underline`}>
                       <ExternalLink className="w-3 h-3" /> Find it →
                     </a>
