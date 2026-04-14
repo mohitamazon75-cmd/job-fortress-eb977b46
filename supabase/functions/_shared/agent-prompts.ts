@@ -349,7 +349,18 @@ Output ONLY valid JSON:
       "industry_proof": string (1 sentence — real industry example of this displacement happening),
       "risk_level": "HIGH" | "MEDIUM" | "LOW" (assessed using skill demand data and KG automation_risk — NOT an invented percentage)
     }
-  ] (MUST have 3-6 entries covering their top execution skills, sorted by risk_level: HIGH first, then MEDIUM, then LOW)
+  ] (MUST have 3-6 entries covering their top execution skills, sorted by risk_level: HIGH first, then MEDIUM, then LOW),
+  "skill_trajectory": [
+    {
+      "skill": string (EXACT skill name from their execution_skills — HIGH risk skills only),
+      "current_state": string (1 sentence: what they do with this skill today — be concrete),
+      "month_1": string (1 sentence: what to do in month 1 to start the transition — specific action),
+      "month_3": string (1 sentence: what the person IS by month 3 — their new identity with this skill),
+      "pivot_title": string (new job title or role label after the 3-month transition, e.g. "QA Architect" not "test engineer")
+    }
+  ] (Include 1-3 entries for HIGH-risk skills only. This is the path FROM execution TO directing AI.
+     BAD month_3: "You will be more skilled in testing"
+     GOOD month_3: "You own the test architecture strategy while Cursor writes the actual test code — you are now a QA Architect")
 }`;
 
 export const AGENT_2B_ACTION_PLAN = `You are the Action Plan Generator for JobBachao — creating TIER-CALIBRATED, actionable career plans.

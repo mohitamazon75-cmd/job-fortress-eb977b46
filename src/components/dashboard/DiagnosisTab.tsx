@@ -528,25 +528,114 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
           </div>
         </div>
 
-        <h3 className="text-lg font-black text-foreground mb-1">
-          Your Moat: {report.cognitive_moat}
-        </h3>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-          {report.survivability && report.survivability.score >= 60
-            ? `Your work in ${moatSkills[0]?.toLowerCase() || 'strategic domains'} requires the kind of contextual judgment, ambiguity navigation, and stakeholder empathy that current AI architectures fundamentally cannot replicate. This is your lifeline — but only if you double down on it.`
-            : `You have emerging strengths in ${moatSkills[0]?.toLowerCase() || 'certain areas'}, but they're not deep enough yet to protect you. The next ${report.months_remaining} months are critical for building this moat.`
-          }
-        </p>
-
-        <div className="flex flex-wrap gap-2">
-          {moatSkills.map((skill, i) => (
-            <span key={i} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-prophet-green/10 text-prophet-green border border-prophet-green/20">
-              <CheckCircle className="w-3 h-3" />
-              {skill}
-            </span>
-          ))}
+        {/* Irreplaceable Edge Card — cognitive_moat + moat_narrative
+            Previously: one grey h3 text line. Now: a proper green bordered card
+            that Pro users can actually read and act on. */}
+        <div className="rounded-2xl border-2 border-prophet-green/20 bg-prophet-green/[0.04] p-5 mb-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-prophet-green mb-2">
+            🛡️ Your irreplaceable edge
+          </p>
+          <h3 className="text-base font-black text-foreground leading-snug mb-2">
+            {report.cognitive_moat}
+          </h3>
+          {report.moat_narrative ? (
+            <p className="text-sm text-foreground/80 leading-relaxed mb-3">{report.moat_narrative}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              {report.survivability && report.survivability.score >= 60
+                ? `Your work in ${moatSkills[0]?.toLowerCase() || 'strategic domains'} requires contextual judgment, ambiguity navigation, and stakeholder empathy that AI cannot replicate. Double down on this.`
+                : `You have emerging strengths in ${moatSkills[0]?.toLowerCase() || 'certain areas'} — not deep enough yet. The next ${report.months_remaining} months are critical.`
+              }
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {moatSkills.map((skill, i) => (
+              <span key={i} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-prophet-green/10 text-prophet-green border border-prophet-green/20">
+                <CheckCircle className="w-3 h-3" />
+                {skill}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+
+      {/* Urgency + Personalised Actions — Pro users also deserve to see these.
+          free_advice_1/2/3 are generated for every user but previously only shown
+          in the !isProUser free dossier. Pro users going straight to the dashboard
+          never saw them. Showing here below the moat card. */}
+      {(report.urgency_horizon || report.free_advice_1) && (
+        <div className="rounded-2xl border-2 border-primary/15 bg-primary/[0.03] p-5 space-y-3 mb-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+            🎯 Your personalised actions
+          </p>
+          {report.urgency_horizon && (
+            <div className="flex items-start gap-2.5 pb-3 border-b border-border/50">
+              <span className="text-base flex-shrink-0 mt-0.5">⏱️</span>
+              <p className="text-sm font-bold text-foreground leading-snug">{report.urgency_horizon}</p>
+            </div>
+          )}
+          {report.free_advice_1 && (
+            <div className="flex items-start gap-2.5">
+              <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+              <p className="text-xs text-foreground/85 leading-relaxed">{report.free_advice_1}</p>
+            </div>
+          )}
+          {report.free_advice_2 && (
+            <div className="flex items-start gap-2.5">
+              <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+              <p className="text-xs text-foreground/85 leading-relaxed">{report.free_advice_2}</p>
+            </div>
+          )}
+          {report.free_advice_3 && (
+            <div className="flex items-start gap-2.5">
+              <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+              <p className="text-xs text-foreground/85 leading-relaxed">{report.free_advice_3}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Skill Trajectory — 3-month path from executing to directing AI
+          Newly generated field: for each HIGH-risk skill, shows the concrete
+          path from "I do this" → "AI does this, I own the strategy" */}
+      {report.skill_trajectory && report.skill_trajectory.length > 0 && (
+        <div className="rounded-2xl border-2 border-border bg-card overflow-hidden mb-4">
+          <div className="px-5 pt-4 pb-3 border-b border-border/60">
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+              🗺️ Your 3-month transition path
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              How to move from executing these skills to directing AI that executes them.
+            </p>
+          </div>
+          <div className="divide-y divide-border/40">
+            {report.skill_trajectory.map((t, i) => (
+              <div key={i} className="p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs font-black text-destructive bg-destructive/10 px-2 py-0.5 rounded-full border border-destructive/20">
+                    {t.skill}
+                  </span>
+                  <span className="text-muted-foreground text-xs">→</span>
+                  <span className="text-xs font-black text-prophet-green">{t.pivot_title}</span>
+                </div>
+                <div className="space-y-2.5">
+                  <div className="flex gap-3">
+                    <span className="text-[10px] font-black text-muted-foreground w-16 flex-shrink-0 mt-0.5">NOW</span>
+                    <p className="text-xs text-foreground/70 leading-relaxed">{t.current_state}</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <span className="text-[10px] font-black text-primary w-16 flex-shrink-0 mt-0.5">MONTH 1</span>
+                    <p className="text-xs text-foreground/85 leading-relaxed">{t.month_1}</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <span className="text-[10px] font-black text-prophet-green w-16 flex-shrink-0 mt-0.5">MONTH 3</span>
+                    <p className="text-xs font-semibold text-foreground leading-relaxed">{t.month_3}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Share & Export CTA */}
       <div className="flex items-center justify-center gap-2 py-2 flex-wrap mb-6">

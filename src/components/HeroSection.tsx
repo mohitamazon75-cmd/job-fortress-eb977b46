@@ -184,7 +184,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             <span className="text-foreground font-bold">two reports</span> — a risk diagnosis{' '}
             <em>and</em> a growth playbook — covering{' '}
             <span className="text-foreground font-bold">95+ job families</span>,{' '}
-            <span className="text-foreground font-bold">200+ AI tools</span>, and{' '}
+            <span className="text-foreground font-bold">50+ AI tools</span>, and{' '}
             <span className="text-foreground font-bold">live market data</span>.{' '}
             <span className="text-primary font-black">Know your risk. Own your future.</span>
           </motion.p>
@@ -247,7 +247,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             {[
               { value: '2', label: 'Full Reports', icon: BarChart3, color: 'hsl(var(--primary))' },
               { value: '10+', label: 'Deliverables', icon: Zap, color: 'hsl(var(--prophet-cyan))' },
-              { value: '200+', label: 'AI Tools Tracked', icon: Brain, color: 'hsl(var(--prophet-gold))' },
+              { value: '50+', label: 'AI Tools Tracked', icon: Brain, color: 'hsl(var(--prophet-gold))' },
               { value: '< 4 min', label: 'Deep Analysis', icon: Network, color: 'hsl(var(--prophet-green))' },
             ].map((stat, i) => {
               const Icon = stat.icon;
