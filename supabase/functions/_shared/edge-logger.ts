@@ -70,18 +70,19 @@ export async function trackUsage(functionName: string, isError: boolean, latency
       .maybeSingle();
 
     if (existing) {
+      const ex = existing as { id: string; call_count: number; error_count: number };
       await sb
         .from("daily_usage_stats")
         .update({
-          call_count: existing.call_count + 1,
-          error_count: existing.error_count + (isError ? 1 : 0),
+          call_count: ex.call_count + 1,
+          error_count: ex.error_count + (isError ? 1 : 0),
           avg_latency_ms: latencyMs || null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", existing.id);
+        .eq("id", ex.id);
 
       // Check daily threshold
-      const newCount = existing.call_count + 1;
+      const newCount = ex.call_count + 1;
       if (newCount === DAILY_CALL_THRESHOLD || newCount === DAILY_CALL_THRESHOLD * 2) {
         await sb.from("monitoring_alerts").insert({
           alert_type: "cost_spike",
@@ -124,18 +125,19 @@ export async function trackAgentLatency(
       .maybeSingle();
 
     if (existing) {
+      const ex = existing as { id: string; call_count: number; error_count: number; avg_latency_ms: number | null };
       // Running average for latency
-      const prevAvg = existing.avg_latency_ms || latencyMs;
-      const newAvg = Math.round((prevAvg * existing.call_count + latencyMs) / (existing.call_count + 1));
+      const prevAvg = ex.avg_latency_ms || latencyMs;
+      const newAvg = Math.round((prevAvg * ex.call_count + latencyMs) / (ex.call_count + 1));
       await sb
         .from("daily_usage_stats")
         .update({
-          call_count: existing.call_count + 1,
-          error_count: existing.error_count + (timedOut ? 1 : 0),
+          call_count: ex.call_count + 1,
+          error_count: ex.error_count + (timedOut ? 1 : 0),
           avg_latency_ms: newAvg,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", existing.id);
+        .eq("id", ex.id);
     } else {
       await sb.from("daily_usage_stats").insert({
         stat_date: today,
