@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MicroFeedback from '@/components/dashboard/MicroFeedback';
 import HinglishTooltip from '@/components/dashboard/HinglishTooltip';
-import { AlertTriangle, CheckCircle, Brain, Clock, Shield, ShieldCheck, TrendingDown, ArrowRight, Flame, Eye, Zap, ChevronDown, Info, FlaskConical, ExternalLink, Swords, Database } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Brain, Clock, Shield, ShieldCheck, TrendingDown, ArrowRight, Flame, Eye, Zap, ChevronDown, Info, FlaskConical, ExternalLink, Swords, Database, ChevronUp, Cpu, UserCheck } from 'lucide-react';
 import { getExecutiveLabel } from '@/lib/seniority-utils';
-import { formatCurrency, normalizeTools } from '@/lib/scan-engine';
+import { formatCurrency, normalizeTools, type SkillThreatIntel } from '@/lib/scan-engine';
 import { computeStabilityScore } from '@/lib/stability-score';
 import MLWakingState from '@/components/MLWakingState';
 import PanicIndexWidget from '@/components/PanicIndexWidget';
@@ -13,6 +13,102 @@ import AIThreatCard from '@/components/dashboard/AIThreatCard';
 import FeedbackButtons from '@/components/dashboard/FeedbackButtons';
 import CountdownTimer from '@/components/dashboard/CountdownTimer';
 import PeerComparison from '@/components/dashboard/PeerComparison';
+
+// ── Skill Threat Intel Section ─────────────────────────────────────────────
+// Per-skill breakdown: what AI does vs what human still owns.
+// Previously only rendered in DoomClockCard (free tier).
+// Now shown in full in the Pro DiagnosisTab.
+function SkillThreatIntelSection({ intel, isExec }: { intel: SkillThreatIntel[]; isExec?: boolean }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const sorted = [...intel].sort((a, b) => {
+    const order = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+    return (order[a.risk_level ?? 'MEDIUM'] ?? 1) - (order[b.risk_level ?? 'MEDIUM'] ?? 1);
+  });
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+      className="rounded-2xl border-2 border-border bg-card overflow-hidden">
+      <div className="px-5 pt-5 pb-3 border-b border-border/60">
+        <div className="flex items-center gap-2">
+          <Cpu className="w-4 h-4 text-destructive" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-destructive">
+            {isExec ? 'Strategic Disruption Intelligence' : 'Skill-by-Skill AI Threat Analysis'}
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          {isExec ? 'How AI is reshaping your organisational function — and where human judgment still wins.' : 'Exactly which AI tool threatens each skill, and what you still own.'}
+        </p>
+      </div>
+      <div className="divide-y divide-border/40">
+        {sorted.map((item) => {
+          const isOpen = expanded === item.skill;
+          const riskColor = item.risk_level === 'HIGH'
+            ? 'text-destructive bg-destructive/10 border-destructive/25'
+            : item.risk_level === 'LOW'
+            ? 'text-prophet-green bg-prophet-green/10 border-prophet-green/25'
+            : 'text-amber-400 bg-amber-400/10 border-amber-400/25';
+          const riskLabel = item.risk_level ?? 'MEDIUM';
+
+          return (
+            <div key={item.skill}>
+              <button
+                onClick={() => setExpanded(isOpen ? null : item.skill)}
+                className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors text-left"
+              >
+                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border flex-shrink-0 ${riskColor}`}>
+                  {riskLabel}
+                </span>
+                <span className="flex-1 text-sm font-bold text-foreground truncate">{item.skill}</span>
+                {item.threat_tool && (
+                  <span className="text-[10px] text-muted-foreground hidden sm:block flex-shrink-0">→ {item.threat_tool}</span>
+                )}
+                {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />}
+              </button>
+
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-5 pb-4 space-y-3">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-5 h-5 rounded-full bg-destructive/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Cpu className="w-2.5 h-2.5 text-destructive" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-wider text-destructive mb-0.5">AI doing it now</p>
+                          <p className="text-xs text-foreground/85 leading-relaxed">{item.what_ai_does}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-5 h-5 rounded-full bg-prophet-green/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <UserCheck className="w-2.5 h-2.5 text-prophet-green" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-wider text-prophet-green mb-0.5">What you still own</p>
+                          <p className="text-xs text-foreground/85 leading-relaxed">{item.what_human_still_owns}</p>
+                        </div>
+                      </div>
+                      {item.industry_proof && (
+                        <div className="bg-muted/40 rounded-lg px-3 py-2">
+                          <p className="text-[10px] font-semibold text-muted-foreground italic leading-relaxed">{item.industry_proof}</p>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
 import FateCardShare from '@/components/dashboard/FateCardShare';
 import PDFExport from '@/components/dashboard/PDFExport';
 import LinkedInPostGenerator from '@/components/dashboard/LinkedInPostGenerator';
@@ -352,6 +448,13 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
         isExec={isExec}
         userName={userName}
       />
+
+      {/* Skill-by-Skill Threat Intelligence
+          Previously: only shown in free DoomClockCard.
+          Now: full per-skill breakdown in Pro DiagnosisTab where power users get most value. */}
+      {report.skill_threat_intel && report.skill_threat_intel.length > 0 && (
+        <SkillThreatIntelSection intel={report.skill_threat_intel} isExec={isExec} />
+      )}
 
       {/* Countdown Timer */}
       <CountdownTimer monthsRemaining={report.months_remaining} />

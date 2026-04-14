@@ -348,6 +348,78 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         </motion.div>
       )}
 
+      {/* FIX 5: cognitive_moat + moat_narrative — "Your irreplaceable edge."
+          Previously: cognitive_moat rendered as one tiny grey line buried in Pro tab only.
+          Now: a dedicated card in the free dossier — the emotional anchor that makes
+          users feel seen before they hit any blur wall. */}
+      {!isProUser && (report.cognitive_moat || (report as any).moat_narrative) && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}
+          className="rounded-2xl border-2 border-prophet-green/20 bg-prophet-green/[0.04] p-5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-prophet-green mb-2">
+            🛡️ Your irreplaceable edge
+          </p>
+          {report.cognitive_moat && (
+            <p className="text-sm font-black text-foreground leading-snug mb-2">
+              {report.cognitive_moat}
+            </p>
+          )}
+          {(report as any).moat_narrative && (
+            <p className="text-xs text-foreground/80 leading-relaxed">
+              {(report as any).moat_narrative}
+            </p>
+          )}
+        </motion.div>
+      )}
+
+      {/* FIX 1: free_advice_1/2/3 — the most personalised AI-generated insights.
+          Generated at LLM cost but previously NEVER rendered for free users.
+          Show as 3 specific "this week" action chips before the blurred Pro wall. */}
+      {!isProUser && (report.free_advice_1 || report.urgency_horizon) && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+          className="rounded-2xl border-2 border-primary/15 bg-primary/[0.03] p-5 space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">
+            🎯 Your personalised intelligence
+          </p>
+
+          {/* FIX 2: urgency_horizon — the year + skill + consequence. The most actionable line. */}
+          {report.urgency_horizon && (
+            <div className="flex items-start gap-2.5 pb-3 border-b border-border/50">
+              <span className="text-base flex-shrink-0 mt-0.5">⏱️</span>
+              <p className="text-sm font-bold text-foreground leading-snug">{report.urgency_horizon}</p>
+            </div>
+          )}
+
+          {/* free_advice_1/2 — show 2 for free, blur/gate the 3rd */}
+          {report.free_advice_1 && (
+            <div className="flex items-start gap-2.5">
+              <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+              <p className="text-xs text-foreground/85 leading-relaxed">{report.free_advice_1}</p>
+            </div>
+          )}
+          {report.free_advice_2 && (
+            <div className="flex items-start gap-2.5">
+              <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+              <p className="text-xs text-foreground/85 leading-relaxed">{report.free_advice_2}</p>
+            </div>
+          )}
+
+          {/* 3rd advice teaser — blurred to show there's more */}
+          {report.free_advice_3 && (
+            <div className="relative">
+              <div className="flex items-start gap-2.5 blur-[4px] select-none pointer-events-none">
+                <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                <p className="text-xs text-foreground/85 leading-relaxed">{report.free_advice_3}</p>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-muted-foreground bg-background/90 px-3 py-1 rounded-full border border-border">
+                  🔒 Full plan in Pro
+                </span>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {/* #1 Action Card — immediately after hope section, capitalise on the peak */}
       {!isProUser && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
@@ -980,6 +1052,16 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
                 >
                   <strong>{openingLine}</strong>
                 </motion.p>
+                {report.urgency_horizon && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                    className="text-[12px] text-destructive/80 leading-relaxed mt-2 max-w-sm mx-auto font-semibold"
+                  >
+                    {report.urgency_horizon}
+                  </motion.p>
+                )}
                 {report.linkedin_name && report.linkedin_name !== 'Professional' && (
                   <motion.p
                     initial={{ opacity: 0 }}

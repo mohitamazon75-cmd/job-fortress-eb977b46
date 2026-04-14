@@ -796,6 +796,20 @@ No explanation, no markdown. Return ONLY the JSON.`;
     // ══════════════════════════════════════════════════════════
     // STEPS 7+8+9: PARALLEL AGENT ORCHESTRATION (extracted to scan-agents.ts)
     // ══════════════════════════════════════════════════════════
+
+    // Extract achievement bullets from rawProfileText for Agent 2A personalisation.
+    // The rich resume parser now captures "• Reduced test cycle from 5 days to 6 hours" etc.
+    // We pull those lines so Agent 2A can anchor advice to specific real accomplishments.
+    const achievementLines = rawProfileText
+      .split('\n')
+      .filter((line: string) => line.trim().startsWith('•') || line.trim().startsWith('-'))
+      .map((line: string) => line.trim())
+      .filter((line: string) => line.length > 20 && line.length < 300)
+      .slice(0, 8); // Top 8 achievement bullets
+    const resumeAchievements = achievementLines.length > 0
+      ? achievementLines.join('\n')
+      : null;
+
     const agentResults = await orchestrateAgents({
       LOVABLE_API_KEY,
       activeModel,
@@ -826,6 +840,7 @@ No explanation, no markdown. Return ONLY the JSON.`;
       primaryJob,
       marketSignal,
       hasTimeBudget,
+      resumeAchievements,
     });
 
     const { mlObsolescence, mlTimedOut, validatedAgent2, seniorityTier, displayName, displayCompany } = agentResults;

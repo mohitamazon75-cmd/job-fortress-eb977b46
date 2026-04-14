@@ -86,6 +86,10 @@ export interface AgentOrchestrationInput {
 
   /** Time budget checker — returns true if enough time remains */
   hasTimeBudget: (msNeeded: number) => boolean;
+
+  /** Key achievement bullets extracted from resume — passed verbatim to Agent 2A
+   *  so it can write "your achievement of X positions you as Y" not generic advice */
+  resumeAchievements?: string | null;
 }
 
 export interface AgentOrchestrationResult {
@@ -265,6 +269,15 @@ CURRENT ROLE MARKET SIGNAL (live data for ${detectedRole}):
       : 'No data'
   }
 USE THIS: If market_health is 'declining' or posting_change_pct < -10, treat the current role as a strong PUSH factor — pivots are urgent, not optional.` : ''}
+${input.resumeAchievements ? `
+RESUME ACHIEVEMENTS (extracted verbatim — use these to write personalised, specific advice):
+${input.resumeAchievements}
+
+ACHIEVEMENT ANCHORING (CRITICAL — this is what separates WOW insights from generic advice):
+Every free_advice field MUST reference at least one specific achievement above.
+BAD: "${displayName}, upskill in Python this week."
+GOOD: "${displayName}, your achievement of [paste specific metric from above] is the portfolio proof — write that as a LinkedIn case study this week."
+The achievement IS the advice. The specific outcome is the proof. Generic advice is banned.` : ''}
 
 ${kgContext}`;
 
