@@ -557,6 +557,7 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
             ))}
           </div>
         </div>
+      </div>
 
       {/* Urgency + Personalised Actions — Pro users also deserve to see these.
           free_advice_1/2/3 are generated for every user but previously only shown
