@@ -135,6 +135,8 @@ const Index = () => {
   const cleanupRef = useRef<(() => void) | null>(null);
   // H-3 FIX: isMounted guard prevents state updates after component unmount
   const isMountedRef = useRef(true);
+  // Rate limit guard: persists across scanReport state resets (e.g. rescan-from-upgrade-card flow)
+  const hasCompletedScanRef = useRef(false);
   const hydrationAttemptedRef = useRef<string | null>(null);
   useEffect(() => {
     isMountedRef.current = true;
@@ -247,6 +249,7 @@ const Index = () => {
 
         if (existingScan.scan_status === 'complete' && existingScan.final_json_report) {
           setScanReport(existingScan.final_json_report);
+          hasCompletedScanRef.current = true;
           setMoneyShotSeen(false);
           setPhase('reveal');
           return;
@@ -485,6 +488,7 @@ const Index = () => {
         if (!isMountedRef.current) return;
         setScanReport(report);
         setMoneyShotSeen(false);
+        hasCompletedScanRef.current = true; // persist across state resets for rate limit gate
         track('scan_complete', { scanId: id });
         navigate(`/results/choose?id=${id}`);
 
@@ -566,8 +570,11 @@ const Index = () => {
   };
 
   const launchScan = async (metro: string, skills: string) => {
-    // P0-PROD-02 FIX: Gate free user rescan — show RateLimitUpsell if already scanned
-    if (scanReport && session && !session.user?.user_metadata?.subscription_tier) {
+    // P0-PROD-02 FIX: Gate free user rescan — show RateLimitUpsell if already scanned.
+    // Use hasCompletedScanRef (not scanReport) because the upgrade-card rescan flow
+    // clears scanReport before reaching launchScan — ref persists across state resets.
+    const alreadyScanned = hasCompletedScanRef.current || !!scanReport;
+    if (alreadyScanned && session && !session.user?.user_metadata?.subscription_tier) {
       // Free user who has already completed a scan
       track('error_view' as any);
       setShowRateLimitUpsell(true);
