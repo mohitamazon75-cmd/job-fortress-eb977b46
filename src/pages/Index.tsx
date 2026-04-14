@@ -400,6 +400,25 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [phase]);
 
+  // Wire the rescan-with-resume event fired by the accuracy upgrade card in the dossier.
+  // When a low-confidence user uploads a resume from within the results view, reset
+  // to input-method phase so the normal resume scan flow runs.
+  useEffect(() => {
+    const handleRescanWithResume = (e: Event) => {
+      const file = (e as CustomEvent<{ file: File }>).detail?.file;
+      if (!file) return;
+      resumeFileRef.current = file;
+      track('rescan_from_upgrade_card', { source: 'low_confidence_resume_upload' });
+      try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true })); } catch {}
+      // Reset scan state then go straight to auth-gate (auth already exists)
+      setScanReport(null);
+      setScanId('');
+      setPhase('auth-gate');
+    };
+    window.addEventListener('jb:rescan-with-resume', handleRescanWithResume);
+    return () => window.removeEventListener('jb:rescan-with-resume', handleRescanWithResume);
+  }, [track]);
+
   const handleStart = () => {
     track('cta_click');
     setPhase('input-method');

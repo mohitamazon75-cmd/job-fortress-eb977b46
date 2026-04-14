@@ -102,8 +102,9 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
               Add your career data
             </h2>
             <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              LinkedIn or your resume gives us your exact skills, role, and seniority — unlocking{' '}
-              <span className="text-foreground font-semibold">10× deeper, more accurate analysis</span>.
+              Upload your resume or paste your LinkedIn URL — we extract your exact skills, role,
+              and seniority for{' '}
+              <span className="text-foreground font-semibold">a personalised AI risk score</span>.
             </p>
           </div>
 
