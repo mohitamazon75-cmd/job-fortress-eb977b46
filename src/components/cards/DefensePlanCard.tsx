@@ -365,6 +365,7 @@ export default function DefensePlanCard({ report }: DefensePlanCardProps) {
           toolsTracked={tools.length}
           kgCoverage={report.data_quality?.kg_coverage}
           source={report.source}
+          confidence={report.data_quality?.overall ?? null}
           compact
         />
       </motion.div>

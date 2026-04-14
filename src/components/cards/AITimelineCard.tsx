@@ -192,7 +192,7 @@ export default function AITimelineCard({ report }: { report: ScanReport }) {
       </motion.div>
 
       <DataProvenance skillsMatched={kgMatched} toolsTracked={tools.length}
-        kgCoverage={report.data_quality?.kg_coverage} source={report.source} compact />
+        kgCoverage={report.data_quality?.kg_coverage} source={report.source} confidence={report.data_quality?.overall ?? null} compact />
     </div>
   );
 }

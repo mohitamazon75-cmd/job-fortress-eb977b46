@@ -13,6 +13,7 @@ import { useLiveEnrichment } from '@/hooks/use-live-enrichment';
 import DataProvenance from '@/components/cards/DataProvenance';
 import WhyThisScore from '@/components/cards/WhyThisScore';
 import FreeActionCard from '@/components/cards/FreeActionCard';
+import SkillConfirmationQuiz from '@/components/cards/SkillConfirmationQuiz';
 import { getVibe } from '@/lib/get-vibe';
 
 // ═══════════════════════════════════════════════════════════════
@@ -89,6 +90,8 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
   const rawFamily = getVerbatimRole(report);
   const matchedFamily = (rawFamily.length > 50 || rawFamily.includes('.') || rawFamily.startsWith('I '))
     ? (report.industry || 'Your Role') : rawFamily;
+  // FIX 4: track quiz dismissal so it only shows once per session
+  const [quizDismissed, setQuizDismissed] = useState(false);
   const kgMatched = report.computation_method?.kg_skills_matched ?? skillAdjustments.length;
   const tier = inferSeniorityTier(report.seniority_tier);
   const isExec = isExecutiveTier(tier);
@@ -301,7 +304,60 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         )}
       </motion.div>
 
-      {/* FIX 4: AI Impact Snapshot + Action Card shown FIRST for free users — 
+      {/* FIX 3: Low-confidence accuracy upgrade card — shown when data_quality.overall === 'LOW'
+          (synthetic fallback used, no real profile data). Honest, non-alarming, actionable. */}
+      {report.data_quality?.overall === 'LOW' && (
+        <motion.div
+          id="improve-accuracy"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-2xl border-2 border-amber-500/25 bg-amber-500/[0.06] p-5"
+        >
+          <div className="flex items-start gap-3">
+            <span className="text-xl mt-0.5">📊</span>
+            <div className="flex-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-1">
+                Industry estimate
+              </p>
+              <p className="text-sm font-bold text-foreground leading-snug mb-1">
+                This score is based on your industry and experience level, not your actual skills.
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Upload your resume to get a personalised score based on your real skill profile — typically ±15–20 points from the industry average.
+              </p>
+              <label className="inline-flex items-center gap-2 mt-3 cursor-pointer">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (!file.name.toLowerCase().endsWith('.pdf') || file.size > 5 * 1024 * 1024) return;
+                    // Dispatch custom event — Index.tsx listens and triggers a new resume scan
+                    window.dispatchEvent(new CustomEvent('jb:rescan-with-resume', { detail: { file } }));
+                  }}
+                >
+                  <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black text-foreground border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 transition-colors">
+                    Upload resume → personalise my score
+                  </span>
+                </label>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* FIX 4: Skill confirmation quiz — low-confidence scans get a 30-second
+          skill picker that personalises the analysis. Dismissed once confirmed. */}
+      {report.data_quality?.overall === 'LOW' && !quizDismissed && (
+        <SkillConfirmationQuiz
+          report={report}
+          onDismiss={() => setQuizDismissed(true)}
+        />
+      )}
+
+      {/* FIX 4 (original): AI Impact Snapshot + Action Card shown FIRST for free users — 
           Psychological order: Fear (score) → Hope (moat + action) → Curiosity (blurred details).
           Moving these above the blur walls captures the hope peak before users hit friction. */}
       {!isProUser && (topAtRisk.length > 0 || moatSkills.length > 0) && (
@@ -507,7 +563,8 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
       {/* Data Provenance */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
         <DataProvenance skillsMatched={kgMatched} toolsTracked={tools.length}
-          kgCoverage={report.data_quality?.kg_coverage} source={report.source} />
+          kgCoverage={report.data_quality?.kg_coverage} source={report.source}
+          confidence={report.data_quality?.overall ?? null} />
       </motion.div>
     </div>
   );
@@ -909,6 +966,38 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
                 >
                   {tierLabel}
                 </motion.p>
+
+                {/* FIX 2: Data confidence badge — honest transparency about score accuracy */}
+                {(() => {
+                  const conf = report.data_quality?.overall;
+                  const source = report.source;
+                  if (!conf) return null;
+                  const isLow = conf === 'LOW';
+                  const isMed = conf === 'MEDIUM';
+                  const label = isLow
+                    ? 'Industry estimate · Add resume for personal accuracy'
+                    : isMed
+                    ? source === 'linkedin' ? 'Based on LinkedIn data' : 'Based on partial profile'
+                    : source === 'resume' ? 'Based on your resume' : 'High confidence analysis';
+                  const dotColor = isLow ? 'bg-amber-500' : isMed ? 'bg-blue-400' : 'bg-prophet-green';
+                  const textColor = isLow ? 'text-amber-400' : isMed ? 'text-blue-300' : 'text-prophet-green';
+                  const bgColor = isLow ? 'bg-amber-500/10 border-amber-500/20' : isMed ? 'bg-blue-500/10 border-blue-500/20' : 'bg-prophet-green/10 border-prophet-green/20';
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className={`inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full border text-[10px] font-bold ${bgColor} ${textColor}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                      {label}
+                      {isLow && (
+                        <a href="#improve-accuracy" className="underline underline-offset-2 opacity-70">→ improve</a>
+                      )}
+                    </motion.div>
+                  );
+                })()}
+
                 <motion.p
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}

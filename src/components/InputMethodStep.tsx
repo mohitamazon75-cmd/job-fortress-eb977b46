@@ -107,7 +107,9 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
             </p>
           </div>
 
-          {/* Method selector */}
+          {/* Method selector — Resume FIRST: it's the reliable personalization path.
+              LinkedIn URL scraping is unreliable (LinkedIn blocks it); resume PDF
+              parsing gives real skill-level data. Order reflects actual accuracy. */}
           {!method && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -115,6 +117,27 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
               transition={{ delay: 0.3 }}
               className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6"
             >
+              {/* RESUME — primary, most accurate */}
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setMethod('resume')}
+                className="group relative p-5 sm:p-8 rounded-2xl border-2 border-prophet-cyan/40 bg-card hover:border-prophet-cyan transition-all duration-300 text-center overflow-hidden"
+              >
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'hsl(var(--prophet-cyan) / 0.04)' }} />
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'hsl(var(--prophet-cyan) / 0.1)' }}>
+                    <FileText className="w-8 h-8 text-prophet-cyan" />
+                  </div>
+                  <h3 className="font-bold text-foreground text-lg mb-1">Upload Resume</h3>
+                  <p className="text-sm text-muted-foreground">PDF · most accurate analysis</p>
+                  <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-prophet-cyan bg-prophet-cyan/10 px-3 py-1 rounded-full border border-prophet-cyan/20">
+                    <Zap className="w-3 h-3" /> Highest accuracy
+                  </span>
+                </div>
+              </motion.button>
+
+              {/* LINKEDIN — secondary, accuracy depends on public profile */}
               <motion.button
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
@@ -127,26 +150,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                     <Linkedin className="w-8 h-8 text-primary" />
                   </div>
                   <h3 className="font-bold text-foreground text-lg mb-1">LinkedIn URL</h3>
-                  <p className="text-sm text-muted-foreground">Paste your profile link</p>
-                </div>
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setMethod('resume')}
-                className="group relative p-5 sm:p-8 rounded-2xl border-2 border-border bg-card hover:border-prophet-cyan/50 transition-all duration-300 text-center overflow-hidden"
-              >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'hsl(var(--prophet-cyan) / 0.04)' }} />
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'hsl(var(--prophet-cyan) / 0.08)' }}>
-                    <FileText className="w-8 h-8 text-prophet-cyan" />
-                  </div>
-                  <h3 className="font-bold text-foreground text-lg mb-1">Upload Resume</h3>
-                  <p className="text-sm text-muted-foreground">PDF only (max 5MB)</p>
-                  <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-primary bg-primary/8 px-3 py-1 rounded-full">
-                    <Zap className="w-3 h-3" /> Recommended — best results
-                  </span>
+                  <p className="text-sm text-muted-foreground">Works best for public profiles</p>
                 </div>
               </motion.button>
             </motion.div>

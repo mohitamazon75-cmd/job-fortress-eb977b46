@@ -337,6 +337,7 @@ export default function JobSafetyCard({ report, scanId }: { report: ScanReport; 
           toolsTracked={tools.length}
           kgCoverage={report.data_quality?.kg_coverage}
           source={report.source}
+          confidence={report.data_quality?.overall ?? null}
         />
       </motion.div>
     </div>
