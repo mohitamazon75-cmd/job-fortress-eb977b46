@@ -97,12 +97,46 @@ async function parseResume(
           messages: [
             {
               role: "system",
-              content: `You are a resume parser. Extract structured career data from the resume. Return ONLY valid JSON:\n{\n  "name": string,\n  "headline": string (VERBATIM job title from resume — copy character by character, NEVER upgrade or inflate),\n  "company": string (current/most recent company),\n  "location": string,\n  "skills": [string] (specific granular skills, NOT broad categories — aim for 15-25),\n  "experience": [{"title": string, "company": string, "duration": string}],\n  "education": [{"degree": string, "institution": string}],\n  "inferredIndustry": string,\n  "yearsOfExperience": number\n}\nCRITICAL: headline MUST be the EXACT title as written on the resume. If it says "Senior Manager", output "Senior Manager" NOT "Director". If it says "Digital Marketing Manager", output "Digital Marketing Manager" NOT "Marketing Director".\nNo markdown, no explanation, only JSON.`,
+              content: `You are an expert resume analyst. Extract every professionally meaningful detail from this resume. Return ONLY valid JSON — no markdown, no explanation.
+
+SCHEMA:
+{
+  "name": string,
+  "headline": string (VERBATIM job title — copy character by character, never upgrade or inflate),
+  "company": string (current/most recent company),
+  "location": string,
+  "yearsOfExperience": number,
+  "inferredIndustry": string,
+  "inferredSubSector": string (specific sub-sector: e.g. "Fintech SaaS", "IT Services & Outsourcing", "E-commerce Platform"),
+  "skills": [string] (SPECIFIC granular skills only — 15-25 items. Good: "React.js", "PostgreSQL", "Jest unit testing", "CI/CD with GitHub Actions", "REST API design", "Agile sprint planning". Bad: "programming", "communication", "teamwork", "presentation"),
+  "techStack": [string] (every specific technology, language, framework, tool, platform mentioned anywhere in the resume — be exhaustive: "Python", "AWS Lambda", "Docker", "Kubernetes", "Selenium", "Jenkins", "Jira", "Confluence", "Figma", "Tableau", etc.),
+  "certifications": [string] (AWS Certified, Google Cloud, PMP, Scrum Master, CFA, etc.),
+  "experience": [
+    {
+      "title": string,
+      "company": string,
+      "duration": string,
+      "keyAchievements": [string] (extract 2-4 bullet-point achievements verbatim or paraphrased closely — include numbers, metrics, scope: "Led migration of 3 legacy services to microservices, reducing latency by 40%", "Managed team of 8 engineers across 2 locations", "Built real-time inventory system handling 50K daily transactions"),
+      "technologiesUsed": [string] (specific tech used in THIS role)
+    }
+  ],
+  "education": [{ "degree": string, "institution": string, "year": string | null }],
+  "projects": [{ "name": string, "description": string, "techUsed": [string] }],
+  "openSource": string | null (any GitHub, open source, publications mentioned),
+  "domainExpertise": [string] (deep domain knowledge signals: "payments processing", "healthcare compliance", "supply chain optimization", "credit risk modeling" — NOT generic skills)
+}
+
+CRITICAL RULES:
+- headline MUST be the EXACT title from the resume. Never upgrade. "Senior QA Engineer" stays "Senior QA Engineer".
+- skills: extract from ALL sections — skills section, experience bullets, projects, certifications. If resume mentions "Selenium WebDriver" extract "Selenium WebDriver", not "testing".
+- keyAchievements: this is the most important field. Extract real numbers and impact. "Improved test coverage from 40% to 85%" is gold. "Responsible for testing" is useless.
+- techStack: be exhaustive. If resume says "worked with AWS services including EC2, S3, RDS, Lambda" — extract all four separately.
+- domainExpertise: what industry problems has this person solved? "e-commerce checkout optimization", "banking fraud detection", "clinical trial data management" etc.`,
             },
             {
               role: "user",
               content: [
-                { type: "text", text: "Extract all professional data from this resume. The headline field MUST be the VERBATIM job title — do NOT upgrade, paraphrase, or inflate it:" },
+                { type: "text", text: "Extract every professional detail from this resume. Be exhaustive on skills, technologies, and achievements. The headline MUST be verbatim — do NOT upgrade or inflate:" },
                 { type: "image_url", image_url: { url: `data:application/pdf;base64,${resumeBase64}` } },
               ],
             },
@@ -125,10 +159,62 @@ async function parseResume(
       if (!content) return fallback;
 
       const parsed = JSON.parse(content);
-      let rawText = `Name: ${parsed.name || "Unknown"}\nHeadline: ${parsed.headline || "Unknown"}\nCompany: ${parsed.company || "Unknown"}\nLocation: ${parsed.location || "Unknown"}\nSkills: ${(parsed.skills || []).join(", ")}\nYears of Experience: ${parsed.yearsOfExperience || "Unknown"}\n`;
+
+      // Build a rich profile text that gives Agent 1 the full picture.
+      // Previously we only passed: Name, Headline, flat Skills list, and job title+company.
+      // That caused Agent 1 to use surface-level skills ("presentation", "manual testing")
+      // instead of the real technical depth visible in the resume.
+      let rawText = `Name: ${parsed.name || "Unknown"}\nHeadline: ${parsed.headline || "Unknown"}\nCompany: ${parsed.company || "Unknown"}\nLocation: ${parsed.location || "Unknown"}\nYears of Experience: ${parsed.yearsOfExperience || "Unknown"}\nInferred Industry: ${parsed.inferredIndustry || "Unknown"}\nInferred Sub-Sector: ${parsed.inferredSubSector || "Unknown"}\n`;
+
+      // Skills — full granular list
+      if (parsed.skills?.length > 0) {
+        rawText += `\nSpecific Skills: ${parsed.skills.join(", ")}\n`;
+      }
+
+      // Tech stack — exhaustive
+      if (parsed.techStack?.length > 0) {
+        rawText += `Technology Stack: ${parsed.techStack.join(", ")}\n`;
+      }
+
+      // Certifications
+      if (parsed.certifications?.length > 0) {
+        rawText += `Certifications: ${parsed.certifications.join(", ")}\n`;
+      }
+
+      // Domain expertise
+      if (parsed.domainExpertise?.length > 0) {
+        rawText += `Domain Expertise: ${parsed.domainExpertise.join(", ")}\n`;
+      }
+
+      // Experience WITH achievements and role-specific tech
       if (parsed.experience?.length > 0) {
-        rawText += `Experience:\n`;
-        for (const exp of parsed.experience) rawText += `  - ${exp.title} at ${exp.company} (${exp.duration})\n`;
+        rawText += `\nWork Experience:\n`;
+        for (const exp of parsed.experience) {
+          rawText += `  ${exp.title} at ${exp.company} (${exp.duration})\n`;
+          if (exp.technologiesUsed?.length > 0) {
+            rawText += `    Technologies: ${exp.technologiesUsed.join(", ")}\n`;
+          }
+          if (exp.keyAchievements?.length > 0) {
+            for (const ach of exp.keyAchievements) {
+              rawText += `    • ${ach}\n`;
+            }
+          }
+        }
+      }
+
+      // Projects
+      if (parsed.projects?.length > 0) {
+        rawText += `\nProjects:\n`;
+        for (const proj of parsed.projects) {
+          rawText += `  ${proj.name}: ${proj.description}`;
+          if (proj.techUsed?.length > 0) rawText += ` [${proj.techUsed.join(", ")}]`;
+          rawText += `\n`;
+        }
+      }
+
+      // Open source / publications
+      if (parsed.openSource) {
+        rawText += `\nOpen Source / Publications: ${parsed.openSource}\n`;
       }
 
       let extractedYears: number | null = null;
@@ -136,7 +222,7 @@ async function parseResume(
         extractedYears = parsed.yearsOfExperience;
       }
 
-      console.debug(`[Ingestion] Resume parsed: name=${parsed.name ? "[present]" : "[absent]"}, role=${parsed.headline ? "[present]" : "[absent]"}, exp=${extractedYears ?? "absent"}`);
+      console.debug(`[Ingestion] Resume parsed (rich): name=${parsed.name ? "[present]" : "[absent]"}, role=${parsed.headline ? "[present]" : "[absent]"}, skills=${parsed.skills?.length ?? 0}, tech=${parsed.techStack?.length ?? 0}, achievements=${parsed.experience?.reduce((n: number, e: any) => n + (e.keyAchievements?.length ?? 0), 0) ?? 0}, exp=${extractedYears ?? "absent"}`);
 
       return {
         rawText,

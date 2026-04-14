@@ -64,6 +64,18 @@ VERBATIM TITLE EXTRACTION (CRITICAL — ZERO TOLERANCE FOR TITLE INFLATION):
   * Do not inflate skill counts beyond what is genuinely demonstrated in the profile.
 - execution_skills: operational/process TASKS this person performs (not tools). Scale by seniority.
   * CRITICAL: NEVER include trivial commodity skills that EVERYONE does regardless of role. BANNED skills for ALL tiers: email_writing, email_management, calendar_management, meeting_scheduling, basic_copywriting, filing, note_taking, internet_research, phone_calls, data_entry, travel_booking, expense_reporting.
+  * ADDITIONALLY BANNED — overly generic IT skills that tell nothing about actual capability (use the SPECIFIC version instead):
+    - BANNED: "testing" → USE: "Selenium WebDriver automation", "Jest unit testing", "Postman API testing", "JMeter load testing"
+    - BANNED: "programming" or "coding" → USE: "Python scripting", "React.js development", "Java Spring Boot", specific language
+    - BANNED: "databases" → USE: "PostgreSQL query optimization", "MongoDB aggregation", "MySQL schema design"
+    - BANNED: "presentation" or "presentations" → USE: "Technical documentation", "Stakeholder reporting", "Executive briefings" (only if genuinely senior)
+    - BANNED: "manual testing" → USE: "Functional test case design", "Regression testing", "UAT coordination", "Black-box testing" — be specific about what TYPE
+    - BANNED: "communication" → NOT a skill. Drop it entirely.
+    - BANNED: "problem solving" → NOT a skill. Drop it entirely.
+    - BANNED: "teamwork" or "collaboration" → NOT a skill. Drop it entirely.
+    - BANNED: "Microsoft Office" → USE: "Excel financial modelling", "PowerPoint deck design" — only if genuinely specialized
+    - BANNED: "cloud" → USE: "AWS EC2/Lambda", "Google Cloud Run", "Azure DevOps" — always specify the platform and service
+    - BANNED: "agile" alone → USE: "Scrum sprint facilitation", "Kanban workflow management", "SAFe framework" — specify the practice
   * For EXECUTIVE/SENIOR_LEADER: include ONLY high-stakes ORGANIZATIONAL tasks like "P&L Governance", "Board Reporting", "M&A Due Diligence", "Cross-functional Org Design", "Regulatory Strategy", "Investor Relations", "Capital Allocation", "Organizational Restructuring", "Strategic Partnerships", "Risk Committee Oversight". NEVER include generic tasks like "email writing" or "report writing" — these are beneath executive-level analysis.
   * For MANAGER: include team-level tasks like "Sprint Planning", "Team Performance Reviews", "Budget Management", "Vendor Negotiations"
   * For IC roles: include hands-on tasks like "A/B Testing", "SQL Reporting", "Content Calendar Management"
