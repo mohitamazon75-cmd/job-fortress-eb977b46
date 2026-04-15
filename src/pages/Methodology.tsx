@@ -56,7 +56,7 @@ export default function Methodology() {
           </p>
           <div className="grid sm:grid-cols-2 gap-3">
             {[
-              { label: 'Role automation risk', weight: '~45%', desc: 'How automatable your specific job tasks are, matched against 164 role archetypes' },
+              { label: 'Role automation risk', weight: '~45%', desc: 'How automatable your specific job tasks are, matched against 98 role archetypes spanning IT, finance, marketing, BPO/KPO, healthcare, government, and more' },
               { label: 'Skill-level risk', weight: '~25%', desc: 'Each of your skills matched against our Knowledge Graph — execution skills vs strategic skills' },
               { label: 'Experience & seniority', weight: '~15%', desc: 'More experience = lower risk for the same role. Executive roles are scored differently.' },
               { label: 'Market signals', weight: '~10%', desc: 'Live job posting trends for your role — is hiring growing or declining?' },
@@ -80,7 +80,7 @@ export default function Methodology() {
             The Knowledge Graph
           </h2>
           <p className="text-sm text-foreground/80 leading-relaxed">
-            The Knowledge Graph is JobBachao's structured database of how automatable different jobs and skills are. It currently contains <strong>177 role archetypes</strong>, <strong>31 skill categories</strong>, and <strong>21 industry sectors</strong>.
+            The Knowledge Graph is JobBachao's structured database of how automatable different jobs and skills are. It currently contains <strong>98 role archetypes</strong>, <strong>30 skill categories</strong>, <strong>20 industry sectors</strong>, and <strong>10 named AI tool threats</strong> tracked by deployment stage.
           </p>
           <p className="text-sm text-foreground/80 leading-relaxed">
             Each role node contains: base automation probability, task automatability score, social intelligence requirement, creative originality requirement, decision authority level, regulatory shield strength, and displacement timeline estimates.
