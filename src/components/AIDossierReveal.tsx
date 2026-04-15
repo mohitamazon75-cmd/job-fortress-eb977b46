@@ -623,23 +623,6 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         </motion.div>
       )}
 
-      {/* FIX 3: Model B deep-analysis entry point — 7-card career intelligence report.
-          Most valuable Pro content. Zero users discover it without this link. */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38 }}
-        className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-black text-primary uppercase tracking-widest mb-0.5">7-Card Deep Analysis</p>
-          <p className="text-[11px] text-muted-foreground leading-snug">
-            ATS keywords · live job matches · pivot paths · blind spots · your human advantage
-          </p>
-        </div>
-        <a
-          href={`/results/model-b${scanId ? `?id=${scanId}` : ''}`}
-          className="flex-shrink-0 flex items-center gap-1 text-xs font-black text-primary hover:text-primary/80 transition-colors"
-        >
-          See all 7 →
-        </a>
-      </motion.div>
 
       {/* Data Provenance */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>

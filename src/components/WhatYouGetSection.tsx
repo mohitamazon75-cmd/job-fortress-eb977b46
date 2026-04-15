@@ -97,8 +97,8 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
             </span>
           </h2>
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Every scan delivers <span className="text-foreground font-bold">two full reports</span> — 
-            a risk diagnosis <em>and</em> a growth playbook. Not generic LinkedIn advice.{' '}
+            Every scan delivers a <span className="text-foreground font-bold">7-card intelligence report</span> — 
+            risk diagnosis, skill threats, pivot paths, and a 90-day mission. Not generic LinkedIn advice.{' '}
             <span className="text-foreground font-bold">Actionable intelligence you can use today.</span>
           </p>
         </motion.div>
@@ -115,8 +115,8 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
               <BarChart3 className="w-4.5 h-4.5 text-destructive" />
             </div>
             <div>
-              <h3 className="font-black text-foreground text-base">Report A — Risk Diagnosis</h3>
-              <p className="text-xs text-muted-foreground">How vulnerable are you? The honest answer.</p>
+              <h3 className="font-black text-foreground text-base">Cards 1–4 — Risk Diagnosis</h3>
+              <p className="text-xs text-muted-foreground">How vulnerable are you? The honest, deterministic answer.</p>
             </div>
             <span className="ml-auto text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
               Free
@@ -161,8 +161,8 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
               <TrendingUp className="w-4.5 h-4.5 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-black text-foreground text-base">Report B — Growth Playbook</h3>
-              <p className="text-xs text-muted-foreground">Your 7-card action plan to become irreplaceable.</p>
+              <h3 className="font-black text-foreground text-base">Cards 5–7 — Growth Playbook</h3>
+              <p className="text-xs text-muted-foreground">Your pivot path, blind spots, and 90-day mission.</p>
             </div>
             <span className="ml-auto text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
               Included

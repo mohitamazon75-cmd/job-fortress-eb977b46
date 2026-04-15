@@ -30,7 +30,7 @@ const TESTIMONIALS = [
 ];
 
 const STATS = [
-  { value: '2 Reports', label: 'Risk Diagnosis + Growth Playbook — two complete views from a single scan, both free' },
+  { value: '7 Cards', label: 'Risk Mirror → Skills vs AI → Market → Pivot → Blind Spots → 90-Day Mission — one unified scan, completely free' },
   { value: '10+', label: 'Deliverables per scan — score, doom clock, pivot paths, salary scripts, ATS rewrite & more' },
   { value: '< 4 min', label: '4-agent intelligence engine + Knowledge Graph + live market signals. Not a quiz — a career MRI.' },
 ];

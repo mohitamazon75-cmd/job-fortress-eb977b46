@@ -180,12 +180,12 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             transition={{ delay: 0.4, duration: 0.6 }}
             className="text-lg sm:text-2xl md:text-3xl text-muted-foreground max-w-3xl mx-auto mb-8 sm:mb-12 leading-relaxed font-medium"
           >
-            We analyze your career against{' '}
-            <span className="text-foreground font-bold">two reports</span> — a risk diagnosis{' '}
-            <em>and</em> a growth playbook — covering{' '}
+            We analyze your career through{' '}
+            <span className="text-foreground font-bold">7 intelligence cards</span> — risk diagnosis,{' '}
+            skill threats, pivot paths, market data — covering{' '}
             <span className="text-foreground font-bold">98+ role archetypes</span>,{' '}
             <span className="text-foreground font-bold">50+ AI tools</span>, and{' '}
-            <span className="text-foreground font-bold">live market data</span>.{' '}
+            <span className="text-foreground font-bold">live India market data</span>.{' '}
             <span className="text-primary font-black">Know your risk. Own your future.</span>
           </motion.p>
 
@@ -205,7 +205,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
                 className="group relative w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 rounded-2xl text-primary-foreground font-black text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
                 style={{ background: 'var(--gradient-primary)', boxShadow: '0 16px 60px hsl(var(--primary) / 0.4)' }}
               >
-                Get My 2 Free Reports
+                Get My Free Career Scan
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
                 <motion.div
                   className="absolute inset-0 rounded-2xl"
@@ -233,7 +233,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
               className="flex items-center justify-center gap-2 mt-5"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
-              <span className="text-xs text-muted-foreground"><span className="text-prophet-green font-bold">2 reports</span> · Risk Score + Growth Playbook · Under 4 min</span>
+              <span className="text-xs text-muted-foreground"><span className="text-prophet-green font-bold">7 intelligence cards</span> · Risk + Skills + Market + Pivot + Mission · Under 4 min</span>
             </motion.div>
           </motion.div>
 
@@ -245,7 +245,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto mb-10"
           >
             {[
-              { value: '2', label: 'Full Reports', icon: BarChart3, color: 'hsl(var(--primary))' },
+              { value: '7', label: 'Intelligence Cards', icon: BarChart3, color: 'hsl(var(--primary))' },
               { value: '10+', label: 'Deliverables', icon: Zap, color: 'hsl(var(--prophet-cyan))' },
               { value: '50+', label: 'AI Tools Tracked', icon: Brain, color: 'hsl(var(--prophet-gold))' },
               { value: '< 4 min', label: 'Deep Analysis', icon: Network, color: 'hsl(var(--prophet-green))' },
@@ -309,8 +309,8 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
               {[
                 { step: '01', Icon: Link2, title: 'Link Profile', desc: 'Paste LinkedIn or upload your resume', color: 'hsl(var(--primary))' },
                 { step: '02', Icon: Brain, title: 'AI Scan', desc: '4-agent intelligence engine analyses your career', color: 'hsl(var(--prophet-cyan))' },
-                { step: '03', Icon: BarChart3, title: 'Report A', desc: 'Risk score, doom clock, AI threat map', color: 'hsl(var(--prophet-gold))' },
-                { step: '04', Icon: Shield, title: 'Report B', desc: 'Growth playbook, pivot paths, salary scripts', color: 'hsl(var(--prophet-green))' },
+                { step: '03', Icon: BarChart3, title: 'Risk Score', desc: 'Deterministic score + doom clock + skill threat map', color: 'hsl(var(--prophet-gold))' },
+                { step: '04', Icon: Shield, title: '7-Card Report', desc: 'Pivot paths, salary data, 90-day mission, pro dashboard', color: 'hsl(var(--prophet-green))' },
               ].map((item, i) => (
                 <motion.div
                   key={item.step}

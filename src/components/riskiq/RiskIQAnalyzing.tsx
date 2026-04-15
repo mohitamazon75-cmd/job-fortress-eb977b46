@@ -63,7 +63,7 @@ const PHASES = [
 const TOTAL_PHASE_DURATION = PHASES.reduce((s, p) => s + p.durationSec, 0); // 90s
 
 const TRUST_MESSAGES = [
-  { threshold: 0, text: "Analysing your unique career fingerprint", sub: "No two reports are the same" },
+  { threshold: 0, text: "Analysing your unique career fingerprint", sub: "Every scan is personalised to your exact profile" },
   { threshold: 20, text: "Running 48 deterministic algorithms", sub: "Every score is reproducible & auditable" },
   { threshold: 40, text: "Cross-referencing live market data", sub: "Job postings, salary trends & AI adoption signals" },
   { threshold: 60, text: "Building your personalized defense plan", sub: "Actionable strategies, not generic advice" },
