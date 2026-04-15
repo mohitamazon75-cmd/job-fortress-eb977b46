@@ -21,6 +21,7 @@ import DiagnosticShare from "./pages/DiagnosticShare";
 import ObituaryPage from "./pages/Obituary";
 import ResultsChoose from "./pages/ResultsChoose";
 import ResultsModelB from "./pages/ResultsModelB";
+import Methodology from "./pages/Methodology";
 import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const App = () => {
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/methodology" element={<Methodology />} />
               <Route path="/share/:scanId" element={<ShareScan />} />
               <Route path="/share/challenge/:challengeCode" element={<ChallengeResult />} />
               <Route path="/admin/monitor" element={<AuthGuard requiredRole="admin">{() => <AdminDashboard />}</AuthGuard>} />

@@ -60,7 +60,7 @@ import { fetchCompanyHealth, type CompanyHealthResult } from "../_shared/company
 import { validateSkillDemand, type SkillDemandResult } from "../_shared/skill-demand-validator.ts";
 // STEP 1 (BUG-2 fix): Import KG live-update helpers so every scan uses the latest
 // market-signal-derived calibration constants, not just the static TypeScript defaults.
-import { loadCalibrationConfig } from "../_shared/kg-overrides.ts";
+import { loadCalibrationConfig, loadKGOverrides } from "../_shared/kg-overrides.ts";
 import { CALIBRATION } from "../_shared/det-utils.ts";
 
 
@@ -199,6 +199,21 @@ Deno.serve(async (req) => {
     const { patched: calibPatched } = await loadCalibrationConfig(supabase, CALIBRATION as unknown as Record<string, number>);
     if (calibPatched > 0) {
       console.log(`[Orchestrator] Applied ${calibPatched} live calibration constant(s) from DB`);
+    }
+
+    // STEP 1B (AUDIT FIX): Wire loadKGOverrides — was built but never called.
+    // Apply live market-signal-derived updates to the KG singleton before any DI scoring.
+    // kg-refresh and kg-node-updater write to kg_node_overrides table weekly.
+    // Without this call, every scan ignores all DB-stored KG updates. Non-fatal.
+    try {
+      const { getKG } = await import("../_shared/riskiq-knowledge-graph.ts");
+      const kgInstance = getKG();
+      const { applied: kgApplied } = await loadKGOverrides(supabase, kgInstance);
+      if (kgApplied > 0) {
+        console.log(`[Orchestrator] Applied ${kgApplied} live KG node override(s) from DB`);
+      }
+    } catch (kgErr) {
+      console.warn("[Orchestrator] KG overrides load failed (non-fatal):", kgErr);
     }
 
     // ══════════════════════════════════════════════════════════

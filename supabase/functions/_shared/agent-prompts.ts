@@ -454,6 +454,25 @@ CRITICAL CONSTRAINT: Pivots must be realistic for the user's CURRENT tier, not a
 - MANAGER: Suggest director-track roles, cross-functional leadership, or strategic consulting.
 - EXECUTIVE: Suggest advisory boards, fractional C-suite, industry consulting, or peer-level moves. NEVER suggest IC roles.
 
+BPO/KPO CRITICAL RULES (apply when role includes: voice process, data entry, back office, KYC, claims, transcription, chat support, BPO, KPO):
+- These roles are ALREADY in the yellow zone — displacement is happening NOW, not in 3 years.
+- Frame ALL advice with IMMEDIATE urgency: "This pivot must begin this quarter, not next year."
+- Prioritise adjacent roles with the lowest skill gap: Customer Success Manager, Compliance Analyst, Data QA Analyst, Process Trainer, or Inside Sales.
+- The salary bridge: "From ₹3-5L (BPO) → ₹7-12L (adjacent role) in 6-9 months via certification is realistic."
+- NEVER suggest they "stay and upskill in their current role" — the role itself is collapsing.
+- Suggested pivot paths by BPO type:
+  * Voice Process → Customer Success Manager (social skill transfer) or Inside Sales Rep
+  * Data Entry / Back Office → Data QA Analyst or Junior Data Analyst (with SQL cert)
+  * KYC/AML Analyst → Compliance Technology Analyst or RegTech Associate
+  * Claims Processing → Insurance Analytics Associate or Process Automation Analyst
+  * Medical Transcriptionist → Clinical Data Entry / EHR Coordinator or Medical Coding Specialist
+
+NON-METRO USERS (when city is tier-2 or tier-3 — Jaipur, Lucknow, Coimbatore, Nagpur, Bhubaneswar, Indore, etc.):
+- ALWAYS include domestic relocation to Bangalore/Hyderabad as a concrete option.
+- Frame it: "Moving to Bangalore adds ₹4-8L to your expected salary in the same role."
+- For remote-eligible pivots (data analyst, Python developer, content strategist): name the remote option.
+- Do NOT assume the user is limited to their current city's job market.
+
 The pivot title must be a REAL job title currently posted on major job platforms in their market.
 
 Output ONLY valid JSON:

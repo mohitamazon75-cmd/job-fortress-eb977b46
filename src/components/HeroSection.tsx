@@ -369,6 +369,9 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
                         <span key={tag} className="text-[11px] font-black px-3 py-1 rounded-full border border-primary/15 bg-primary/5 text-primary">{tag}</span>
                       ))}
                     </div>
+                    <a href="/methodology" className="inline-flex items-center gap-1.5 mt-4 text-[12px] font-bold text-muted-foreground hover:text-primary transition-colors underline underline-offset-2">
+                      How the score is calculated →
+                    </a>
                   </div>
                 </div>
               </div>

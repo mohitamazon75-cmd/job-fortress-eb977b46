@@ -234,7 +234,30 @@ export function computeAll(
   const monthlySalary = estimateMonthlySalary(profile.estimated_monthly_salary_inr, jobData, profile.experience_years, companyTier, metroTier, specialization, country);
 
   // 3. Obsolescence Timeline
-  const timeline = calculateObsolescenceTimeline(determinismIndex, marketSignal, profile.seniority_tier);
+  // AUDIT FIX: When the matched job node has KG-derived partial_displacement_years,
+  // blend it with the deterministic timeline instead of using the generic power curve alone.
+  // The KG data (sourced from Frey & Osborne, WEF FoJ 2025, NASSCOM) is more role-specific
+  // than the generic DI power curve, which gives the same months to a content writer and
+  // a solutions architect even though their real displacement timelines differ by 3+ years.
+  const baseTimeline = calculateObsolescenceTimeline(determinismIndex, marketSignal, profile.seniority_tier);
+  let timeline = baseTimeline;
+  if (jobData && typeof (jobData as any).partial_displacement_years === 'number') {
+    const kgPartialYears = (jobData as any).partial_displacement_years as number;
+    const kgMonths = Math.round(kgPartialYears * 12);
+    // Only use KG anchor when confidence is HIGH or VERY HIGH (≥3 matched skills)
+    // to avoid anchoring on a potentially mismatched job family
+    if (diResult.matchedCount >= 3 && kgMonths > 0) {
+      // Blend: 60% KG role anchor + 40% DI-derived timeline
+      // This preserves the personalised DI signal while grounding it in role reality
+      const blendedMonths = Math.round(kgMonths * 0.6 + baseTimeline.yellow_zone_months * 0.4);
+      const clampedMonths = Math.max(6, Math.min(60, blendedMonths));
+      timeline = {
+        ...baseTimeline,
+        yellow_zone_months: clampedMonths,
+        already_in_warning: clampedMonths <= 12,
+      };
+    }
+  }
 
   // 4. Salary Bleed
   const salaryBleed = calculateSalaryBleed(determinismIndex, monthlySalary, marketSignal);

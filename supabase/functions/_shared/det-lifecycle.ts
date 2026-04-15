@@ -86,6 +86,11 @@ export function calculateSalaryBleed(
 const GEO_SCORES: Record<string, number> = {
   "us citizen/gc": 100, "h1b holder": 70, "indian oci": 65,
   "eu passport": 60, "remote only": 55, "willing to relocate": 40,
+  // Domestic India mobility — meaningful resilience signal for tier-2 professionals
+  "willing to relocate within india": 30, "relocate to bangalore": 32,
+  "relocate to bangalore/hyderabad": 32, "relocate to mumbai": 28,
+  "relocate to pune": 25, "relocate to delhi": 24,
+  "remote india": 22, "open to relocation": 20,
 };
 
 function getGeoScore(geoAdvantage: string | null): number {
@@ -188,7 +193,21 @@ export function calculateSurvivability(
 const GEO_PROBABILITY: Record<string, number> = {
   "us citizen/gc": 0.85, "h1b holder": 0.70, "indian oci": 0.65,
   "eu passport": 0.60, "remote only": 0.55, "willing to relocate": 0.40,
+  // AUDIT FIX: Domestic India relocation options — previously got 0 credit.
+  // A tier-2 professional moving to Bangalore/Hyderabad can expect 1.4–1.8x salary uplift.
+  // This is a real, achievable optionality for millions of Indian professionals.
+  "willing to relocate within india": 0.60,
+  "relocate to bangalore": 0.65, "relocate to bangalore/hyderabad": 0.65,
+  "relocate to mumbai": 0.58, "relocate to pune": 0.55,
+  "relocate to delhi": 0.52, "remote india": 0.50,
+  "open to relocation": 0.45,
 };
+
+// Domestic India multiplier — much lower than international but real and achievable.
+const DOMESTIC_INDIA_KEYS = new Set([
+  "willing to relocate within india", "relocate to bangalore", "relocate to bangalore/hyderabad",
+  "relocate to mumbai", "relocate to pune", "relocate to delhi", "remote india", "open to relocation",
+]);
 
 export function calculateGeoArbitrage(
   currentMonthlySalary: number,
@@ -201,23 +220,25 @@ export function calculateGeoArbitrage(
 } | null {
   const key = (geoAdvantage || "").toLowerCase().trim();
   const probability = GEO_PROBABILITY[key] || 0.25;
-  const targetSalary = Math.round(currentMonthlySalary * targetMultiplier);
+
+  // Domestic India relocation: 1.5x multiplier (tier-2 → tier-1 salary uplift)
+  // vs international 3.0x. More conservative but far more achievable.
+  const isDomesticIndia = DOMESTIC_INDIA_KEYS.has(key) || key.includes("within india") || key.includes("relocate india");
+  const effectiveMultiplier = isDomesticIndia ? 1.5 : targetMultiplier;
+
+  const targetSalary = Math.round(currentMonthlySalary * effectiveMultiplier);
   const rawDelta = targetSalary - currentMonthlySalary;
   if (rawDelta <= 0) return null;
 
   // BUG-3 fix: Correct EV formula.
   // ev12mo = P(relocation succeeds) × annual_salary_gain
-  // This is the expected value of the relocation decision over 1 year.
-  // The old formula (probAdjusted × 12) was equivalent but obfuscated via
-  // an intermediate "monthly EV" step that implied monthly recurrence.
-  // probability_adjusted_delta_inr = ev12mo / 12 — the per-month expected gain
-  // when averaged across the full year including the probability of failure.
-  // Label in UI: "Expected value if relocation succeeds" (shown per year).
   const ev12mo = Math.round(probability * rawDelta * 12);
   const probAdjusted = Math.round(ev12mo / 12); // monthly average of annual EV
   const fastestWeeks = probability >= 0.7 ? 6 : probability >= 0.5 ? 10 : 16;
 
-  const marketLabel = key.includes("us") || key.includes("gc") ? "US Direct"
+  const marketLabel = isDomesticIndia
+    ? (key.includes("bangalore") ? "Bangalore (Domestic)" : key.includes("mumbai") ? "Mumbai (Domestic)" : "Tier-1 India City")
+    : key.includes("us") || key.includes("gc") ? "US Direct"
     : key.includes("h1b") ? "US H1B Transfer"
     : key.includes("remote") ? "US/EU Remote"
     : key.includes("eu") ? "EU Market" : "Global Remote";

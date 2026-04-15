@@ -433,6 +433,30 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         </motion.div>
       )}
 
+      {/* Crisis support for low-score free users (score <40).
+          Audit finding: product's response to acute career anxiety was a paywall.
+          Psychologically, a user at score 28 needs a response pathway, not a sales moment.
+          The coach opt-in (free 3 email nudges) is the right therapeutic response here. */}
+      {!isProUser && score < 40 && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.20 }}
+          className="rounded-2xl border-2 border-amber-400/20 bg-amber-400/[0.04] p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-xl flex-shrink-0">🧭</span>
+            <div className="flex-1">
+              <p className="text-sm font-black text-foreground mb-1">
+                Your score is in the high-risk zone. You don't have to figure this out alone.
+              </p>
+              <p className="text-xs text-foreground/75 leading-relaxed mb-3">
+                Get 3 free personalised coaching messages over the next 48 hours — specific actions based on your exact risk profile, delivered to your inbox.
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Free for all users · No spam · Just 3 nudges, then we stop.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Narrative Verdict — blurred for free users */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
         className={`rounded-2xl border-2 ${vibe.border} ${vibe.bg} p-5 ${!isProUser ? 'relative overflow-hidden' : ''}`}>
