@@ -153,6 +153,9 @@ Deno.serve(async (req) => {
                     role: "system",
                     content: `You are a weekly career intelligence briefing engine. Return ONLY valid JSON.
 
+ADDRESSATION: Address the user as "you" throughout. NEVER use "this professional" or third-person.
+CITATIONS: For every numerical claim, cite the source in brackets [source, date]. Never fabricate statistics.
+
 CONTEXT:
 - Role: ${role}
 - Industry: ${industry}
@@ -161,7 +164,7 @@ CONTEXT:
 - Company: ${company || "not specified"}
 ${seniorityCtx}
 
-Generate 3-5 fresh career signals from the LAST 7 DAYS relevant to this professional. Each must reference real companies, events, or data.
+Generate 3-5 fresh career signals from the LAST 7 DAYS relevant to you. Each must reference real companies, events, or data.
 
 Return JSON:
 {

@@ -310,7 +310,9 @@ CONSTRAINTS: ${locationCountry} | ${currency} | ${hoursPerWeek} hrs/wk | Budget:
 
     // ═══ STAGE 1: LATERAL SCOUT (Flash ~10s) ═══
     console.log(`[SideHustle] Stage 1: LateralScout starting...`);
-    const lateralPrompt = `You are a lateral-thinking opportunity scout operating in March 2026. Identify 8 NON-OBVIOUS opportunity vectors for this professional.
+    const lateralPrompt = `You are a lateral-thinking opportunity scout operating in ${new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}. Identify 8 NON-OBVIOUS opportunity vectors for you based on your profile.
+
+ADDRESSATION: Address the user as "you" throughout. NEVER use "this professional". For every numerical claim, cite the source.
 
 DO NOT suggest the obvious. Think laterally using 2026 market context:
 1. CROSS-DOMAIN TRANSFER: Adjacent industries desperately needing their skills (especially industries just NOW adopting AI)

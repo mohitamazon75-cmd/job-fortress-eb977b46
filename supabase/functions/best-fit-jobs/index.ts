@@ -180,7 +180,9 @@ Deno.serve(async (req) => {
       `[${i}] TITLE: ${l.title}\nURL: ${l.url}\nSNIPPET: ${l.snippet}\nSOURCE_TYPE: ${l.source}`
     ).join("\n\n");
 
-    const systemPrompt = `You are an elite career advisor. Given REAL job listings scraped from job boards, select and rank the TOP 8 most relevant jobs for this professional.
+    const systemPrompt = `You are an elite career advisor. Given REAL job listings scraped from job boards, select and rank the TOP 8 most relevant jobs for you based on your profile.
+
+ADDRESSATION: Address the user as "you" throughout. NEVER use "this professional". For every numerical claim, cite the source.
 
 RULES:
 - Only include jobs that are REAL postings (not articles, not guides, not "top jobs" listicles)
