@@ -132,8 +132,8 @@ export async function orchestrateAgents(
 
   const seniorityTier = agent1?.seniority_tier || "PROFESSIONAL";
   const expYears = profileInput.experience_years ?? 5;
-  const displayName = linkedinName || "this professional";
-  const displayCompany = linkedinCompany || agent1?.current_company || "their company";
+  const displayName = linkedinName || agent1?.current_role || "you";
+  const displayCompany = linkedinCompany || agent1?.current_company || "your company";
 
   const monthlySalary = estimateMonthlySalary(
     profileInput.estimated_monthly_salary_inr, 
