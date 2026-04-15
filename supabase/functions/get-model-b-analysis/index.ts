@@ -648,23 +648,28 @@ card4_pivot: {
 
 card5_jobs: {
   headline: string (max 8 words — present tense, name the count),
-  subline: string (statement — "Your [skill] matches 4 of these."),
+  subline: string (statement — "Your [skill] matches 4 of these searches."),
   fear_hook: string (2 SHORT sentences — urgency with numbers),
   tough_love: string, hope_bridge: string (1 sentence — name their specific fit),
   emotion_message: string,
-  active_count: integer, senior_count: integer, strong_match_count: integer,
+  active_count: integer (estimated total active listings across all searches),
+  senior_count: integer, strong_match_count: integer,
   job_matches: [
     {
-      company: string, role: string (CLEAN searchable job title — e.g. "Head of Demand Generation", NOT "Vice President Marketing Europe Zycus". Never include company name or region in the role field.), salary: string (₹ amount — "₹15-22L fixed", never "competitive"), location: string (city name only — e.g. "Hyderabad", "Mumbai"),
-      match_color: "green"|"navy"|"amber", match_label: string,
+      role: string (descriptive search title — e.g. "Senior Marketing Manager roles in Hyderabad", NOT an invented company+role),
+      company: string (set to "Naukri Search" — do NOT invent company names),
+      salary: string (salary range from AmbitionBox data for this role+city, e.g. "₹18-28L" — if unknown, use "Market rate"),
+      location: string (city name only),
+      match_color: "green"|"navy"|"amber",
+      match_label: string (e.g. "~340 active listings"),
       why_fit: string (1 SHORT sentence using their actual moat skill),
-      tags: string[] (include company tier: "MNC"|"Unicorn"|"Startup"),
-      apply_evidence: string,
-      company_context: string (1 SHORT sentence),
-      urgency_narrative: string (2 SHORT sentences — why NOW),
-      search_url: string
+      tags: string[] (3 skill tags from the user's profile that match this search),
+      apply_evidence: string (1 sentence — why this search is curated for them),
+      company_context: string (set to "Live Naukri search curated for your profile"),
+      urgency_narrative: string (2 SHORT sentences — why act NOW),
+      search_url: string (MUST be a real Naukri URL: https://www.naukri.com/jobs-in-{city-lowercase}?k={role-keywords-plus-separated}&experience={years})
     }
-  ] (exactly 5)
+  ] (exactly 5 — each must be a DIFFERENT role variation or city. NEVER invent specific company names or positions. These are curated SEARCH URLs that link to hundreds of real, current listings.)
 }
 
 card6_blindspots: {
