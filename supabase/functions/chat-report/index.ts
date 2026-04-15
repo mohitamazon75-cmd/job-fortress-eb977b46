@@ -9,7 +9,9 @@ import { createTokenTrackingTransform } from "../_shared/token-tracker.ts";
 // ── Rate limits ──────────────────────────────────────────────
 const CHAT_RATE_LIMIT = 30;
 const CHAT_RATE_WINDOW_MS = 60 * 60 * 1000;
-const MAX_QUESTIONS_PER_SCAN = 10;
+const MAX_QUESTIONS_PER_SCAN_FREE = 10;   // Free users: 10 questions per scan
+const MAX_QUESTIONS_PER_SCAN_PRO  = 50;   // Pro users: 50 questions per scan (₹300/mo deserves this)
+const MAX_QUESTIONS_PER_SCAN = MAX_QUESTIONS_PER_SCAN_FREE; // default, overridden below for Pro
 const MONTHLY_FREE_LIMIT = 5;
 
 async function checkChatRateLimit(ip: string, sb: any): Promise<boolean> {
@@ -33,7 +35,8 @@ async function checkChatRateLimit(ip: string, sb: any): Promise<boolean> {
   }
 }
 
-async function checkScanQuestionLimit(scanId: string, sb: any): Promise<{ allowed: boolean; count: number }> {
+async function checkScanQuestionLimit(scanId: string, sb: any, isPro = false): Promise<{ allowed: boolean; count: number }> {
+  const limit = isPro ? MAX_QUESTIONS_PER_SCAN_PRO : MAX_QUESTIONS_PER_SCAN_FREE;
   try {
     const { count, error } = await sb
       .from("chat_messages")
@@ -44,7 +47,7 @@ async function checkScanQuestionLimit(scanId: string, sb: any): Promise<{ allowe
       return { allowed: false, count: 0 };
     }
     const currentCount = count ?? 0;
-    if (currentCount >= MAX_QUESTIONS_PER_SCAN) {
+    if (currentCount >= limit) {
       return { allowed: false, count: currentCount };
     }
     await sb.from("chat_messages").insert({ scan_id: scanId });
@@ -111,6 +114,44 @@ You are the "JobBachao Career AI Advisor", an elite, brutally honest Executive C
 1. DATA GROUNDING: Never give generic advice. Every single answer must explicitly reference at least one specific data point from the user's report (e.g., "Because you are in [Industry] in a [Location], your risk timeline is compressed..."). If a report field is missing or null, say [DATA MISSING: field] — NEVER fabricate data.
 2. THE "SO WHAT?" FRAMEWORK: For every insight you provide, immediately follow it with an actionable, step-by-step countermeasure with a timeline.
 3. LOCALIZED REALITY: Factor in the realities of the Indian job market, corporate culture, and offshore/service-based economy dynamics where relevant to the user's specific role. Use ₹ for financial figures.
+
+<india_labour_context>
+Apply this knowledge whenever the user asks about switching jobs, offers, negotiation, or workplace decisions:
+
+NOTICE PERIODS (India-specific):
+- IT/Tech majors (TCS, Infosys, Wipro, HCL, Cognizant): 60–90 days standard; negotiable but buyout typically ₹30k–₹1L
+- BFSI (banks, NBFCs, insurance): 30–90 days depending on seniority; senior roles often 90 days
+- Product companies (Swiggy, Zepto, Razorpay, CRED): 30–60 days typically; buyout often easier at Series B+
+- Startups (seed to Series A): 30 days common; founders sometimes negotiate 15 days
+- PSU/Government: very long, often 3–6 months
+- Manufacturing/FMCG: 30–60 days standard
+
+ESOP/EQUITY STRUCTURES:
+- Typical cliff: 1 year before any vesting begins
+- Typical schedule: 25% at cliff, then monthly/quarterly over 3 more years
+- Always check: exercise window after leaving (common: 90 days — often too short for illiquid startups)
+- ESOP tax event in India: at exercise (perquisite tax at income tax rate) AND at sale (capital gains)
+- Key question before leaving: is there a buyback program or secondary market?
+
+CTC COMPONENTS users often misunderstand:
+- Fixed gross vs take-home after PF (12% employee + 12% employer of basic, but employer's 12% is part of CTC)
+- Gratuity (4.81% of basic — only paid after 5 years of service; often part of CTC)
+- Variable pay: ask what % is typically paid and under what conditions
+- Insurance premiums often deducted from salary (₹3k–₹8k/month for family floater)
+- Actual in-hand ≈ Fixed gross × 0.68–0.75 after all deductions
+
+MOONLIGHTING & NON-COMPETE:
+- IT companies (particularly Wipro, Infosys): explicit anti-moonlighting clauses; moonlighting led to mass terminations in 2022–23
+- Non-compete agreements are generally NOT enforceable in India under Section 27 of the Indian Contract Act (courts consistently uphold this)
+- Non-disclosure agreements (NDAs) ARE enforceable — IP and client data protection is real
+- Freelancing/consulting during notice period: technically prohibited by most employment contracts
+
+SALARY NEGOTIATION INDIA-SPECIFIC:
+- Counter-offer acceptance rate among Indian professionals is high (70%+) but 60% leave within 12 months anyway
+- Hike benchmarks: 15–20% is expected for lateral moves; 30–40% for role upgrades; 50%+ possible in high-demand skills (GenAI, cloud, cybersecurity)
+- Form 16 / ITR is required by most employers — salary inflation claims are easily caught
+- Joining bonus with clawback clause: standard at senior levels (12–18 month clawback period)
+</india_labour_context>
 4. TONE MIRRORING: If the user's threat score is high (DI > 65 or tone_tag is critical/urgent), your tone should reflect urgency — open with the ₹ risk figure. If their score is low (DI < 35), focus on aggressive growth and building moats.
 5. LIVE DATA: When live market intelligence is provided, cite specific findings with source numbers [1], [2] etc. to increase credibility.
 6. CONFLICT RESOLUTION: If DI score and tone_tag conflict, TRUST the numeric DI score. Flag the conflict: "[NOTE: Score and band label conflict — using numeric score]".
@@ -219,11 +260,17 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Pro users have questions_remaining===999 (sentinel from check_and_increment_coach_usage)
+    const isProUser = monthlyQuestionsRemaining >= 999;
+
     if (scanId && UUID_RE.test(scanId)) {
-      const questionCheck = await checkScanQuestionLimit(scanId, sb);
+      const questionCheck = await checkScanQuestionLimit(scanId, sb, isProUser);
       if (!questionCheck.allowed) {
+        const limitMsg = isProUser
+          ? `You've used all ${MAX_QUESTIONS_PER_SCAN_PRO} questions for this scan. Start a new scan to continue.`
+          : `Question limit reached. You've used all ${MAX_QUESTIONS_PER_SCAN_FREE} questions for this scan. Upgrade to Pro for 50 questions per scan.`;
         return new Response(JSON.stringify({
-          error: "Question limit reached. You've used all 10 questions for this scan.",
+          error: limitMsg,
           limit_reached: true,
           count: questionCheck.count,
         }), {

@@ -33,7 +33,20 @@ Deno.serve(async (req: Request) => {
       keySkills,
       userId,
       dpdpConsentGiven,
-    } = body as Record<string, string | boolean | undefined>;
+      estimatedMonthlySalaryInr: rawCTC,
+    } = body as Record<string, string | boolean | number | undefined>;
+
+    // VibeSec: validate and clamp user-reported CTC before storage.
+    // Range: ₹5,000–₹5,000,000/month (₹60k–₹6Cr annual) — anything outside is rejected.
+    // Type: must be a finite number, not a string or object.
+    let validatedCTC: number | null = null;
+    if (rawCTC !== null && rawCTC !== undefined) {
+      const parsed = typeof rawCTC === 'number' ? rawCTC : Number(rawCTC);
+      if (Number.isFinite(parsed) && parsed >= 5000 && parsed <= 5000000) {
+        validatedCTC = Math.round(parsed);
+      }
+      // Silently discard out-of-range values — no error response (avoids info leakage)
+    }
 
     // Deduplicate: if this user already has a recent 'processing' scan, reuse it
     if (userId) {
@@ -69,6 +82,8 @@ Deno.serve(async (req: Request) => {
       dpdp_consent_at: dpdpConsentGiven ? new Date().toISOString() : null,
       ...(keySkills ? { enrichment_cache: { key_skills: keySkills } } : {}),
       ...(userId ? { user_id: userId } : {}),
+      // User-reported CTC — pre-validated and clamped above
+      ...(validatedCTC !== null ? { estimated_monthly_salary_inr: validatedCTC } : {}),
     };
 
     const { data, error } = await supabase

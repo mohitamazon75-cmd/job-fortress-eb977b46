@@ -87,12 +87,41 @@ export default function ScoreHistoryTab({ userId, locale = 'en' }: ScoreHistoryT
     }
   }, [userId]);
 
-  // TODO(2026-04-06): nurture-emails removed — JobBachao
-  // email system not yet designed. Re-implement when ready.
+  // Enroll user in rescan nudge alerts — stores opt-in intent via score_events table.
+  // score-change-notify cron reads this to know the user actively wants alerts.
+  // VibeSec: user_id comes from supabase.auth.getUser(), never from client payload.
   const handleEnrollNudge = async () => {
-    toast.info('Email nudges coming soon', {
-      description: 'This feature is under development.',
-    });
+    try {
+      const { data: { user }, error: authErr } = await supabase.auth.getUser();
+      if (authErr || !user) {
+        toast.error('Please sign in to enable alerts.');
+        return;
+      }
+
+      // Idempotent insert — if already opted in, silently succeeds
+      const { error } = await supabase.from('score_events').insert({
+        user_id: user.id,
+        event_type: 'rescan_alert_optin',
+        metadata: { opted_in_at: new Date().toISOString(), channel: 'email_whatsapp' },
+        computed_at: new Date().toISOString(),
+      });
+
+      if (error) {
+        // Unique violation means already enrolled — treat as success
+        if (error.code === '23505') {
+          toast.success('You\'re already enrolled in market alerts!');
+          return;
+        }
+        throw error;
+      }
+
+      toast.success('Market alerts activated!', {
+        description: 'We\'ll notify you when your career score shifts due to market changes.',
+      });
+    } catch (err) {
+      console.error('[ScoreHistoryTab] Enroll nudge failed:', err);
+      toast.error('Something went wrong. Please try again.');
+    }
   };
 
   // Empty state

@@ -105,7 +105,7 @@ function computeCareerCapital(report: ScanReport, tier: string): number {
   // Component 4: Cohort validation bonus (0–10)
   // Only awarded when real peer data confirms the position
   const hasPeerData = typeof (report as any).cohort_size === 'number'
-    ? (report as any).cohort_size > 10
+    ? (report as any).cohort_size >= 50
     : !!report.survivability?.peer_percentile_estimate;
   const cohortBonus = hasPeerData ? 10 : 0;
 
@@ -256,7 +256,7 @@ export function computeScoreBreakdown(report: ScanReport): ScoreDecomposition {
   const kgMarketCap = kgBaseline !== null
     ? Math.max(20, Math.min(65, 100 - kgBaseline + seniorityMarketBonus))
     : UNVERIFIED_MARKET_CAP;
-  const hasCohortData = (report as any).cohort_size > 10
+  const hasCohortData = (report as any).cohort_size >= 50
     || report.survivability?.peer_percentile_estimate;
   const effectiveMarketPercentile = Math.min(
     aiMarketPercentile,

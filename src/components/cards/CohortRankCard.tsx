@@ -54,6 +54,24 @@ export default function CohortRankCard({
 
   if (!data) return null;
 
+  // N≥50 minimum: a cohort of fewer than 50 peers produces a statistically meaningless
+  // percentile. Showing "you're in the 68th percentile" at N=3 damages credibility with
+  // any quantitatively literate professional. Show a "building" message instead.
+  if (data.cohort_size < 50) {
+    return (
+      <div className="rounded-2xl border border-border/50 bg-card/50 p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <Users className="w-4 h-4 text-primary" />
+          <p className="text-xs font-semibold text-foreground/50 uppercase tracking-widest">Peer Comparison</p>
+        </div>
+        <p className="text-sm text-foreground/70">
+          Building your cohort — {data.cohort_size} {role} professionals tracked so far.
+          Check back in 30 days as more peers scan.
+        </p>
+      </div>
+    );
+  }
+
   const pct = Math.round(data.safer_than_pct);
   const barWidth = Math.max(5, Math.min(95, pct));
 

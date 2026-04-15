@@ -41,7 +41,9 @@ export default function CohortInsightBadge({
   }
 
   // ── Error or no data — render nothing (non-blocking) ─────────
-  if (error || !data || data.cohort_size < 3) return null;
+  // N≥50 minimum: fewer peers produces statistically meaningless percentiles.
+  // At N<50, "you're in the 68th percentile" is noise dressed as insight.
+  if (error || !data || data.cohort_size < 50) return null;
 
   // ── Choose trend icon based on variant + cohort data ─────────
   const showImprovement = variant === 'stability' && data.pct_improved !== null && data.pct_improved > 0;

@@ -65,7 +65,7 @@ function createScanCheckClient(accessToken: string) {
   });
 }
 
-type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'seven-cards' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' | 'thank-you' | 'error';
+type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'ctc-input' | 'processing' | 'seven-cards' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' | 'thank-you' | 'error';
 
 // FIX 4 (LOW): Named interface for ScanRow instead of inline type
 interface ScanRow {
@@ -121,7 +121,10 @@ const Index = () => {
   const [industry, setIndustry] = useState('');
   const [yearsExperience, setYearsExperience] = useState('');
   const [metroTier, setMetroTier] = useState('');
-  const [_keySkills, setKeySkills] = useState('');
+  const [pendingSkills, setKeySkills] = useState('');
+  // Optional CTC — improves Replacement Invoice accuracy.
+  // VibeSec: clamped 5k–5M INR/month, never logged to console or analytics.
+  const [userReportedCTC, setUserReportedCTC] = useState<number | null>(null);
   const [scanId, setScanId] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [scanReport, setScanReport] = useState<ScanReport | null>(null);
@@ -553,21 +556,27 @@ const Index = () => {
 
   const handleSelectMetro = async (v: string) => {
     setMetroTier(v);
-    // Manual path: show skills step before scanning
+    // Manual path: show skills step before scanning (skills → CTC → launch)
     if (!linkedinUrl && !resumeFileRef.current) {
       setStep(5);
       return;
     }
-    await launchScan(v, '');
+    // LinkedIn/resume path: go to CTC screen before scan
+    // (Affinda will extract salary too, but user's actual CTC is more accurate)
+    setKeySkills('');
+    setPhase('ctc-input');
   };
 
   const handleSelectSkills = async (skills: string) => {
     setKeySkills(skills);
-    await launchScan(metroTier, skills);
+    // Show optional CTC screen before scan — manual path only.
+    // LinkedIn/resume users skip this: Affinda/LLM extracts salary from their data.
+    setPhase('ctc-input');
   };
 
   const handleSkipSkills = async () => {
-    await launchScan(metroTier, '');
+    setKeySkills('');
+    setPhase('ctc-input');
   };
 
   const launchScan = async (metro: string, skills: string) => {
@@ -594,6 +603,7 @@ const Index = () => {
           yearsExperience,
           metroTier: metro,
           keySkills: skills || undefined,
+          estimatedMonthlySalaryInr: userReportedCTC ?? null,
         });
         if (!id || !token) {
           console.error('Scan creation failed: missing id or token');
@@ -623,7 +633,13 @@ const Index = () => {
   }, []);
   const handleMoneyShotComplete = useCallback(() => {
     setMoneyShotSeen(true);
-    setPhase('insight-cards');
+    // From the seven-cards flow (new): go directly to the Pro dashboard.
+    // From the legacy insight-cards flow (old path): continue the insight chain.
+    // We detect "came from seven-cards" by checking if phase was already passed through it.
+    // The simplest signal: insight-cards phase guards use moneyShotSeen; if we set it true
+    // and the scanReport exists, going to reveal is the right destination from the new flow.
+    // Legacy paths (direct URL load /?id=...) enter via 'seven-cards' too, so reveal is correct.
+    setPhase('reveal');
   }, []);
   const handleInsightCardsComplete = useCallback(() => { setPhase('crisis-center'); }, []);
   const handleCrisisCenterComplete = useCallback(() => { setPhase('startup-autopsy'); }, []);
@@ -739,6 +755,53 @@ const Index = () => {
         />
         </Suspense>
       )}
+      {/* ── Optional CTC input — shown after onboarding, before scan launch ── */}
+      {phase === 'ctc-input' && (
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+          <div className="w-full max-w-sm">
+            <div className="mb-8 text-center">
+              <div className="text-4xl mb-4">₹</div>
+              <h2 className="text-2xl font-black text-foreground mb-2">What's your current monthly CTC?</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Optional — makes your Replacement Invoice exact instead of estimated.<br />
+                We never store or share your salary publicly.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { label: 'Under ₹30,000/month', value: 25000 },
+                { label: '₹30,000 – ₹60,000/month', value: 45000 },
+                { label: '₹60,000 – ₹1,20,000/month', value: 90000 },
+                { label: '₹1,20,000 – ₹2,50,000/month', value: 185000 },
+                { label: '₹2,50,000 – ₹5,00,000/month', value: 375000 },
+                { label: 'Above ₹5,00,000/month', value: 600000 },
+              ].map(({ label, value }) => (
+                <button
+                  key={value}
+                  onClick={() => {
+                    setUserReportedCTC(value);
+                    launchScan(metroTier, pendingSkills);
+                  }}
+                  className="w-full py-4 px-5 rounded-2xl border-2 border-border bg-card text-foreground text-left text-sm font-semibold hover:border-primary/40 hover:bg-primary/5 transition-all duration-200 active:scale-[0.98]"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                setUserReportedCTC(null);
+                launchScan(metroTier, pendingSkills);
+              }}
+              className="w-full mt-4 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Skip — use estimated salary
+            </button>
+          </div>
+        </div>
+      )}
       {phase === 'processing' && <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><MatrixLoading onComplete={handleLoadingComplete} scanReady={!!scanReport} scanId={scanId} seniorityTier={
         yearsExperience === '0-2' ? 'ENTRY' : yearsExperience === '3-5' ? 'PROFESSIONAL' : yearsExperience === '6-10' ? 'MANAGER' : yearsExperience === '10+' ? 'SENIOR_LEADER' : null
       } /></Suspense>}
@@ -749,8 +812,12 @@ const Index = () => {
             report={scanReport}
             scanId={scanId}
             onComplete={() => {
-              // After 7 cards → go to full Pro dashboard (AIDossierReveal) for deep dive
-              setPhase('reveal');
+              // After 7 cards → Replacement Invoice (MoneyShotCard) → Pro dashboard.
+              // The Replacement Invoice is the product's highest-converting viral moment —
+              // it was accidentally removed from the critical path in the 7-card unification.
+              // Restoring it here: seven-cards → money-shot → reveal.
+              setMoneyShotSeen(false);
+              setPhase('money-shot');
             }}
           />
         </Suspense>

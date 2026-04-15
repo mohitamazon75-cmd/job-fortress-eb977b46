@@ -331,6 +331,7 @@ export async function createScan(params: {
   yearsExperience?: string;
   metroTier?: string;
   keySkills?: string;
+  estimatedMonthlySalaryInr?: number | null; // Optional CTC — improves Replacement Invoice accuracy
 }): Promise<{ id: string; accessToken: string; triggered?: boolean }> {
   // Check if user is authenticated to associate scan with user
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -353,6 +354,8 @@ export async function createScan(params: {
         metroTier: params.metroTier || null,
         keySkills: params.keySkills || null,
         userId: user?.id || null,
+        // VibeSec: server-side clamp enforced in create-scan edge fn (5k–5M INR/month)
+        estimatedMonthlySalaryInr: params.estimatedMonthlySalaryInr ?? null,
       },
     });
 

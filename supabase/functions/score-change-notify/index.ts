@@ -47,6 +47,13 @@ Deno.serve(async (req) => {
 
     const notifiedIds = new Set((recentlyNotified || []).map((r: any) => r.user_id));
 
+    // Get users who have explicitly enrolled in alerts (opted in via ScoreHistoryTab)
+    const { data: optedInUsers } = await supabase
+      .from("score_events")
+      .select("user_id")
+      .eq("event_type", "rescan_alert_optin");
+    const optedInIds = new Set((optedInUsers || []).map((r: any) => r.user_id));
+
     // Get users with completed scans in the last 90 days, not recently notified
     const { data: eligibleScans } = await supabase
       .from("scans")
@@ -63,13 +70,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Deduplicate to one scan per user (most recent)
+    // Deduplicate to one scan per user (most recent).
+    // Opted-in users (enrolled via ScoreHistoryTab) are processed first — they
+    // explicitly asked for alerts. Non-opted-in recent scanners fill remaining slots.
     const seenUsers = new Set<string>();
-    const uniqueScans = eligibleScans.filter((s: any) => {
-      if (seenUsers.has(s.user_id) || notifiedIds.has(s.user_id)) return false;
+    const optedInScans: any[] = [];
+    const generalScans: any[] = [];
+
+    for (const s of eligibleScans) {
+      if (seenUsers.has(s.user_id) || notifiedIds.has(s.user_id)) continue;
       seenUsers.add(s.user_id);
-      return true;
-    }).slice(0, MAX_USERS_PER_RUN);
+      if (optedInIds.has(s.user_id)) {
+        optedInScans.push(s);
+      } else {
+        generalScans.push(s);
+      }
+    }
+
+    // Opted-in users always get alerts; general users fill remaining budget
+    const uniqueScans = [...optedInScans, ...generalScans].slice(0, MAX_USERS_PER_RUN);
 
     // ── 2. Check market signal changes for each user ──────────────────────────
     let notified = 0;
