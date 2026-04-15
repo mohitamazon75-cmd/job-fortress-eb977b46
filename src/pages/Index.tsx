@@ -45,6 +45,7 @@ const lazyWithRetry = (importFn: () => Promise<any>) => lazy(async () => {
 });
 
 const MatrixLoading = lazyWithRetry(() => import('@/components/MatrixLoading'));
+const SevenCardReveal = lazyWithRetry(() => import('@/components/SevenCardReveal'));
 const AIDossierReveal = lazyWithRetry(() => import('@/components/AIDossierReveal'));
 const MoneyShotCard = lazyWithRetry(() => import('@/components/MoneyShotCard'));
 const InsightCards = lazyWithRetry(() => import('@/components/InsightCards'));
@@ -64,7 +65,7 @@ function createScanCheckClient(accessToken: string) {
   });
 }
 
-type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' | 'thank-you' | 'error';
+type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'seven-cards' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' | 'thank-you' | 'error';
 
 // FIX 4 (LOW): Named interface for ScanRow instead of inline type
 interface ScanRow {
@@ -202,7 +203,7 @@ const Index = () => {
       setScanId(routedScanId);
       setScanReport(navState.cachedReport);
       setMoneyShotSeen(false);
-      setPhase('reveal');
+      setPhase('seven-cards');
       // Clear navigation state to prevent stale re-use on refresh
       window.history.replaceState({}, '', window.location.href);
       return;
@@ -251,7 +252,7 @@ const Index = () => {
           setScanReport(existingScan.final_json_report);
           hasCompletedScanRef.current = true;
           setMoneyShotSeen(false);
-          setPhase('reveal');
+          setPhase('seven-cards');
           return;
         }
 
@@ -264,7 +265,7 @@ const Index = () => {
               if (!isMountedRef.current || cancelled) return;
               setScanReport(report);
               setMoneyShotSeen(false);
-              setPhase('reveal');
+              setPhase('seven-cards');
             },
             () => {
               if (!isMountedRef.current || cancelled) return;
@@ -461,7 +462,7 @@ const Index = () => {
     setScanReport(report);
     setScanId(id);
     setMoneyShotSeen(false);
-    setPhase('reveal');
+    setPhase('seven-cards');
   }, []);
 
   const handleSelectCountry = (v: string) => { setCountry(v); setStep(2); };
@@ -613,8 +614,8 @@ const Index = () => {
   };
 
   const handleLoadingComplete = useCallback(() => {
-    // scanReady prop in MatrixLoading already gates this call, so always transition
-    setPhase('reveal');
+    // Transition to the new unified 7-card experience
+    setPhase('seven-cards');
   }, []);
 
   const handleRevealComplete = useCallback(() => {
@@ -741,6 +742,23 @@ const Index = () => {
       {phase === 'processing' && <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><MatrixLoading onComplete={handleLoadingComplete} scanReady={!!scanReport} scanId={scanId} seniorityTier={
         yearsExperience === '0-2' ? 'ENTRY' : yearsExperience === '3-5' ? 'PROFESSIONAL' : yearsExperience === '6-10' ? 'MANAGER' : yearsExperience === '10+' ? 'SENIOR_LEADER' : null
       } /></Suspense>}
+      {/* ── NEW: 7-card unified experience (replaces reveal → money-shot → insight-cards sequence) ── */}
+      {phase === 'seven-cards' && (scanReport ? (
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading your report...</div></div>}>
+          <SevenCardReveal
+            report={scanReport}
+            scanId={scanId}
+            onComplete={() => {
+              // After 7 cards → go to full Pro dashboard (AIDossierReveal) for deep dive
+              setPhase('reveal');
+            }}
+          />
+        </Suspense>
+      ) : (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <p className="text-muted-foreground">Loading results...</p>
+        </div>
+      ))}
       {phase === 'reveal' && (scanReport ? (
         <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading results...</div></div>}><AIDossierReveal report={scanReport} onComplete={handleRevealComplete} scanId={scanId} isProUser={isProUser} /></Suspense>
       ) : (
