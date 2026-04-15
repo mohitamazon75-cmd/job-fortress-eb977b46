@@ -16,6 +16,7 @@ import FreeActionCard from '@/components/cards/FreeActionCard';
 import SkillConfirmationQuiz from '@/components/cards/SkillConfirmationQuiz';
 import { getVibe } from '@/lib/get-vibe';
 import { useInsightVisible } from '@/hooks/use-insight-track';
+import { detectPersona, getPersonaConfig } from '@/lib/persona-detect';
 
 // ═══════════════════════════════════════════════════════════════
 // MERGED: Score Reveal + Intelligence Profile in one scrollable view
@@ -146,6 +147,8 @@ function PersonalisedIntelCard({ report, scanId }: { report: ScanReport; scanId?
 function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report: ScanReport; scanId?: string; isProUser?: boolean; onUpgrade?: () => void }) {
   const score = computeStabilityScore(report);
   const breakdown = computeScoreBreakdown(report);
+  const persona = detectPersona(report);
+  const personaConfig = getPersonaConfig(persona);
   const vibe = getVibe(score, report);
   const tools = normalizeTools(report.ai_tools_replacing || []);
   const skillAdjustments = report.score_breakdown?.skill_adjustments || [];
@@ -456,15 +459,20 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
       {/* Crisis support for low-score free users (score <40).
           Audit finding: product's response to acute career anxiety was a paywall.
           Psychologically, a user at score 28 needs a response pathway, not a sales moment.
-          The coach opt-in (free 3 email nudges) is the right therapeutic response here. */}
-      {!isProUser && score < 40 && (
+          The coach opt-in (free 3 email nudges) is the right therapeutic response here.
+          Persona-aware: BPO threshold=60, PSU threshold=25, IT Services=40, General=40. */}
+      {!isProUser && score < personaConfig.crisisThreshold && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.20 }}
           className="rounded-2xl border-2 border-amber-400/20 bg-amber-400/[0.04] p-5">
           <div className="flex items-start gap-3">
-            <span className="text-xl flex-shrink-0">🧭</span>
+            <span className="text-xl flex-shrink-0">{persona === 'BPO_KPO' ? '🚨' : '🧭'}</span>
             <div className="flex-1">
               <p className="text-sm font-black text-foreground mb-1">
-                Your score is in the high-risk zone. You don't have to figure this out alone.
+                {persona === 'BPO_KPO'
+                  ? 'Your role is in the displacement zone. Pivots happening now take 3-6 months.'
+                  : persona === 'PSU_GOV'
+                  ? 'Your role has strong protection — but building optionality now costs nothing.'
+                  : 'Your score is in the high-risk zone. You don\'t have to figure this out alone.'}
               </p>
               <p className="text-xs text-foreground/75 leading-relaxed mb-3">
                 Get 3 free personalised coaching messages over the next 48 hours — specific actions based on your exact risk profile, delivered to your inbox.

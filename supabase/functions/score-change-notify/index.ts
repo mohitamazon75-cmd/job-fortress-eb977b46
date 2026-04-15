@@ -1,0 +1,196 @@
+/**
+ * score-change-notify — Proactive score-change notifications (P1 audit finding)
+ *
+ * Audit finding: "When a new AI tool ships that overlaps with a user's skill fingerprint,
+ * or when their role's market_signal shows a posting_change_pct below −10% since their
+ * last scan, send a personalised notification."
+ *
+ * Designed to run weekly via pg_cron. For each active user:
+ *   1. Compute score drift since their last scan (reuses score-drift logic)
+ *   2. Check if any market signals for their role have worsened since their scan
+ *   3. If drift ≥ 3 points OR market decline > 10%, enqueue a personalised email
+ *   4. Rate-limit: max 1 notification per user per 30 days
+ *
+ * Call via pg_cron: SELECT cron.schedule('weekly-score-notify', '0 9 * * 1',
+ *   $$SELECT net.http_post(url:='..../score-change-notify', headers:='{"Authorization":"Bearer SERVICE_ROLE_KEY"}')$$);
+ */
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+
+const SITE_URL = "https://jobbachao.com";
+const MIN_DRIFT_TO_NOTIFY = 3;       // points — below this is noise
+const MARKET_DECLINE_THRESHOLD = -10; // % posting change — below = notify
+const NOTIFY_COOLDOWN_DAYS = 30;      // max 1 email per user per month
+const MAX_USERS_PER_RUN = 200;        // safety cap per cron invocation
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return handleCorsPreFlight(req);
+  const corsHeaders = getCorsHeaders(req);
+
+  try {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // ── 1. Find active users who have a completed scan ────────────────────────
+    const cutoffDate = new Date(Date.now() - NOTIFY_COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+    // Get users who had a score-change notification in the last 30 days
+    const { data: recentlyNotified } = await supabase
+      .from("score_events")
+      .select("user_id")
+      .eq("event_type", "score_change_notification")
+      .gte("computed_at", cutoffDate);
+
+    const notifiedIds = new Set((recentlyNotified || []).map((r: any) => r.user_id));
+
+    // Get users with completed scans in the last 90 days, not recently notified
+    const { data: eligibleScans } = await supabase
+      .from("scans")
+      .select("user_id, id, role_detected, industry, determinism_index, created_at, metro_tier")
+      .eq("scan_status", "complete")
+      .not("user_id", "is", null)
+      .gte("created_at", new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(MAX_USERS_PER_RUN * 3); // over-fetch to account for deduplication
+
+    if (!eligibleScans || eligibleScans.length === 0) {
+      return new Response(JSON.stringify({ status: "ok", notified: 0, message: "No eligible scans" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Deduplicate to one scan per user (most recent)
+    const seenUsers = new Set<string>();
+    const uniqueScans = eligibleScans.filter((s: any) => {
+      if (seenUsers.has(s.user_id) || notifiedIds.has(s.user_id)) return false;
+      seenUsers.add(s.user_id);
+      return true;
+    }).slice(0, MAX_USERS_PER_RUN);
+
+    // ── 2. Check market signal changes for each user ──────────────────────────
+    let notified = 0;
+    const errors: string[] = [];
+
+    for (const scan of uniqueScans) {
+      try {
+        // Fetch latest market signal for this role
+        const { data: signal } = await supabase
+          .from("market_signals")
+          .select("posting_change_pct, automation_risk_delta, ai_job_mentions_pct, updated_at")
+          .eq("job_family", scan.role_detected ?? "")
+          .eq("metro_tier", scan.metro_tier ?? "tier1")
+          .gte("updated_at", scan.created_at)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!signal) continue;
+
+        // Compute estimated score drift
+        const automationDelta = signal.automation_risk_delta ?? 0;
+        const marketDrift = Math.abs(automationDelta * 0.3);
+        const postingDecline = signal.posting_change_pct ?? 0;
+
+        const shouldNotify =
+          marketDrift >= MIN_DRIFT_TO_NOTIFY ||
+          postingDecline <= MARKET_DECLINE_THRESHOLD;
+
+        if (!shouldNotify) continue;
+
+        // ── 3. Fetch user profile for email ──────────────────────────────────
+        const { data: profile } = await supabase.auth.admin.getUserById(scan.user_id);
+        if (!profile?.user?.email) continue;
+
+        const userEmail = profile.user.email;
+        const displayRole = scan.role_detected || "your role";
+        const driftStr = marketDrift >= MIN_DRIFT_TO_NOTIFY
+          ? `Your estimated score has shifted ~${Math.round(marketDrift)} points`
+          : `Hiring for ${displayRole} is down ${Math.abs(postingDecline).toFixed(0)}%`;
+
+        // ── 4. Build email ────────────────────────────────────────────────────
+        const emailHtml = `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#0f0f0e;font-family:system-ui,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 24px;">
+    <div style="margin-bottom:24px;">
+      <span style="color:#f7f5f0;font-weight:900;font-size:20px;letter-spacing:-0.5px;">JobBachao</span>
+      <span style="color:#6b7280;font-size:12px;margin-left:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Market Alert</span>
+    </div>
+
+    <div style="background:#1a1a18;border:1px solid #2a2a28;border-radius:12px;padding:28px;margin-bottom:20px;">
+      <p style="color:#dc2626;font-size:11px;font-weight:900;letter-spacing:2px;text-transform:uppercase;margin:0 0 12px;">⚠ Your Market Position Has Shifted</p>
+      <h2 style="color:#f7f5f0;font-size:22px;font-weight:800;margin:0 0 12px;line-height:1.3;">${driftStr} since your last scan</h2>
+      <p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        The market for <strong style="color:#f7f5f0;">${displayRole}</strong> professionals has changed. 
+        Your JobBachao score reflects live market signals — when conditions shift, your position does too.
+        Running a fresh scan takes 60 seconds and gives you an updated action plan.
+      </p>
+      <a href="${SITE_URL}?utm_source=score_alert&utm_medium=email&utm_campaign=market_shift"
+         style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:900;font-size:14px;padding:14px 28px;border-radius:8px;text-decoration:none;">
+        Rescan Now — Free →
+      </a>
+    </div>
+
+    <p style="color:#4b5563;font-size:11px;line-height:1.5;margin:0;">
+      You're receiving this because your career scan is on file at JobBachao. 
+      <a href="${SITE_URL}/settings" style="color:#6366f1;">Unsubscribe from market alerts</a>
+    </p>
+  </div>
+</body></html>`;
+
+        // ── 5. Enqueue email ──────────────────────────────────────────────────
+        await supabase.rpc("enqueue_email", {
+          queue_name: "transactional_emails",
+          payload: {
+            to: userEmail,
+            from: "JobBachao Alerts <alerts@notify.jobbachao.com>",
+            sender_domain: "notify.jobbachao.com",
+            subject: `⚠ Market shift detected for ${displayRole} — rescan recommended`,
+            html: emailHtml,
+            text: `${driftStr} since your last scan.\n\nThe market for ${displayRole} professionals has changed. Rescan now to get an updated score and action plan: ${SITE_URL}\n\nTo unsubscribe: ${SITE_URL}/settings`,
+            purpose: "transactional",
+            label: "score_change_alert",
+            message_id: `score-alert-${scan.user_id}-${Date.now()}`,
+            queued_at: new Date().toISOString(),
+          },
+        });
+
+        // ── 6. Record that we notified this user ──────────────────────────────
+        await supabase.from("score_events").insert({
+          user_id: scan.user_id,
+          scan_id: scan.id,
+          event_type: "score_change_notification",
+          metadata: {
+            drift: marketDrift,
+            posting_change_pct: postingDecline,
+            role: displayRole,
+            notified_at: new Date().toISOString(),
+          },
+          computed_at: new Date().toISOString(),
+        });
+
+        notified++;
+        console.log(`[ScoreChangeNotify] Notified ${userEmail} — drift: ${marketDrift.toFixed(1)}, posting_delta: ${postingDecline}`);
+
+      } catch (userErr) {
+        errors.push(`${scan.user_id}: ${userErr}`);
+        console.error(`[ScoreChangeNotify] Failed for user ${scan.user_id}:`, userErr);
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ status: "ok", notified, checked: uniqueScans.length, errors: errors.slice(0, 5) }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+
+  } catch (err) {
+    console.error("[ScoreChangeNotify] Fatal error:", err);
+    return new Response(
+      JSON.stringify({ error: String(err) }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+});
