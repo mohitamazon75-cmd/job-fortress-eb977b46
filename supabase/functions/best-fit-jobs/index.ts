@@ -260,7 +260,7 @@ Select the top 8 most relevant, REAL job postings. Rank by fit to this person's 
                     additionalProperties: false,
                   },
                 },
-                market_insight: { type: "string", description: "One paragraph about the current job market for this professional's profile" },
+                market_insight: { type: "string", description: "One paragraph about the current job market for your profile" },
               },
               required: ["jobs", "market_insight"],
               additionalProperties: false,
