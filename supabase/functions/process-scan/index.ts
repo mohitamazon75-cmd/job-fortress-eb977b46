@@ -799,14 +799,8 @@ No explanation, no markdown. Return ONLY the JSON.`;
     const det = computeAll(profileInput, allSkillRiskRows, skillMapRows, primaryJob, marketSignal, !!scan.linkedin_url, companyTier, scan.metro_tier || null, null, agent1?.industry || resolvedIndustry, scanCountry, companyHealthResult?.score ?? null, detectedSubSector, profile_completeness_pct, profile_gaps);
     console.log(`[Orchestrator] DI=${det.determinism_index}, SS=${det.survivability.score}, quality=${det.data_quality.overall}${companyHealthResult ? `, companyHealth=${companyHealthResult.score}` : ''}${skillDemandResults.length > 0 ? `, skillsValidated=${skillDemandResults.length}` : ''}${detectedSubSector ? `, subSector=${detectedSubSector}` : ''}`);
 
-    // STEP 2 (BUG-3 fix): Check for contradictions between Agent1 categorical signal,
-    // the deterministic DI, and the ML automation_risk (if available).
-    // Non-fatal: logs a warning but never blocks the scan.
-    checkAutomationSignalConsistency(
-      agent1?.automatable_task_ratio,
-      det.determinism_index,
-      null, // ML risk not yet computed at this point — checked again in report assembly
-    );
+    // Signal consistency check with teeth now happens in scan-report-builder.ts (assembleReport)
+    // where it can actually adjust mergedDI before the report is built and persisted.
 
     // ══════════════════════════════════════════════════════════
     // STEPS 7+8+9: PARALLEL AGENT ORCHESTRATION (extracted to scan-agents.ts)

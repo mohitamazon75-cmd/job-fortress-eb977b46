@@ -23,6 +23,7 @@ import {
 } from "../_shared/agent-prompts.ts";
 import { validateOutputForTier } from "../_shared/scan-helpers.ts";
 import { validateToolStatic } from "../_shared/scan-report-builder.ts";
+import { validateAgentOutput, Agent2ASchema, Agent2BSchema } from "../_shared/zod-schemas.ts";
 import { getPreviousScore } from "../_shared/score-history.ts";
 import { getKG } from "../_shared/riskiq-knowledge-graph.ts";
 import { estimateMonthlySalary, calculateGeoArbitrage, type MarketSignalRow } from "../_shared/deterministic-engine.ts";
@@ -402,9 +403,21 @@ ${kgContext}`;
   }
 
   // Unpack Agents 2A/2B/2C
-  const agent2a = agents2Results[0].status === "fulfilled" ? agents2Results[0].value : null;
-  const agent2b = agents2Results[1].status === "fulfilled" ? agents2Results[1].value : null;
-  const agent2c = agents2Results[2].status === "fulfilled" ? agents2Results[2].value : null;
+  // FIX B: Validate each agent's raw output against its Zod schema before merging.
+  // Previously the merged agent2 object went to DB with zero structural validation —
+  // malformed fields (wrong type, hallucinated shapes) would silently corrupt scan data.
+  //
+  // validateAgentOutput() returns the validated data on success, or null with a
+  // console.warn on failure. Callers downstream use || {} so null fails gracefully.
+  const agent2aRaw = agents2Results[0].status === "fulfilled" ? agents2Results[0].value : null;
+  const agent2bRaw = agents2Results[1].status === "fulfilled" ? agents2Results[1].value : null;
+  const agent2c   = agents2Results[2].status === "fulfilled" ? agents2Results[2].value : null;
+
+  // Zod-validate 2A and 2B; 2C has no schema yet (pivot fields are looser)
+  const agent2a = agent2aRaw ? (validateAgentOutput("Agent2A", Agent2ASchema, agent2aRaw) ?? agent2aRaw) : null;
+  const agent2b = agent2bRaw ? (validateAgentOutput("Agent2B", Agent2BSchema, agent2bRaw) ?? agent2bRaw) : null;
+  // Note: fallback to raw when schema fails keeps existing resilience — bad data is
+  // logged and the scan continues rather than returning a blank report.
 
   // Score-narrative consistency check for Agent2A
   if (agent2a && det?.determinism_index !== undefined) {

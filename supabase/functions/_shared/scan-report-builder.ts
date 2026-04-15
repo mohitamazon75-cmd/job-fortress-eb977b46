@@ -17,6 +17,7 @@ import {
 } from "./scan-helpers.ts";
 import { getLocale } from "./locale-config.ts";
 import { callAgent } from "./ai-agent-caller.ts";
+import { checkAutomationSignalConsistency } from "./zod-schemas.ts";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -264,7 +265,41 @@ export function assembleReport(input: ReportAssemblyInput): any {
 
   // CONSISTENCY FIX: All core numerical metrics come from the deterministic engine.
   // ML/LLM outputs only provide qualitative insights (judo_strategy, weekly_diet, etc.)
-  const mergedDI = det.determinism_index;
+  //
+  // AUDIT FIX A: Signal consistency gate with teeth.
+  // Previously checkAutomationSignalConsistency() logged a warning and did nothing —
+  // a user could receive DI=22 ("safe") while Agent1 said HIGH automation risk, silently.
+  //
+  // The fix: when Agent1's categorical signal contradicts the DI AND DI confidence is
+  // LOW or MEDIUM (meaning KG had sparse skill matches), nudge DI 30% toward the
+  // Agent1-implied range midpoint. Conservative — deterministic engine still dominates.
+  // Only fires when both: (a) contradiction detected, (b) DI confidence is not HIGH/VERY HIGH.
+  let mergedDI = det.determinism_index;
+  if (agent1?.automatable_task_ratio) {
+    const consistencyResult = checkAutomationSignalConsistency(
+      agent1.automatable_task_ratio,
+      mergedDI,
+      null,
+    );
+    const diConfidence = det.determinism_confidence as string;
+    if (!consistencyResult.consistent && diConfidence !== "VERY HIGH" && diConfidence !== "HIGH") {
+      const AGENT1_MIDPOINTS: Record<string, number> = {
+        HIGH: 72,   // midpoint of 55–100 expected range
+        MEDIUM: 47, // midpoint of 25–70 expected range
+        LOW: 20,    // midpoint of 0–40 expected range
+      };
+      const targetMidpoint = AGENT1_MIDPOINTS[agent1.automatable_task_ratio];
+      if (targetMidpoint !== undefined) {
+        const adjustedDI = Math.round(mergedDI * 0.7 + targetMidpoint * 0.3);
+        console.warn(
+          `[ConsistencyGate] Contradiction resolved: DI ${mergedDI}→${adjustedDI} ` +
+          `(Agent1=${agent1.automatable_task_ratio}, KG confidence=${diConfidence}). ` +
+          `${consistencyResult.warning}`,
+        );
+        mergedDI = Math.max(5, Math.min(95, adjustedDI));
+      }
+    }
+  }
   const mergedMonthsRemaining = det.months_remaining;
   const mergedToneTag = deriveToneTag(mergedDI as number);
   const analysisSource = mlObsolescence ? "ml_enhanced" : "deterministic_only";

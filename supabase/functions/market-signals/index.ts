@@ -1224,7 +1224,7 @@ async function geminiOnlyHeadlines(apiKey: string) {
           },
           { role: "user", content: "Generate 16 AI & jobs headlines." },
         ],
-        temperature: 0.9,
+        temperature: 0.4, // FIX D: was 0.9 — structured JSON output; high temp causes malformed arrays
       }),
     });
     clearTimeout(ms7T);

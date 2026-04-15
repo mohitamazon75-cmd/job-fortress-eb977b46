@@ -212,7 +212,7 @@ async function enrichNarrative(apiKey: string, profile: ProfileInput, report: Ri
 No markdown. No explanation. ONLY the JSON object.` },
           { role: "user", content: `Role: ${profile.role}\nIndustry: ${profile.industry}\nExperience: ${profile.experience}\nCity: ${profile.city}\nRisk Score: ${report.risk_score}/100 (${report.risk_tier})\nTop threats: ${report.threats.slice(0, 2).map(t => t.name).join(", ")}\nTop strengths: ${report.strengths.slice(0, 2).map(s => s.title).join(", ")}\nDoomsday: ${report.viral.doomsday_date}\n\nGenerate a viral headline and 2-sentence summary.` },
         ],
-        temperature: 0.7,
+        temperature: 0.3, // FIX D: was 0.7 — structured JSON output; use low temp
       }),
       signal: controller.signal,
     });
