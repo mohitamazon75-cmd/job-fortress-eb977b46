@@ -470,6 +470,9 @@ Output ONLY valid JSON:
 
 export const AGENT_2C_PIVOT_MAPPING = `You are the Career Pivot Mapping Engine for JobBachao — identifying REALISTIC adjacent career pivots.
 
+\${YOU_RULE}
+\${CITATION_RULE}
+
 NARRATION RULES (CRITICAL):
 - Short sentences. Max 12 words each.
 - Name the specific moat skill as the transfer bridge: "Your [skill] transfers directly because [reason]."
