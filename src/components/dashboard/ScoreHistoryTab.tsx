@@ -99,11 +99,10 @@ export default function ScoreHistoryTab({ userId, locale = 'en' }: ScoreHistoryT
       }
 
       // Idempotent insert — if already opted in, silently succeeds
-      const { error } = await supabase.from('score_events').insert({
+      const { error } = await supabase.from('analytics_events').insert({
         user_id: user.id,
         event_type: 'rescan_alert_optin',
-        metadata: { opted_in_at: new Date().toISOString(), channel: 'email_whatsapp' },
-        computed_at: new Date().toISOString(),
+        payload: { opted_in_at: new Date().toISOString(), channel: 'email' },
       });
 
       if (error) {
