@@ -214,7 +214,7 @@ function Card2SkillsVsAI({ report, onBack, onNext }: { report: ScanReport; onBac
                   <span style={{ fontSize: 18, flexShrink: 0 }}>🤖</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--mb-red)' }}>{s}</div>
-                    {tools[i] && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: 'var(--mb-ink3)', marginTop: 2 }}>Being replaced by {tools[i]}</div>}
+                    {tools[i] && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: 'var(--mb-ink3)', marginTop: 2 }}>Being replaced by {typeof tools[i] === 'string' ? tools[i] : (tools[i] as { name: string }).name}</div>}
                   </div>
                 </div>
               ))}
