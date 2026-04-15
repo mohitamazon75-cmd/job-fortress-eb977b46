@@ -153,6 +153,89 @@ export default function MoneyShotCard({ report, onContinue, scanId }: MoneyShotC
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
   };
 
+  // LinkedIn visual share: generate a canvas card, download it, then open LinkedIn share
+  // The audit finding: visual canvas share card was only available to Pro users.
+  // This gives free users a score card image they can attach to a LinkedIn post.
+  const handleLinkedInShare = async () => {
+    try {
+      // Build a minimal 1200×628 (LinkedIn OG) canvas card
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 628;
+      const ctx = canvas.getContext('2d')!;
+
+      // Background
+      const isDanger = careerScore < 50;
+      ctx.fillStyle = '#0f0f0e';
+      ctx.fillRect(0, 0, 1200, 628);
+
+      // Accent bar
+      const barGrad = ctx.createLinearGradient(0, 0, 1200, 0);
+      barGrad.addColorStop(0, isDanger ? '#dc2626' : '#16a34a');
+      barGrad.addColorStop(1, isDanger ? '#f97316' : '#06b6d4');
+      ctx.fillStyle = barGrad;
+      ctx.fillRect(0, 0, 1200, 6);
+
+      // Brand
+      ctx.fillStyle = '#f7f5f0';
+      ctx.font = '700 28px system-ui, sans-serif';
+      ctx.fillText('JOBBACHAO', 72, 72);
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '400 18px system-ui, sans-serif';
+      ctx.fillText('AI Career Intelligence', 72, 100);
+
+      // Score
+      ctx.fillStyle = isDanger ? '#dc2626' : '#16a34a';
+      ctx.font = '900 140px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${careerScore}`, 300, 380);
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '600 28px system-ui, sans-serif';
+      ctx.fillText('/100', 300, 420);
+      ctx.fillStyle = '#f7f5f0';
+      ctx.font = '700 22px system-ui, sans-serif';
+      ctx.fillText('Career Position Score', 300, 460);
+
+      // Role and industry
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#f7f5f0';
+      ctx.font = '700 38px system-ui, sans-serif';
+      const roleDisplay = roleName.length > 32 ? roleName.slice(0, 32) + '…' : roleName;
+      ctx.fillText(roleDisplay, 560, 260);
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '400 24px system-ui, sans-serif';
+      ctx.fillText(report.industry || '', 560, 300);
+
+      // Verdict label
+      const verdict = careerScore >= 70 ? '✓ RESILIENT' : careerScore >= 50 ? '⚠ MODERATE RISK' : '⚠ HIGH RISK';
+      ctx.fillStyle = isDanger ? '#dc2626' : '#16a34a';
+      ctx.font = '700 22px system-ui, sans-serif';
+      ctx.fillText(verdict, 560, 360);
+
+      // CTA
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '400 20px system-ui, sans-serif';
+      ctx.fillText('Check yours free → jobbachao.com', 560, 560);
+
+      // Download
+      const link = document.createElement('a');
+      link.download = `jobbachao-score-${careerScore}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      // Open LinkedIn share with pre-filled text
+      const liText = encodeURIComponent(`I just ran my career through an AI risk analysis.\n\nMy Career Position Score: ${careerScore}/100 (${verdict})\nRole: ${roleName}\n\nSee where you stand on AI displacement → jobbachao.com\n\n#CareerRisk #AI #JobSecurity #JobBachao`);
+      setTimeout(() => {
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=https://jobbachao.com`, '_blank');
+      }, 500);
+
+      toast.success('Score card downloaded! Attach it to your LinkedIn post.');
+    } catch {
+      // Fallback to text share
+      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=https://jobbachao.com`, '_blank');
+    }
+  };
+
   const handleShare = async () => {
     if (navigator.share) {
       try { await navigator.share({ title: 'My Replacement Invoice', text: shareText }); } catch {}
@@ -521,6 +604,17 @@ export default function MoneyShotCard({ report, onContinue, scanId }: MoneyShotC
               >
                 Show Me How to Prove It
                 <ArrowRight className="w-4 h-4" />
+              </motion.button>
+
+              {/* LinkedIn visual share — generates a canvas card image for LinkedIn posts */}
+              <motion.button
+                onClick={handleLinkedInShare}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[13px] border border-[#0077B5]/30 bg-[#0077B5]/[0.06] text-[#0077B5] hover:bg-[#0077B5]/[0.12] transition-all"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                Share to LinkedIn
               </motion.button>
 
               {/* Generic share fallback */}

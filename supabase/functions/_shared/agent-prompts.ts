@@ -63,7 +63,8 @@ VERBATIM TITLE EXTRACTION (CRITICAL — ZERO TOLERANCE FOR TITLE INFLATION):
   * EXECUTIVE (15+ years): 15-25 total skills
   * Do not inflate skill counts beyond what is genuinely demonstrated in the profile.
 - execution_skills: operational/process TASKS this person performs (not tools). Scale by seniority.
-  * CRITICAL: NEVER include trivial commodity skills that EVERYONE does regardless of role. BANNED skills for ALL tiers: email_writing, email_management, calendar_management, meeting_scheduling, basic_copywriting, filing, note_taking, internet_research, phone_calls, data_entry, travel_booking, expense_reporting.
+  * CRITICAL: NEVER include trivial commodity skills that EVERYONE does regardless of role. BANNED skills for ALL tiers: email_writing, email_management, calendar_management, meeting_scheduling, basic_copywriting, filing, note_taking, internet_research, phone_calls, travel_booking, expense_reporting.
+  * EXCEPTION — For BPO/KPO/back-office roles ONLY: "data_entry" IS a meaningful signal (not trivially universal in those roles) and should be extracted as "High-volume data entry" or "Structured data processing" — never as bare "data_entry" which is too generic.
   * ADDITIONALLY BANNED — overly generic IT skills that tell nothing about actual capability (use the SPECIFIC version instead):
     - BANNED: "testing" → USE: "Selenium WebDriver automation", "Jest unit testing", "Postman API testing", "JMeter load testing"
     - BANNED: "programming" or "coding" → USE: "Python scripting", "React.js development", "Java Spring Boot", specific language
