@@ -238,7 +238,7 @@ async function geminiOnlyHeadlines(apiKey: string) {
           },
           { role: "user", content: "Generate 16 AI & jobs headlines." },
         ],
-        temperature: 0.9,
+        temperature: 0.4, // FIX D: was 0.9 — structured JSON array output
       }),
       signal: ai2Ctrl.signal,
     });

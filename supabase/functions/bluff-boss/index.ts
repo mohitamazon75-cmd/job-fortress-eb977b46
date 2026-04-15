@@ -114,7 +114,7 @@ Return ONLY valid JSON, no markdown.`;
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
+        temperature: 0.3, // FIX D: was 0.7 — structured JSON via response_format
         response_format: { type: "json_object" },
       }),
       signal: aiCtrl.signal,
