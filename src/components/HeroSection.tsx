@@ -183,7 +183,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             We analyze your career against{' '}
             <span className="text-foreground font-bold">two reports</span> — a risk diagnosis{' '}
             <em>and</em> a growth playbook — covering{' '}
-            <span className="text-foreground font-bold">95+ job families</span>,{' '}
+            <span className="text-foreground font-bold">98+ role archetypes</span>,{' '}
             <span className="text-foreground font-bold">50+ AI tools</span>, and{' '}
             <span className="text-foreground font-bold">live market data</span>.{' '}
             <span className="text-primary font-black">Know your risk. Own your future.</span>

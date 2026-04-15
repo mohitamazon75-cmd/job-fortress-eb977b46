@@ -55,7 +55,7 @@ export default function IndustryRiskHeatmap() {
             AI Risk by Industry
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
-            Average automation risk across <span className="text-foreground font-bold">95+ job families</span> in each sector
+            Average automation risk across <span className="text-foreground font-bold">98+ role archetypes</span> in each sector
           </p>
         </motion.div>
 

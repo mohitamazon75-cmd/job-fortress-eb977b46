@@ -22,7 +22,7 @@ const TERMINAL_LINES = [
   // Profile Extraction (lines 0-5) — ~15s
   "> Ingesting profile data...",
   "> Mapping role to Knowledge Graph (98 role archetypes)...",
-  "> Matching skills against 147 risk vectors...",
+  "> Matching skills against 30 skill categories & 98 role archetypes...",
   "> Cross-referencing O*NET & ISCO-08 taxonomy...",
   "> Querying live job market data for your role...",
   "> Profile extraction complete.",
