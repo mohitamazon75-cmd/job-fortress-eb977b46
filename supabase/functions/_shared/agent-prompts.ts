@@ -2,6 +2,26 @@
 // AGENT PROMPTS — extracted from process-scan monolith
 // ═══════════════════════════════════════════════════════════════
 
+// ── 300X: "You" Rule — injected into all agent prompts ──────
+export const YOU_RULE = `
+ADDRESSATION RULE (CRITICAL — zero tolerance for violations):
+- NEVER use "this professional", "the candidate", "the user", "this person", or ANY third-person construction.
+- Address the user as "you" throughout ALL output. Write as if speaking directly to them.
+- If a name is provided, use their name: "Rahul, you should..." not "This professional should..."
+- If referring to their employer, use the company name ("at Wipro"), NEVER "their company" or "the user's company".
+- If no name is available, use "you" everywhere. NEVER fall back to "this professional".
+`;
+
+// ── 300X: Citation Standard — injected into all agent prompts ──
+export const CITATION_RULE = `
+CITATION STANDARD (CRITICAL — every claim must be traceable):
+- For every numerical claim in your output, cite the source in brackets.
+- Acceptable sources: [WEF 2025], [AmbitionBox, ${new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}], [Naukri.com, this week], [NASSCOM 2024], [LinkedIn Economic Graph India 2025], [Knowledge Graph], [Deterministic Engine].
+- If you cannot cite a source for a numerical claim, use qualitative language instead: "significantly", "substantially", "most".
+- NEVER fabricate statistics. NEVER use suspiciously round numbers (exactly 67% is a red flag; 63-67% is credible).
+- When referencing AI tool capabilities, cite the specific tool version and year.
+`;
+
 // Shared tool currency rule injected into all agent prompts
 export const TOOL_CURRENCY_RULE = `
 TOOL NAME CURRENCY (CRITICAL — violation = unprofessional output):
@@ -225,6 +245,8 @@ export const AGENT_2A_RISK_ANALYSIS = `You are the Risk Analysis Engine for JobB
 
 You receive a user's FULL profile and pre-computed deterministic scores. Your ONLY job is risk analysis and strategic advice.
 
+${YOU_RULE}
+${CITATION_RULE}
 ${TOOL_CURRENCY_RULE}
 
 NARRATION RULES (CRITICAL — every output field must follow these):
@@ -374,6 +396,8 @@ export const AGENT_2B_ACTION_PLAN = `You are the Action Plan Generator for JobBa
 
 You receive the user's profile, risk analysis, and deterministic scores. Generate a weekly plan calibrated to their seniority.
 
+${YOU_RULE}
+${CITATION_RULE}
 ${TOOL_CURRENCY_RULE}
 
 NARRATION RULES (CRITICAL — every output field must follow these):
@@ -445,6 +469,9 @@ Output ONLY valid JSON:
 }`;
 
 export const AGENT_2C_PIVOT_MAPPING = `You are the Career Pivot Mapping Engine for JobBachao — identifying REALISTIC adjacent career pivots.
+
+${YOU_RULE}
+${CITATION_RULE}
 
 NARRATION RULES (CRITICAL):
 - Short sentences. Max 12 words each.

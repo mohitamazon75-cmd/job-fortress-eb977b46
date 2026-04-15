@@ -180,7 +180,9 @@ Deno.serve(async (req) => {
       `[${i}] TITLE: ${l.title}\nURL: ${l.url}\nSNIPPET: ${l.snippet}\nSOURCE_TYPE: ${l.source}`
     ).join("\n\n");
 
-    const systemPrompt = `You are an elite career advisor. Given REAL job listings scraped from job boards, select and rank the TOP 8 most relevant jobs for this professional.
+    const systemPrompt = `You are an elite career advisor. Given REAL job listings scraped from job boards, select and rank the TOP 8 most relevant jobs for you based on your profile.
+
+ADDRESSATION: Address the user as "you" throughout. NEVER use "this professional". For every numerical claim, cite the source.
 
 RULES:
 - Only include jobs that are REAL postings (not articles, not guides, not "top jobs" listicles)
@@ -194,7 +196,7 @@ RULES:
 
 OUTPUT FORMAT (strict JSON via tool call):`;
 
-    const userPrompt = `Rank these real job listings for this professional:
+    const userPrompt = `Rank these real job listings for this person's profile:
 
 PROFILE:
 - Current Role: ${role}
@@ -258,7 +260,7 @@ Select the top 8 most relevant, REAL job postings. Rank by fit to this person's 
                     additionalProperties: false,
                   },
                 },
-                market_insight: { type: "string", description: "One paragraph about the current job market for this professional's profile" },
+                market_insight: { type: "string", description: "One paragraph about the current job market for your profile" },
               },
               required: ["jobs", "market_insight"],
               additionalProperties: false,

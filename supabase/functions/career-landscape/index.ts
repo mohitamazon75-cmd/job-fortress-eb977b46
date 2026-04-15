@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     ].slice(0, 6);
 
     // AI synthesis with Gemini
-    const prompt = `You are a career transition strategist. Analyze lateral move opportunities for this professional.
+    const prompt = `You are a career transition strategist. Analyze lateral move opportunities based on this profile. Address the user as "you" throughout — never "this professional". For every numerical claim, cite the source in brackets.
 
 CURRENT PROFILE:
 - Role: ${role}
