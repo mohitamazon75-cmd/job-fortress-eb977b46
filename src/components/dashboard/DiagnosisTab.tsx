@@ -363,7 +363,7 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
                   <h4 className="text-[11px] font-black uppercase tracking-wider text-primary mb-2">How Career Position Score Is Calculated</h4>
                   <div className="space-y-2">
                     {[
-                      { label: 'Role Automation Risk (65% weight)', desc: 'Baseline disruption score for your job family from our Knowledge Graph, adjusted by your specific skill risk profile. Each skill is weighted by importance and matched against 200+ automation risk ratings.' },
+                      { label: 'Role Automation Risk (65% weight)', desc: 'Baseline disruption score for your job family from our Knowledge Graph, adjusted by your specific skill risk profile. Each skill is weighted by importance and matched against 98 role-specific risk ratings.' },
                       { label: 'Personal Protection (35% weight)', desc: 'Inverse of your Protection Score — accounts for experience depth, strategic skill moats, geographic advantage, and adaptability to AI-augmented workflows.' },
                       { label: 'Market Pressure Adjustment', desc: 'Real-time signal from job posting trends — if AI-related mentions in your role\'s postings exceed 15%, an additional pressure factor is applied.' },
                       { label: 'Experience Reduction', desc: 'Senior professionals (8+ years) receive a risk reduction of up to 12 points, reflecting leadership and judgment-based tasks that resist automation.' },

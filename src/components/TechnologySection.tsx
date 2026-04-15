@@ -29,8 +29,8 @@ const AnimatedCounter = forwardRef<HTMLSpanElement, { target: number; suffix?: s
 AnimatedCounter.displayName = 'AnimatedCounter';
 
 const STATS = [
-  { value: 95, suffix: '+', label: 'Job Families Mapped', sublabel: 'Scored & tracked', icon: Database, color: 'hsl(var(--primary))' },
-  { value: 147, suffix: '+', label: 'Skill Vectors', sublabel: 'Vulnerability-tracked', icon: Network, color: 'hsl(var(--prophet-cyan))' },
+  { value: 98, suffix: '+', label: 'Role Archetypes', sublabel: 'Across IT, BPO, finance, govt & more', icon: Database, color: 'hsl(var(--primary))' },
+  { value: 30, suffix: '+', label: 'Skill Categories', sublabel: 'Vulnerability-tracked', icon: Network, color: 'hsl(var(--prophet-cyan))' },
   { value: 5, suffix: '', label: 'AI Agents', sublabel: 'Parallel pipeline', icon: Brain, color: 'hsl(var(--prophet-gold))' },
   { value: 100, suffix: '%', label: 'Deterministic', sublabel: 'Zero LLM-generated numbers', icon: BarChart3, color: 'hsl(var(--prophet-green))' },
 ];
@@ -45,7 +45,7 @@ const TECH_PILLARS = [
   {
     icon: Network,
     title: 'Structured Knowledge Graph',
-    desc: '95+ job families × 147+ skill vectors with weighted edges mapping automation risk, AI augmentation potential, and human-edge strength across global labor markets.',
+    desc: '98+ role archetypes × 30 skill categories with weighted edges mapping automation risk, AI augmentation potential, and human-edge strength across global labor markets.',
     tags: ['Job-Skill Matrix', 'Automation Risk Edges', 'Human Edge Scoring'],
   },
   {

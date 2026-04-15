@@ -31,9 +31,9 @@ interface AIDossierRevealProps {
 
 // ── Dossier Loading Steps ──
 const TRUST_STEPS = [
-  { icon: Database, label: 'Matching your skills against Knowledge Graph', detail: '95 job families × 147 skill vectors' },
+  { icon: Database, label: 'Matching your skills against Knowledge Graph', detail: '98 role archetypes × 30 skill categories' },
   { icon: Search, label: 'Checking live market signals for your role', detail: 'Demand trends, salary trajectory, talent density' },
-  { icon: Brain, label: 'Running AI disruption analysis', detail: 'Mapping your tasks against 200+ AI tools' },
+  { icon: Brain, label: 'Running AI disruption analysis', detail: 'Mapping your tasks against 50+ AI tools' },
   { icon: BarChart3, label: 'Modeling career trajectory scenarios', detail: 'Seniority-calibrated risk projection' },
   { icon: Globe, label: 'Applying geo-market calibration', detail: 'Adjusting for your metro tier and industry' },
   { icon: Shield, label: 'Building defense strategies', detail: 'Personalized to your moat skills' },

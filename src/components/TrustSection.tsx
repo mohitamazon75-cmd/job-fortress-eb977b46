@@ -13,7 +13,7 @@ const TRUST_PILLARS = [
   {
     icon: Network,
     title: 'Structured Knowledge Graph',
-    desc: '95 job families × 147+ skill vectors mapped with automation risk, AI augmentation, and human-edge data.',
+    desc: '98 role archetypes × 30 skill categories mapped with automation risk, AI augmentation, and human-edge data.',
     proof: 'Calibrated from O*NET, ESCO, NASSCOM',
     highlight: 'Not an LLM guess',
   },

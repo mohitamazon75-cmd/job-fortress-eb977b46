@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { User, Calculator, TrendingUp, Zap, Check } from 'lucide-react';
 
 const LOADING_MESSAGES = [
-  "Matching your profile against 95 job families...",
+  "Matching your profile against 98 role archetypes...",
   "Running your skills through our obsolescence engine...",
   "Checking how your role ranks against 50,000+ Indian professionals...",
   "Calculating your salary bleed rate at current AI adoption pace...",
@@ -21,7 +21,7 @@ const AGENTS = [
 const TERMINAL_LINES = [
   // Profile Extraction (lines 0-5) — ~15s
   "> Ingesting profile data...",
-  "> Mapping role to Knowledge Graph (95 job families)...",
+  "> Mapping role to Knowledge Graph (98 role archetypes)...",
   "> Matching skills against 147 risk vectors...",
   "> Cross-referencing O*NET & ISCO-08 taxonomy...",
   "> Querying live job market data for your role...",

@@ -178,6 +178,25 @@ export const Agent2ASchema = z.object({
   dead_end_narrative: z.string().optional(),
   cultural_risk_assessment: z.any().optional().nullable(),
   pivot_rationale: z.string().optional().nullable(),
+  // AUDIT FIX: these fields were added to the Agent 2A prompt but never to the Zod schema.
+  // validateAgentOutput() strips any field not in the schema → they were silently dropped
+  // every scan even though Agent 2A generated them. Added here to preserve them.
+  moat_narrative: z.string().optional().nullable(),
+  urgency_horizon: z.string().optional().nullable(),
+  threat_timeline: z.string().optional().nullable(),
+  skill_threat_intel: z.array(z.object({
+    skill: z.string(),
+    threat_tool: z.string().optional(),
+    timeline: z.string().optional(),
+    severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]).optional(),
+    defence: z.string().optional(),
+  })).optional().nullable(),
+  skill_trajectory: z.array(z.object({
+    skill: z.string(),
+    action: z.string().optional(),
+    timeline: z.string().optional(),
+    outcome: z.string().optional(),
+  })).optional().nullable(),
 });
 
 // ═══ Agent 2B (Action Plan) Output Schema ═══
