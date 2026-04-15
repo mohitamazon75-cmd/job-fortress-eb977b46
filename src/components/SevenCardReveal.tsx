@@ -169,9 +169,9 @@ function Card1RiskMirror({ report, score, onNext }: { report: ScanReport; score:
   const indiaPct = Math.round(di);
 
   const confrontation = report.dead_end_narrative
-    ? report.dead_end_narrative.split('.')[0] + '.'
+    ? cleanAdvice(report.dead_end_narrative.split('.')[0] + '.')
     : report.urgency_horizon
-    ? report.urgency_horizon
+    ? cleanAdvice(report.urgency_horizon)
     : `${indiaPct}% of your daily work is automatable at current AI adoption rates.`;
 
   return (
@@ -210,7 +210,7 @@ function Card1RiskMirror({ report, score, onNext }: { report: ScanReport; score:
 
         {report.urgency_horizon && report.urgency_horizon !== confrontation && (
           <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: 'var(--mb-ink2)', lineHeight: 1.7, padding: '14px 18px', background: 'var(--mb-navy-tint)', borderRadius: 12, border: '1px solid var(--mb-navy-tint2)' }}>
-            ⏱ {report.urgency_horizon}
+            ⏱ {cleanAdvice(report.urgency_horizon ?? "")}
           </div>
         )}
       </CardBody>
