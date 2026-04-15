@@ -23,6 +23,36 @@ import { getVerbatimRole } from '@/lib/role-guard';
 import { detectPersona, getPersonaConfig } from '@/lib/persona-detect';
 import '@/styles/model-b-tokens.css';
 
+// ── Utility: format snake_case skill names → human readable ────────
+// Fixes: "academic_writing" → "Academic Writing"
+// Fixes: "social_media_content" → "Social Media Content"
+function fmtSkill(s: string): string {
+  if (!s) return s;
+  return s
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .replace(/\bAi\b/g, 'AI')
+    .replace(/\bApi\b/g, 'API')
+    .replace(/\bSeo\b/g, 'SEO')
+    .replace(/\bSql\b/g, 'SQL')
+    .replace(/\bCrm\b/g, 'CRM')
+    .replace(/\bErp\b/g, 'ERP')
+    .replace(/\bHr\b/g, 'HR')
+    .replace(/\bRpa\b/g, 'RPA');
+}
+
+// ── Utility: clean up LLM third-person advice text → second person ──
+// Fixes: "this professional, integrate ChatGPT" → "Integrate ChatGPT"
+function cleanAdvice(text: string): string {
+  if (!text) return text;
+  return text
+    .replace(/^this professional,?\s*/i, '')
+    .replace(/^the professional,?\s*/i, '')
+    .replace(/\bthis professional\b/gi, 'you')
+    .replace(/\bthe professional\b/gi, 'you')
+    .replace(/^([a-z])/, c => c.toUpperCase());
+}
+
 // ── Design system from Model B (reused) ──────────────────────────
 function Badge({ label, variant = 'amber' }: { label: string; variant?: 'amber' | 'navy' | 'green' | 'red' | 'teal' }) {
   const colors: Record<string, { bg: string; color: string; border: string }> = {
@@ -213,8 +243,8 @@ function Card2SkillsVsAI({ report, onBack, onNext }: { report: ScanReport; onBac
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, background: 'var(--mb-red-tint)', border: '1px solid rgba(174,40,40,0.15)' }}>
                   <span style={{ fontSize: 18, flexShrink: 0 }}>🤖</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--mb-red)' }}>{s}</div>
-                    {tools[i] && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: 'var(--mb-ink3)', marginTop: 2 }}>Being replaced by {typeof tools[i] === 'string' ? tools[i] : tools[i].tool_name}</div>}
+                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--mb-red)' }}>{fmtSkill(s)}</div>
+                    {tools[i] && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: 'var(--mb-ink3)', marginTop: 2 }}>Being replaced by {typeof tools[i] === 'string' ? tools[i] : (tools[i] as any).tool_name}</div>}
                   </div>
                 </div>
               ))}
@@ -229,7 +259,7 @@ function Card2SkillsVsAI({ report, onBack, onNext }: { report: ScanReport; onBac
               {moatSkills.map((s, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, background: 'var(--mb-green-tint)', border: '1px solid rgba(26,107,60,0.15)' }}>
                   <span style={{ fontSize: 18, flexShrink: 0 }}>🛡️</span>
-                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--mb-green)' }}>{s}</div>
+                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--mb-green)' }}>{fmtSkill(s)}</div>
                 </div>
               ))}
             </div>
@@ -282,6 +312,20 @@ function Card3SkillShield({ report, onBack, onNext }: { report: ScanReport; onBa
             <SectionLabel label="Your cognitive edge" />
             <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: 'var(--mb-ink2)', lineHeight: 1.8, padding: '14px 18px', background: 'var(--mb-navy-tint)', borderRadius: 12, border: '1px solid var(--mb-navy-tint2)', marginBottom: 16 }}>
               {report.cognitive_moat}
+            </div>
+          </>
+        )}
+
+        {(report.moat_skills ?? []).length > 0 && (
+          <>
+            <SectionLabel label="Skills AI cannot replicate" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              {(report.moat_skills ?? []).slice(0, 4).map((s, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 12, background: 'var(--mb-green-tint)', border: '1px solid rgba(26,107,60,0.15)' }}>
+                  <span style={{ fontSize: 16, flexShrink: 0 }}>🛡️</span>
+                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 700, color: 'var(--mb-green)' }}>{fmtSkill(s)}</div>
+                </div>
+              ))}
             </div>
           </>
         )}
@@ -398,9 +442,19 @@ function Card5PivotPath({ report, onBack, onNext }: { report: ScanReport; onBack
             ))}
           </>
         ) : (
-          <EmotionStrip bgColor="var(--mb-teal-tint)" borderColor="rgba(14,102,85,0.2)" icon="🗺️" textColor="var(--mb-ink)"
-            message="Pivot path analysis runs from your specific skill fingerprint. Upload your resume for a personalised pivot recommendation with ₹ salary bridge."
-          />
+          // Fallback: show AI-adjacent pivot suggestion based on role/DI
+          (() => {
+            const role = report.role || 'your current role';
+            const di = report.determinism_index ?? 50;
+            const pivotSuggestion = di > 65
+              ? `Pivot to an AI-augmented version of ${role} — practitioners who lead AI adoption rather than resist it earn 30–50% more and are the last to be displaced.`
+              : `Strengthen ${role} with AI specialisation — the top 20% in your field are adding AI tooling skills and capturing disproportionate salary growth.`;
+            return (
+              <EmotionStrip bgColor="var(--mb-teal-tint)" borderColor="rgba(14,102,85,0.2)" icon="🗺️" textColor="var(--mb-ink)"
+                message={pivotSuggestion}
+              />
+            );
+          })()
         )}
 
         {cultural && (
@@ -441,7 +495,7 @@ function Card6BlindSpots({ report, onBack, onNext }: { report: ScanReport; onBac
             {advice.map((a, i) => (
               <div key={i} style={{ display: 'flex', gap: 12, padding: '14px 16px', borderRadius: 12, background: 'var(--mb-navy-tint)', border: '1px solid var(--mb-navy-tint2)', marginBottom: 10 }}>
                 <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--mb-navy)', color: 'white', fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: 'var(--mb-ink2)', lineHeight: 1.7, fontWeight: 500 }}>{a}</span>
+                <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: 'var(--mb-ink2)', lineHeight: 1.7, fontWeight: 500 }}>{cleanAdvice(a)}</span>
               </div>
             ))}
           </>
@@ -452,7 +506,7 @@ function Card6BlindSpots({ report, onBack, onNext }: { report: ScanReport; onBac
             <SectionLabel label="Critical gaps" />
             {gaps.map((g: any, i: number) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--mb-rule)', alignItems: 'center' }}>
-                <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: 'var(--mb-ink2)', fontWeight: 600 }}>{g.missing_skill}</span>
+                <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: 'var(--mb-ink2)', fontWeight: 600 }}>{fmtSkill(g.missing_skill)}</span>
                 <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 8, background: 'var(--mb-red-tint)', color: 'var(--mb-red)' }}>
                   {g.weeks_to_proficiency}wk to fix
                 </span>
@@ -480,6 +534,16 @@ function Card7Mission({ report, onBack, onComplete }: { report: ScanReport; onBa
   const weeklyPlan = report.weekly_action_plan?.slice(0, 3) ?? [];
   const diet = report.weekly_survival_diet;
 
+  // Role-specific fallback when no immediate_next_step from Agent 2B
+  const di = report.determinism_index ?? 50;
+  const role = report.role || 'your role';
+  const topMoat = (report.moat_skills ?? [])[0];
+  const fallbackAction = di > 70
+    ? `Spend 30 minutes today mapping every repetitive task in your workday to a specific AI tool. For ${role}, this is your survival priority — the professionals who automate their own routine work are the ones who keep their jobs.`
+    : topMoat
+    ? `Build one visible proof point for "${fmtSkill(topMoat)}" this week — a case study, a LinkedIn post, or a team presentation. Your moat only protects you if your manager can see it.`
+    : `Identify the one skill that makes you irreplaceable on your current team, then spend 20 minutes documenting a specific result it produced. This becomes your career defence when AI adoption accelerates.`;
+
   return (
     <CardShell>
       <CardHead
@@ -488,13 +552,21 @@ function Card7Mission({ report, onBack, onComplete }: { report: ScanReport; onBa
         sub="Your 90-day adaptation plan. Week-by-week actions grounded in your specific skills and risk profile."
       />
       <CardBody>
-        {nextStep && (
+        {nextStep ? (
           <>
             <SectionLabel label="Your immediate next step" />
             <div style={{ padding: '18px 20px', borderRadius: 14, background: 'var(--mb-green-tint)', border: '1.5px solid rgba(26,107,60,0.22)', marginBottom: 20 }}>
               <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, fontWeight: 800, color: 'var(--mb-green)', marginBottom: 6 }}>{nextStep.action}</div>
               <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: 'var(--mb-ink2)', lineHeight: 1.6, fontWeight: 500 }}>{nextStep.rationale}</div>
               <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: 'var(--mb-ink3)', marginTop: 8 }}>Time needed: {nextStep.time_required}</div>
+            </div>
+          </>
+        ) : (
+          <>
+            <SectionLabel label="Your immediate next step" />
+            <div style={{ padding: '18px 20px', borderRadius: 14, background: 'var(--mb-green-tint)', border: '1.5px solid rgba(26,107,60,0.22)', marginBottom: 20 }}>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: 'var(--mb-ink2)', lineHeight: 1.7, fontWeight: 500 }}>{fallbackAction}</div>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: 'var(--mb-ink3)', marginTop: 8 }}>Time needed: 30 minutes</div>
             </div>
           </>
         )}
