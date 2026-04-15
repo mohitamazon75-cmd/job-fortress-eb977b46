@@ -1,10 +1,19 @@
 /**
- * ResultsChoose — Previously showed "choose Model A or Model B".
- * Now redirects to the unified flow (/?id=scanId) which uses the
- * new SevenCardReveal experience — same data, no forced choice.
+ * ResultsChoose — Routes to the rich Model B analysis (7.8/10 experience).
  *
- * Kept as a named route so that any external links/bookmarks
- * to /results/choose?id=... still work correctly.
+ * Flow: any link to /results/choose?id=... → /results/model-b?id=...
+ *
+ * The Model B analysis (get-model-b-analysis edge fn) produces:
+ *   card1_risk: fear_hook, confrontation, cost_of_inaction
+ *   card2_market: live market signals, disruption timeline
+ *   card3_shield: cognitive moat, ATS keywords matched
+ *   card4_pivot: role transitions with negotiation anchors
+ *   card5_jobs: real job matches from live search
+ *   card6_blindspots: blind spots, interview prep questions
+ *   card7_human: human advantages with proof labels
+ *
+ * SevenCardReveal (the swipeable teaser) is shown as part of the main /
+ * scan flow before the user reaches this point.
  */
 import { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -21,19 +30,19 @@ export default function ResultsChoose() {
       return;
     }
 
-    // Log the redirect for analytics continuity
+    // Analytics continuity
     supabase.functions.invoke("log-ab-event", {
-      body: { analysis_id: analysisId, event_type: "unified_redirect" },
+      body: { analysis_id: analysisId, event_type: "model_b_redirect" },
     }).catch(() => {});
 
-    // Redirect to the main flow which now shows SevenCardReveal
-    navigate(`/?id=${analysisId}`, { replace: true });
+    // Route to the rich Model B analysis
+    navigate(`/results/model-b?id=${analysisId}`, { replace: true });
   }, [analysisId, navigate]);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAF9F6" }}>
       <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "#6B6960" }}>
-        Loading your report…
+        Generating your personalised analysis…
       </div>
     </div>
   );

@@ -65,7 +65,7 @@ function createScanCheckClient(accessToken: string) {
   });
 }
 
-type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'ctc-input' | 'processing' | 'seven-cards' | 'money-shot' | 'obituary' | 'reveal' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' | 'thank-you' | 'error';
+type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'seven-cards' | 'money-shot' | 'reveal' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' | 'thank-you' | 'error';
 
 // FIX 4 (LOW): Named interface for ScanRow instead of inline type
 interface ScanRow {
@@ -656,27 +656,22 @@ const Index = () => {
 
   const handleSelectMetro = async (v: string) => {
     setMetroTier(v);
-    // Manual path: show skills step before scanning (skills → CTC → launch)
+    // Manual path: show skills step before scanning
     if (!linkedinUrl && !resumeFileRef.current) {
       setStep(5);
       return;
     }
-    // LinkedIn/resume path: go to CTC screen before scan
-    // (Affinda will extract salary too, but user's actual CTC is more accurate)
-    setKeySkills('');
-    setPhase('ctc-input');
+    // LinkedIn/resume path: launch scan directly
+    await launchScan(v, '');
   };
 
   const handleSelectSkills = async (skills: string) => {
     setKeySkills(skills);
-    // Show optional CTC screen before scan — manual path only.
-    // LinkedIn/resume users skip this: Affinda/LLM extracts salary from their data.
-    setPhase('ctc-input');
+    await launchScan(metroTier, skills);
   };
 
   const handleSkipSkills = async () => {
-    setKeySkills('');
-    setPhase('ctc-input');
+    await launchScan(metroTier, '');
   };
 
   const launchScan = async (metro: string, skills: string) => {
@@ -733,11 +728,16 @@ const Index = () => {
   }, []);
   const handleMoneyShotComplete = useCallback(() => {
     setMoneyShotSeen(true);
-    // money-shot → obituary (free viral content) → reveal (Pro dashboard)
-    // The Career Obituary is the product's most shareable output — it's now
-    // on the critical path between the Replacement Invoice and the Pro upgrade.
-    setPhase('obituary');
-  }, []);
+    // After the Replacement Invoice → navigate to the rich Model B analysis.
+    // get-model-b-analysis generates hyper-personalised card data (fear_hook,
+    // job_matches, human advantages, negotiation anchors) — this is the 7.8/10
+    // experience. SevenCardReveal was a teaser; Model B is the full report.
+    if (scanId) {
+      navigate(`/results/model-b?id=${scanId}`);
+    } else {
+      setPhase('reveal');
+    }
+  }, [scanId, navigate]);
   const handleInsightCardsComplete = useCallback(() => { setPhase('crisis-center'); }, []);
   const handleCrisisCenterComplete = useCallback(() => { setPhase('startup-autopsy'); }, []);
   const handleAutopsyComplete = useCallback(() => { setPhase('market-radar'); }, []);
@@ -853,52 +853,6 @@ const Index = () => {
         </Suspense>
       )}
       {/* ── Optional CTC input — shown after onboarding, before scan launch ── */}
-      {phase === 'ctc-input' && (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
-          <div className="w-full max-w-sm">
-            <div className="mb-8 text-center">
-              <div className="text-4xl mb-4">₹</div>
-              <h2 className="text-2xl font-black text-foreground mb-2">What's your current monthly CTC?</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Optional — makes your Replacement Invoice exact instead of estimated.<br />
-                We never store or share your salary publicly.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {[
-                { label: 'Under ₹30,000/month', value: 25000 },
-                { label: '₹30,000 – ₹60,000/month', value: 45000 },
-                { label: '₹60,000 – ₹1,20,000/month', value: 90000 },
-                { label: '₹1,20,000 – ₹2,50,000/month', value: 185000 },
-                { label: '₹2,50,000 – ₹5,00,000/month', value: 375000 },
-                { label: 'Above ₹5,00,000/month', value: 600000 },
-              ].map(({ label, value }) => (
-                <button
-                  key={value}
-                  onClick={() => {
-                    setUserReportedCTC(value);
-                    launchScan(metroTier, pendingSkills);
-                  }}
-                  className="w-full py-4 px-5 rounded-2xl border-2 border-border bg-card text-foreground text-left text-sm font-semibold hover:border-primary/40 hover:bg-primary/5 transition-all duration-200 active:scale-[0.98]"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => {
-                setUserReportedCTC(null);
-                launchScan(metroTier, pendingSkills);
-              }}
-              className="w-full mt-4 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Skip — use estimated salary
-            </button>
-          </div>
-        </div>
-      )}
       {phase === 'processing' && <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><MatrixLoading onComplete={handleLoadingComplete} scanReady={!!scanReport} scanId={scanId} seniorityTier={
         yearsExperience === '0-2' ? 'ENTRY' : yearsExperience === '3-5' ? 'PROFESSIONAL' : yearsExperience === '6-10' ? 'MANAGER' : yearsExperience === '10+' ? 'SENIOR_LEADER' : null
       } /></Suspense>}
@@ -940,12 +894,6 @@ const Index = () => {
       {/* ── P1-1: Career Obituary — free viral phase between money-shot and Pro dashboard ── */}
       {/* P.G. Wodehouse × TOI editorial: a eulogy for the user's job role killed by AI.  */}
       {/* Most shareable output in the product — now on the critical path for every user.  */}
-      {phase === 'obituary' && scanReport && (
-        <ObituaryPhase
-          report={scanReport}
-          onContinue={() => setPhase('reveal')}
-        />
-      )}
       {phase === 'insight-cards' && (scanReport ? (
         <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><InsightCards report={scanReport} onComplete={handleInsightCardsComplete} scanId={scanId} biggest_concern={scanGoals?.biggest_concern} isProUser={isProUser} /></Suspense>
       ) : (
