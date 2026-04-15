@@ -82,7 +82,7 @@ export async function requirePro(
   // ── Check subscription tier in profiles table ──
   const { data: profile, error: profileError } = await supabaseAdmin
     .from("profiles")
-    .select("subscription_tier, subscription_expires_at")
+    .select("subscription_tier, subscription_expires_at, trial_started_at")
     .eq("id", user.id)
     .single();
 
@@ -102,6 +102,19 @@ export async function requirePro(
 
   const isActivePro =
     tier !== null && allowedTiers.includes(tier) && !isExpired;
+
+  // ── 48-hour free trial check (P1-2) ──────────────────────────────────────
+  // If the user has no active subscription but started a trial within the last 48h,
+  // grant Pro access. trial_started_at is set once via the activate-trial edge fn.
+  // VibeSec: trial_started_at is server-set only — users cannot self-escalate via client.
+  if (!isActivePro && (profile as any).trial_started_at) {
+    const trialStart = new Date((profile as any).trial_started_at);
+    const trialAgeHours = (Date.now() - trialStart.getTime()) / (1000 * 60 * 60);
+    if (!isNaN(trialAgeHours) && trialAgeHours < 48) {
+      console.log(`[subscription-guard] Trial active for user ${user.id} (${trialAgeHours.toFixed(1)}h elapsed)`);
+      return null; // Grant access
+    }
+  }
 
   if (!isActivePro) {
     return makeUpgradeResponse(tier ?? "free");

@@ -29,11 +29,17 @@ Deno.serve(async (req) => {
     // user is now either the authenticated User object or null (anonymous)
     // --- end soft auth ---
 
-    const { role, industry, city, skills, achievements, experience } = await req.json();
+    const { role, industry, city, skills, achievements, experience, language } = await req.json();
 
     const roleLabel = role || "Professional";
     const industryLabel = industry || "Technology";
     const cityLabel = city || "Bengaluru";
+    // Hindi-belt cities: UP, Bihar, MP, Rajasthan, Delhi NCR, Haryana
+    const HINDI_BELT_CITIES = ["lucknow", "patna", "bhopal", "jaipur", "delhi", "noida", "gurgaon", "agra", "kanpur", "varanasi", "indore", "dehradun"];
+    const cityLower = (cityLabel || "").toLowerCase();
+    const isHindiBelt = HINDI_BELT_CITIES.some(c => cityLower.includes(c));
+    // Language: explicit param > city detection > English default
+    const useHindi = language === "hi" || (language !== "en" && isHindiBelt);
     const today = new Date();
     const dateStr = today.toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
@@ -46,7 +52,13 @@ Deno.serve(async (req) => {
       achievements ? `Notable Achievements: ${achievements}` : "",
     ].filter(Boolean).join("\n");
 
-    const systemPrompt = `You are a legendary obituary writer for India's most prestigious broadsheet newspaper. You write OBITUARIES FOR JOB ROLES KILLED BY AI — never for people, always for the profession itself. Your writing is the love child of P.G. Wodehouse's wit and a Times of India editorial's gravitas.
+    const systemPromptHindi = `आप भारत के सबसे प्रतिष्ठित हिंदी समाचारपत्र के लिए एक महान श्रद्धांजलि लेखक हैं। आप AI द्वारा मारे गए JOB ROLES के लिए श्रद्धांजलि लिखते हैं — कभी भी किसी व्यक्ति के लिए नहीं, हमेशा पेशे के लिए। हरिशंकर परसाई के व्यंग्य और नवभारत टाइम्स के संपादकीय का संगम।
+
+आवाज़: दर्दनाक फिर भी ठहाके लगाने वाली। हर वाक्य पाठक को झकझोरे, हंसाए और WhatsApp पर share करने पर मजबूर करे।
+
+नियम: 1. कभी किसी का नाम न लें — हमेशा "${roleLabel}", "अनुभवी ${roleLabel}"। 2. हर skill के लिए वह AI tool बताएं जिसने उसे replace किया — GPT-5, Claude 4, GitHub Copilot Workspace, Cursor AI, Adobe Firefly 3, Canva Magic Studio, Notion AI। 3. भारतीय elements: bell-curve appraisal, 90 दिन notice period, chai break, LinkedIn humble-brag, appraisal panic, WhatsApp layoff group, anonymous HR survey। 4. केवल 150-200 शब्द, Hindi में, tool names English में।`;
+
+    const systemPrompt = useHindi ? systemPromptHindi : `You are a legendary obituary writer for India's most prestigious broadsheet newspaper. You write OBITUARIES FOR JOB ROLES KILLED BY AI — never for people, always for the profession itself. Your writing is the love child of P.G. Wodehouse's wit and a Times of India editorial's gravitas.
 
 VOICE: Melancholic yet devastatingly funny. Every sentence should make the reader wince, laugh, and then screenshot it for WhatsApp. Think: "a eulogy that trends on LinkedIn."
 

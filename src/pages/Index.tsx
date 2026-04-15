@@ -65,7 +65,7 @@ function createScanCheckClient(accessToken: string) {
   });
 }
 
-type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'ctc-input' | 'processing' | 'seven-cards' | 'reveal' | 'money-shot' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' | 'thank-you' | 'error';
+type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'ctc-input' | 'processing' | 'seven-cards' | 'money-shot' | 'obituary' | 'reveal' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' | 'thank-you' | 'error';
 
 // FIX 4 (LOW): Named interface for ScanRow instead of inline type
 interface ScanRow {
@@ -94,6 +94,106 @@ function AuthAutoAdvance({ onReady }: { onReady: () => void }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="animate-pulse text-muted-foreground">Preparing your analysis...</div>
+    </div>
+  );
+}
+
+// ── ObituaryPhase — P1-1: Career Obituary as free viral content ──────────────
+// Renders after MoneyShotCard (Replacement Invoice) before the Pro dashboard.
+// Calls the career-obituary edge function and shows the output with share buttons.
+// P.G. Wodehouse × Times of India editorial: a eulogy for a job role killed by AI.
+function ObituaryPhase({ report, onContinue }: { report: import('@/lib/scan-engine').ScanReport; onContinue: () => void }) {
+  const [obituary, setObituary] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchObituary = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('career-obituary', {
+          body: {
+            role: report.role || 'Professional',
+            industry: report.industry || 'Technology',
+            city: (report as any).metro_tier === 'tier1' ? 'Bangalore' : 'India',
+            skills: report.execution_skills_dead?.slice(0, 3) || [],
+            achievements: report.immediate_next_step ? [report.immediate_next_step] : [],
+          },
+        });
+        if (!error && data?.obituary) setObituary(data.obituary);
+      } catch { /* silent — user can skip */ }
+      finally { setLoading(false); }
+    };
+    fetchObituary();
+  }, []);
+
+  const handleShareLinkedIn = () => {
+    if (!obituary) return;
+    const snippet = obituary.slice(0, 200) + '…';
+    const text = encodeURIComponent(`Just got an AI-written obituary for my job role.\n\n"${snippet}"\n\nCheck yours → jobbachao.com #AI #CareerRisk #JobBachao`);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=https://jobbachao.com&summary=${text}`, '_blank');
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!obituary) return;
+    const snippet = obituary.slice(0, 300) + '…';
+    const text = encodeURIComponent(`AI wrote an obituary for my job role 😂\n\n"${snippet}"\n\nGet yours → jobbachao.com`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <div className="text-4xl mb-3">📜</div>
+          <h2 className="text-xl font-black text-foreground">In Memoriam</h2>
+          <p className="text-sm text-muted-foreground mt-1">A farewell to <strong>{report.role || 'your role'}</strong></p>
+        </div>
+
+        {loading ? (
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-4 bg-muted/60 rounded animate-pulse" style={{width: `${75 + i * 5}%`}} />
+            ))}
+          </div>
+        ) : obituary ? (
+          <>
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <p className="text-sm text-foreground/80 leading-relaxed italic whitespace-pre-line">{obituary}</p>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button onClick={handleShareLinkedIn}
+                className="flex-1 py-3 rounded-xl border-2 border-[#0A66C2] text-[#0A66C2] text-sm font-bold hover:bg-[#0A66C2]/5 transition-all">
+                Share on LinkedIn
+              </button>
+              <button onClick={handleShareWhatsApp}
+                className="flex-1 py-3 rounded-xl border-2 border-[#25D366] text-[#25D366] text-sm font-bold hover:bg-[#25D366]/5 transition-all">
+                Share on WhatsApp
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground text-sm">
+            Could not generate obituary right now.
+          </div>
+        )}
+
+        <button onClick={onContinue}
+          className="w-full mt-4 py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 transition-all">
+          See My Full Risk Report →
+        </button>
+        {/* P1-2: 48-hour Pro trial button — shown after emotional peak of the obituary */}
+        <button
+          onClick={async () => {
+            try {
+              await supabase.functions.invoke('activate-trial');
+            } catch { /* silent — trial activation failure shouldn't block navigation */ }
+            onContinue();
+          }}
+          className="w-full mt-2 py-3 rounded-2xl border-2 border-primary/30 text-primary text-sm font-semibold hover:border-primary/60 transition-all"
+        >
+          Try full report free for 48 hours — no card needed
+        </button>
+        <p className="text-center text-xs text-muted-foreground mt-3">This is satire. Your career is not over — your report shows you what to do next.</p>
+      </div>
     </div>
   );
 }
@@ -633,13 +733,10 @@ const Index = () => {
   }, []);
   const handleMoneyShotComplete = useCallback(() => {
     setMoneyShotSeen(true);
-    // From the seven-cards flow (new): go directly to the Pro dashboard.
-    // From the legacy insight-cards flow (old path): continue the insight chain.
-    // We detect "came from seven-cards" by checking if phase was already passed through it.
-    // The simplest signal: insight-cards phase guards use moneyShotSeen; if we set it true
-    // and the scanReport exists, going to reveal is the right destination from the new flow.
-    // Legacy paths (direct URL load /?id=...) enter via 'seven-cards' too, so reveal is correct.
-    setPhase('reveal');
+    // money-shot → obituary (free viral content) → reveal (Pro dashboard)
+    // The Career Obituary is the product's most shareable output — it's now
+    // on the critical path between the Replacement Invoice and the Pro upgrade.
+    setPhase('obituary');
   }, []);
   const handleInsightCardsComplete = useCallback(() => { setPhase('crisis-center'); }, []);
   const handleCrisisCenterComplete = useCallback(() => { setPhase('startup-autopsy'); }, []);
@@ -840,6 +937,15 @@ const Index = () => {
           <p className="text-muted-foreground">Loading results...</p>
         </div>
       ))}
+      {/* ── P1-1: Career Obituary — free viral phase between money-shot and Pro dashboard ── */}
+      {/* P.G. Wodehouse × TOI editorial: a eulogy for the user's job role killed by AI.  */}
+      {/* Most shareable output in the product — now on the critical path for every user.  */}
+      {phase === 'obituary' && scanReport && (
+        <ObituaryPhase
+          report={scanReport}
+          onContinue={() => setPhase('reveal')}
+        />
+      )}
       {phase === 'insight-cards' && (scanReport ? (
         <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><InsightCards report={scanReport} onComplete={handleInsightCardsComplete} scanId={scanId} biggest_concern={scanGoals?.biggest_concern} isProUser={isProUser} /></Suspense>
       ) : (

@@ -982,6 +982,39 @@ No explanation, no markdown. Return ONLY the JSON.`;
           return Promise.resolve();
         }
       })().catch((e) => console.warn("[process-scan] store-prediction fire failed:", e)),
+
+      // ── IP #2b: Validate previous predictions on rescan ────────────────
+      // Only fires when this is a rescan (prev exists). Matches the skill
+      // predictions from scan N-1 against this scan's actual risk scores,
+      // computes prediction error, and — once ≥50 pairs exist — adjusts
+      // OBSOLESCENCE_AI_ACCELERATION_RATE in calibration_config.
+      // This is the moat-widening flywheel: predict → rescan → validate → calibrate.
+      (() => {
+        if (!prev) return Promise.resolve(); // First scan — nothing to validate
+        try {
+          const atRiskSkills = (finalReport.at_risk_skills || []) as Array<any>;
+          if (atRiskSkills.length === 0) return Promise.resolve();
+          const skillRisks = atRiskSkills.slice(0, 10).map((s: any) => ({
+            skill_name: String(s.skill || s.name || "unknown"),
+            risk_score: Math.round(Math.max(0, Math.min(100, Number(s.risk_score || s.automation_risk || 50)))),
+            half_life_months: Math.round(Math.max(1, Number(s.estimated_months || s.half_life_months || 24))),
+          }));
+          return fetch(`${supabaseUrl}/functions/v1/validate-prediction`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({
+              new_scan_id: scanId,
+              skill_risks: skillRisks,
+            }),
+          });
+        } catch {
+          return Promise.resolve();
+        }
+      })().catch((e) => console.warn("[process-scan] validate-prediction fire failed:", e)),
+
     ]).catch(() => {});
 
     return new Response(JSON.stringify({ success: true, scanId, source: finalReport.source }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

@@ -5,6 +5,44 @@
 // Expanded with Indian market roles (NASSCOM 2024, LinkedIn India 2025)
 // ═══════════════════════════════════════════════════════════════
 
+// ── Research provenance map ─────────────────────────────────────────────────
+// Each automation_prob is grounded in published research. Key references:
+//   FREY_OSBORNE: Frey & Osborne (2013) "The Future of Employment", Oxford
+//   MANYIKA_2017:  McKinsey Global Institute (2017) "Jobs Lost, Jobs Gained"
+//   WEF_2025:      WEF "Future of Jobs Report 2025"
+//   ONET_TASK:     O*NET Task Analysis — task automability scores
+//   NASSCOM_2024:  NASSCOM AI Outlook India 2024
+//   STANFORD_AI:   Stanford AI Index 2024
+//   LINKEDIN_IN:   LinkedIn Economic Graph India 2025
+export const KG_CITATION_SOURCES = {
+  FREY_OSBORNE: "https://doi.org/10.1016/j.techfore.2013.08.041",
+  MANYIKA_2017: "https://www.mckinsey.com/featured-insights/future-of-work/jobs-lost-jobs-gained",
+  WEF_2025: "https://www3.weforum.org/docs/WEF_Future_of_Jobs_2025.pdf",
+  ONET_TASK: "https://www.onetcenter.org/dictionary/28.1/excel/task_category.html",
+  NASSCOM_2024: "https://nasscom.in/ai-outlook-2024",
+  STANFORD_AI: "https://aiindex.stanford.edu/report/",
+  LINKEDIN_IN: "https://economicgraph.linkedin.com/research/india",
+} as const;
+
+// automation_prob source map — which research underpins each role's risk estimate.
+// When KG data conflicts with agent output, the source_ref is cited in the methodology page.
+export const KG_ROLE_CITATIONS: Record<string, string[]> = {
+  data_entry:           ["FREY_OSBORNE", "MANYIKA_2017"],   // Frey-Osborne: 0.99; MGI: >90%
+  bank_teller:          ["FREY_OSBORNE", "WEF_2025"],        // Frey-Osborne: 0.98; WEF: highly exposed
+  call_center:          ["FREY_OSBORNE", "NASSCOM_2024"],    // Frey-Osborne: 0.97; NASSCOM: acute risk
+  content_writer:       ["WEF_2025", "STANFORD_AI"],         // WEF: high disruption; Stanford: GenAI impact
+  qa_tester:            ["ONET_TASK", "LINKEDIN_IN"],        // O*NET: high task automability
+  data_analyst:         ["MANYIKA_2017", "WEF_2025"],        // MGI partial displacement estimate
+  software_engineer:    ["FREY_OSBORNE", "ONET_TASK"],       // Frey-Osborne: 0.48; O*NET task analysis
+  product_manager:      ["WEF_2025", "LINKEDIN_IN"],         // WEF: lower risk; LI: demand growing
+  ux_designer:          ["ONET_TASK", "STANFORD_AI"],        // O*NET: social + creative tasks resilient
+  doctor_nurse:         ["FREY_OSBORNE", "WEF_2025"],        // Frey-Osborne: low; WEF: regulatory shield
+  teacher:              ["MANYIKA_2017", "WEF_2025"],        // MGI: social intelligence protection
+  researcher:           ["ONET_TASK", "STANFORD_AI"],        // Stanford: research augmented not replaced
+  voice_process:        ["NASSCOM_2024", "FREY_OSBORNE"],    // NASSCOM: India-specific BPO disruption
+  kyc_aml_analyst:      ["NASSCOM_2024", "WEF_2025"],        // NASSCOM 2024: fintech automation
+};
+
 export interface RoleNode {
   id: string;
   title: string;
