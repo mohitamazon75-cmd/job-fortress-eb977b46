@@ -445,7 +445,14 @@ export async function createScan(params: {
 }
 
 export async function uploadResume(file: File, scanId: string): Promise<string> {
-  const filePath = `${scanId}/${file.name}`;
+  // Sanitize filename: replace non-ASCII and special chars with underscores
+  const sanitized = file.name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')        // strip diacritics
+    .replace(/[^\w.\-]/g, '_')              // replace non-word chars (keeps a-z, 0-9, _, -, .)
+    .replace(/_+/g, '_')                    // collapse consecutive underscores
+    .replace(/^_|_$/g, '');                 // trim leading/trailing underscores
+  const filePath = `${scanId}/${sanitized || 'resume.pdf'}`;
   const { error } = await supabase.storage
     .from('resumes')
     .upload(filePath, file, { contentType: file.type || 'application/pdf', upsert: true });

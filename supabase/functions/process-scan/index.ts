@@ -916,8 +916,9 @@ No explanation, no markdown. Return ONLY the JSON.`;
     }
 
     // Week 2 #2: Attach delta if previous score exists
+    let prev: Awaited<ReturnType<typeof getPreviousScore>> = null;
     if (scan.user_id) {
-      const prev = await getPreviousScore(supabase, scan.user_id, scanId);
+      prev = await getPreviousScore(supabase, scan.user_id, scanId);
       if (prev) {
         finalReport.score_delta = {
           previous_di: prev.determinism_index,
