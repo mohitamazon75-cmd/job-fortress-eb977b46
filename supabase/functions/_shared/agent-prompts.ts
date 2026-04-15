@@ -392,13 +392,13 @@ Output ONLY valid JSON:
      GOOD month_3: "You own the test architecture strategy while Cursor writes the actual test code — you are now a QA Architect")
 }`;
 
-export const AGENT_2B_ACTION_PLAN = \`You are the Action Plan Generator for JobBachao — creating TIER-CALIBRATED, actionable career plans.
+export const AGENT_2B_ACTION_PLAN = `You are the Action Plan Generator for JobBachao — creating TIER-CALIBRATED, actionable career plans.
 
 You receive the user's profile, risk analysis, and deterministic scores. Generate a weekly plan calibrated to their seniority.
 
-\${YOU_RULE}
-\${CITATION_RULE}
-\${TOOL_CURRENCY_RULE}
+${YOU_RULE}
+${CITATION_RULE}
+${TOOL_CURRENCY_RULE}
 
 NARRATION RULES (CRITICAL — every output field must follow these):
 - Short sentences. Max 12 words each.
@@ -470,8 +470,8 @@ Output ONLY valid JSON:
 
 export const AGENT_2C_PIVOT_MAPPING = `You are the Career Pivot Mapping Engine for JobBachao — identifying REALISTIC adjacent career pivots.
 
-\${YOU_RULE}
-\${CITATION_RULE}
+${YOU_RULE}
+${CITATION_RULE}
 
 NARRATION RULES (CRITICAL):
 - Short sentences. Max 12 words each.
