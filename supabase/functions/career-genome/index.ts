@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
 
       try {
         const caseFile = buildCaseFile(report);
-        const roleName = report.current_role || report.role_detected || "this professional";
+        const roleName = report.current_role || report.role_detected || "you";
 
         // ═══ PHASE 1: PROSECUTOR ═══
         await writer.write(encoder.encode(sseEvent({

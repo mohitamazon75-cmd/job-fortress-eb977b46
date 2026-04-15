@@ -196,7 +196,7 @@ RULES:
 
 OUTPUT FORMAT (strict JSON via tool call):`;
 
-    const userPrompt = `Rank these real job listings for this professional:
+    const userPrompt = `Rank these real job listings for this person's profile:
 
 PROFILE:
 - Current Role: ${role}
