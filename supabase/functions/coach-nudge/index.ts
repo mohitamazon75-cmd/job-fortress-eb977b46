@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sendCoachNudgeWhatsApp, normaliseIndiaPhone } from "../_shared/whatsapp-sender.ts";
+// WhatsApp imports removed — profiles table doesn't have phone column yet
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -179,18 +179,7 @@ Deno.serve(async (req) => {
               });
               console.log(`[CoachNudge] Enqueued email for nudge ${nudge.id} to ${profile.email}`);
 
-              // WhatsApp parallel channel — fire-and-forget alongside email
-              // Uses pre-generated whatsapp_text from nudge content generator
-              const userPhone = normaliseIndiaPhone(profile.phone);
-              if (userPhone && nudgeContent.whatsapp_text) {
-                sendCoachNudgeWhatsApp(
-                  userPhone,
-                  nudgeContent.title,
-                  nudgeContent.message,
-                  siteUrl,
-                ).then(r => console.log(`[CoachNudge] WhatsApp nudge ${nudge.id}: ${r.sent ? "sent " + r.messageId : "skipped " + r.reason}`))
-                 .catch(err => console.warn(`[CoachNudge] WhatsApp fire-and-forget error for ${nudge.id}:`, err));
-              }
+              // WhatsApp channel placeholder — profiles table doesn't have phone yet
             }
           } catch (emailErr) {
             console.error(`[CoachNudge] Email enqueue failed for nudge ${nudge.id}:`, emailErr);
