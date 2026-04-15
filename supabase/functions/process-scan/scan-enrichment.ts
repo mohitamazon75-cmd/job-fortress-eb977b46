@@ -17,6 +17,7 @@ import {
   stripUnverifiedNumbers,
 } from "../_shared/scan-utils.ts";
 import { inferFromLinkedinUrl, parseExperienceYears } from "../_shared/scan-helpers.ts";
+import { parseResumeWithAffinda } from "../_shared/affinda-parser.ts";
 
 // ── Types ──
 
@@ -86,6 +87,12 @@ async function parseResume(
     let binary = "";
     for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
     const resumeBase64 = btoa(binary);
+
+    // Launch Affinda in parallel with the LLM vision call.
+    // Affinda gives accurate years-from-dates and structured certifications.
+    // ZERO REGRESSION: if Affinda fails/absent, affindaResult is null and
+    // the LLM output is used unchanged. No await blocking the LLM path.
+    const affindaPromise = parseResumeWithAffinda(resumeBase64).catch(() => null);
 
     const { signal, cancel } = createTimeoutController(RESUME_PARSE_TIMEOUT_MS);
     try {
@@ -222,7 +229,38 @@ CRITICAL RULES:
         extractedYears = parsed.yearsOfExperience;
       }
 
-      console.debug(`[Ingestion] Resume parsed (rich): name=${parsed.name ? "[present]" : "[absent]"}, role=${parsed.headline ? "[present]" : "[absent]"}, skills=${parsed.skills?.length ?? 0}, tech=${parsed.techStack?.length ?? 0}, achievements=${parsed.experience?.reduce((n: number, e: any) => n + (e.keyAchievements?.length ?? 0), 0) ?? 0}, exp=${extractedYears ?? "absent"}`);
+      // Await Affinda result (was launched in parallel with this LLM call)
+      // If Affinda has date-computed years: prefer it over LLM's text estimate
+      // because it's derived from actual start/end dates, not prose inference.
+      // This matters for the survivability score multipliers (>2yr, >5yr, >10yr).
+      const affindaResult = await affindaPromise;
+      if (affindaResult) {
+        // Use Affinda years if they're meaningfully different from LLM (>6mo delta)
+        // or if LLM had no years. Affinda wins on accuracy; LLM wins on coverage.
+        if (affindaResult.accurate_years_experience !== null) {
+          const llmYears = extractedYears ?? 0;
+          const affYears = affindaResult.accurate_years_experience;
+          if (extractedYears === null || Math.abs(affYears - llmYears) > 0.5) {
+            console.log(`[Affinda] Experience override: LLM=${llmYears}yr → Affinda=${affYears}yr (date-computed)`);
+            extractedYears = affYears;
+          }
+        }
+        // Inject Affinda certifications not already in the LLM's cert list
+        if (affindaResult.certifications.length > 0) {
+          const existing = (parsed.certifications ?? []).map((c: string) => c.toLowerCase());
+          const newCerts = affindaResult.certifications.filter(c => !existing.includes(c.toLowerCase()));
+          if (newCerts.length > 0) {
+            rawText += `\nAdditional Certifications (Affinda): ${newCerts.join(", ")}\n`;
+            console.debug(`[Affinda] Injected ${newCerts.length} additional certs`);
+          }
+        }
+        // Inject education tier signal for seniority calibration
+        if (affindaResult.education_tier === "tier1") {
+          rawText += `\nEducation Signal: Tier-1 India institution detected (IIT/NIT/IIM equivalent)\n`;
+        }
+      }
+
+      console.debug(`[Ingestion] Resume parsed (rich): name=${parsed.name ? "[present]" : "[absent]"}, role=${parsed.headline ? "[present]" : "[absent]"}, skills=${parsed.skills?.length ?? 0}, tech=${parsed.techStack?.length ?? 0}, achievements=${parsed.experience?.reduce((n: number, e: any) => n + (e.keyAchievements?.length ?? 0), 0) ?? 0}, exp=${extractedYears ?? "absent"}${affindaResult ? " (affinda-verified)" : ""}`);
 
       return {
         rawText,
