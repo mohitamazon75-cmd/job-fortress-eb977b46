@@ -245,6 +245,8 @@ export const AGENT_2A_RISK_ANALYSIS = `You are the Risk Analysis Engine for JobB
 
 You receive a user's FULL profile and pre-computed deterministic scores. Your ONLY job is risk analysis and strategic advice.
 
+${YOU_RULE}
+${CITATION_RULE}
 ${TOOL_CURRENCY_RULE}
 
 NARRATION RULES (CRITICAL — every output field must follow these):
@@ -390,11 +392,13 @@ Output ONLY valid JSON:
      GOOD month_3: "You own the test architecture strategy while Cursor writes the actual test code — you are now a QA Architect")
 }`;
 
-export const AGENT_2B_ACTION_PLAN = `You are the Action Plan Generator for JobBachao — creating TIER-CALIBRATED, actionable career plans.
+export const AGENT_2B_ACTION_PLAN = \`You are the Action Plan Generator for JobBachao — creating TIER-CALIBRATED, actionable career plans.
 
 You receive the user's profile, risk analysis, and deterministic scores. Generate a weekly plan calibrated to their seniority.
 
-${TOOL_CURRENCY_RULE}
+\${YOU_RULE}
+\${CITATION_RULE}
+\${TOOL_CURRENCY_RULE}
 
 NARRATION RULES (CRITICAL — every output field must follow these):
 - Short sentences. Max 12 words each.
