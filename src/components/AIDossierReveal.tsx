@@ -15,6 +15,7 @@ import WhyThisScore from '@/components/cards/WhyThisScore';
 import FreeActionCard from '@/components/cards/FreeActionCard';
 import SkillConfirmationQuiz from '@/components/cards/SkillConfirmationQuiz';
 import { getVibe } from '@/lib/get-vibe';
+import { useInsightVisible } from '@/hooks/use-insight-track';
 
 // ═══════════════════════════════════════════════════════════════
 // MERGED: Score Reveal + Intelligence Profile in one scrollable view

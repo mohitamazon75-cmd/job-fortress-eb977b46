@@ -79,6 +79,12 @@ VERBATIM TITLE EXTRACTION (CRITICAL — ZERO TOLERANCE FOR TITLE INFLATION):
   * For EXECUTIVE/SENIOR_LEADER: include ONLY high-stakes ORGANIZATIONAL tasks like "P&L Governance", "Board Reporting", "M&A Due Diligence", "Cross-functional Org Design", "Regulatory Strategy", "Investor Relations", "Capital Allocation", "Organizational Restructuring", "Strategic Partnerships", "Risk Committee Oversight". NEVER include generic tasks like "email writing" or "report writing" — these are beneath executive-level analysis.
   * For MANAGER: include team-level tasks like "Sprint Planning", "Team Performance Reviews", "Budget Management", "Vendor Negotiations"
   * For IC roles: include hands-on tasks like "A/B Testing", "SQL Reporting", "Content Calendar Management"
+  * BPO/KPO SKILL EXTRACTION (apply when role is in: voice process, data entry, KYC, claims, transcription, BPO, KPO, back office, customer support, helpdesk):
+    - DO extract: "CSAT metric management", "SLA adherence", "AHT (Average Handle Time) optimization", "Quality scorecard monitoring", "CRM data accuracy", "Tier-1 escalation handling", "Process documentation", "Shift handover reporting"
+    - DO extract KPO-specific: "Equity research report writing", "Financial statement analysis", "Bloomberg terminal", "Investment thesis documentation"
+    - DO extract compliance: "KYC document verification", "AML red flag identification", "FATF guidelines application", "Sanctions screening"
+    - The moat for BPO professionals: "Process quality assurance", "Cross-team escalation judgment", "Client communication under pressure", "Regulatory interpretation in grey areas" — extract these when present
+    - NEVER extract "customer service" as a skill — be specific: "Inbound call resolution", "Voice process CX management", "Chat support SLA management"
 - strategic_skills: high-cognitive skills requiring human judgment that AI CANNOT replicate.
   * For EXECUTIVE: "Organizational Judgment Under Ambiguity", "Board-Level Stakeholder Navigation", "Cross-Cultural M&A Integration", "Regulatory Risk Intuition"
   * For IC: "Stakeholder Alignment", "Brand Psychology", "0-to-1 Product Strategy"
