@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sendCoachNudgeWhatsApp, normaliseIndiaPhone } from "../_shared/whatsapp-sender.ts";
+// WhatsApp imports removed — profiles table doesn't have phone column yet
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
