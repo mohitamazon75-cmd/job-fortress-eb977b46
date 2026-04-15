@@ -17,6 +17,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { sendScoreAlertWhatsApp, normaliseIndiaPhone } from "../_shared/whatsapp-sender.ts";
 
 const SITE_URL = "https://jobbachao.com";
 const MIN_DRIFT_TO_NOTIFY = 3;       // points — below this is noise
@@ -158,6 +159,23 @@ Deno.serve(async (req) => {
           },
         });
 
+        // ── 5b. WhatsApp parallel channel (India 85%+ open rate vs email 15%) ──
+        // Fire-and-forget: WhatsApp failures never block email delivery.
+        // Only fires when: user has phone, WHATSAPP_* env vars set, template approved.
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("phone")
+          .eq("user_id", scan.user_id)
+          .maybeSingle();
+
+        const userPhone = normaliseIndiaPhone(profileData?.phone);
+        if (userPhone) {
+          const alertText = `${driftStr} since your last scan. Market conditions for ${displayRole} have shifted — rescan now for your updated plan.`;
+          sendScoreAlertWhatsApp(userPhone, alertText, `${SITE_URL}?utm_source=score_alert&utm_medium=whatsapp`)
+            .then(r => console.log(`[ScoreChangeNotify] WhatsApp ${r.sent ? "sent" : "skipped"}: ${r.sent ? r.messageId : r.reason}`))
+            .catch(err => console.warn("[ScoreChangeNotify] WhatsApp fire-and-forget error:", err));
+        }
+
         // ── 6. Record that we notified this user ──────────────────────────────
         await supabase.from("score_events").insert({
           user_id: scan.user_id,
@@ -168,6 +186,7 @@ Deno.serve(async (req) => {
             posting_change_pct: postingDecline,
             role: displayRole,
             notified_at: new Date().toISOString(),
+            channels: userPhone ? ["email", "whatsapp"] : ["email"],
           },
           computed_at: new Date().toISOString(),
         });

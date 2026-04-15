@@ -2,6 +2,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearch } from "../_shared/tavily-search.ts";
 import { enrichRolesWithAdzunaSalary } from "../_shared/adzuna-salary.ts";
+import { enrichRolesWithIndiaSalary } from "../_shared/ambitionbox-salary.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ═══════════════════════════════════════════════════════════════
@@ -288,15 +289,22 @@ Deno.serve(async (req) => {
         : r.why_safer,
     }));
 
-    // Enrich upskill roles with real Adzuna salary data (non-blocking)
+    // Enrich upskill roles with India salary data — AmbitionBox → Glassdoor → Adzuna
+    // AmbitionBox has 30M+ India-specific salary points vs Adzuna's global data.
     let enrichedRoles = personalizedRoles;
     try {
-      enrichedRoles = await enrichRolesWithAdzunaSalary(personalizedRoles, {
-        ADZUNA_API_ID: Deno.env.get("ADZUNA_API_ID") || "",
-        ADZUNA_API_KEY: Deno.env.get("ADZUNA_API_KEY") || "",
-      });
+      enrichedRoles = await enrichRolesWithIndiaSalary(personalizedRoles);
     } catch (e: any) {
-      console.warn("[india-jobs] Adzuna salary enrichment failed (non-fatal):", e.message);
+      console.warn("[india-jobs] India salary enrichment failed (non-fatal):", e.message);
+      // Fallback to Adzuna if AmbitionBox/Glassdoor chain fails
+      try {
+        enrichedRoles = await enrichRolesWithAdzunaSalary(personalizedRoles, {
+          ADZUNA_API_ID: Deno.env.get("ADZUNA_API_ID") || "",
+          ADZUNA_API_KEY: Deno.env.get("ADZUNA_API_KEY") || "",
+        });
+      } catch (e2: any) {
+        console.warn("[india-jobs] Adzuna fallback also failed (non-fatal):", e2.message);
+      }
     }
 
     const result = {
