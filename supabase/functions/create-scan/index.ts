@@ -95,8 +95,27 @@ Deno.serve(async (req: Request) => {
     if (error) throw error;
     if (!data?.id) throw new Error("Scan creation returned no ID");
 
+    // Fire-and-forget: trigger process-scan server-to-server so anonymous users
+    // don't hit the JWT gate inside process-scan.
+    const processUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/process-scan`;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const triggerFetch = fetch(processUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({ scanId: data.id }),
+    }).catch((err) => console.warn("[create-scan] Failed to trigger process-scan:", err));
+
+    // @ts-ignore: EdgeRuntime is available in the Supabase edge runtime
+    if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+      // @ts-ignore
+      (EdgeRuntime as any).waitUntil(triggerFetch);
+    }
+
     return new Response(
-      JSON.stringify({ id: data.id, accessToken: data.access_token, triggered: false }),
+      JSON.stringify({ id: data.id, accessToken: data.access_token, triggered: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
