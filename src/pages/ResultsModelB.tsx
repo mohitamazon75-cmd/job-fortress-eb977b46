@@ -276,7 +276,7 @@ export default function ResultsModelB() {
       supabase.functions.invoke("fetch-weekly-intel", {
         body: {
           role: cardData.user?.current_title || "",
-          judo_tool: (cardData.scan_judo as any).recommended_tool,
+          judo_tool: (cardData.scan_judo as any)?.recommended_tool || "",
           industry: cardData.user?.industry || "",
           scanId: analysisId,
         },

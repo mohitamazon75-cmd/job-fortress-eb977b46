@@ -10,6 +10,7 @@
 
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { guardRequest } from "../_shared/abuse-guard.ts";
 
 const VALID_OUTCOMES = new Set([
   "started_upskilling",
@@ -31,6 +32,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
   const corsHeaders = getCorsHeaders(req);
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+
+  // Spam protection: reject requests from blocked IPs/origins
+  const blocked = guardRequest(req, corsHeaders);
+  if (blocked) return blocked;
 
   try {
     const url = new URL(req.url);

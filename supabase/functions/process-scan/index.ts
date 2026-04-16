@@ -946,6 +946,18 @@ Deno.serve(async (req) => {
     finalReport._diagnostics = scanDiagnostics;
 
     await updateScan(supabase, scanId, finalReport, linkedinName, linkedinCompany);
+
+    // Invalidate any stale model_b_results card_data for this scan.
+    // This is critical when the user uploaded a NEW resume — the old card_data
+    // from a previous Model B analysis would otherwise be served from cache,
+    // showing results based on the old resume even after a fresh scan.
+    if (hasResume) {
+      await supabase.from("model_b_results")
+        .update({ card_data: null, gemini_raw: null })
+        .eq("analysis_id", scanId)
+        .not("card_data", "is", null);
+      console.log(`[Orchestrator] Invalidated stale model_b_results card_data for fresh resume scan ${scanId}`);
+    }
     clearTimeout(globalTimer);
     console.log(`[Orchestrator] Complete in ${((Date.now() - globalStart) / 1000).toFixed(1)}s! Role: ${finalReport.role}, DI: ${finalReport.determinism_index}, SS: ${finalReport.survivability.score}`);
 

@@ -24,6 +24,9 @@ CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 -- ── 1. score-change-notify — Monday 9am IST = 03:30 UTC ──────────────────────
 -- Proactive score-drift alerts. Fires when market signals for a user's role
 -- have worsened by ≥3 DI points or posting_change_pct < -10% since their scan.
+-- NOTE: Replace YOUR_SERVICE_ROLE_KEY with the actual key from
+-- Supabase Dashboard → Settings → API → service_role key
+-- Or set it first: ALTER DATABASE postgres SET app.service_role_key = 'your-key';
 SELECT cron.schedule(
   'score-change-notify-weekly',
   '30 3 * * 1',  -- Mon 03:30 UTC = Mon 09:00 IST
@@ -32,7 +35,10 @@ SELECT cron.schedule(
       url := 'https://dlpeirtuaxydoyzwzdyz.supabase.co/functions/v1/score-change-notify',
       headers := jsonb_build_object(
         'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || current_setting('app.service_role_key', true)
+        'Authorization', 'Bearer ' || coalesce(
+          current_setting('app.service_role_key', true),
+          current_setting('app.settings.service_role_key', true)
+        )
       ),
       body := '{}'::jsonb
     );
