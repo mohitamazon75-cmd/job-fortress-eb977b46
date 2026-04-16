@@ -543,9 +543,14 @@ Deno.serve(async (req) => {
     // Check for cached Agent1 output to ensure consistency across repeat scans
     let agent1: any = null;
     {
-      // Skip Agent1 cache when forceRefresh is true — ensures fresh role extraction
-      if (forceRefresh) {
-        console.log(`[Agent1:Cache] BYPASS — forceRefresh=true, will extract fresh profile`);
+      // CRITICAL FIX: Skip Agent1 cache when a resume is present OR forceRefresh is true.
+      // Previously: only forceRefresh bypassed the Agent1 cache. This meant uploading a
+      // NEW resume with the same industry/years/metro as a previous scan would return the
+      // OLD profile extraction — the new resume was extracted into rawProfileText but never
+      // sent to Agent 1. Users got identical results regardless of what resume they uploaded.
+      // Fix: hasResume=true means Agent1 MUST read the actual resume file, not cached skills.
+      if (forceRefresh || hasResume) {
+        console.log(`[Agent1:Cache] BYPASS — ${forceRefresh ? "forceRefresh=true" : "new resume uploaded — must extract fresh"}`);
       } else {
         try {
           const cacheWindow = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24h cache
