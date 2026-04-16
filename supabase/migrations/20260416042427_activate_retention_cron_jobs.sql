@@ -66,3 +66,28 @@ SELECT cron.schedule(
 -- Verify schedules are registered
 -- SELECT jobid, jobname, schedule, command FROM cron.job
 -- WHERE jobname IN ('score-change-notify-weekly', 'generate-weekly-brief-sunday');
+
+
+
+
+-- IP Improvement: outcome calibration — runs Mon 04:00 UTC (30 min after outcome follow-ups)
+SELECT cron.unschedule('compute-outcome-calibration-weekly') WHERE EXISTS (
+  SELECT 1 FROM cron.job WHERE jobname = 'compute-outcome-calibration-weekly'
+);
+SELECT cron.schedule(
+  'compute-outcome-calibration-weekly',
+  '0 4 * * 1',  -- Mon 04:00 UTC = Mon 09:30 IST (after sendOutcomeFollowUps at 03:30)
+  $$
+    SELECT net.http_post(
+      url := 'https://dlpeirtuaxydoyzwzdyz.supabase.co/functions/v1/compute-outcome-calibration',
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'Authorization', 'Bearer ' || coalesce(
+          current_setting('app.service_role_key', true),
+          current_setting('app.settings.service_role_key', true)
+        )
+      ),
+      body := '{}'::jsonb
+    );
+  $$
+);

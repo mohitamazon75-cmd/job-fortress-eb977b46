@@ -209,6 +209,40 @@ Deno.serve(async (req: Request) => {
     const embedding = buildEmbedding(report);
     const embeddingStr = `[${embedding.join(",")}]`;
 
+    // T4: Generate semantic embedding via Lovable gateway (text-embedding-3-small)
+    // Cost: ~$0.000002/scan. Falls back gracefully if unavailable.
+    let semanticEmbeddingStr: string | null = null;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (LOVABLE_API_KEY) {
+      try {
+        const profileText = [
+          `${report.role || report.role_family || "Professional"}`,
+          `with ${report.experience_years || 5} years`,
+          `in ${report.industry || "Technology"}.`,
+          `Skills: ${((report.all_skills || []) as string[]).slice(0, 6).join(", ") || "mixed"}.`,
+          `${report.city_tier === 1 ? "Tier 1" : "Tier 2"} city.`,
+          `Seniority: ${report.seniority_tier || "MID"}.`,
+        ].join(" ");
+
+        const embResp = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: "text-embedding-3-small", input: profileText }),
+          signal: AbortSignal.timeout(5_000),
+        });
+        if (embResp.ok) {
+          const embData = await embResp.json();
+          const vec = embData?.data?.[0]?.embedding as number[] | undefined;
+          if (vec?.length === 1536) {
+            semanticEmbeddingStr = `[${vec.join(",")}]`;
+            console.log("[cohort-match] Semantic embedding generated (1536-dim)");
+          }
+        }
+      } catch (e) {
+        console.warn("[cohort-match] Semantic embedding failed (non-fatal):", e);
+      }
+    }
+
     // Find the user's previous scan for delta computation
     const { data: prevScanVec } = await supabase
       .from("scan_vectors")
@@ -231,6 +265,7 @@ Deno.serve(async (req: Request) => {
       automation_risk: report.automation_risk ?? null,
       doom_months: report.doom_clock_months ?? null,
       prior_scan_id: prevScanVec?.scan_id ?? null,
+      ...(semanticEmbeddingStr ? { semantic_embedding: semanticEmbeddingStr, semantic_model: "text-embedding-3-small" } : {}),
     };
 
     // If we have a previous scan, compute deltas

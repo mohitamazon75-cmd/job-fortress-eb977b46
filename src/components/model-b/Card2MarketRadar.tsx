@@ -26,6 +26,12 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
   // 30-min DB cache in live-market means no LLM cost on repeat views.
   // Fires post-scan so it never adds to scan latency.
   const [liveMarket, setLiveMarket] = useState<LiveMarketData | null>(null);
+  const [cohortOutcome, setCohortOutcome] = useState<{
+    calibrated: boolean; sample_size?: number; got_interview_rate?: number;
+    upskilling_rate?: number; di_bucket_min?: number; di_bucket_max?: number;
+    role_category?: string | null;
+  } | null>(null);
+
   useEffect(() => {
     if (!c2) return;
     const role = cardData.user?.current_title || "";
@@ -39,6 +45,20 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         setLiveMarket(data);
       }
     }).catch(() => { /* non-fatal — card shows fine without live data */ });
+
+    // Fetch cohort outcome data (calibrated from real scan outcomes)
+    const di = (cardData as any)?.risk_score ?? (cardData as any)?.determinism_index;
+    if (di) {
+      supabase.functions.invoke("get-cohort-outcomes", {
+        body: {
+          di,
+          role: (cardData as any)?.user?.current_title || "",
+          industry: (cardData as any)?.user?.industry || "",
+        },
+      }).then(({ data }) => {
+        if (data) setCohortOutcome(data);
+      }).catch(() => {}); // non-fatal
+    }
   }, []);
   if (!c2) return null;
 
@@ -126,7 +146,43 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           </>
         )}
 
-        {/* Feature 1: Live market signals from Tavily — lazy-loaded, 30-min cache */}
+        {/* T6: Cohort outcome strip — shows when calibration data exists (n≥30) */}
+        {cohortOutcome && (
+          <div style={{ background: cohortOutcome.calibrated ? "var(--mb-green-tint)" : "var(--mb-paper)", border: `1.5px solid ${cohortOutcome.calibrated ? "rgba(26,107,60,0.2)" : "var(--mb-rule)"}`, borderRadius: 14, padding: "14px 18px", marginBottom: 14 }}>
+            {cohortOutcome.calibrated ? (
+              <>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-green)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 6 }}>
+                  📊 YOUR COHORT — REAL OUTCOMES
+                </div>
+                <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 15, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.5 }}>
+                  Of <strong>{cohortOutcome.sample_size?.toLocaleString()}</strong> professionals with DI {cohortOutcome.di_bucket_min}–{cohortOutcome.di_bucket_max}
+                  {cohortOutcome.role_category ? ` in ${cohortOutcome.role_category}` : ""}:
+                </div>
+                <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap" as const }}>
+                  {(cohortOutcome.got_interview_rate ?? 0) > 0 && (
+                    <div style={{ background: "var(--mb-green)", borderRadius: 10, padding: "8px 14px", color: "white", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700 }}>
+                      🤝 {Math.round((cohortOutcome.got_interview_rate ?? 0) * 100)}% got interviews
+                    </div>
+                  )}
+                  {(cohortOutcome.upskilling_rate ?? 0) > 0 && (
+                    <div style={{ background: "var(--mb-navy)", borderRadius: 10, padding: "8px 14px", color: "white", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700 }}>
+                      📚 {Math.round((cohortOutcome.upskilling_rate ?? 0) * 100)}% started upskilling
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: "var(--mb-ink3)", marginTop: 8 }}>
+                  Based on 7-day follow-ups from JobBachao users
+                </div>
+              </>
+            ) : (
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "var(--mb-ink3)" }}>
+                🔬 <strong>Calibrating with real outcomes.</strong> As more users with your profile report back, this card will show what % got interviews.
+              </div>
+            )}
+          </div>
+        )}
+
+                {/* Feature 1: Live market signals from Tavily — lazy-loaded, 30-min cache */}
         {liveMarket && (
           <>
             <SectionLabel label={`LIVE MARKET SIGNALS — ${new Date().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`} />
