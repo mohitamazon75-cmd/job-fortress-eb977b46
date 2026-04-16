@@ -86,21 +86,19 @@ interface ExistingScanHydrationRow {
   linkedin_url: string | null;
 }
 
-// Tiny component that fires onReady once on mount (avoids render-loop in AuthGuard children)
-// ── AuthOrAnon ────────────────────────────────────────────────────────────────
-// Replaces the old AuthGuard + AuthAutoAdvance pattern in the auth-gate phase.
-// 
-// OLD (broken): AuthGuard navigated to /auth when no session existed, which:
-//   - Destroyed resumeFileRef (page reload)
-//   - Lost the scan context
-//   - Forced users to see their old account's scans on return
-//
-// NEW (fixed): Check for existing session → if found, advance immediately.
-//   If not found → create an anonymous Supabase session (no redirect, no page
-//   reload, resume stays in memory). The user can upgrade to a real account
-//   after seeing their results.
-function AuthOrAnon({ onReady }: { onReady: () => void }) {
+function isAnonymousAuthSession(session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']) {
+  const user = session?.user;
+  if (!user) return false;
+  return Boolean((user as { is_anonymous?: boolean }).is_anonymous || (!user.email && !user.phone));
+}
+
+// Real auth gate for production scan flow.
+// We preserve pending scan intent in storage, redirect to /auth, then resume the
+// flow after login/signup. This prevents anonymous scans from generating stale
+// resume-less analyses and ensures Google/email auth is the required entrypoint.
+function AuthGate({ onReady }: { onReady: () => void }) {
   const fired = useRef(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (fired.current) return;
@@ -108,28 +106,27 @@ function AuthOrAnon({ onReady }: { onReady: () => void }) {
 
     (async () => {
       try {
-        // Check for existing session first
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
+        if (session && !isAnonymousAuthSession(session)) {
           onReady();
           return;
         }
-        // No session — create anonymous one so the scan can proceed without redirect
-        const { error } = await supabase.auth.signInAnonymously();
-        if (error) {
-          console.warn('[AuthOrAnon] Anonymous sign-in failed, proceeding anyway:', error.message);
-        }
-        onReady();
+
+        try {
+          sessionStorage.setItem('jb_post_auth_redirect', '/');
+        } catch {}
+
+        navigate('/auth', { replace: true });
       } catch (e) {
-        console.warn('[AuthOrAnon] Auth check failed, proceeding anyway:', e);
-        onReady();
+        console.warn('[AuthGate] Auth check failed, redirecting to login:', e);
+        navigate('/auth', { replace: true });
       }
     })();
-  }, [onReady]);
+  }, [navigate, onReady]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Preparing your analysis...</div>
+      <div className="animate-pulse text-muted-foreground">Redirecting to secure sign in...</div>
     </div>
   );
 }
@@ -682,7 +679,7 @@ const Index = () => {
         />
       )}
       {phase === 'auth-gate' && (
-        <AuthOrAnon onReady={handleAuthConfirmed} />
+        <AuthGate onReady={handleAuthConfirmed} />
       )}
       {phase === 'rescan-check' && (
         <RescanDetector
