@@ -76,9 +76,13 @@ Deno.serve(async (req) => {
     }
 
     // ─── Get resume text from scans table ───
+    // P-2-A: Select only the columns extractResumeText() and extractCity() actually use.
+    // Previously select("*") fetched the full row including all agent outputs,
+    // access_token, pgvector embeddings, etc. — up to 200KB of JSON per call.
+    // These 5 columns cover all code paths in extractResumeText() and extractCity().
     const { data: scan, error: scanError } = await supabase
       .from("scans")
-      .select("*")
+      .select("final_json_report, role_detected, industry, years_experience, linkedin_url")
       .eq("id", analysis_id)
       .maybeSingle();
 

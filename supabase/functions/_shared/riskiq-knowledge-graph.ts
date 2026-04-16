@@ -452,6 +452,20 @@ export class RiskKnowledgeGraph {
     }
     return null;
   }
+
+  /**
+   * Returns all skill names stored in the KG, lowercased.
+   * Used for fuzzy matching of user-entered skills against the KG without
+   * a full DB round-trip. Previously the pipeline fetched all skill_risk_matrix
+   * rows from Supabase to get this list — the KG already has them in memory.
+   *
+   * Covers the KG's built-in SkillNode map. Skills that exist only in the
+   * DB (not seeded into the KG) are not covered here — those are handled by
+   * the DB fallback query that runs after this check.
+   */
+  getAllSkillNames(): string[] {
+    return Array.from(this.skills.keys());
+  }
 }
 
 let _kgInstance: RiskKnowledgeGraph | null = null;

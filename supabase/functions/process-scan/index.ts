@@ -317,8 +317,15 @@ Deno.serve(async (req) => {
     if (manualKeySkills && !scan.linkedin_url && !hasResume) {
       const rawSkills = manualKeySkills.split(/[,;\n]+/).map((s: string) => s.trim().toLowerCase()).filter((s: string) => s.length > 1);
       if (rawSkills.length > 0) {
-        const { data: allKgSkills } = await supabase.from("skill_risk_matrix").select("skill_name");
-        const kgNames = (allKgSkills || []).map((s: any) => s.skill_name);
+        // P-4-B: Use KG in-memory skill list — avoids a full skill_risk_matrix
+        // table scan. The KG singleton is already loaded for role lookups.
+        // Falls back to DB only if the KG skill list is empty (shouldn't happen
+        // in normal operation since the KG is seeded with all known skills).
+        const kgSkillNames = getKG().getAllSkillNames();
+        const kgNames: string[] = kgSkillNames.length > 0
+          ? kgSkillNames
+          : await supabase.from("skill_risk_matrix").select("skill_name")
+              .then(r => (r.data || []).map((s: Record<string, unknown>) => String(s.skill_name)));
         for (const raw of rawSkills) {
           // Exact match first
           const exact = kgNames.find((k: string) => k.toLowerCase() === raw);
@@ -443,10 +450,26 @@ Deno.serve(async (req) => {
     const skillMapRows: JobSkillMapRow[] = (skillMapData || []).map((s: any) => ({ skill_name: s.skill_name, importance: s.importance, frequency: s.frequency }));
     const skillNames = skillMapRows.map((s) => s.skill_name);
 
+    // P-1-B: Single skill_risk_matrix query replaces 2 sequential queries.
+    // Previously: query for skillNames, then a second query for "additional" names
+    // that was derived from the same set — making the branch effectively dead code.
+    // Now: one query, one round-trip, same result.
+    function mapSkillRow(s: Record<string, unknown>): SkillRiskRow {
+      return {
+        skill_name: String(s.skill_name),
+        automation_risk: Number(s.automation_risk),
+        ai_augmentation_potential: Number(s.ai_augmentation_potential),
+        human_moat: s.human_moat as string | null,
+        replacement_tools: (s.replacement_tools as string[]) || [],
+        india_demand_trend: String(s.india_demand_trend),
+        category: String(s.category),
+      };
+    }
+
     let skillRiskRows: SkillRiskRow[] = [];
     if (skillNames.length > 0) {
       const { data: skills } = await supabase.from("skill_risk_matrix").select("*").in("skill_name", skillNames);
-      skillRiskRows = (skills || []).map((s: any) => ({ skill_name: s.skill_name, automation_risk: s.automation_risk, ai_augmentation_potential: s.ai_augmentation_potential, human_moat: s.human_moat, replacement_tools: s.replacement_tools || [], india_demand_trend: s.india_demand_trend, category: s.category }));
+      skillRiskRows = (skills || []).map(mapSkillRow);
     }
 
     if (skillRiskRows.length > 0) {
@@ -456,18 +479,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    const allRelevantSkillNames = Array.from(new Set([...skillNames])).filter(Boolean);
+    // allSkillRiskRows starts with job-skill-map results; profile skills are
+    // added in the P-1-B batch below (after Agent 1 has run and profileInput exists).
     let allSkillRiskRows: SkillRiskRow[] = [...skillRiskRows];
-    if (allRelevantSkillNames.length > skillNames.length) {
-      const additionalNames = allRelevantSkillNames.filter((n) => !skillNames.includes(n));
-      if (additionalNames.length > 0) {
-        const { data: extraSkills } = await supabase.from("skill_risk_matrix").select("*").in("skill_name", additionalNames);
-        if (extraSkills?.length) {
-          const extraRows = extraSkills.map((s: any) => ({ skill_name: s.skill_name, automation_risk: s.automation_risk, ai_augmentation_potential: s.ai_augmentation_potential, human_moat: s.human_moat, replacement_tools: s.replacement_tools || [], india_demand_trend: s.india_demand_trend, category: s.category }));
-          allSkillRiskRows = [...allSkillRiskRows, ...extraRows];
-        }
-      }
-    }
 
     let marketSignal: MarketSignalRow | null = null;
     if (marketSignals?.[0]) {
@@ -769,12 +783,13 @@ Deno.serve(async (req) => {
       }
     }
 
+    // P-1-B: Query 4 — top-up for profile skills not already in allSkillRiskRows.
+    // Uses mapSkillRow helper defined above; eliminates the inline :any mapping.
     const missingProfileSkills = profileSkillNames.filter((n) => !allSkillRiskRows.some((r) => r.skill_name === n));
     if (missingProfileSkills.length > 0) {
       const { data: extraProfileSkills } = await supabase.from("skill_risk_matrix").select("*").in("skill_name", missingProfileSkills);
       if (extraProfileSkills?.length) {
-        const extraRows = extraProfileSkills.map((s: any) => ({ skill_name: s.skill_name, automation_risk: s.automation_risk, ai_augmentation_potential: s.ai_augmentation_potential, human_moat: s.human_moat, replacement_tools: s.replacement_tools || [], india_demand_trend: s.india_demand_trend, category: s.category }));
-        allSkillRiskRows = [...allSkillRiskRows, ...extraRows];
+        allSkillRiskRows = [...allSkillRiskRows, ...extraProfileSkills.map(mapSkillRow)];
       }
     }
 

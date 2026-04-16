@@ -1,30 +1,21 @@
-import { useState, useEffect } from "react";
+// useState and useEffect removed — scan count is now a prop from ResultsModelB
 import { CardShell, CardHead, CardBody, Badge, LivePill, EmotionStrip, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   cardData: any;
   onNext: () => void;
+  /** Monthly scan count for social proof. Fetched once by ResultsModelB and passed down. */
+  monthlyScanCount?: number | null;
 }
 
-export default function Card1RiskMirror({ cardData, onNext }: Props) {
+export default function Card1RiskMirror({ cardData, onNext, monthlyScanCount }: Props) {
   const c1 = cardData.card1_risk;
   const u = cardData.user || {};
   const disruptionYear = c1?.disruption_year || "2027";
 
-  // Fetch real scan count for social proof
-  const [scanCount, setScanCount] = useState<number | null>(null);
-  useEffect(() => {
-    supabase
-      .from("scans")
-      .select("id", { count: "exact", head: true })
-      .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-      .then(({ count }) => {
-        if (count !== null && count >= 10) {
-          setScanCount(Math.floor(count / 10) * 10);
-        }
-      });
-  }, []);
+  // P-3-B: scan count is now fetched once by ResultsModelB and passed as a prop,
+  // avoiding a redundant DB query every time this card renders.
+  const scanCount = monthlyScanCount ?? null;
 
   if (!c1) return null;
 

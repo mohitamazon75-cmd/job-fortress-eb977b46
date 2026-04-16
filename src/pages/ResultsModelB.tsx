@@ -98,6 +98,9 @@ export default function ResultsModelB() {
   const [loadingMsg, setLoadingMsg] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [journeyDone, setJourneyDone] = useState(false);
+  // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
+  // Previously the card fetched this independently on every render.
+  const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
   const [displayScore, setDisplayScore] = useState(0);
 
   const streak = useStreak();
@@ -216,6 +219,17 @@ export default function ResultsModelB() {
   useEffect(() => {
     if (!analysisId) { navigate("/", { replace: true }); return; }
     fetchAnalysis();
+
+    // P-3-B: Fetch monthly scan count for social proof (lifted from Card1RiskMirror)
+    supabase
+      .from("scans")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      .then(({ count }) => {
+        if (count !== null && count >= 10) {
+          setMonthlyScanCount(Math.floor(count / 10) * 10);
+        }
+      });
   }, [analysisId, navigate, fetchAnalysis]);
 
   // Loading message cycling
@@ -415,7 +429,7 @@ export default function ResultsModelB() {
         {/* Main content */}
         {cardData && !loading && !error && (
           <>
-            {currentCard === 0 && <Card1RiskMirror cardData={cardData} onNext={() => handleTabChange(1)} />}
+            {currentCard === 0 && <Card1RiskMirror cardData={cardData} onNext={() => handleTabChange(1)} monthlyScanCount={monthlyScanCount} />}
             {currentCard === 1 && <Card2MarketRadar cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} />}
             {currentCard === 2 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(1)} onNext={() => handleTabChange(3)} onUpgradePlan={() => {
               logEvent("modal_opened", { source: "upgrade_plan" });
