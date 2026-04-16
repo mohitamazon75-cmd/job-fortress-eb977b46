@@ -26,32 +26,7 @@ import '@/styles/model-b-tokens.css';
 // ── Utility: format snake_case skill names → human readable ────────
 // Fixes: "academic_writing" → "Academic Writing"
 // Fixes: "social_media_content" → "Social Media Content"
-function fmtSkill(s: string): string {
-  if (!s) return s;
-  return s
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase())
-    .replace(/\bAi\b/g, 'AI')
-    .replace(/\bApi\b/g, 'API')
-    .replace(/\bSeo\b/g, 'SEO')
-    .replace(/\bSql\b/g, 'SQL')
-    .replace(/\bCrm\b/g, 'CRM')
-    .replace(/\bErp\b/g, 'ERP')
-    .replace(/\bHr\b/g, 'HR')
-    .replace(/\bRpa\b/g, 'RPA');
-}
-
-// ── Utility: clean up LLM third-person advice text → second person ──
-// Fixes: "this professional, integrate ChatGPT" → "Integrate ChatGPT"
-function cleanAdvice(text: string): string {
-  if (!text) return text;
-  return text
-    .replace(/^this professional,?\s*/i, '')
-    .replace(/^the professional,?\s*/i, '')
-    .replace(/\bthis professional\b/gi, 'you')
-    .replace(/\bthe professional\b/gi, 'you')
-    .replace(/^([a-z])/, c => c.toUpperCase());
-}
+import { fmtSkill, cleanAdvice } from '@/lib/display-utils';
 
 // ── Design system from Model B (reused) ──────────────────────────
 function Badge({ label, variant = 'amber' }: { label: string; variant?: 'amber' | 'navy' | 'green' | 'red' | 'teal' }) {
