@@ -45,27 +45,6 @@ Deno.serve(async (req: Request) => {
       // Silently discard out-of-range values — no error response (avoids info leakage)
     }
 
-    // Deduplicate: if this user already has a recent 'processing' scan, reuse it
-    if (userId) {
-      const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-      const { data: existing } = await supabase
-        .from("scans")
-        .select("id, access_token")
-        .eq("user_id", userId)
-        .eq("scan_status", "processing")
-        .gte("created_at", twoMinAgo)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (existing) {
-        return new Response(
-          JSON.stringify({ id: existing.id, accessToken: existing.access_token }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
     const insertPayload: Record<string, unknown> = {
       linkedin_url: linkedinUrl || null,
       resume_file_path: resumeFilePath || null,

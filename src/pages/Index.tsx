@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import HeroSection from '@/components/HeroSection';
 import SocialProofSection from '@/components/SocialProofSection';
 import InputMethodStep from '@/components/InputMethodStep';
@@ -361,6 +362,10 @@ const Index = () => {
       if (!file) return;
       resumeFileRef.current = file;
       track('rescan_from_upgrade_card', { source: 'low_confidence_resume_upload' });
+      setIndustry('');
+      setYearsExperience('');
+      setMetroTier('');
+      setKeySkills('');
       try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true })); } catch {}
       // Reset scan state then go straight to auth-gate (auth already exists)
       setScanReport(null);
@@ -394,6 +399,8 @@ const Index = () => {
     // an engineering resume). This is the root cause of "same old results" bug.
     setIndustry('');
     setYearsExperience('');
+    setMetroTier('');
+    setKeySkills('');
     setStep(1);
     try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true })); } catch {}
     try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
@@ -411,6 +418,8 @@ const Index = () => {
     // Clear stale onboarding values so new scan starts fresh
     setIndustry('');
     setYearsExperience('');
+    setMetroTier('');
+    setKeySkills('');
     setPhase('onboarding');
     setStep(1);
   };
@@ -493,7 +502,10 @@ const Index = () => {
           .update({ resume_file_path: filePath } as any)
           .eq('id', id);
       } catch (err) {
-        console.warn('Resume upload failed, continuing without:', err);
+        console.error('Resume upload failed:', err);
+        toast.error(err instanceof Error ? err.message : 'Resume upload failed. Please try again.');
+        setPhase('input-method');
+        return;
       }
     }
 
