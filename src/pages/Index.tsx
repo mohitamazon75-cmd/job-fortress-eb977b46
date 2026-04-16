@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import HeroSection from '@/components/HeroSection';
 import SocialProofSection from '@/components/SocialProofSection';
 import InputMethodStep from '@/components/InputMethodStep';
@@ -55,6 +55,8 @@ import { type ScanReport, createScan, uploadResume, triggerProcessScan, subscrib
 import { createClient } from '@supabase/supabase-js';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { useRequestMutex } from '@/hooks/use-request-mutex';
+import { useScanFlow } from '@/hooks/useScanFlow';
+import { useOnboardingState } from '@/hooks/useOnboardingState';
 
 // Helper: create a Supabase client with x-scan-access-token header so RLS allows reading
 import { SUPABASE_URL as SB_URL, SUPABASE_PUBLISHABLE_KEY as SB_KEY } from '@/lib/supabase-config';
@@ -199,53 +201,54 @@ function ObituaryPhase({ report, onContinue }: { report: import('@/lib/scan-engi
 }
 
 const Index = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
-  const routedScanId = searchParams.get('id');
   const { track } = useAnalytics();
   const { withMutex, isLocked } = useRequestMutex();
-  const [phase, setPhase] = useState<AppPhase>('hero');
-  const [step, setStep] = useState(1);
-  const detectCountry = () => {
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (tz === 'Asia/Kolkata' || tz === 'Asia/Calcutta') return 'IN';
-      if (tz?.startsWith('America/')) return 'US';
-      if (tz === 'Asia/Dubai') return 'AE';
-    } catch {}
-    return '';
-  };
-  const [country, setCountry] = useState(detectCountry);
-  const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [yearsExperience, setYearsExperience] = useState('');
-  const [metroTier, setMetroTier] = useState('');
-  const [pendingSkills, setKeySkills] = useState('');
-  // Optional CTC — improves Replacement Invoice accuracy.
-  // VibeSec: clamped 5k–5M INR/month, never logged to console or analytics.
-  const [userReportedCTC, setUserReportedCTC] = useState<number | null>(null);
-  const [scanId, setScanId] = useState('');
-  const [accessToken, setAccessToken] = useState('');
-  const [scanReport, setScanReport] = useState<ScanReport | null>(null);
-  const [moneyShotSeen, setMoneyShotSeen] = useState(false);
-  const [showReAuth, setShowReAuth] = useState(false);
-  const [_showGoalModal, _setShowGoalModal] = useState(false);
-  const [showPostRevealGoalModal, setShowPostRevealGoalModal] = useState(false);
-  const [scanGoals, setScanGoals] = useState<ScanGoals | null>(null);
-  const [errorScanStatus, setErrorScanStatus] = useState<string | null>(null);
-  const [showRateLimitUpsell, setShowRateLimitUpsell] = useState(false);
-  const resumeFileRef = useRef<File | null>(null);
-  const cleanupRef = useRef<(() => void) | null>(null);
-  // H-3 FIX: isMounted guard prevents state updates after component unmount
-  const isMountedRef = useRef(true);
-  // Rate limit guard: persists across scanReport state resets (e.g. rescan-from-upgrade-card flow)
-  const hasCompletedScanRef = useRef(false);
-  const hydrationAttemptedRef = useRef<string | null>(null);
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => { isMountedRef.current = false; };
-  }, []);
+
+  // ── Onboarding state (country, industry, metro, skills, resume file) ───────
+  const onboarding = useOnboardingState();
+  const {
+    country, setCountry,
+    linkedinUrl, setLinkedinUrl,
+    industry, setIndustry,
+    yearsExperience, setYearsExperience,
+    metroTier, setMetroTier,
+    pendingSkills, setKeySkills,
+    userReportedCTC, setUserReportedCTC,
+    step, setStep,
+    resumeFileRef,
+    isManualPath: _isManualPath,
+  } = onboarding;
+
+  // ── Scan flow (phase machine, scan id/token/report, auto-recovery) ─────────
+  const scanFlow = useScanFlow({
+    onHydrateOnboardingFields: ({ country: c, industry: i, yearsExperience: y, metroTier: m, linkedinUrl: l }) => {
+      if (c) setCountry(c);
+      if (i) setIndustry(i);
+      if (y) setYearsExperience(y);
+      if (m) setMetroTier(m);
+      if (l) setLinkedinUrl(l);
+    },
+  });
+  const {
+    phase, setPhase,
+    scanId, setScanId,
+    accessToken, setAccessToken,
+    scanReport, setScanReport,
+    moneyShotSeen, setMoneyShotSeen,
+    errorScanStatus, setErrorScanStatus,
+    showRateLimitUpsell, setShowRateLimitUpsell,
+    showReAuth, setShowReAuth,
+    showPostRevealGoalModal, setShowPostRevealGoalModal,
+    scanGoals, setScanGoals,
+    cleanupRef,
+    isMountedRef,
+    hasCompletedScanRef,
+    routedScanId,
+    handleMoneyShotComplete,
+    handleInsightCardsComplete,
+    handleCrisisCenterComplete,
+  } = scanFlow;
+
 
   // On mount: capture ?ref= referral code, log click, store for conversion tracking
   useEffect(() => {
@@ -298,186 +301,11 @@ const Index = () => {
     }
   }, [routedScanId]);
 
-  useEffect(() => {
-    if (!routedScanId || scanReport) return;
-    // Fast path: if navigated here with cached report in state (e.g. from choice screen), skip DB
-    const navState = location.state as { cachedReport?: ScanReport; cachedScanId?: string } | null;
-    if (navState?.cachedReport && navState?.cachedScanId === routedScanId) {
-      setScanId(routedScanId);
-      setScanReport(navState.cachedReport);
-      setMoneyShotSeen(false);
-      setPhase('seven-cards');
-      // Clear navigation state to prevent stale re-use on refresh
-      window.history.replaceState({}, '', window.location.href);
-      return;
-    }
 
-    if (hydrationAttemptedRef.current === routedScanId) return;
 
-    hydrationAttemptedRef.current = routedScanId;
 
-    let cancelled = false;
-    const ACTIVE_STATUSES = new Set(['processing', 'running']);
 
-    const hydrateExistingScan = async () => {
-      setPhase('processing');
 
-      try {
-        try { sessionStorage.removeItem('jb_pending_input'); } catch {}
-
-        const { data, error } = await supabase
-          .from('scans')
-          .select('id, scan_status, final_json_report, access_token, country, industry, years_experience, metro_tier, linkedin_url')
-          .eq('id', routedScanId)
-          .single();
-
-        if (cancelled) return;
-
-        if (error || !data) {
-          console.warn('[Index] Failed to restore scan from URL', error);
-          setScanId('');
-          setAccessToken('');
-          setPhase('hero');
-          return;
-        }
-
-        const existingScan = data as ExistingScanHydrationRow;
-
-        setScanId(existingScan.id);
-        setAccessToken(existingScan.access_token || '');
-        if (existingScan.country) setCountry(existingScan.country);
-        if (existingScan.industry) setIndustry(existingScan.industry);
-        if (existingScan.years_experience) setYearsExperience(existingScan.years_experience);
-        if (existingScan.metro_tier) setMetroTier(existingScan.metro_tier);
-        if (existingScan.linkedin_url) setLinkedinUrl(existingScan.linkedin_url);
-
-        if (existingScan.scan_status === 'complete' && existingScan.final_json_report) {
-          setScanReport(existingScan.final_json_report);
-          hasCompletedScanRef.current = true;
-          setMoneyShotSeen(false);
-          setPhase('seven-cards');
-          return;
-        }
-
-        if (ACTIVE_STATUSES.has(existingScan.scan_status || '') && existingScan.access_token) {
-          cleanupRef.current?.();
-          cleanupRef.current = subscribeScanStatus(
-            routedScanId,
-            existingScan.access_token,
-            (report) => {
-              if (!isMountedRef.current || cancelled) return;
-              setScanReport(report);
-              setMoneyShotSeen(false);
-              setPhase('seven-cards');
-            },
-            () => {
-              if (!isMountedRef.current || cancelled) return;
-              setPhase('error');
-            }
-          );
-          return;
-        }
-
-        console.warn('[Index] Scan restore unavailable for status', existingScan.scan_status);
-        setScanId('');
-        setAccessToken('');
-        setPhase('hero');
-      } catch (error) {
-        if (cancelled) return;
-        console.error('[Index] Unexpected scan restore failure', error);
-        setScanId('');
-        setAccessToken('');
-        setPhase('hero');
-      }
-    };
-
-    void hydrateExistingScan();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [routedScanId, scanReport]);
-
-  useEffect(() => {
-    return () => { cleanupRef.current?.(); };
-  }, []);
-
-  // Auto-recovery: when error screen shows, check if backend actually completed the scan
-  // Also falls back to the URL param scan if the current in-flight scan failed
-  useEffect(() => {
-    if (phase !== 'error') return;
-    
-    const tryRecover = async () => {
-      setErrorScanStatus('checking');
-
-      // 1. Check the current in-flight scan
-      if (scanId && accessToken) {
-        try {
-          const sc = createScanCheckClient(accessToken);
-          const { data } = await sc.from('scans')
-            .select('scan_status, final_json_report')
-            .eq('id', scanId)
-            .single();
-          const row = data as ScanRow | null;
-          if (row?.scan_status === 'complete' && row?.final_json_report) {
-            console.debug('[AutoRecover] Current scan completed in backend');
-            setScanReport(row.final_json_report as ScanReport);
-            setMoneyShotSeen(false);
-            navigate(`/results/choose?id=${scanId}`);
-            return;
-          }
-        } catch {}
-      }
-
-      // 2. Fallback: if URL has a different scan ID, check if THAT one is complete
-      if (routedScanId && routedScanId !== scanId) {
-        try {
-          const { data } = await supabase.from('scans')
-            .select('id, scan_status, final_json_report, access_token')
-            .eq('id', routedScanId)
-            .single();
-          const row = data as (ScanRow & { id: string; access_token: string | null }) | null;
-          if (row?.scan_status === 'complete' && row?.final_json_report) {
-            console.debug('[AutoRecover] URL scan is complete, recovering from', routedScanId);
-            setScanId(row.id);
-            setAccessToken(row.access_token || '');
-            setScanReport(row.final_json_report as ScanReport);
-            setMoneyShotSeen(false);
-            navigate(`/results/choose?id=${routedScanId}`);
-            return;
-          }
-        } catch {}
-      }
-
-      // 3. Check user's most recent completed scan as last resort
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id) {
-          const { data } = await supabase.from('scans')
-            .select('id, scan_status, final_json_report, access_token')
-            .eq('user_id', user.id)
-            .eq('scan_status', 'complete')
-            .not('final_json_report', 'is', null)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-          if (data?.final_json_report) {
-            console.debug('[AutoRecover] Found recent completed scan', data.id);
-            setScanId(data.id);
-            setAccessToken(data.access_token || '');
-            setScanReport(data.final_json_report as unknown as ScanReport);
-            setMoneyShotSeen(false);
-            navigate(`/results/choose?id=${data.id}`);
-            return;
-          }
-        }
-      } catch {}
-
-      if (isMountedRef.current) setErrorScanStatus('failed');
-    };
-
-    tryRecover();
-  }, [phase, scanId, accessToken, routedScanId, navigate]);
 
   // Scroll to top on phase change + track phase
   useEffect(() => {
@@ -490,12 +318,7 @@ const Index = () => {
     else if (phase === 'error') track('error_view');
   }, [phase, track]);
 
-  // Guard: never allow insight cards before Money Shot is explicitly continued
-  useEffect(() => {
-    if (phase === 'insight-cards' && scanReport && !moneyShotSeen) {
-      setPhase('money-shot');
-    }
-  }, [phase, scanReport, moneyShotSeen]);
+
 
   // Global session expiry listener — shows re-auth modal instead of losing state
   useEffect(() => {
@@ -652,7 +475,7 @@ const Index = () => {
     }
   }, [track, navigate]);
 
-  const _isManualPath = !linkedinUrl && !resumeFileRef.current;
+
 
   const handleSelectMetro = async (v: string) => {
     setMetroTier(v);
@@ -726,20 +549,9 @@ const Index = () => {
   const handleRevealComplete = useCallback(() => {
     setShowPostRevealGoalModal(true);
   }, []);
-  const handleMoneyShotComplete = useCallback(() => {
-    setMoneyShotSeen(true);
-    // After the Replacement Invoice → navigate to the rich Model B analysis.
-    // get-model-b-analysis generates hyper-personalised card data (fear_hook,
-    // job_matches, human advantages, negotiation anchors) — this is the 7.8/10
-    // experience. SevenCardReveal was a teaser; Model B is the full report.
-    if (scanId) {
-      navigate(`/results/model-b?id=${scanId}`);
-    } else {
-      setPhase('reveal');
-    }
-  }, [scanId, navigate]);
-  const handleInsightCardsComplete = useCallback(() => { setPhase('crisis-center'); }, []);
-  const handleCrisisCenterComplete = useCallback(() => { setPhase('startup-autopsy'); }, []);
+
+
+
   const handleAutopsyComplete = useCallback(() => { setPhase('market-radar'); }, []);
   const handleMarketRadarComplete = useCallback(() => { setPhase('thank-you'); }, []);
 

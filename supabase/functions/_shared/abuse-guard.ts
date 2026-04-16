@@ -17,12 +17,22 @@ export async function timingSafeEqual(a: string, b: string): Promise<boolean> {
   const aBytes = encoder.encode(a);
   const bBytes = encoder.encode(b);
   if (aBytes.length !== bBytes.length) {
-    // Still do the comparison to avoid timing oracle on length
+    // Still do the comparison to avoid timing oracle on length.
     await crypto.subtle.digest("SHA-256", aBytes);
     return false;
   }
-  const keyBytes = encoder.encode("constant-time-key");
-  const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  // Use a fresh random key per call. The key's sole purpose is to make the
+  // final hex comparison constant-time via HMAC — it does not need to be
+  // stable or secret. A random key removes the hardcoded string from source
+  // and prevents any key-dependent analysis of the comparison function.
+  const randomKeyBytes = crypto.getRandomValues(new Uint8Array(32));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    randomKeyBytes,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
   const [sigA, sigB] = await Promise.all([
     crypto.subtle.sign("HMAC", key, aBytes),
     crypto.subtle.sign("HMAC", key, bBytes),

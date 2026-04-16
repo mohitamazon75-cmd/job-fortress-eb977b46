@@ -3,16 +3,13 @@
 // Import in any edge function to auto-log errors and track calls
 // ═══════════════════════════════════════════════════════════════
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createAdminClient } from "./supabase-client.ts";
 
 let _sb: ReturnType<typeof createClient> | null = null;
 
 function getSb() {
   if (!_sb) {
-    _sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    _sb = createAdminClient();
   }
   return _sb;
 }

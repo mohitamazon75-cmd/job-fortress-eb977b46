@@ -3,7 +3,7 @@
 // every single edge function call. Cache TTL = 30s.
 // ═══════════════════════════════════════════════════════════════
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "./supabase-client.ts";
 
 // Cost weights per function (approximate $/call)
 const FUNCTION_COST_WEIGHTS: Record<string, number> = {
@@ -69,10 +69,7 @@ export async function checkDailySpending(functionName: string, userId?: string):
   }
 
   // Slow path: query DB
-  const sb = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const sb = createAdminClient();
 
   const today = new Date().toISOString().split("T")[0];
 

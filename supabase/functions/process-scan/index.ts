@@ -9,7 +9,7 @@
  * Notes:   150s global timeout. Agents run in parallel via scan-agents.ts.
  *          Enrichment delegated to scan-enrichment.ts. Deterministic scoring via barrel.
  */
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import {
   computeAll,
   type ProfileInput,
@@ -92,9 +92,47 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "scanId is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const supabase = createAdminClient();
 
-    // ── Fetch scan ──
+    // ── Scan diagnostics — populated throughout the pipeline, persisted in
+    // final_json_report._diagnostics. Zero behavior change; pure observability.
+    // Enables post-hoc root-cause analysis for quality complaints (e.g., "why
+    // does my scan look generic?") without guessing which steps degraded.
+    const scanDiagnostics: {
+      agent1: "cache_hit" | "success" | "fallback" | "failed";
+      agent2a: "success" | "fallback" | "skipped";
+      agent2b: "success" | "fallback" | "skipped";
+      agent2c: "success" | "skipped";
+      qualityEditor: "ran" | "skipped_timeout" | "skipped";
+      profileSource: "resume" | "linkedin" | "manual" | "unknown";
+      profileConfidence: "high" | "medium" | "low";
+      timedOut: boolean;
+      durationMs: number;
+      downstream: {
+        cohortMatch: "fired" | "failed";
+        storePrediction: "fired" | "failed";
+        validatePrediction: "fired" | "skipped" | "failed";
+        computeDelta: "fired" | "failed";
+        generateMilestones: "fired" | "failed";
+      };
+    } = {
+      agent1: "failed",
+      agent2a: "skipped",
+      agent2b: "skipped",
+      agent2c: "skipped",
+      qualityEditor: "skipped",
+      profileSource: "unknown",
+      profileConfidence: "high",
+      timedOut: false,
+      durationMs: 0,
+      downstream: {
+        cohortMatch: "failed",
+        storePrediction: "failed",
+        validatePrediction: "skipped",
+        computeDelta: "failed",
+        generateMilestones: "failed",
+      },
+    };
     const { data: scan, error: scanErr } = await supabase.from("scans").select("*").eq("id", scanId).single();
     if (scanErr || !scan) {
       return new Response(JSON.stringify({ error: "Scan not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -256,6 +294,14 @@ Deno.serve(async (req) => {
     let { rawProfileText, normalizedExperienceYears } = enrichment;
     const { profileExtractionConfidence, linkedinName, linkedinCompany, parsedLinkedinIndustry, parsedLinkedinRole } = enrichment;
     const linkedinInference = { inferredName: linkedinName, inferredIndustry: parsedLinkedinIndustry, inferredRoleHint: parsedLinkedinRole, confidence: profileExtractionConfidence === "high" ? 0.8 : profileExtractionConfidence === "medium" ? 0.5 : 0.2 };
+
+    // Diagnostics: record profile source and extraction confidence
+    scanDiagnostics.profileConfidence = profileExtractionConfidence as "high" | "medium" | "low";
+    scanDiagnostics.profileSource = scan.resume_filename
+      ? "resume"
+      : scan.linkedin_url
+      ? "linkedin"
+      : "manual";
 
     // ══════════════════════════════════════════════════════════
     const { industry: resolvedIndustry, reason: industryResolutionReason } = resolveIndustry(
@@ -607,6 +653,10 @@ Deno.serve(async (req) => {
 
     // ── Agent1 Quality Observability ──
     const agent1Success = !!agent1;
+    // Diagnostics: record Agent 1 outcome
+    scanDiagnostics.agent1 = agent1Success
+      ? (usedAgent1SyntheticFallback ? "fallback" : "success")
+      : "failed";
     const agent1Role = agent1?.current_role || null;
     const agent1SkillCount = agent1?.all_skills?.length || 0;
     const agent1Seniority = agent1?.seniority_tier || null;
@@ -854,6 +904,12 @@ No explanation, no markdown. Return ONLY the JSON.`;
 
     const { mlObsolescence, mlTimedOut, validatedAgent2, seniorityTier, displayName, displayCompany } = agentResults;
 
+    // Diagnostics: record Agent 2A/2B/2C outcomes
+    const va2 = validatedAgent2 as any;
+    scanDiagnostics.agent2a = va2?.agent2a ? (va2.agent2aValidated === false ? "fallback" : "success") : "skipped";
+    scanDiagnostics.agent2b = va2?.agent2b ? (va2.agent2bValidated === false ? "fallback" : "success") : "skipped";
+    scanDiagnostics.agent2c = va2?.pivot_roles ? "success" : "skipped";
+
     // ══════════════════════════════════════════════════════════
     // STEP 10: REPORT ASSEMBLY
     // ══════════════════════════════════════════════════════════
@@ -875,8 +931,10 @@ No explanation, no markdown. Return ONLY the JSON.`;
 
     if (hasTimeBudget(5_000)) {
       await runQualityEditor(finalReport, detectedRole, displayName, displayCompany, agent1?.industry || resolvedIndustry, LOVABLE_API_KEY);
+      scanDiagnostics.qualityEditor = "ran";
     } else {
       console.warn("[Orchestrator] Skipping Quality Editor due to low time budget");
+      scanDiagnostics.qualityEditor = "skipped_timeout";
     }
 
     normalizeFounderImmediateStep(finalReport);
@@ -937,6 +995,11 @@ No explanation, no markdown. Return ONLY the JSON.`;
       quality_editor: getPromptVersion("QualityEditor"),
     };
 
+    // Diagnostics: record final timing and timeout state, then embed in report.
+    scanDiagnostics.durationMs = Date.now() - globalStart;
+    scanDiagnostics.timedOut = globalTimedOut;
+    finalReport._diagnostics = scanDiagnostics;
+
     await updateScan(supabase, scanId, finalReport, linkedinName, linkedinCompany);
     clearTimeout(globalTimer);
     console.log(`[Orchestrator] Complete in ${((Date.now() - globalStart) / 1000).toFixed(1)}s! Role: ${finalReport.role}, DI: ${finalReport.determinism_index}, SS: ${finalReport.survivability.score}`);
@@ -954,7 +1017,10 @@ No explanation, no markdown. Return ONLY the JSON.`;
           Authorization: `Bearer ${serviceKey}`,
         },
         body: JSON.stringify({ scan_id: scanId }),
-      }).catch((e) => console.warn("[process-scan] cohort-match fire failed:", e)),
+      }).catch((e) => {
+        console.warn("[process-scan] cohort-match fire failed:", e);
+        scanDiagnostics.downstream.cohortMatch = "failed";
+      }).then(() => { scanDiagnostics.downstream.cohortMatch = "fired"; }).catch(() => {}),
 
       // ── IP #2: Store doom clock + skill predictions for calibration ────
       // Build skill_risks array from classified skills in finalReport
@@ -1027,7 +1093,7 @@ No explanation, no markdown. Return ONLY the JSON.`;
     trackUsage("process-scan", true).catch(() => {});
 
     try {
-      const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const supabase = createAdminClient();
       const body = await req.clone().json().catch(() => ({}));
       if (body.scanId) {
         const { data: current } = await supabase.from("scans").select("scan_status").eq("id", body.scanId).single();

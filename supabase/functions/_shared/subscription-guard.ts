@@ -8,7 +8,7 @@
 //   if (guard) return guard; // Returns a 402 Response if not Pro
 // ═══════════════════════════════════════════════════════════════
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "./supabase-client.ts";
 
 // ┌─────────────────────────────────────────────────────────────┐
 // │  TESTING BYPASS — set to false when ready to enforce Pro    │
@@ -54,10 +54,7 @@ export async function requirePro(
   }
 
   // ── Verify JWT and get user ──
-  const supabaseAdmin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const supabaseAdmin = createAdminClient();
 
   const token = authHeader.slice(7);
   const {
