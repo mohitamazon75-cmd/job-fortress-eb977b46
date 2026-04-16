@@ -63,7 +63,7 @@ export function logTokenUsage(
     const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!url || !key) return;
 
-    const sb = createClient(url, key);
+    const sb = createAdminClient();
     sb.from("token_usage_log")
       .insert({
         function_name: functionName,
