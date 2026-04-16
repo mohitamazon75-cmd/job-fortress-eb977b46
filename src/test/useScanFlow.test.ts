@@ -175,6 +175,63 @@ describe('useScanFlow — phase machine', () => {
     );
   });
 
+  it('does not redirect to the latest completed scan when recovery fails for the current scan', async () => {
+    const { supabase } = await import('@/integrations/supabase/client');
+
+    const fromMock = vi.fn((table: string) => {
+      if (table === 'scans') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'scan-error',
+              scan_status: 'error',
+              final_json_report: null,
+              access_token: 'token-error',
+              country: 'IN',
+              industry: 'Technology',
+              years_experience: '5',
+              metro_tier: 'tier1',
+              linkedin_url: null,
+            },
+            error: null,
+          }),
+        } as any;
+      }
+
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      } as any;
+    });
+
+    vi.mocked(supabase.from).mockImplementation(fromMock as any);
+
+    const { result } = renderHook(() => useScanFlow(noopCallbacks), {
+      wrapper: wrapper(['/?id=scan-error']),
+    });
+
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 80));
+    });
+
+    act(() => {
+      result.current.setScanId('scan-error');
+      result.current.setAccessToken('token-error');
+      result.current.setPhase('error');
+    });
+
+    await act(async () => {
+      await new Promise(r => setTimeout(r, 80));
+    });
+
+    expect(result.current.errorScanStatus).toBe('failed');
+    expect(mockNavigate).not.toHaveBeenCalledWith('/results/choose?id=scan-error');
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringMatching(/^\/results\/choose\?id=/));
+  });
+
   // ── Test 3: dead phases can no longer cause the UX loop (CQ-3-A regression guard)
   // insight-cards, crisis-center, startup-autopsy, market-radar were removed from
   // AppPhase. This test ensures the hook doesn't get stuck in hero when money-shot
