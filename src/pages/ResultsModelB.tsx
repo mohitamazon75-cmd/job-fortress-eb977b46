@@ -19,6 +19,12 @@ const ScoreTrendCard  = lazy(() => import("@/components/cards/ScoreTrendCard"));
 const CareerGenomeDebate = lazy(() => import("@/components/dashboard/CareerGenomeDebate"));
 const ResumeWeaponizerCard = lazy(() => import("@/components/cards/ResumeWeaponizerCard"));
 
+interface WeeklyIntelData {
+  resources?: Array<{ title: string; url: string; type: string; time_commitment?: string }>;
+  summary?: string;
+  citations?: string[];
+}
+
 const LOADING_MESSAGES = [
   "Reading your resume with fresh eyes...",
   "Mapping your skills to India's 2026 market...",
@@ -106,8 +112,10 @@ export default function ResultsModelB() {
   const [userId, setUserId] = useState<string | null>(null);
   const [journeyDone, setJourneyDone] = useState(false);
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
-  // Previously the card fetched this independently on every render.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
+  // Feature 3: Weekly intel for the Tools tab Judo section — fetched lazily when Tools tab opens.
+  const [weeklyIntel, setWeeklyIntel] = useState<WeeklyIntelData | null>(null);
+  const [weeklyIntelLoading, setWeeklyIntelLoading] = useState(false);
   const [displayScore, setDisplayScore] = useState(0);
 
   const streak = useStreak();
@@ -260,7 +268,23 @@ export default function ResultsModelB() {
       return next;
     });
     logEvent("card_viewed", { card_index: index });
-  }, [logEvent]);
+
+    // Feature 3: Fetch live Tavily learning resources when user first opens the Tools tab.
+    // Fires once (guarded by weeklyIntelLoading + weeklyIntel), lazy, 30-min cached.
+    if (index === 7 && !weeklyIntelLoading && !weeklyIntel && cardData?.scan_judo?.recommended_tool) {
+      setWeeklyIntelLoading(true);
+      supabase.functions.invoke("fetch-weekly-intel", {
+        body: {
+          role: cardData.user?.current_title || "",
+          judo_tool: (cardData.scan_judo as any).recommended_tool,
+          industry: cardData.user?.industry || "",
+          scanId: analysisId,
+        },
+      }).then(({ data }) => {
+        if (data?.resources?.length || data?.summary) setWeeklyIntel(data);
+      }).catch(() => {}).finally(() => setWeeklyIntelLoading(false));
+    }
+  }, [logEvent, weeklyIntelLoading, weeklyIntel, cardData, analysisId]);
 
   // Journey complete detection
   useEffect(() => {
@@ -489,6 +513,33 @@ export default function ResultsModelB() {
                       <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-navy)", textTransform: "uppercase" as const, letterSpacing: "0.12em", marginBottom: 12 }}>📈 Your Risk Score Over Time</div>
                       <ScoreTrendCard report={syntheticReport} scanId={analysisId ?? undefined} />
                     </div>
+
+                    {/* Feature 3: Live Tavily learning resources for the Judo tool */}
+                    {(weeklyIntelLoading || weeklyIntel) && (
+                      <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
+                        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-amber)", textTransform: "uppercase" as const, letterSpacing: "0.12em", marginBottom: 12 }}>
+                          🥋 LIVE LEARNING RESOURCES — {cardData.scan_judo?.recommended_tool || "Your Judo Tool"}
+                        </div>
+                        {weeklyIntelLoading && !weeklyIntel && (
+                          <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "var(--mb-ink3)", padding: "12px 0" }}>Searching Tavily for live resources…</div>
+                        )}
+                        {weeklyIntel?.summary && (
+                          <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, marginBottom: 14 }}>{weeklyIntel.summary}</div>
+                        )}
+                        {(weeklyIntel?.resources || []).slice(0, 4).map((r: any, i: number) => (
+                          <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 0", borderBottom: i < Math.min(3, (weeklyIntel?.resources?.length || 0) - 1) ? "1px solid var(--mb-rule)" : "none", textDecoration: "none" }}>
+                            <span style={{ fontSize: 18, flexShrink: 0 }}>{r.type === "video" ? "▶️" : r.type === "course" ? "🎓" : "📖"}</span>
+                            <div>
+                              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-navy)", marginBottom: 2 }}>{r.title}</div>
+                              {r.time_commitment && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "var(--mb-ink3)" }}>{r.time_commitment}</div>}
+                            </div>
+                          </a>
+                        ))}
+                        {weeklyIntel?.citations && weeklyIntel.citations.length > 0 && (
+                          <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: "var(--mb-ink4)", marginTop: 10 }}>Sources: {weeklyIntel.citations.slice(0, 2).join(" · ")}</div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Career Genome Debate — 3 AI agents argue about your future */}
                     <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>

@@ -1,4 +1,17 @@
+import { useState, useEffect } from "react";
 import { CardShell, CardHead, CardBody, Badge, LivePill, EmotionStrip, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
+import { supabase } from "@/integrations/supabase/client";
+
+interface LiveMarketData {
+  salary_range_lpa?: { min: number; max: number; median: number };
+  job_postings_trend?: "growing" | "declining" | "stable";
+  posting_change_pct?: number;
+  ai_disruption_level?: "LOW" | "MEDIUM" | "HIGH";
+  key_findings?: string[];
+  top_hiring_companies?: string[];
+  in_demand_skills?: string[];
+  data_confidence?: string;
+}
 
 interface Props {
   cardData: any;
@@ -8,6 +21,25 @@ interface Props {
 
 export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
   const c2 = cardData.card2_market;
+
+  // Feature 1: Live market signals — fetched lazily when this card mounts.
+  // 30-min DB cache in live-market means no LLM cost on repeat views.
+  // Fires post-scan so it never adds to scan latency.
+  const [liveMarket, setLiveMarket] = useState<LiveMarketData | null>(null);
+  useEffect(() => {
+    if (!c2) return;
+    const role = cardData.user?.current_title || "";
+    const industry = cardData.user?.industry || "";
+    if (!role && !industry) return;
+
+    supabase.functions.invoke("live-market", {
+      body: { role, industry, metro: "tier1", country: "IN" },
+    }).then(({ data }) => {
+      if (data?.salary_range_lpa || data?.key_findings?.length) {
+        setLiveMarket(data);
+      }
+    }).catch(() => { /* non-fatal — card shows fine without live data */ });
+  }, []);
   if (!c2) return null;
 
   return (
@@ -90,6 +122,50 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
                   </div>
                 );
               })}
+            </div>
+          </>
+        )}
+
+        {/* Feature 1: Live market signals from Tavily — lazy-loaded, 30-min cache */}
+        {liveMarket && (
+          <>
+            <SectionLabel label={`LIVE MARKET SIGNALS — ${new Date().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+              {liveMarket.salary_range_lpa && (
+                <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px" }}>
+                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 800, color: "var(--mb-green)", marginBottom: 4 }}>💰 LIVE SALARY RANGE — YOUR ROLE</div>
+                  <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 16, fontWeight: 800, color: "var(--mb-ink)" }}>
+                    ₹{liveMarket.salary_range_lpa.min}–{liveMarket.salary_range_lpa.max}L · median ₹{liveMarket.salary_range_lpa.median}L
+                  </div>
+                </div>
+              )}
+              {liveMarket.job_postings_trend && (
+                <div style={{ background: liveMarket.job_postings_trend === "growing" ? "var(--mb-green-tint)" : liveMarket.job_postings_trend === "declining" ? "var(--mb-red-tint)" : "var(--mb-amber-tint)", border: "1.5px solid rgba(0,0,0,0.1)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-ink)" }}>
+                    {liveMarket.job_postings_trend === "growing" ? "📈" : liveMarket.job_postings_trend === "declining" ? "📉" : "➡️"} Job postings are {liveMarket.job_postings_trend}
+                  </div>
+                  {liveMarket.posting_change_pct !== undefined && (
+                    <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, fontWeight: 800, color: liveMarket.posting_change_pct >= 0 ? "var(--mb-green)" : "var(--mb-red)" }}>
+                      {liveMarket.posting_change_pct >= 0 ? "+" : ""}{liveMarket.posting_change_pct}% YoY
+                    </span>
+                  )}
+                </div>
+              )}
+              {liveMarket.key_findings?.slice(0, 2).map((finding, i) => (
+                <div key={i} style={{ background: "var(--mb-paper)", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "10px 14px", fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.6 }}>
+                  🔍 {finding}
+                </div>
+              ))}
+              {liveMarket.in_demand_skills && liveMarket.in_demand_skills.length > 0 && (
+                <div style={{ background: "var(--mb-navy-tint)", border: "1.5px solid rgba(26,58,107,0.15)", borderRadius: 12, padding: "12px 16px" }}>
+                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-navy)", marginBottom: 8, textTransform: "uppercase" as const, letterSpacing: "0.1em" }}>🔥 What employers want right now</div>
+                  <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
+                    {liveMarket.in_demand_skills.slice(0, 5).map((skill, i) => (
+                      <span key={i} style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: "var(--mb-navy)", color: "white" }}>{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
