@@ -23,17 +23,17 @@ export default function RescanDetector({ onViewPrevious, onStartNew }: RescanDet
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If the user has pending input (was mid-upload before auth), skip straight to new scan.
-    // Without this, returning from /auth after uploading a resume shows the old-account scans,
-    // which is confusing — the user clearly wants to start fresh with their new resume.
+    // CRITICAL: If the user had an active "upload new resume" intent, skip old scans entirely.
+    // Checks BOTH storages — localStorage survives OAuth redirects, sessionStorage handles
+    // same-session flows. Clear both so repeat visits don't skip unexpectedly.
     try {
-      const pending = sessionStorage.getItem('jb_pending_input');
-      if (pending) {
-        const parsed = JSON.parse(pending);
-        if (parsed?.hasResume || parsed?.linkedinUrl) {
-          onStartNew();
-          return;
-        }
+      const lsIntent = localStorage.getItem('jb_fresh_scan_intent');
+      const ssPending = sessionStorage.getItem('jb_pending_input');
+      const hasPending = lsIntent === '1' || (ssPending && JSON.parse(ssPending)?.hasResume);
+      if (hasPending) {
+        localStorage.removeItem('jb_fresh_scan_intent');
+        onStartNew();
+        return;
       }
     } catch { /* non-fatal */ }
 
@@ -201,7 +201,10 @@ export default function RescanDetector({ onViewPrevious, onStartNew }: RescanDet
 
         {/* New scan button */}
         <button
-          onClick={onStartNew}
+          onClick={() => {
+            try { localStorage.removeItem('jb_fresh_scan_intent'); } catch {}
+            onStartNew();
+          }}
           className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:bg-primary/5 transition-colors font-bold text-sm"
         >
           {isDueForRescan

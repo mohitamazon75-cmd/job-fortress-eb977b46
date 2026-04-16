@@ -388,8 +388,10 @@ const Index = () => {
   const handleResumeSubmit = async (file: File) => {
     resumeFileRef.current = file;
     track('input_method_selected', { method: 'resume' });
-    // Persist flag (file itself can't survive redirect — user will re-select)
+    // Persist in BOTH storages: sessionStorage for same-session restoration,
+    // localStorage for surviving OAuth redirects (incognito-safe within session)
     try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true })); } catch {}
+    try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
     setPhase('auth-gate');
   };
 
