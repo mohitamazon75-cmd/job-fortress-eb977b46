@@ -1,4 +1,5 @@
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 
 /**
  * create-scan — lightweight edge function that inserts a new scan row

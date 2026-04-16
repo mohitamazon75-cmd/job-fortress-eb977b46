@@ -156,11 +156,7 @@ export async function validateJwtClaims(
   }
 
   try {
-    const supabase = createAdminClient(); // was: dynamic import createClient
-    void (
-      Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
+    const supabase = createAnonClient(authHeader.slice(7).trim());
 
     const { data: { user }, error } = await supabase.auth.getUser();
 
@@ -187,4 +183,4 @@ export async function validateJwtClaims(
     };
   }
 }
-import { createAdminClient } from "./supabase-client.ts";
+import { createAdminClient, createAnonClient } from "./supabase-client.ts";
