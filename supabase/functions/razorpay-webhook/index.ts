@@ -1,4 +1,5 @@
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
