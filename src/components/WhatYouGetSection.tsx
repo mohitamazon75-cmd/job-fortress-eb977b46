@@ -5,56 +5,56 @@ import { Shield, TrendingUp, Brain, Swords, Target, Briefcase, FileText, Zap, Ar
 const REPORT_A = [
   {
     icon: Target,
-    title: 'Career Safety Score',
-    desc: 'Your deterministic risk score — computed by our Knowledge Graph, not guessed by an LLM.',
+    title: 'Career Position Score',
+    desc: '6-factor deterministic score: AI Exposure Index, Human Edge Skills, Career Capital, Market Demand, Income Risk, and Skill Freshness — computed by our Knowledge Graph, not guessed by an LLM.',
   },
   {
     icon: Shield,
-    title: 'Skill Gap Analysis',
-    desc: 'Every skill mapped against AI replacement risk, with specific tools threatening each one.',
+    title: 'Skill Doom Clock',
+    desc: 'Every skill matched to the exact AI tool replacing it — Power BI Copilot, Google Analytics AI, Claude — with months remaining before relevance drops below 50%.',
   },
   {
-    icon: TrendingUp,
-    title: 'Doom Clock',
-    desc: 'Months until significant displacement risk — based on AI adoption curves in your industry.',
+    icon: Radar,
+    title: 'Live Market Intelligence',
+    desc: 'Real salary range, hiring trend (growing/stable/declining), and what skills employers are actively posting for right now — refreshed live, not from training data.',
   },
   {
-    icon: Brain,
-    title: 'AI Impact Dossier',
-    desc: '5-factor breakdown: Automation Risk, Market Demand, Moat Strength, Supply Pressure, Career Capital.',
+    icon: BookOpen,
+    title: '90-Day Defense Plan',
+    desc: 'Week-by-week action plan with specific certifications and career moves — scored in points so you can track momentum and measure progress every week.',
   },
 ];
 
 const REPORT_B = [
   {
-    icon: Radar,
-    title: 'Market Radar',
-    desc: 'Live salary benchmarks for your role + city, with negotiation scripts you can use today.',
-  },
-  {
     icon: Swords,
-    title: 'Career Pivot Paths',
-    desc: 'Quantified lateral moves showing salary delta, skill transfer %, and growth trajectory.',
+    title: 'Career Pivot Analysis',
+    desc: 'Quantified lateral moves with exact skill transfer %, salary delta, and AI risk score per path — compare three pivots side by side in one view.',
   },
   {
     icon: Briefcase,
     title: 'Best-Fit Jobs',
-    desc: 'AI-matched roles where your existing skills give you an unfair advantage — with live postings.',
+    desc: 'Live search across Naukri, LinkedIn, and Indeed — match scores show where your existing skills give you an unfair advantage over other candidates.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Salary Negotiation Scripts',
+    desc: 'Your CTC vs Market 75th percentile gap surfaced with copy-paste negotiation scripts calibrated to your seniority, role, and city.',
   },
   {
     icon: FileText,
-    title: 'Resume Weaponizer',
-    desc: 'ATS-optimized rewrite highlighting AI-resistant skills that make you irreplaceable.',
+    title: 'ATS Resume Rewrite',
+    desc: 'Before/after rewrite that surfaces specific achievements and AI-resistant strengths — replacing generic execution skills recruiters ignore.',
   },
   {
-    icon: BookOpen,
-    title: '90-Day Defense Plan',
-    desc: 'Week-by-week action plan with exact courses, certifications, and moves to make.',
+    icon: Brain,
+    title: 'Blind Spot Analysis',
+    desc: 'The career risks your resume doesn\'t show — hidden vulnerabilities in skill positioning, market timing, and narrative gaps.',
   },
   {
     icon: MessageSquare,
     title: 'AI Career Coach',
-    desc: 'Ask follow-up questions about your results — powered by your actual scan data, not generic advice.',
+    desc: 'Ask follow-up questions powered by your actual scan data — not generic ChatGPT answers but intelligence grounded in your specific profile.',
   },
 ];
 
@@ -115,8 +115,8 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
               <BarChart3 className="w-4.5 h-4.5 text-destructive" />
             </div>
             <div>
-              <h3 className="font-black text-foreground text-base">Cards 1–4 — Risk Diagnosis</h3>
-              <p className="text-xs text-muted-foreground">How vulnerable are you? The honest, deterministic answer.</p>
+              <h3 className="font-black text-foreground text-base">Your Risk Intelligence — Free</h3>
+              <p className="text-xs text-muted-foreground">Score, skill threats, live market context, and your first action plan.</p>
             </div>
             <span className="ml-auto text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-destructive/10 text-destructive border border-destructive/20">
               Free
@@ -161,8 +161,8 @@ export default function WhatYouGetSection({ onCTA }: WhatYouGetSectionProps) {
               <TrendingUp className="w-4.5 h-4.5 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-black text-foreground text-base">Cards 5–7 — Growth Playbook</h3>
-              <p className="text-xs text-muted-foreground">Your pivot path, blind spots, and 90-day mission.</p>
+              <h3 className="font-black text-foreground text-base">Your Full Arsenal — Complete Report</h3>
+              <p className="text-xs text-muted-foreground">Pivot paths, salary scripts, ATS rewrite, blind spots, and your career coach.</p>
             </div>
             <span className="ml-auto text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
               Included

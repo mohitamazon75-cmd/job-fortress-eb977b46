@@ -391,7 +391,7 @@ export default function SampleReport({ onCTA }: SampleReportProps) {
           </div>
         </div>
 
-        {/* ═══ CARD 6: Career Pivot Paths (Blurred) ═══ */}
+        {/* ═══ CARD 6: Career Pivot Analysis (Blurred) ═══ */}
         <div className="p-5 sm:p-8 border-b border-border">
           <SectionLabel icon={Target} label="Career Pivot Analysis" tag="Pro" />
           <div className="space-y-2 mb-3">

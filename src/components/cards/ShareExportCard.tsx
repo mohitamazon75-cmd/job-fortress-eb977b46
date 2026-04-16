@@ -20,7 +20,7 @@ export default function ShareExportCard({ report, scanId }: ShareExportCardProps
   const [challengeLoading, setChallengeLoading] = useState(false);
 
   const shareUrl = `${window.location.origin}/share/${scanId}`;
-  const shareText = `I just checked my AI Career Safety Score — ${score}/100 as a ${role} in ${industry}. Check yours:`;
+  const shareText = `I just checked my Career Position Score — ${score}/100 as a ${role} in ${industry}. Check yours:`;
 
   const handleWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`, '_blank');
