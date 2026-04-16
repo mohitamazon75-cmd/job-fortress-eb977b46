@@ -1534,6 +1534,8 @@ export type Database = {
           industry: string | null
           role_family: string | null
           scan_id: string
+          semantic_embedding: string | null
+          semantic_model: string | null
           seniority_tier: string | null
           stability_score: number | null
           user_id: string
@@ -1545,6 +1547,8 @@ export type Database = {
           industry?: string | null
           role_family?: string | null
           scan_id: string
+          semantic_embedding?: string | null
+          semantic_model?: string | null
           seniority_tier?: string | null
           stability_score?: number | null
           user_id: string
@@ -1556,6 +1560,8 @@ export type Database = {
           industry?: string | null
           role_family?: string | null
           scan_id?: string
+          semantic_embedding?: string | null
+          semantic_model?: string | null
           seniority_tier?: string | null
           stability_score?: number | null
           user_id?: string
