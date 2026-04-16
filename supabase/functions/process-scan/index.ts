@@ -303,7 +303,7 @@ Deno.serve(async (req) => {
 
     // Diagnostics: record profile source and extraction confidence
     scanDiagnostics.profileConfidence = profileExtractionConfidence as "high" | "medium" | "low";
-    scanDiagnostics.profileSource = scan.resume_filename
+    scanDiagnostics.profileSource = scan.resume_file_path
       ? "resume"
       : scan.linkedin_url
       ? "linkedin"
