@@ -56,7 +56,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { useRequestMutex } from '@/hooks/use-request-mutex';
 import { useScanFlow } from '@/hooks/useScanFlow';
-import { useOnboardingState } from '@/hooks/useOnboardingState';
+import { useOnboardingState, detectCountry } from '@/hooks/useOnboardingState';
 
 // Helper: create a Supabase client with x-scan-access-token header so RLS allows reading
 import { SUPABASE_URL as SB_URL, SUPABASE_PUBLISHABLE_KEY as SB_KEY } from '@/lib/supabase-config';

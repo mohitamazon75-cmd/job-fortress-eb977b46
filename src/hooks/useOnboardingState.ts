@@ -21,8 +21,8 @@
 
 import { useState, useRef } from 'react';
 
-/** Detects country from browser timezone. Returns ISO 2-letter code or empty string. */
-function detectCountry(): string {
+/** Detects country from browser timezone — exported for use in reset flows. */
+export function detectCountry(): string {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (tz === 'Asia/Kolkata' || tz === 'Asia/Calcutta') return 'IN';

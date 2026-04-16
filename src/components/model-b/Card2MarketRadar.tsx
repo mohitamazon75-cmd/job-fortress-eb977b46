@@ -59,6 +59,41 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", fontWeight: 700 }}>{c2.market_quote_source}</div>
         </div>
 
+        {/* ── Live skill threat intel — which AI tools are replacing which skills ──
+            Injected from scan_skill_threats (from scan's skill_threat_intel field).
+            Shows the current AI tools actively displacing skills in their role. */}
+        {Array.isArray(cardData.scan_skill_threats) && (cardData.scan_skill_threats as any[]).length > 0 && (
+          <>
+            <SectionLabel label="LIVE THREAT SIGNALS — happening now in your role" />
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+              {(cardData.scan_skill_threats as any[]).map((threat: any, i: number) => {
+                const sevColors: Record<string, { bg: string; color: string; border: string }> = {
+                  CRITICAL: { bg: "var(--mb-red-tint)", color: "var(--mb-red)", border: "rgba(174,40,40,0.2)" },
+                  HIGH: { bg: "#fff5ec", color: "#c44a1a", border: "rgba(196,74,26,0.2)" },
+                  MEDIUM: { bg: "var(--mb-amber-tint)", color: "var(--mb-amber)", border: "rgba(139,90,0,0.2)" },
+                  LOW: { bg: "var(--mb-green-tint)", color: "var(--mb-green)", border: "rgba(26,107,60,0.2)" },
+                };
+                const s = sevColors[threat.severity] || sevColors.MEDIUM;
+                return (
+                  <div key={i} style={{ background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-ink)", marginBottom: 2 }}>
+                        {threat.skill} {threat.threat_tool && <span style={{ color: s.color }}>→ {threat.threat_tool}</span>}
+                      </div>
+                      {threat.defence && (
+                        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink3)", lineHeight: 1.5 }}>✅ {threat.defence}</div>
+                      )}
+                    </div>
+                    {threat.timeline && (
+                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 800, color: s.color, whiteSpace: "nowrap" as const }}>{threat.timeline}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         <CardNav onBack={onBack} onNext={onNext} />
       </CardBody>
     </CardShell>
