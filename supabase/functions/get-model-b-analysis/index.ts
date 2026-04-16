@@ -32,6 +32,10 @@ Deno.serve(async (req) => {
     const supabase = createAdminClient();
 
     // ─── Check cache / completed results ───
+    // TTL: card_data older than 2 hours is considered stale and will regenerate.
+    // This ensures fresh analysis when users rescan with new resumes, and
+    // eliminates the need to manually clear model_b_results between scans.
+    const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
     const { data: cached } = await supabase
       .from("model_b_results")
       .select("*")
@@ -39,12 +43,27 @@ Deno.serve(async (req) => {
       .not("card_data", "is", null)
       .maybeSingle();
 
-    if (cached?.card_data && Object.keys(cached.card_data as object).length > 5) {
-      console.log(`[model-b] Cache hit for ${analysis_id}`);
+    const cacheAge = cached?.updated_at
+      ? Date.now() - new Date(cached.updated_at as string).getTime()
+      : Infinity;
+    const cacheValid = cached?.card_data
+      && Object.keys(cached.card_data as object).length > 5
+      && cacheAge < CACHE_TTL_MS;
+
+    if (cacheValid) {
+      console.log(`[model-b] Cache hit for ${analysis_id} (age: ${Math.round(cacheAge / 60000)}min)`);
       return new Response(
         JSON.stringify({ success: true, data: cached }),
         { headers: jsonHeaders }
       );
+    }
+
+    // Stale or missing — clear and regenerate
+    if (cached?.card_data && !cacheValid) {
+      console.log(`[model-b] Cache STALE for ${analysis_id} (age: ${Math.round(cacheAge / 60000)}min) — regenerating`);
+      await supabase.from("model_b_results")
+        .update({ card_data: null, gemini_raw: null })
+        .eq("analysis_id", analysis_id);
     }
 
     // ─── If polling, check if processing is in progress ───

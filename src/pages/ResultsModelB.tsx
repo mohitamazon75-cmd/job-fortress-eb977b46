@@ -110,6 +110,7 @@ export default function ResultsModelB() {
   const [actionModal, setActionModal] = useState<{ title: string; promptText: string } | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [journeyDone, setJourneyDone] = useState(false);
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
@@ -140,6 +141,8 @@ export default function ResultsModelB() {
       const { data: { user } } = await supabase.auth.getUser();
       const uid = user?.id || null;
       setUserId(uid);
+      // Detect anonymous users (created by signInAnonymously) to show sign-in prompt
+      setIsAnonymous(!!(user?.is_anonymous || (user && !user.email && !user.phone)));
 
       // First call triggers the background job
       const { data, error: fnError } = await supabase.functions.invoke("get-model-b-analysis", {
@@ -353,6 +356,27 @@ export default function ResultsModelB() {
   return (
     <div className="mb-root" style={{ background: "var(--mb-bg)", minHeight: "100vh" }}>
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 16px 64px" }}>
+
+        {/* ── Sign-in banner for anonymous users ── */}
+        {isAnonymous && cardData && (
+          <div style={{ background: "var(--mb-navy)", borderRadius: 14, padding: "14px 18px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 800, color: "white", marginBottom: 2 }}>
+                💾 Save your results
+              </div>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "rgba(255,255,255,0.65)" }}>
+                Sign in to track score changes and get weekly updates
+              </div>
+            </div>
+            <button
+              onClick={() => { window.location.href = '/auth'; }}
+              style={{ background: "white", color: "var(--mb-navy)", border: "none", borderRadius: 10, padding: "8px 16px", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 800, cursor: "pointer", flexShrink: 0 }}
+            >
+              Sign In / Sign Up →
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 800, color: "var(--mb-ink)", letterSpacing: "-0.01em" }}>JobBachao</div>
