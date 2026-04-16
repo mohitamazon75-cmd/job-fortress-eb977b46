@@ -23,14 +23,11 @@ export default function RescanDetector({ onViewPrevious, onStartNew }: RescanDet
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // BULLETPROOF: If user had ANY pending scan intent, skip old scans entirely.
-    // Check localStorage (survives redirects) AND sessionStorage (same-session).
+    // If the user came here after starting a new scan flow, never surface old scans.
     try {
       const lsIntent = localStorage.getItem('jb_fresh_scan_intent');
       const ssPending = sessionStorage.getItem('jb_pending_input');
-      const hasPendingWork = lsIntent === '1' || Boolean(
-        ssPending && JSON.parse(ssPending)?.hasResume
-      );
+      const hasPendingWork = lsIntent === '1' || Boolean(ssPending);
       if (hasPendingWork) {
         localStorage.removeItem('jb_fresh_scan_intent');
         onStartNew();

@@ -380,8 +380,9 @@ const Index = () => {
   const handleLinkedinSubmit = (url: string) => {
     setLinkedinUrl(url);
     track('input_method_selected', { method: 'linkedin' });
-    // Persist so OAuth redirect can restore context
+    // Persist so OAuth redirect can restore context and skip old-scan recovery.
     try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ linkedinUrl: url })); } catch {}
+    try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
     setPhase('auth-gate');
   };
 

@@ -5,6 +5,45 @@ import { lovable } from '@/integrations/lovable/index';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, Eye, EyeOff, AlertCircle, Zap } from 'lucide-react';
 
+const POST_AUTH_REDIRECT_KEY = 'jb_post_auth_redirect';
+
+function getStoredAnonymousScanIds(): string[] {
+  const ids = new Set<string>();
+
+  try {
+    const legacyIds = JSON.parse(localStorage.getItem('anon_scan_ids') || '[]');
+    if (Array.isArray(legacyIds)) {
+      legacyIds.forEach((value) => {
+        if (typeof value === 'string' && value) ids.add(value);
+      });
+    }
+  } catch {}
+
+  try {
+    const storedScans = JSON.parse(localStorage.getItem('anon_scans') || '[]');
+    if (Array.isArray(storedScans)) {
+      storedScans.forEach((entry) => {
+        if (typeof entry === 'string' && entry) ids.add(entry);
+        if (entry && typeof entry === 'object' && typeof entry.id === 'string' && entry.id) ids.add(entry.id);
+      });
+    }
+  } catch {}
+
+  return Array.from(ids);
+}
+
+function clearStoredAnonymousScans() {
+  localStorage.removeItem('anon_scan_ids');
+  localStorage.removeItem('anon_scans');
+}
+
+function consumePostAuthRedirect(): string | null {
+  const redirect = sessionStorage.getItem(POST_AUTH_REDIRECT_KEY);
+  if (!redirect) return null;
+  sessionStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+  return redirect.startsWith('/') ? redirect : null;
+}
+
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -16,33 +55,55 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        // Week 1 #1: Migrate anonymous scans on login/signup
-        if (event === 'SIGNED_IN') {
-          try {
-            const storedScanIds = JSON.parse(localStorage.getItem('anon_scan_ids') || '[]');
-            if (storedScanIds.length > 0) {
-              await supabase.functions.invoke('migrate-anon-scans', {
-                body: { scanIds: storedScanIds },
-              });
-              localStorage.removeItem('anon_scan_ids');
-            }
-          } catch (e) {
-            console.debug('[auth] anon scan migration failed (non-fatal):', e);
+    let handled = false;
+
+    const finishAuthFlow = async () => {
+      if (handled) return;
+      handled = true;
+
+      try {
+        const storedScanIds = getStoredAnonymousScanIds();
+        if (storedScanIds.length > 0) {
+          const { error: migrateError } = await supabase.functions.invoke('migrate-anon-scans', {
+            body: { scanIds: storedScanIds },
+          });
+
+          if (!migrateError) {
+            clearStoredAnonymousScans();
+          } else {
+            console.debug('[auth] anon scan migration failed (non-fatal):', migrateError);
           }
         }
-        // If there's pending input context, go to / which will auto-restore
-        const hasPending = sessionStorage.getItem('jb_pending_input');
-        navigate('/', { replace: true, state: hasPending ? { fromAuth: true } : undefined });
+      } catch (e) {
+        console.debug('[auth] anon scan migration failed (non-fatal):', e);
+      }
+
+      const redirect = consumePostAuthRedirect();
+      if (redirect) {
+        navigate(redirect, { replace: true });
+        return;
+      }
+
+      const hasPending = sessionStorage.getItem('jb_pending_input');
+      navigate('/', { replace: true, state: hasPending ? { fromAuth: true } : undefined });
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        void finishAuthFlow();
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/', { replace: true });
+      if (session) {
+        void finishAuthFlow();
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      handled = true;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';

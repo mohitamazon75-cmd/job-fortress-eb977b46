@@ -369,7 +369,12 @@ export default function ResultsModelB() {
               </div>
             </div>
             <button
-              onClick={() => { window.location.href = '/auth'; }}
+              onClick={() => {
+                try {
+                  sessionStorage.setItem('jb_post_auth_redirect', `${window.location.pathname}${window.location.search}`);
+                } catch {}
+                window.location.href = '/auth';
+              }}
               style={{ background: "white", color: "var(--mb-navy)", border: "none", borderRadius: 10, padding: "8px 16px", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 800, cursor: "pointer", flexShrink: 0 }}
             >
               Sign In / Sign Up →
