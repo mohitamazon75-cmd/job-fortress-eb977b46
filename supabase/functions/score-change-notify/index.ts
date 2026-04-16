@@ -219,8 +219,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Issue 2-A: 7-day outcome follow-up pass (runs after score-drift pass)
+    const outcomeResult = await sendOutcomeFollowUps(supabase, SITE_URL, corsHeaders).catch(e => {
+      console.warn("[ScoreChangeNotify] Outcome follow-up pass failed (non-fatal):", e);
+      return { sent: 0 };
+    });
+
     return new Response(
-      JSON.stringify({ status: "ok", notified, checked: uniqueScans.length, errors: errors.slice(0, 5) }),
+      JSON.stringify({ status: "ok", notified, checked: uniqueScans.length, outcome_followups_sent: outcomeResult.sent, errors: errors.slice(0, 5) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
 
@@ -231,4 +237,92 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
+
 });
+
+
+// 7-day outcome follow-up emails (Issue 2-A flywheel)
+// Called by score-change-notify cron run after the score-drift pass.
+export async function sendOutcomeFollowUps(supabase: ReturnType<typeof createAdminClient>, SITE_URL: string, corsHeaders: Record<string, string>) {
+    const windowStart = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    const windowEnd   = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Scans that completed in the 6–8 day window
+    const { data: targetScans } = await supabase
+      .from("scans")
+      .select("id, user_id, role_detected, determinism_index")
+      .eq("scan_status", "complete")
+      .gte("created_at", windowStart)
+      .lte("created_at", windowEnd)
+      .not("user_id", "is", null)
+      .limit(200);
+
+    if (!targetScans?.length) return { sent: 0 };
+
+    // Filter out scans that already have an outcome captured
+    const { data: existingOutcomes } = await supabase
+      .from("scan_outcomes")
+      .select("scan_id")
+      .in("scan_id", targetScans.map(s => s.id))
+      .eq("source", "email_7day");
+
+    const alreadyCaptured = new Set((existingOutcomes || []).map(o => o.scan_id));
+    const toEmail = targetScans.filter(s => !alreadyCaptured.has(s.id));
+
+    let sent = 0;
+    for (const scan of toEmail) {
+      try {
+        const { data: profile } = await supabase.auth.admin.getUserById(scan.user_id);
+        const email = profile?.user?.email;
+        if (!email) continue;
+
+        const role = scan.role_detected || "Professional";
+        const di   = scan.determinism_index || 60;
+        const baseUrl = `${SITE_URL}/functions/v1/capture-outcome?scan_id=${scan.id}&source=email_7day&outcome=`;
+
+        const html = `
+<div style="font-family:'DM Sans',sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#faf9f6">
+  <div style="font-size:22px;font-weight:900;color:#0d0c0a;margin-bottom:8px">Quick check-in 👋</div>
+  <div style="font-size:15px;color:#5c5a56;margin-bottom:24px">
+    It's been 7 days since your JobBachao scan. Your risk score was <strong>${di}/100</strong> for your ${role} role.
+    <br><br>What's happened since?
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    ${[
+      ["started_upskilling", "🎯 Started upskilling / learning"],
+      ["applied_to_jobs",    "📋 Applied to jobs"],
+      ["got_interview",      "🎉 Got an interview!"],
+      ["nothing_yet",        "⏳ Nothing yet"],
+    ].map(([val, label]) => `
+      <a href="${baseUrl}${val}" style="display:block;padding:14px 18px;background:#fff;border:2px solid #e8e4dc;border-radius:12px;font-size:14px;font-weight:700;color:#0d0c0a;text-decoration:none">
+        ${label}
+      </a>`).join("")}
+  </div>
+  <div style="font-size:12px;color:#9c9890;margin-top:24px">
+    Your answer improves predictions for 1,200+ Indian professionals with similar profiles.
+  </div>
+</div>`;
+
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("RESEND_API_KEY") || ""}`,
+          },
+          body: JSON.stringify({
+            from: "JobBachao <career@jobbachao.com>",
+            to: [email],
+            subject: `7 days since your scan — what happened? (1 quick question)`,
+            html,
+          }),
+        });
+
+        sent++;
+      } catch (e) {
+        console.warn("[OutcomeFollowUp] Failed for scan", scan.id, e);
+      }
+    }
+
+    console.log(`[OutcomeFollowUp] Sent ${sent}/${toEmail.length} 7-day follow-ups`);
+    return { sent };
+  }

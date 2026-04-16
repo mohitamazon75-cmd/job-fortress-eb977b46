@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -11,6 +11,13 @@ import Card5JobsTracker from "@/components/model-b/Card5JobsTracker";
 import Card6BlindSpots from "@/components/model-b/Card6BlindSpots";
 import Card7HumanAdvantage from "@/components/model-b/Card7HumanAdvantage";
 import PromptModal from "@/components/model-b/PromptModal";
+
+// Issue 1-A: Lazy-load the three highest-value previously-hidden features.
+// These were fully built but permanently unreachable in the old flow.
+// They load only when the user taps the Tools tab — zero bundle cost otherwise.
+const ScoreTrendCard  = lazy(() => import("@/components/cards/ScoreTrendCard"));
+const CareerGenomeDebate = lazy(() => import("@/components/dashboard/CareerGenomeDebate"));
+const ResumeWeaponizerCard = lazy(() => import("@/components/cards/ResumeWeaponizerCard"));
 
 const LOADING_MESSAGES = [
   "Reading your resume with fresh eyes...",
@@ -26,7 +33,7 @@ const LOADING_MESSAGES = [
 const STREAK_KEY = "jb_streak";
 const STREAK_DATE_KEY = "jb_streak_date";
 
-const TAB_LABELS = ["Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human"];
+const TAB_LABELS = ["Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
 
 function useStreak() {
   const [streak, setStreak] = useState(1);
@@ -268,7 +275,8 @@ export default function ResultsModelB() {
 
   if (!analysisId) return null;
 
-  const progressPct = ((currentCard + 1) / 7) * 100;
+  // Progress is based on the 7 core content cards; Tools tab (index 7) is bonus
+  const progressPct = Math.min(100, ((Math.min(currentCard, 6) + 1) / 7) * 100);
 
   const getTabState = (i: number) => {
     if (i === currentCard) return "active";
@@ -442,6 +450,68 @@ export default function ResultsModelB() {
             {currentCard === 4 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} analysisId={analysisId} />}
             {currentCard === 5 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} />}
             {currentCard === 6 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(5)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
+
+            {/* ── Issue 1-A: Tools tab (index 7) ─────────────────────────────────
+                Three fully-built features that were unreachable in the old flow.
+                Lazy-loaded — zero bundle cost until the user taps Tools. */}
+            {currentCard === 7 && (() => {
+              // Build a minimal ScanReport-shaped object from cardData so the
+              // existing tool components (built for ScanReport) work without changes.
+              const syntheticReport = {
+                role: cardData.user?.current_title || "Professional",
+                industry: cardData.user?.industry || "Technology",
+                determinism_index: cardData.risk_score || 55,
+                moat_score: cardData.shield_score || 50,
+                all_skills: (cardData.card3_shield?.skills || []).map((s: any) => s.name),
+                moat_skills: (cardData.card3_shield?.skills || []).filter((s: any) => s.level === "best-in-class" || s.level === "strong").map((s: any) => s.name),
+                execution_skills_dead: (cardData.card3_shield?.skills || []).filter((s: any) => s.level === "critical-gap").map((s: any) => s.name),
+                free_advice_1: cardData.card6_blindspots?.blind_spots?.[0]?.body || "",
+                free_advice_2: cardData.card6_blindspots?.blind_spots?.[1]?.body || "",
+                seniority_tier: "PROFESSIONAL" as const,
+                survivability: { score: 100 - (cardData.risk_score || 55), breakdown: { experience_bonus: 0, strategic_bonus: 0, geo_bonus: 0, adaptability_bonus: 0 }, primary_vulnerability: cardData.card6_blindspots?.blind_spots?.[0]?.title || "", peer_percentile_estimate: "40th" },
+                months_remaining: 24,
+                doom_clock_months: 24,
+                country: "IN",
+              } as any;
+
+              return (
+                <div style={{ paddingBottom: 32 }}>
+                  {/* Header */}
+                  <div style={{ background: "var(--mb-navy)", borderRadius: 16, padding: "20px 22px", marginBottom: 20, textAlign: "center" as const }}>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase" as const, letterSpacing: "0.15em", marginBottom: 6 }}>Exclusive tools · Built for your profile</div>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "white" }}>Go deeper on your career intelligence</div>
+                  </div>
+
+                  <Suspense fallback={<div style={{ padding: 40, textAlign: "center" as const, color: "var(--mb-ink3)", fontFamily: "'DM Sans',sans-serif", fontSize: 13 }}>Loading tools…</div>}>
+
+                    {/* Score Trend — how your risk score changed over time */}
+                    <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
+                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-navy)", textTransform: "uppercase" as const, letterSpacing: "0.12em", marginBottom: 12 }}>📈 Your Risk Score Over Time</div>
+                      <ScoreTrendCard report={syntheticReport} scanId={analysisId ?? undefined} />
+                    </div>
+
+                    {/* Career Genome Debate — 3 AI agents argue about your future */}
+                    <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
+                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-navy)", textTransform: "uppercase" as const, letterSpacing: "0.12em", marginBottom: 12 }}>🧬 Career Genome Debate</div>
+                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 14, lineHeight: 1.6 }}>3 AI agents debate your career future. Pessimist. Optimist. Realist. Who's right?</div>
+                      <CareerGenomeDebate report={syntheticReport} scanId={analysisId ?? ""} />
+                    </div>
+
+                    {/* Resume Weaponizer — rewrite your resume for the AI era */}
+                    <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
+                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-navy)", textTransform: "uppercase" as const, letterSpacing: "0.12em", marginBottom: 12 }}>⚔️ Resume Weaponizer</div>
+                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 14, lineHeight: 1.6 }}>Rewrite your resume to emphasise AI-proof skills. Built from your actual profile.</div>
+                      <ResumeWeaponizerCard report={syntheticReport} scanId={analysisId ?? ""} />
+                    </div>
+
+                  </Suspense>
+
+                  <button onClick={() => handleTabChange(0)} style={{ width: "100%", padding: "14px", background: "var(--mb-navy)", color: "white", border: "none", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>
+                    ← Back to Risk Analysis
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* Bottom action buttons */}
             <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>

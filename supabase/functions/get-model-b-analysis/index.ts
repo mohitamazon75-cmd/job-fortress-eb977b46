@@ -178,7 +178,60 @@ async function processAnalysis(
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
-  const userPrompt = buildUserPrompt(resumeText, userCity);
+
+  // ── Issue 4-A: Fetch live India job listings before the LLM call ────────────
+  // Call india-jobs to get real Tavily-powered listings for this role + city.
+  // Inject as grounding context so the LLM formats real data instead of
+  // hallucinating plausible-sounding but unverifiable job matches.
+  // Timeout: 8s — if india-jobs is slow, we fall back to LLM generation.
+  let liveJobsContext = "";
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Extract role hint from resume text (first 500 chars usually has current title)
+    const roleLine = resumeText.slice(0, 500).split("\n")
+      .find(l => /engineer|manager|analyst|developer|director|lead|head|specialist|consultant/i.test(l));
+    const roleHint = roleLine?.trim().slice(0, 80) || "";
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8_000);
+
+    const jobsResp = await fetch(`${supabaseUrl}/functions/v1/india-jobs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`,
+      },
+      body: JSON.stringify({
+        role: roleHint,
+        city: userCity === "India" ? "Bangalore" : userCity,
+        skills: [],
+        experience: "",
+        country: "IN",
+        mode: "grounding_context",   // signals this is a pre-LLM fetch
+      }),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout));
+
+    if (jobsResp.ok) {
+      const jobsData = await jobsResp.json();
+      const listings = (jobsData.live_jobs || jobsData.jobs || []).slice(0, 6);
+      if (listings.length > 0) {
+        liveJobsContext = `\n\nLIVE JOB LISTINGS (fetched from Naukri/Tavily right now — use these as the basis for card5_jobs.job_matches, do NOT invent new ones):\n${
+          listings.map((j: any, i: number) =>
+            `${i + 1}. ${j.title || j.role} at ${j.company} | ${j.location} | ${j.salary_range || "salary not listed"} | ${j.url || j.search_url || ""}`
+          ).join("\n")
+        }\n\nFor card5_jobs.job_matches: use exactly these companies and roles. If a field is missing, estimate it from market data. The search_url for each must be the real URL provided above.`;
+        console.log(`[model-b] Injected ${listings.length} live job listings as grounding context`);
+      }
+    }
+  } catch (jobErr) {
+    // Non-fatal — LLM generates job matches as fallback
+    console.warn("[model-b] Live jobs pre-fetch failed (non-fatal, using LLM fallback):", jobErr);
+  }
+
+  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext);
 
   let cardData: Record<string, unknown> | null = null;
   let geminiRaw: unknown = null;
@@ -565,7 +618,7 @@ OUTPUT: Return ONLY a valid JSON object. No markdown fences. Start with {`;
 // ═══════════════════════════════════════════════════════════════
 // USER PROMPT — Full Schema with Psychology Fields
 // ═══════════════════════════════════════════════════════════════
-function buildUserPrompt(resumeText: string, userCity: string): string {
+function buildUserPrompt(resumeText: string, userCity: string, liveJobsContext = ""): string {
   const cityInstruction = userCity === "India"
     ? "Location unknown. Use 'India' as location. Do not default to any specific city. Show companies from multiple Indian metros."
     : `The user is based in ${userCity}. Prioritize companies and job matches in ${userCity} and nearby metros. Only use Bangalore/Mumbai if the user is actually located there.`;
@@ -752,5 +805,6 @@ card7_human: {
   },
   whatsapp_message: string,
   score_card_text: string
-}`;
+}
+${liveJobsContext}`;
 }
