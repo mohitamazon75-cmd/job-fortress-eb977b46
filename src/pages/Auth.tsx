@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { motion } from 'framer-motion';
@@ -42,6 +43,22 @@ function consumePostAuthRedirect(): string | null {
   if (!redirect) return null;
   sessionStorage.removeItem(POST_AUTH_REDIRECT_KEY);
   return redirect.startsWith('/') ? redirect : null;
+}
+
+function isAnonymousSession(session: Session | null): boolean {
+  const user = session?.user;
+  if (!user) return false;
+  return Boolean((user as { is_anonymous?: boolean }).is_anonymous || (!user.email && !user.phone));
+}
+
+async function clearAnonymousSessionIfNeeded() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!isAnonymousSession(session)) return;
+
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw error;
+  }
 }
 
 export default function Auth() {
@@ -89,13 +106,13 @@ export default function Auth() {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
+      if (session && !isAnonymousSession(session)) {
         void finishAuthFlow();
       }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      if (session && !isAnonymousSession(session)) {
         void finishAuthFlow();
       }
     });
@@ -114,13 +131,14 @@ export default function Auth() {
     setSuccess('');
     setLoading(true);
 
-    // DEV BYPASS: on localhost, any email/password goes straight through
     if (isLocalhost) {
       navigate('/', { replace: true });
       return;
     }
 
     try {
+      await clearAnonymousSessionIfNeeded();
+
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -163,12 +181,21 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setError('');
     setLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (error) {
-      setError(error.message || 'Google sign-in failed');
+
+    try {
+      await clearAnonymousSessionIfNeeded();
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in failed');
+      setLoading(false);
+      return;
     }
+
     setLoading(false);
   };
 

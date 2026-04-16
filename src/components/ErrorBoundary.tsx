@@ -21,6 +21,7 @@ export default class ErrorBoundary extends React.Component<
       sessionStorage.removeItem('jb_pending_input');
       sessionStorage.removeItem('jb_lazy_retry_once');
       localStorage.removeItem('anon_scan_ids');
+      localStorage.removeItem('anon_scans');
 
       // Only clear auth tokens if this is an auth-related error
       const message = this.state.error?.message || '';
