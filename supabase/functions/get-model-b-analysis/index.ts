@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     // TTL: card_data older than 2 hours is considered stale and will regenerate.
     // This ensures fresh analysis when users rescan with new resumes, and
     // eliminates the need to manually clear model_b_results between scans.
-    const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+    const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes — aggressive TTL ensures fresh analysis
     const { data: cached } = await supabase
       .from("model_b_results")
       .select("*")
