@@ -262,41 +262,31 @@ const Index = () => {
     } catch {}
   }, []);
 
-  // On mount: restore input context if returning from OAuth redirect
-  // FIX 2 (MEDIUM): Add proper try-catch around JSON.parse to handle malformed data
+  const getPendingInputContext = useCallback((): { linkedinUrl?: string; hasResume?: boolean } | null => {
+    try {
+      const pending = sessionStorage.getItem('jb_pending_input');
+      return pending ? JSON.parse(pending) as { linkedinUrl?: string; hasResume?: boolean } : null;
+    } catch {
+      try { sessionStorage.removeItem('jb_pending_input'); } catch {}
+      return null;
+    }
+  }, []);
+
+  // On mount: restore input context if returning from OAuth redirect.
+  // Keep the pending marker until auth is confirmed so we can skip old-scan restore.
   useEffect(() => {
     if (routedScanId) return;
 
-    let pendingInput: any = null;
-    try {
-      const pending = sessionStorage.getItem('jb_pending_input');
-      if (pending) {
-        pendingInput = JSON.parse(pending);
-      }
-    } catch {
-      // Malformed JSON in sessionStorage — clear it and continue
-      try { sessionStorage.removeItem('jb_pending_input'); } catch {}
+    const pendingInput = getPendingInputContext();
+    if (!pendingInput) return;
+
+    if (pendingInput.linkedinUrl) setLinkedinUrl(pendingInput.linkedinUrl);
+    if (pendingInput.hasResume && !resumeFileRef.current) {
+      console.warn('Resume file lost after redirect — user will need to re-upload');
     }
 
-    if (pendingInput) {
-      try {
-        sessionStorage.removeItem('jb_pending_input');
-        if (pendingInput.linkedinUrl) setLinkedinUrl(pendingInput.linkedinUrl);
-        if (pendingInput.hasResume) {
-          // FIX 3 (MEDIUM): Check if resume file ref is lost after OAuth redirect
-          if (!resumeFileRef.current) {
-            // Resume file can't survive a page redirect — clear the stale flag
-            pendingInput.hasResume = false;
-            console.warn('Resume file lost after redirect — user will need to re-upload');
-          }
-          // Resume file can't be persisted — user will need to re-select, but we skip to auth-gate
-          // which will auto-advance to rescan-check/onboarding
-        }
-        // If we had pending input, jump straight to auth-gate (session may already exist)
-        setPhase('auth-gate');
-      } catch {}
-    }
-  }, [routedScanId]);
+    setPhase('auth-gate');
+  }, [getPendingInputContext, routedScanId, setLinkedinUrl, setPhase, resumeFileRef]);
 
 
 
