@@ -384,26 +384,6 @@ export async function createScan(params: {
     console.warn('[Scan] create-scan edge function threw, trying direct insert:', fnErr);
   }
 
-  // ── Fallback: direct REST insert (works when RLS allows anon INSERT) ──
-  // P1-4 FIX: Only reuse scans created within 2 min AND still actively progressing
-  if (user?.id) {
-    const twoMinAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    const { data: existingScans } = await supabase
-      .from('scans')
-      .select('id, access_token, created_at')
-      .eq('user_id', user.id)
-      .eq('scan_status', 'processing')
-      .gte('created_at', twoMinAgo)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    const existing = existingScans as { id: string; access_token: string; created_at: string }[] | null;
-    if (existing?.[0]) {
-      console.debug('[Scan] Reusing recent processing scan:', existing[0].id);
-      return { id: existing[0].id, accessToken: existing[0].access_token };
-    }
-  }
-
   const insertPayload: Record<string, unknown> = {
     linkedin_url: params.linkedinUrl || null,
     resume_file_path: params.resumeFilePath || null,
@@ -445,19 +425,29 @@ export async function createScan(params: {
 }
 
 export async function uploadResume(file: File, scanId: string): Promise<string> {
-  // Sanitize filename: replace non-ASCII and special chars with underscores
-  const sanitized = file.name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')        // strip diacritics
-    .replace(/[^\w.\-]/g, '_')              // replace non-word chars (keeps a-z, 0-9, _, -, .)
-    .replace(/_+/g, '_')                    // collapse consecutive underscores
-    .replace(/^_|_$/g, '');                 // trim leading/trailing underscores
-  const filePath = `${scanId}/${sanitized || 'resume.pdf'}`;
-  const { error } = await supabase.storage
-    .from('resumes')
-    .upload(filePath, file, { contentType: file.type || 'application/pdf', upsert: true });
-  if (error) throw error;
-  return filePath;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('Your session expired before the resume upload completed. Please try again.');
+  }
+
+  const formData = new FormData();
+  formData.append('scanId', scanId);
+  formData.append('file', file, file.name || 'resume.pdf');
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/upload-resume`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: formData,
+  });
+
+  const payload = await response.json().catch(() => null) as { filePath?: string; error?: string } | null;
+  if (!response.ok || !payload?.filePath) {
+    throw new Error(payload?.error || 'Resume upload failed');
+  }
+
+  return payload.filePath;
 }
 
 export async function triggerProcessScan(
