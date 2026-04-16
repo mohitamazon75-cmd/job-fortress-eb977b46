@@ -304,29 +304,6 @@ export function useScanFlow(callbacks: ScanFlowCallbacks): ScanFlowState {
         } catch {}
       }
 
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id) {
-          const { data } = await supabase.from('scans')
-            .select('id, scan_status, final_json_report, access_token')
-            .eq('user_id', user.id)
-            .eq('scan_status', 'complete')
-            .not('final_json_report', 'is', null)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-          if (data?.final_json_report) {
-            if (cancelled) return;
-            setScanId(data.id);
-            setAccessToken(data.access_token || '');
-            setScanReport(data.final_json_report as unknown as ScanReport);
-            setMoneyShotSeen(false);
-            navigate(`/results/choose?id=${data.id}`);
-            return;
-          }
-        }
-      } catch {}
-
       if (!cancelled && isMountedRef.current) setErrorScanStatus('failed');
     };
 
