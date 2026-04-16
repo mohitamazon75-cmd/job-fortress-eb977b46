@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, ArrowRight, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react';
+import { Plus, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport } from '@/lib/scan-engine';
 
@@ -51,7 +51,7 @@ export default function RescanDetector({ onViewPrevious, onStartNew }: RescanDet
       } catch { /* silent */ }
       finally { setLoading(false); }
     })();
-  }, []);
+  }, [onStartNew]);
 
   // Auto-advance when no previous scans
   useEffect(() => {
