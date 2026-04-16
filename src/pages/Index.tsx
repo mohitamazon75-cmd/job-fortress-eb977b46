@@ -297,46 +297,31 @@ const Index = () => {
     } catch {}
   }, []);
 
-  // On mount: restore input context if returning from OAuth redirect
-  // FIX 2 (MEDIUM): Add proper try-catch around JSON.parse to handle malformed data
+  const getPendingInputContext = useCallback((): { linkedinUrl?: string; hasResume?: boolean } | null => {
+    try {
+      const pending = sessionStorage.getItem('jb_pending_input');
+      return pending ? JSON.parse(pending) as { linkedinUrl?: string; hasResume?: boolean } : null;
+    } catch {
+      try { sessionStorage.removeItem('jb_pending_input'); } catch {}
+      return null;
+    }
+  }, []);
+
+  // On mount: restore input context if returning from OAuth redirect.
+  // Keep the pending marker until auth is confirmed so we can skip old-scan restore.
   useEffect(() => {
     if (routedScanId) return;
 
-    let pendingInput: any = null;
-    try {
-      const pending = sessionStorage.getItem('jb_pending_input');
-      if (pending) {
-        pendingInput = JSON.parse(pending);
-      }
-    } catch {
-      // Malformed JSON in sessionStorage — clear it and continue
-      try { sessionStorage.removeItem('jb_pending_input'); } catch {}
+    const pendingInput = getPendingInputContext();
+    if (!pendingInput) return;
+
+    if (pendingInput.linkedinUrl) setLinkedinUrl(pendingInput.linkedinUrl);
+    if (pendingInput.hasResume && !resumeFileRef.current) {
+      console.warn('Resume file lost after redirect — user will need to re-upload');
     }
 
-    if (pendingInput) {
-      try {
-        sessionStorage.removeItem('jb_pending_input');
-
-        if (pendingInput.linkedinUrl) {
-          // LinkedIn URL survives the redirect — restore and skip to onboarding
-          setLinkedinUrl(pendingInput.linkedinUrl);
-          setPhase('auth-gate'); // auth will auto-advance to rescan-check then onboarding
-        } else if (pendingInput.hasResume) {
-          if (resumeFileRef.current) {
-            // Resume file still in memory (same-session) — proceed normally
-            setPhase('auth-gate');
-          } else {
-            // CRITICAL FIX: Resume file is GONE after auth redirect (page reloaded).
-            // Do NOT proceed to rescan-check — that shows old scans from old account.
-            // Send user back to input-method so they re-upload the new resume.
-            // This is the correct UX: they uploaded a resume, they should finish uploading it.
-            console.warn('[Auth] Resume lost after redirect — routing to input-method for re-upload');
-            setPhase('input-method');
-          }
-        }
-      } catch {}
-    }
-  }, [routedScanId]);
+    setPhase('auth-gate');
+  }, [getPendingInputContext, routedScanId, setLinkedinUrl, setPhase, resumeFileRef]);
 
 
 
