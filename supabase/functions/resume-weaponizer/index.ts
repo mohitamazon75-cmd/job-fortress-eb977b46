@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { callAgent, AI_URL, PRO_MODEL } from "../_shared/ai-agent-caller.ts";
@@ -120,10 +121,7 @@ Deno.serve(async (req) => {
   const metro = report.metro_tier || "tier1";
 
   // Cache check
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const supabase = createAdminClient();
   const cacheKey = `rw:${role}_${industry}_${allSkills.slice(0, 30)}_${targetRole || "same"}`.toLowerCase().replace(/\s+/g, '_');
   try {
     const { data: cached } = await supabase

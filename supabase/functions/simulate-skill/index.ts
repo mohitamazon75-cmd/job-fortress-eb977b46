@@ -1,4 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   computeAll,
   matchSkillToKG,
@@ -10,6 +9,7 @@ import {
 } from "../_shared/deterministic-engine.ts";
 
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 
 Deno.serve(async (req) => {
@@ -85,10 +85,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createAdminClient();
 
     // Fetch the scan's final report to reconstruct profile
     const { data: scan, error: scanErr } = await supabase

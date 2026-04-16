@@ -16,6 +16,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 // ── Static mapping: job_family (market_signals key) → role_id (KG key) ──
@@ -126,9 +127,7 @@ Deno.serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createAdminClient();
 
     // Verify this is a trusted caller (service role or admin JWT)
     const authHeader = req.headers.get("Authorization");

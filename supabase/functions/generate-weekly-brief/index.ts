@@ -20,6 +20,7 @@
  * ready for production.
  */
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -47,7 +48,7 @@ Deno.serve(async (req) => {
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const sb = createAdminClient();
 
   try {
     const body = await req.json().catch(() => ({}));

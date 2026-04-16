@@ -1,6 +1,7 @@
 // score-drift: Computes monthly living score drift for a user
 // Shows how their career score has shifted since last scan due to market changes
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from '../_shared/cors.ts';
 
 Deno.serve(async (req: Request) => {
@@ -16,10 +17,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
+    const supabase = createAdminClient();
 
     // Get user's most recent completed scan
     const { data: lastScan } = await supabase

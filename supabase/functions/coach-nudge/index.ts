@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 // WhatsApp imports removed — profiles table doesn't have phone column yet
 
@@ -21,10 +22,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const mode = body.mode as string;
 
-    const sbAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const sbAdmin = createAdminClient();
 
     // ── Mode: Schedule nudges after scan completion ──
     if (mode === "schedule") {

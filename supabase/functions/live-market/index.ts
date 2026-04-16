@@ -1,6 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { tavilySearch, tavilySearchParallel, extractCitations, buildSearchContext } from "../_shared/tavily-search.ts";
 import { getLocale } from "../_shared/locale-config.ts";
 
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const supabase = createAdminClient();
 
     // DB-backed cache check
     const cacheKey = `lm:${(role || '')}_${(industry || '')}_${(metroTier || '')}_${locale.code}`.toLowerCase().replace(/\s+/g, '_');

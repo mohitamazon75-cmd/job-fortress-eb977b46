@@ -15,10 +15,7 @@ const CAREER_RATE_LIMIT = 20;
 const CAREER_RATE_WINDOW_MS = 60 * 60 * 1000;
 
 async function checkCareerRateLimit(ip: string): Promise<boolean> {
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
+  const supabase = createAdminClient();
   const windowStart = new Date(Date.now() - CAREER_RATE_WINDOW_MS).toISOString();
   try {
     const { count, error } = await supabase
@@ -85,10 +82,7 @@ Deno.serve(async (req) => {
     }
 
     // DB-backed cache (survives cold starts)
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createAdminClient();
     const dbCacheKey = `ci:${cacheKey}`.slice(0, 200);
     try {
       const { data: dbCached } = await supabase

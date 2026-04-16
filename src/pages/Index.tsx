@@ -9,8 +9,6 @@ import RescanDetector from '@/components/RescanDetector';
 import RateLimitUpsell from '@/components/RateLimitUpsell';
 import GoalCaptureModal, { type ScanGoals } from '@/components/GoalCaptureModal';
 import OnboardingFlow from '@/components/OnboardingFlow';
-import StartupAutopsyPage from '@/components/StartupAutopsyPage';
-import MarketRadarWidget from '@/components/MarketRadarWidget';
 import ThankYouFooter from '@/components/ThankYouFooter';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -48,8 +46,6 @@ const MatrixLoading = lazyWithRetry(() => import('@/components/MatrixLoading'));
 const SevenCardReveal = lazyWithRetry(() => import('@/components/SevenCardReveal'));
 const AIDossierReveal = lazyWithRetry(() => import('@/components/AIDossierReveal'));
 const MoneyShotCard = lazyWithRetry(() => import('@/components/MoneyShotCard'));
-const InsightCards = lazyWithRetry(() => import('@/components/InsightCards'));
-const SideHustleGenerator = lazyWithRetry(() => import('@/components/SideHustleGenerator'));
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport, createScan, uploadResume, triggerProcessScan, subscribeScanStatus } from '@/lib/scan-engine';
 import { createClient } from '@supabase/supabase-js';
@@ -67,7 +63,9 @@ function createScanCheckClient(accessToken: string) {
   });
 }
 
-type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'seven-cards' | 'money-shot' | 'reveal' | 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' | 'thank-you' | 'error';
+// CQ-3-A: insight-cards | crisis-center | startup-autopsy | market-radar removed (permanently unreachable).
+// Features from these phases are now in ResultsModelB Tools tab.
+type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'seven-cards' | 'money-shot' | 'reveal' | 'thank-you' | 'error';
 
 // FIX 4 (LOW): Named interface for ScanRow instead of inline type
 interface ScanRow {
@@ -246,8 +244,6 @@ const Index = () => {
     hasCompletedScanRef,
     routedScanId,
     handleMoneyShotComplete,
-    handleInsightCardsComplete,
-    handleCrisisCenterComplete,
   } = scanFlow;
 
 
@@ -553,8 +549,6 @@ const Index = () => {
 
 
 
-  const handleAutopsyComplete = useCallback(() => { setPhase('market-radar'); }, []);
-  const handleMarketRadarComplete = useCallback(() => { setPhase('thank-you'); }, []);
 
   const handleReset = () => {
     cleanupRef.current?.();
@@ -704,45 +698,7 @@ const Index = () => {
           <p className="text-muted-foreground">Loading results...</p>
         </div>
       ))}
-      {/* ── P1-1: Career Obituary — free viral phase between money-shot and Pro dashboard ── */}
-      {/* P.G. Wodehouse × TOI editorial: a eulogy for the user's job role killed by AI.  */}
-      {/* Most shareable output in the product — now on the critical path for every user.  */}
-      {phase === 'insight-cards' && (scanReport ? (
-        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><InsightCards report={scanReport} onComplete={handleInsightCardsComplete} scanId={scanId} biggest_concern={scanGoals?.biggest_concern} isProUser={isProUser} /></Suspense>
-      ) : (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <p className="text-muted-foreground">Loading results...</p>
-        </div>
-      ))}
-      {phase === 'crisis-center' && (scanReport ? (
-        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><SideHustleGenerator report={scanReport} onComplete={handleCrisisCenterComplete} country={country} /></Suspense>
-      ) : (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <p className="text-muted-foreground">Loading results...</p>
-        </div>
-      ))}
-      {phase === 'startup-autopsy' && (scanReport ? (
-        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><StartupAutopsyPage report={scanReport} onComplete={handleAutopsyComplete} country={country} /></Suspense>
-      ) : (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <p className="text-muted-foreground">Loading results...</p>
-        </div>
-      ))}
-      {phase === 'market-radar' && scanReport && (
-        <div className="min-h-screen bg-background">
-          <div className="max-w-3xl mx-auto px-4 py-12 space-y-6">
-            <Suspense fallback={<div className="animate-pulse h-40 rounded-xl bg-muted" />}>
-              <MarketRadarWidget
-                role={scanReport.role || 'Professional'}
-                industry={scanReport.industry || 'Technology'}
-                skills={(scanReport.all_skills || scanReport.moat_skills || []).slice(0, 8)}
-                country={country || 'India'}
-                onComplete={handleMarketRadarComplete}
-              />
-            </Suspense>
-          </div>
-        </div>
-      )}
+
       {phase === 'thank-you' && (
         <div className="min-h-screen bg-background">
           <div className="max-w-lg mx-auto px-4 py-12">

@@ -18,6 +18,9 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     let user = null;
     if (authHeader) {
+      // Legitimate exception: cannot use createAdminClient() here because this
+      // client forwards the user's JWT for identity verification (auth header injection).
+      // The factory creates a service-role client; this needs the anon client + user token.
       const authClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,

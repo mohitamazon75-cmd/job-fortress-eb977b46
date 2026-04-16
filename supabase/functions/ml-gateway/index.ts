@@ -9,8 +9,8 @@
 //   5. Replit URL kept server-side — never exposed to client
 // ═══════════════════════════════════════════════════════════════
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 const ML_BASE_URL = Deno.env.get("ML_BASE_URL") || "https://dcce6740-52eb-4861-9ab4-1c6ffbf0a3fc-00-17r35n9rdd8su.kirk.replit.dev";
 const RATE_LIMIT_MAX = 5;
@@ -38,10 +38,7 @@ Deno.serve(async (req) => {
     const blocked = guardRequest(req, corsHeaders);
     if (blocked) return blocked;
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createAdminClient();
 
     // ── Extract client identity ──
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||

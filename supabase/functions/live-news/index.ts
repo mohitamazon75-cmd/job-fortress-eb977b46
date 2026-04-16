@@ -1,6 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
 import { fetchHNSignals } from "../_shared/community-signals.ts";
 
@@ -17,10 +17,7 @@ Deno.serve(async (req) => {
     const blocked = guardRequest(req, corsHeaders);
     if (blocked) return blocked;
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createAdminClient();
 
     // ── Check DB cache first ──
     const { data: cached } = await supabase

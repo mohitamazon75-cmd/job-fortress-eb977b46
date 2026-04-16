@@ -1,4 +1,5 @@
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearch } from "../_shared/tavily-search.ts";
 import { enrichRolesWithAdzunaSalary } from "../_shared/adzuna-salary.ts";
@@ -175,10 +176,7 @@ Deno.serve(async (req) => {
     const { role, industry, skills, city, risk_score, force_refresh } = await req.json();
     if (!role) return json({ error: "role required" }, 400);
 
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const sb = createAdminClient();
 
     // ── Check cache (skip if force_refresh) ──
     const cacheKey = `india-jobs-v2:${role.toLowerCase()}:${(city || "india").toLowerCase()}`;

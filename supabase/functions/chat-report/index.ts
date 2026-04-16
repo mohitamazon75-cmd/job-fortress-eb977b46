@@ -1,4 +1,5 @@
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logEdgeError, trackUsage } from "../_shared/edge-logger.ts";
@@ -210,10 +211,7 @@ Deno.serve(async (req: Request) => {
     const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
       || req.headers.get("cf-connecting-ip")
       || "unknown";
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const sb = createAdminClient();
     const allowed = await checkChatRateLimit(clientIp, sb);
     if (!allowed) {
       return new Response(JSON.stringify({ error: "Chat rate limit exceeded. Please try again later." }), {

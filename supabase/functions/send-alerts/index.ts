@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
@@ -12,10 +13,7 @@ Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const supabase = createAdminClient();
 
     // Fetch unacknowledged alerts from last 30 minutes
     const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();

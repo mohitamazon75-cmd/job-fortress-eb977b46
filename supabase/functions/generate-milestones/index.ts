@@ -5,6 +5,7 @@
 // Inserts into defense_milestones with idempotent ON CONFLICT
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 
@@ -188,7 +189,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const sb = createAdminClient();
 
     // Fetch the scan report
     const { data: scanData, error: scanError } = await supabase

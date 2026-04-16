@@ -1,6 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearch, buildSearchContext } from "../_shared/tavily-search.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
@@ -34,10 +34,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createAdminClient();
 
     // Map industry to relevant job families for contextual results
     const INDUSTRY_ROLES: Record<string, string[]> = {

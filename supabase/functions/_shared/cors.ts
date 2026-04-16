@@ -70,3 +70,51 @@ export function handleCorsPreFlight(req: Request): Response {
   return new Response(null, { status: 204, headers: getCorsHeaders(req) });
 }
 
+
+// ─── Standardised response helpers (CQ-2-A) ──────────────────────────────────
+//
+// Every edge function should return via these helpers instead of constructing
+// raw Response objects. This guarantees:
+//   1. Consistent JSON envelope: { success, data? } or { success, error }
+//   2. Correct CORS headers derived from the request origin
+//   3. Correct Content-Type on every response
+//   4. One place to change the response format if needed
+//
+// Usage:
+//   return okResponse(req, { items: [...] });
+//   return errResponse(req, "Scan not found", 404);
+//   return errResponse(req, "Rate limit exceeded", 429);
+
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+
+/**
+ * 200 OK — wraps data in { success: true, data }.
+ * Pass data: null for responses with no body (e.g. fire-and-forget confirmations).
+ */
+export function okResponse(
+  req: Request,
+  data: Record<string, JsonValue | unknown> | null = null,
+  status = 200,
+): Response {
+  const headers = { ...getCorsHeaders(req), "Content-Type": "application/json" };
+  return new Response(
+    JSON.stringify(data === null ? { success: true } : { success: true, ...data }),
+    { status, headers },
+  );
+}
+
+/**
+ * Error response — wraps message in { success: false, error }.
+ * Defaults to 500. Pass 400/401/403/404/429 as appropriate.
+ */
+export function errResponse(
+  req: Request,
+  message: string,
+  status = 500,
+): Response {
+  const headers = { ...getCorsHeaders(req), "Content-Type": "application/json" };
+  return new Response(
+    JSON.stringify({ success: false, error: message }),
+    { status, headers },
+  );
+}

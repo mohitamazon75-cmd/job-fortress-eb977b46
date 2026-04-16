@@ -4,6 +4,7 @@
 // Updates the newer record with the delta and summary_text
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 
@@ -73,7 +74,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const sb = createAdminClient();
 
     // Fetch the 2 most recent score_history records for this user
     const { data: records, error: fetchError } = await supabase

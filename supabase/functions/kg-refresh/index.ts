@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
 // Process job families in batches to avoid rate limits
@@ -324,7 +325,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const sb = createAdminClient();
 
     // Get all job families
     const { data: jobRows } = await supabase

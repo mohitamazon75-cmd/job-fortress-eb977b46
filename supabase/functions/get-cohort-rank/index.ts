@@ -1,6 +1,7 @@
 // get-cohort-rank: Returns a user's peer percentile vs others in same role + city
 // Powers the CohortRankCard — the "safer than X% of peers" insight
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from '../_shared/cors.ts';
 
 Deno.serve(async (req: Request) => {
@@ -11,10 +12,7 @@ Deno.serve(async (req: Request) => {
   try {
     const { userId, role, city, score } = await req.json();
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
+    const supabase = createAdminClient();
 
     // Try materialized view first (fast)
     const { data: cohortRows } = await supabase

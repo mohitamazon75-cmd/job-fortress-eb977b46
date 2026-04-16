@@ -1,6 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 
 // In-memory cache per isolate — 5 min TTL
@@ -104,10 +104,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createAdminClient();
 
     const roleNormalized = (role || '').toLowerCase().replace(/[_-]/g, ' ');
     const isSenior = SENIOR_KEYWORDS.some(kw => roleNormalized.includes(kw));

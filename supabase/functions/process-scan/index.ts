@@ -38,6 +38,7 @@ import {
 import { computeProfileCompleteness } from "../_shared/scan-utils.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
 import { orchestrateAgents } from "./scan-agents.ts";
+import { runScanPipeline } from "./scan-pipeline.ts";
 
 // New shared modules
 import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
@@ -819,141 +820,60 @@ Deno.serve(async (req) => {
     }
 
     // ══════════════════════════════════════════════════════════
-    // STEP 6: DETERMINISTIC ENGINE
-    // Fix 5: Sub-sector circuit-breaker — if Agent1 failed or returned no sub-sector,
-    // fire a fast FLASH_MODEL call with just the role title to classify the sub-sector
-    // before scoring. A sub-sector miss causes up to 20pt DI swing (e.g., IT Services
-    // 62% vs SaaS Product 42% floor). This call adds <3s and is non-blocking on failure.
+    // STEPS 6–11: SCORING KERNEL (extracted to scan-pipeline.ts — CQ-4-A)
+    // Sub-sector → Deterministic Engine → Agent Orchestration → 
+    // Report Assembly → Quality Passes
     // ══════════════════════════════════════════════════════════
-    let detectedSubSector = agent1?.industry_sub_sector || null;
-    if (!detectedSubSector && hasTimeBudget(8_000) && LOVABLE_API_KEY) {
-      try {
-        const subSectorPrompt = `Classify this job role into the most specific industry sub-sector.
-
-Role: "${detectedRole}"
-Company: "${linkedinCompany || 'Unknown'}"
-Industry: "${agent1?.industry || resolvedIndustry}"
-
-Return ONLY a JSON object with one field:
-{"industry_sub_sector": string}
-
-Sub-sector must be one of these exact values (pick the best match):
-IT & Software: "IT Services & Outsourcing", "IT Consulting", "SaaS Product", "Enterprise Software", "Cybersecurity", "Data Engineering", "Data Science & ML", "DevOps & Cloud", "Embedded Systems", "Gaming", "Fintech", "Healthtech", "Edtech", "Ecommerce Platform"
-Finance & Banking: "Investment Banking", "Retail Banking", "Insurance", "Wealth Management", "Fintech", "Accounting & Audit", "Risk & Compliance"
-Marketing & Advertising: "Performance Marketing", "Brand Strategy", "Content Marketing", "Social Media", "PR & Communications", "Market Research", "SEO & SEM"
-Creative & Design: "Graphic Design", "UX/UI Design", "Video Production", "Copywriting", "Creative Direction", "Animation & Motion"
-Healthcare: "Clinical Practice", "Health Administration", "Pharma & Biotech", "Medical Devices", "Telehealth", "Diagnostics & Imaging"
-Education: "K-12 Teaching", "Higher Education", "Corporate Training", "Edtech Product", "Tutoring & Coaching"
-Manufacturing: "Production & Assembly", "Quality Engineering", "Supply Chain", "R&D & Product Design", "Process Engineering"
-Other: use the closest match or null if genuinely unclear
-
-No explanation, no markdown. Return ONLY the JSON.`;
-
-        const subSectorResp = await callAgent(LOVABLE_API_KEY, "SubSectorBreaker", "You are a role classifier. Return only valid JSON.", subSectorPrompt, FLASH_MODEL, 0.0, 6_000);
-        if (subSectorResp?.industry_sub_sector) {
-          detectedSubSector = subSectorResp.industry_sub_sector;
-          console.log(`[SubSectorBreaker] Circuit-breaker resolved sub-sector: "${detectedSubSector}" for role "${detectedRole}"`);
-        }
-      } catch (e) {
-        console.warn("[SubSectorBreaker] Sub-sector circuit-breaker failed (non-fatal):", e);
-      }
-    } else if (detectedSubSector) {
-      console.log(`[Orchestrator] Sub-sector from Agent1: "${detectedSubSector}"`);
-    }
-
-    const det = computeAll(profileInput, allSkillRiskRows, skillMapRows, primaryJob, marketSignal, !!scan.linkedin_url, companyTier, scan.metro_tier || null, null, agent1?.industry || resolvedIndustry, scanCountry, companyHealthResult?.score ?? null, detectedSubSector, profile_completeness_pct, profile_gaps);
-    console.log(`[Orchestrator] DI=${det.determinism_index}, SS=${det.survivability.score}, quality=${det.data_quality.overall}${companyHealthResult ? `, companyHealth=${companyHealthResult.score}` : ''}${skillDemandResults.length > 0 ? `, skillsValidated=${skillDemandResults.length}` : ''}${detectedSubSector ? `, subSector=${detectedSubSector}` : ''}`);
-
-    // Signal consistency check with teeth now happens in scan-report-builder.ts (assembleReport)
-    // where it can actually adjust mergedDI before the report is built and persisted.
-
-    // ══════════════════════════════════════════════════════════
-    // STEPS 7+8+9: PARALLEL AGENT ORCHESTRATION (extracted to scan-agents.ts)
-    // ══════════════════════════════════════════════════════════
-
-    // Extract achievement bullets from rawProfileText for Agent 2A personalisation.
-    // The rich resume parser now captures "• Reduced test cycle from 5 days to 6 hours" etc.
-    // We pull those lines so Agent 2A can anchor advice to specific real accomplishments.
-    const achievementLines = rawProfileText
-      .split('\n')
-      .filter((line: string) => line.trim().startsWith('•') || line.trim().startsWith('-'))
-      .map((line: string) => line.trim())
-      .filter((line: string) => line.length > 20 && line.length < 300)
-      .slice(0, 8); // Top 8 achievement bullets
-    const resumeAchievements = achievementLines.length > 0
-      ? achievementLines.join('\n')
-      : null;
-
-    const agentResults = await orchestrateAgents({
+    const pipelineResult = await runScanPipeline({
       LOVABLE_API_KEY,
       activeModel,
       FAST_MODEL,
       GLOBAL_TIMEOUT_MS,
-      globalStart,
+      SUPABASE_URL: Deno.env.get("SUPABASE_URL")!,
+      SUPABASE_SERVICE_ROLE_KEY: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       scanId,
-      scan: { user_id: scan.user_id, metro_tier: scan.metro_tier, linkedin_url: scan.linkedin_url },
-      supabaseUrl: Deno.env.get("SUPABASE_URL")!,
-      supabaseServiceRoleKey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      scan,
       profileInput,
+      rawProfileText,
+      profileExtractionConfidence,
       detectedRole,
       resolvedRoleHint,
       resolvedIndustry,
-      agent1,
-      det,
-      linkedinName,
-      linkedinCompany,
-      companyTier,
       compoundRole,
       roleComponents,
-      detectedSubSector,
-      companyHealthResult,
-      skillDemandResults,
-      kgContext,
-      locale,
+      companyTier,
       scanCountry,
+      linkedinName,
+      linkedinCompany,
+      allSkillRiskRows,
+      skillMapRows,
       primaryJob,
       marketSignal,
-      hasTimeBudget,
-      resumeAchievements,
-    });
-
-    const { mlObsolescence, mlTimedOut, validatedAgent2, seniorityTier, displayName, displayCompany } = agentResults;
-
-    // Diagnostics: record Agent 2A/2B/2C outcomes
-    const va2 = validatedAgent2 as any;
-    scanDiagnostics.agent2a = va2?.agent2a ? (va2.agent2aValidated === false ? "fallback" : "success") : "skipped";
-    scanDiagnostics.agent2b = va2?.agent2b ? (va2.agent2bValidated === false ? "fallback" : "success") : "skipped";
-    scanDiagnostics.agent2c = va2?.pivot_roles ? "success" : "skipped";
-
-    // ══════════════════════════════════════════════════════════
-    // STEP 10: REPORT ASSEMBLY
-    // ══════════════════════════════════════════════════════════
-    const finalReport = assembleReport({
-      det, mlObsolescence, mlTimedOut, agent1, validatedAgent2, profileInput,
-      primaryJob, scan, linkedinName, linkedinCompany, detectedRole, resolvedIndustry,
-      compoundRole, roleComponents, companyTier, seniorityTier, displayName, displayCompany, scanCountry,
-      companyHealth: companyHealthResult,
+      allIndustryJobs,
+      kgContext,
+      agent1,
+      companyHealthResult,
       skillDemandResults,
-      subSector: detectedSubSector,
-      rawProfileText,
-      extractionConfidence: profileExtractionConfidence,
+      locale,
+      profile_completeness_pct,
+      profile_gaps,
+      globalStart,
+      globalTimedOut,
+      scanDiagnostics,
+      hasTimeBudget,
     });
 
-    // ══════════════════════════════════════════════════════════
-    // STEP 11: QUALITY PASSES
-    // ══════════════════════════════════════════════════════════
-    deduplicateReportText(finalReport);
-
-    if (hasTimeBudget(5_000)) {
-      await runQualityEditor(finalReport, detectedRole, displayName, displayCompany, agent1?.industry || resolvedIndustry, LOVABLE_API_KEY);
-      scanDiagnostics.qualityEditor = "ran";
-    } else {
-      console.warn("[Orchestrator] Skipping Quality Editor due to low time budget");
-      scanDiagnostics.qualityEditor = "skipped_timeout";
+    if (!pipelineResult.success) {
+      const errMsg = pipelineResult.error;
+      console.error(`[Orchestrator] Pipeline failed at step '${pipelineResult.step}':`, errMsg);
+      await supabase.from("scans").update({ scan_status: "failed" }).eq("id", scanId);
+      return new Response(JSON.stringify({ error: "Scoring pipeline failed", step: pipelineResult.step }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    normalizeFounderImmediateStep(finalReport);
-    delete finalReport.ml_raw;
+    const { finalReport, det, detectedSubSector, seniorityTier, displayName, displayCompany } = pipelineResult;
+
 
     // ══════════════════════════════════════════════════════════
     // STEP 12: PERSIST & RESPOND

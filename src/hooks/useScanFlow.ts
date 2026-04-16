@@ -56,10 +56,8 @@ export type AppPhase =
   | 'seven-cards'
   | 'money-shot'
   | 'reveal'
-  | 'insight-cards'
-  | 'crisis-center'
-  | 'startup-autopsy'
-  | 'market-radar'
+  // 'insight-cards' | 'crisis-center' | 'startup-autopsy' | 'market-radar' removed:
+  // These phases were permanently unreachable (CQ-3-A). Features surfaced in ResultsModelB Tools tab.
   | 'thank-you'
   | 'error';
 
@@ -122,8 +120,6 @@ export interface ScanFlowState {
 
   // Actions
   handleMoneyShotComplete: () => void;
-  handleInsightCardsComplete: () => void;
-  handleCrisisCenterComplete: () => void;
 }
 
 export function useScanFlow(callbacks: ScanFlowCallbacks): ScanFlowState {
@@ -262,12 +258,6 @@ export function useScanFlow(callbacks: ScanFlowCallbacks): ScanFlowState {
     return () => { cancelled = true; };
   }, [routedScanId, scanReport, location.state, callbacks]);
 
-  // Guard: never allow insight-cards before money-shot is explicitly continued
-  useEffect(() => {
-    if (phase === 'insight-cards' && scanReport && !moneyShotSeen) {
-      setPhase('money-shot');
-    }
-  }, [phase, scanReport, moneyShotSeen]);
 
   // Auto-recovery: when error screen shows, check if backend actually completed
   useEffect(() => {
@@ -354,13 +344,6 @@ export function useScanFlow(callbacks: ScanFlowCallbacks): ScanFlowState {
     }
   }, [scanId, navigate]);
 
-  const handleInsightCardsComplete = useCallback(() => {
-    setPhase('crisis-center');
-  }, []);
-
-  const handleCrisisCenterComplete = useCallback(() => {
-    setPhase('startup-autopsy');
-  }, []);
 
   return {
     phase,
@@ -390,7 +373,5 @@ export function useScanFlow(callbacks: ScanFlowCallbacks): ScanFlowState {
     routedScanId,
 
     handleMoneyShotComplete,
-    handleInsightCardsComplete,
-    handleCrisisCenterComplete,
   };
 }

@@ -1,6 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { tavilySearch } from "../_shared/tavily-search.ts";
 
 interface RoleIntelSignal {
@@ -57,10 +57,7 @@ Deno.serve(async (req) => {
     // Build cache key
     const cacheKey = `role-intel:${role.toLowerCase().trim()}:${industry.toLowerCase().trim()}:${(company || '').toLowerCase().trim()}:${(city || '').toLowerCase().trim()}`;
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createAdminClient();
 
     // Check cache
     const { data: cachedData } = await supabase

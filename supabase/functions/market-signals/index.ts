@@ -1,6 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { tavilySearch, tavilySearchParallel, extractCitations, buildSearchContext } from "../_shared/tavily-search.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
 import { getLocale } from "../_shared/locale-config.ts";
@@ -22,10 +22,7 @@ const RATE_LIMIT = 10;
 const RATE_WINDOW_MS = 60_000;
 
 async function checkRateLimit(ip: string): Promise<boolean> {
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
+  const supabase = createAdminClient();
   const windowStart = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
   try {
     const { count, error } = await supabase
@@ -1374,10 +1371,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createAdminClient();
 
     // Route based on signal_type
     switch (signal_type) {

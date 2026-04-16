@@ -175,28 +175,29 @@ describe('useScanFlow — phase machine', () => {
     );
   });
 
-  // ── Test 3: insight-cards without moneyShotSeen → money-shot
-  it('redirects insight-cards to money-shot when money-shot has not been seen', async () => {
+  // ── Test 3: dead phases can no longer cause the UX loop (CQ-3-A regression guard)
+  // insight-cards, crisis-center, startup-autopsy, market-radar were removed from
+  // AppPhase. This test ensures the hook doesn't get stuck in hero when money-shot
+  // is seen and no scanId is present — that path should go to 'reveal'.
+  it("handleMoneyShotComplete without scanId falls back to 'reveal' (not a dead phase)", async () => {
     const { result } = renderHook(() => useScanFlow(noopCallbacks), {
       wrapper: wrapper(['/']),
     });
 
-    // Set up a scan report and set phase to insight-cards
-    // without moneyShotSeen — this is the loop condition
+    // Simulate money-shot being completed without a scanId
     act(() => {
-      result.current.setScanReport({ determinism_index: 55, role: 'Test' } as any);
+      result.current.handleMoneyShotComplete();
     });
 
-    act(() => {
-      result.current.setPhase('insight-cards');
-    });
+    // Must land on 'reveal' — not on any dead phase
+    expect(result.current.phase).toBe('reveal');
+    expect(result.current.moneyShotSeen).toBe(true);
 
-    await act(async () => {
-      await new Promise(r => setTimeout(r, 10));
-    });
-
-    // The guard effect must redirect to money-shot
-    expect(result.current.phase).toBe('money-shot');
+    // Verify none of the removed phases are reachable
+    const removedPhases = ['insight-cards', 'crisis-center', 'startup-autopsy', 'market-radar'];
+    for (const dead of removedPhases) {
+      expect(result.current.phase).not.toBe(dead);
+    }
   });
 
   // ── Test 4: handleMoneyShotComplete with scanId → /results/model-b

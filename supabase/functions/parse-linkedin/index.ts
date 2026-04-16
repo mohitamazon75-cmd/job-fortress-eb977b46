@@ -1,6 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 
 Deno.serve(async (req) => {
@@ -259,10 +259,7 @@ No markdown, no explanation.`,
             const validatedParsed = validateExtraction(parsed, nameGuess, slug);
 
             // Enrich with DB matching
-            const supabase = createClient(
-              Deno.env.get("SUPABASE_URL")!,
-              Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-            );
+            const supabase = createAdminClient();
 
             const { data: jobs } = await supabase
               .from("job_taxonomy")
@@ -308,10 +305,7 @@ No markdown, no explanation.`,
     // ═══════════════════════════════════════════════════════
     const profile = inferProfileFromLinkedinUrl(linkedinUrl);
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createAdminClient();
 
     const { data: jobs } = await supabase
       .from("job_taxonomy")

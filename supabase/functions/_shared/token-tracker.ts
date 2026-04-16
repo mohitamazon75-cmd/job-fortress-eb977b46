@@ -4,7 +4,7 @@
 // 2) logTokenUsage — fire-and-forget DB persistence per AI call
 // ═══════════════════════════════════════════════════════════════
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "./supabase-client.ts";
 
 export interface TokenUsage {
   prompt_tokens: number;
