@@ -1,11 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 // WhatsApp imports removed — profiles table doesn't have phone column yet
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+
 
 // ═══════════════════════════════════════════════════════════════
 // AI Career Coach — Nudge Generator & Scheduler
@@ -17,7 +14,7 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -34,7 +31,7 @@ Deno.serve(async (req) => {
       const { scan_id, user_id } = body;
       if (!scan_id || !user_id) {
         return new Response(JSON.stringify({ error: "scan_id and user_id required" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
@@ -47,7 +44,7 @@ Deno.serve(async (req) => {
 
       if (existing && existing.length > 0) {
         return new Response(JSON.stringify({ ok: true, message: "Already scheduled" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
@@ -62,7 +59,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       return new Response(JSON.stringify({ ok: true, scheduled: 3 }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -79,7 +76,7 @@ Deno.serve(async (req) => {
       if (fetchErr) throw fetchErr;
       if (!dueNudges || dueNudges.length === 0) {
         return new Response(JSON.stringify({ ok: true, processed: 0 }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
@@ -193,7 +190,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ ok: true, processed }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -202,7 +199,7 @@ Deno.serve(async (req) => {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
@@ -216,7 +213,7 @@ Deno.serve(async (req) => {
       const { data: claims, error: claimsErr } = await sbUser.auth.getClaims(token);
       if (claimsErr || !claims?.claims) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
@@ -231,7 +228,7 @@ Deno.serve(async (req) => {
       if (nudgesErr) throw nudgesErr;
 
       return new Response(JSON.stringify({ nudges: nudges || [] }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -240,7 +237,7 @@ Deno.serve(async (req) => {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
         });
       }
 
@@ -259,17 +256,17 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       return new Response(JSON.stringify({ ok: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
     return new Response(JSON.stringify({ error: "Unknown mode" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("[CoachNudge] Error:", err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Internal error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

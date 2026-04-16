@@ -4,11 +4,9 @@
 // Updates the newer record with the delta and summary_text
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -61,7 +59,7 @@ async function generateDeltaSummary(
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -71,7 +69,7 @@ Deno.serve(async (req) => {
     if (!user_id || !scan_id) {
       return new Response(JSON.stringify({ error: "Missing user_id or scan_id" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -89,14 +87,14 @@ Deno.serve(async (req) => {
       console.error("[compute-delta] Fetch error:", fetchError);
       return new Response(JSON.stringify({ error: "Database fetch failed" }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
     if (!records || records.length === 0) {
       return new Response(JSON.stringify({ error: "No score history found" }), {
         status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -119,7 +117,7 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ success: true, is_first_scan: true }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -169,19 +167,19 @@ Deno.serve(async (req) => {
       console.error("[compute-delta] Update error:", updateError);
       return new Response(JSON.stringify({ error: "Database update failed" }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
     return new Response(JSON.stringify({ success: true, score_change: scoreChange, summary_text: summaryText }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("[compute-delta] Fatal error:", err);
     return new Response(JSON.stringify({ error: "Internal error", detail: String(err) }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

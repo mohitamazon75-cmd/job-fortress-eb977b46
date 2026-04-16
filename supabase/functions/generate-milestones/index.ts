@@ -5,11 +5,9 @@
 // Inserts into defense_milestones with idempotent ON CONFLICT
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -176,7 +174,7 @@ async function generateMilestones(
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -186,7 +184,7 @@ Deno.serve(async (req) => {
     if (!user_id || !scan_id) {
       return new Response(JSON.stringify({ error: "Missing user_id or scan_id" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -204,7 +202,7 @@ Deno.serve(async (req) => {
       console.error("[generate-milestones] Scan fetch error:", scanError);
       return new Response(JSON.stringify({ error: "Scan not found" }), {
         status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -234,21 +232,21 @@ Deno.serve(async (req) => {
       // Don't fail the request — this is fire-and-forget
       return new Response(JSON.stringify({ success: true, message: "Milestone insertion had issues but continuing" }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
     console.log("[generate-milestones] Inserted", milestones.length, "milestones");
     return new Response(JSON.stringify({ success: true, milestone_count: milestones.length }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("[generate-milestones] Fatal error:", err);
     // Fire-and-forget: don't fail the request
     return new Response(JSON.stringify({ success: true, message: "Processed (error handling)" }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

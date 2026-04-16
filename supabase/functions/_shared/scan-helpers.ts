@@ -121,9 +121,9 @@ function normalizeStr(s: string): string {
 }
 
 export function validateAgent1Output(
-  agent1: any,
+  agent1: Record<string, unknown>,
   resolvedIndustry: string,
-  allIndustryJobs: any[],
+  allIndustryJobs: Record<string, unknown>[],
   allSkillRiskRows: SkillRiskRow[]
 ): { valid: boolean; warnings: string[]; corrections: Record<string, any> } {
   const warnings: string[] = [];
@@ -252,7 +252,7 @@ export const TIER_NEVER_OUTPUT: Record<string, { patterns: RegExp[]; replacement
   ],
 };
 
-export function validateOutputForTier(agent2Output: any, tier: string, name: string): any {
+export function validateOutputForTier(agent2Output: Record<string, unknown>, tier: string, name: string): Record<string, unknown> {
   if (!agent2Output || !tier) return agent2Output;
   
   const rules = TIER_NEVER_OUTPUT[tier];
@@ -340,12 +340,12 @@ export const ROLE_ALIASES: Record<string, string[]> = {
   "owner": ["management_consultant", "project_manager"],
 };
 
-export function matchRoleToJobFamily(role: string, jobs: any[]): any | null {
+export function matchRoleToJobFamily(role: string, jobs: Record<string, unknown>[]): Record<string, unknown> | null {
   if (!role || jobs.length === 0) return jobs[0] || null;
   const roleNorm = role.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
   const roleTokens = roleNorm.split(/\s+/);
 
-  let bestMatch: any = null;
+  let bestMatch: Record<string, unknown> | null = null;
   let bestScore = -1;
 
   for (const job of jobs) {
@@ -419,7 +419,7 @@ export function titleCaseToken(input: string): string {
     .join(" ");
 }
 
-export function normalizeMarketPositionModel(raw: any, det: DeterministicResult, industry: string): any {
+export function normalizeMarketPositionModel(raw: Record<string, unknown> | null, det: DeterministicResult, industry: string): Record<string, unknown> {
   const percentileRaw = toFiniteNumber(raw?.market_percentile ?? raw?.gaussian_fit_percentile ?? raw?.marketPercentile);
   const fallbackPercentile = Math.max(5, Math.min(95, Math.round(100 - det.determinism_index)));
   const marketPercentile = Math.max(1, Math.min(99, Math.round(percentileRaw ?? fallbackPercentile)));
@@ -488,10 +488,10 @@ export function buildDeterministicShock(
   det: DeterministicResult,
   role: string,
   industry: string,
-  agent2: any,
+  agent2: Record<string, unknown> | null,
   profile: ProfileInput,
   metroTier: string | null
-): any {
+): Record<string, unknown> {
   const di = det.determinism_index;
   const survScore = det.survivability?.score ?? 50;
   const expYears = profile.experience_years ?? 5;
@@ -528,14 +528,14 @@ export function buildDeterministicShock(
 }
 
 export function normalizeCareerShockSimulator(
-  raw: any,
+  raw: Record<string, unknown> | null,
   det: DeterministicResult,
   role: string,
   industry: string,
-  agent2: any,
+  agent2: Record<string, unknown> | null,
   profile: ProfileInput,
   metroTier: string | null
-): any {
+): Record<string, unknown> {
   const fallback = buildDeterministicShock(det, role, industry, agent2, profile, metroTier);
 
   if (!raw || typeof raw !== "object") {

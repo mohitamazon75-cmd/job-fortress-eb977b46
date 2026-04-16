@@ -18,6 +18,7 @@ import {
 import { getLocale } from "./locale-config.ts";
 import { callAgent } from "./ai-agent-caller.ts";
 import { checkAutomationSignalConsistency } from "./zod-schemas.ts";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -30,9 +31,9 @@ export function getTier2CityInfo(
 }
 
 export async function updateScan(
-  supabase: any,
+  supabase: SupabaseClient,
   scanId: string,
-  report: any,
+  report: Record<string, unknown>,
   name: string | null,
   company: string | null,
 ): Promise<void> {
@@ -66,10 +67,10 @@ export function buildDeterministicReport(
   profile: ProfileInput,
   industry: string,
   roleHint: string,
-  scan: any,
+  scan: Record<string, unknown>,
   linkedinName: string | null,
   linkedinCompany: string | null,
-): any {
+): Record<string, unknown> {
   const monthlySalary = estimateMonthlySalary(
     profile.estimated_monthly_salary_inr, null, profile.experience_years, undefined, undefined, undefined, scan?.country,
   );
@@ -110,7 +111,7 @@ function isFounderLikeRole(role?: string | null): boolean {
   return /(\bco[\s-]?founder\b|\bfounder\b|\bowner\b|\bmanaging\s+partner\b)/i.test(role);
 }
 
-export function normalizeFounderImmediateStep(report: any): any {
+export function normalizeFounderImmediateStep(report: Record<string, unknown>): void {
   if (!report || typeof report !== "object") return report;
   if (!isFounderLikeRole(report.role)) return report;
 
@@ -139,7 +140,7 @@ export function normalizeFounderImmediateStep(report: any): any {
 
 // ── Tool validation ──────────────────────────────────────────
 
-export function validateToolStatic(judoStrategy: any): void {
+export function validateToolStatic(judoStrategy: Record<string, unknown>): void {
   if (!judoStrategy?.recommended_tool) return;
   const toolLower = judoStrategy.recommended_tool.toLowerCase().trim();
   let repoSlug = TOOL_GITHUB_MAP[toolLower] || null;
@@ -159,7 +160,7 @@ export function validateToolStatic(judoStrategy: any): void {
 
 // ── Deduplication pass ───────────────────────────────────────
 
-export function deduplicateReportText(finalReport: any): void {
+export function deduplicateReportText(finalReport: Record<string, unknown>): void {
   try {
     const textFields = ["free_advice_1", "free_advice_2", "free_advice_3", "dead_end_narrative", "cognitive_moat", "geo_advantage"];
     const allSentences: Map<string, string> = new Map();
@@ -191,7 +192,7 @@ export function deduplicateReportText(finalReport: any): void {
 const FAST_MODEL = "google/gemini-3-flash-preview"; // Quality Editor: fast + cheap, editorial not reasoning
 
 export async function runQualityEditor(
-  finalReport: any,
+  finalReport: Record<string, unknown>,
   detectedRole: string,
   displayName: string,
   displayCompany: string,
@@ -225,13 +226,13 @@ export async function runQualityEditor(
 
 export interface ReportAssemblyInput {
   det: DeterministicResult;
-  mlObsolescence: any;
+  mlObsolescence: Record<string, unknown> | null;
   mlTimedOut: boolean;
-  agent1: any;
-  validatedAgent2: any;
+  agent1: Record<string, unknown> | null;
+  validatedAgent2: Record<string, unknown> | null;
   profileInput: ProfileInput;
   primaryJob: JobTaxonomyRow | null;
-  scan: any;
+  scan: Record<string, unknown>;
   linkedinName: string | null;
   linkedinCompany: string | null;
   detectedRole: string;
@@ -250,7 +251,7 @@ export interface ReportAssemblyInput {
   extractionConfidence?: string;
 }
 
-export function assembleReport(input: ReportAssemblyInput): any {
+export function assembleReport(input: ReportAssemblyInput): Record<string, unknown> {
   const {
     det, mlObsolescence, mlTimedOut, agent1, validatedAgent2, profileInput,
     primaryJob, scan, linkedinName, linkedinCompany, detectedRole, resolvedIndustry,

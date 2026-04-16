@@ -6,7 +6,7 @@
  * Validates that a cached report meets the current schema requirements.
  * Returns false if fields critical to the dashboard are missing or incompatible.
  */
-export function isCacheCompatible(cachedReport: any): boolean {
+export function isCacheCompatible(cachedReport: Record<string, unknown>): boolean {
   if (!cachedReport || typeof cachedReport !== "object") return false;
 
   // ── Quality gate: reject low-confidence cached reports ──
@@ -55,13 +55,13 @@ export function isCacheCompatible(cachedReport: any): boolean {
  * Attempts to find a compatible cached scan result. Returns the cached report if found, null otherwise.
  */
 export async function findCachedScan(
-  supabase: any,
+  supabase: SupabaseClient,
   scanId: string,
-  scan: any,
+  scan: Record<string, unknown>,
   hasResume: boolean,
   forceRefresh: boolean,
   cacheTtlHours: number,
-): Promise<{ report: any; meta: any } | null> {
+): Promise<{ report: Record<string, unknown>; meta: Record<string, unknown> } | null> {
   if (forceRefresh || hasResume) return null;
 
   const cacheWindow = new Date(Date.now() - cacheTtlHours * 60 * 60 * 1000).toISOString();

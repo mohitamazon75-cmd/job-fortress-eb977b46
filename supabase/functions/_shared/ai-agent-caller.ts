@@ -186,7 +186,7 @@ export async function callAgent(
   const promise = new Promise<any>((resolve) => {
     let settled = false;
 
-    const settle = (result: any, timedOut: boolean) => {
+    const settle = (result: Record<string, unknown> | null, timedOut: boolean) => {
       if (settled) return;
       settled = true;
       inflightRequests.delete(dedupeKey);

@@ -6,77 +6,66 @@
 //
 //   const guard = await requirePro(req);
 //   if (guard) return guard; // Returns a 402 Response if not Pro
+//
+// Production enforcement:
+//   Set the ENFORCE_PRO="true" env var in Supabase Dashboard →
+//   Edge Functions → Secrets. While unset (or set to anything else),
+//   all users pass through — safe for development/staging.
+//   Flip the switch without a deploy; revert instantly if needed.
 // ═══════════════════════════════════════════════════════════════
 
 import { createAdminClient } from "./supabase-client.ts";
+import { getCorsHeaders } from "./cors.ts";
 
-// ┌─────────────────────────────────────────────────────────────┐
-// │  TESTING BYPASS — set to false when ready to enforce Pro    │
-// │  gating in production. While true, all users pass through.  │
-// └─────────────────────────────────────────────────────────────┘
-const TESTING_BYPASS = true;
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+/**
+ * Whether Pro gating is enforced.
+ * Controlled by the ENFORCE_PRO env var — no code change required to flip.
+ * Default: bypass (false) — safe for development.
+ */
+function isEnforcingPro(): boolean {
+  return Deno.env.get("ENFORCE_PRO") === "true";
+}
 
 /**
  * Verifies the requesting user has an active Pro subscription.
- * Returns null if the user is Pro (allow the request through).
+ * Returns null if the user is Pro (or enforcement is disabled).
  * Returns a Response object if not Pro (caller should return this immediately).
  *
  * @param req - The incoming Request object
- * @param allowedTiers - Subscription tiers that can access this feature (default: all paid tiers)
+ * @param allowedTiers - Subscription tiers that can access this feature
  */
 export async function requirePro(
   req: Request,
   allowedTiers: string[] = ["pro", "pro_scan", "pro_monthly"],
 ): Promise<Response | null> {
-  // ── Testing bypass: allow everyone through ──
-  if (TESTING_BYPASS) return null;
+  // ── Bypass: enforcement disabled via env var ──────────────────
+  if (!isEnforcingPro()) return null;
 
-  // ── Extract auth header ──
+  const corsHeaders = getCorsHeaders(req);
+  const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+
+  // ── Extract auth header ───────────────────────────────────────
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(
-      JSON.stringify({
-        error: "Authentication required",
-        code: "UNAUTHENTICATED",
-        status: "error",
-      }),
-      {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      JSON.stringify({ error: "Authentication required", code: "UNAUTHENTICATED", status: "error" }),
+      { status: 401, headers: jsonHeaders },
     );
   }
 
-  // ── Verify JWT and get user ──
+  // ── Verify JWT and get user ───────────────────────────────────
   const supabaseAdmin = createAdminClient();
-
   const token = authHeader.slice(7);
-  const {
-    data: { user },
-    error: authError,
-  } = await supabaseAdmin.auth.getUser(token);
+  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
   if (authError || !user) {
     return new Response(
-      JSON.stringify({
-        error: "Invalid or expired session",
-        code: "INVALID_SESSION",
-        status: "error",
-      }),
-      {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      JSON.stringify({ error: "Invalid or expired session", code: "INVALID_SESSION", status: "error" }),
+      { status: 401, headers: jsonHeaders },
     );
   }
 
-  // ── Check subscription tier in profiles table ──
+  // ── Check subscription tier in profiles table ─────────────────
   const { data: profile, error: profileError } = await supabaseAdmin
     .from("profiles")
     .select("subscription_tier, subscription_expires_at, trial_started_at")
@@ -84,13 +73,12 @@ export async function requirePro(
     .single();
 
   if (profileError || !profile) {
-    return makeUpgradeResponse("free");
+    return makeUpgradeResponse(req, "free");
   }
 
   const tier = profile.subscription_tier as string | null;
   const expiresAt = profile.subscription_expires_at as string | null;
 
-  // Check tier is allowed and not expired
   const expiresAtDate = expiresAt ? new Date(expiresAt) : null;
   const isExpired =
     expiresAtDate !== null &&
@@ -100,28 +88,25 @@ export async function requirePro(
   const isActivePro =
     tier !== null && allowedTiers.includes(tier) && !isExpired;
 
-  // ── 48-hour free trial check (P1-2) ──────────────────────────────────────
-  // If the user has no active subscription but started a trial within the last 48h,
-  // grant Pro access. trial_started_at is set once via the activate-trial edge fn.
-  // VibeSec: trial_started_at is server-set only — users cannot self-escalate via client.
-  if (!isActivePro && (profile as any).trial_started_at) {
-    const trialStart = new Date((profile as any).trial_started_at);
+  // ── 48-hour free trial check ──────────────────────────────────
+  // trial_started_at is server-set only — users cannot self-escalate via client.
+  if (!isActivePro && profile.trial_started_at) {
+    const trialStart = new Date(profile.trial_started_at as string);
     const trialAgeHours = (Date.now() - trialStart.getTime()) / (1000 * 60 * 60);
     if (!isNaN(trialAgeHours) && trialAgeHours < 48) {
-      console.log(`[subscription-guard] Trial active for user ${user.id} (${trialAgeHours.toFixed(1)}h elapsed)`);
-      return null; // Grant access
+      console.log(`[subscription-guard] Trial active for ${user.id} (${trialAgeHours.toFixed(1)}h)`);
+      return null;
     }
   }
 
   if (!isActivePro) {
-    return makeUpgradeResponse(tier ?? "free");
+    return makeUpgradeResponse(req, tier ?? "free");
   }
 
-  // ── User is Pro — allow request through ──
   return null;
 }
 
-function makeUpgradeResponse(currentTier: string): Response {
+function makeUpgradeResponse(req: Request, currentTier: string): Response {
   return new Response(
     JSON.stringify({
       error: "Pro subscription required",
@@ -130,9 +115,6 @@ function makeUpgradeResponse(currentTier: string): Response {
       current_tier: currentTier,
       status: "error",
     }),
-    {
-      status: 402,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    },
+    { status: 402, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } },
   );
 }

@@ -1,14 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: getCorsHeaders(req) });
   }
 
   try {
@@ -19,21 +16,21 @@ Deno.serve(async (req) => {
     if (!event_type || typeof event_type !== "string" || event_type.trim().length === 0) {
       return new Response(
         JSON.stringify({ success: false, error: "event_type must be a non-empty string" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
     if (user_id !== undefined && user_id !== null && typeof user_id !== "string") {
       return new Response(
         JSON.stringify({ success: false, error: "user_id must be a string or null" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
     if (analysis_id !== undefined && analysis_id !== null && typeof analysis_id !== "string") {
       return new Response(
         JSON.stringify({ success: false, error: "analysis_id must be a string or null" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
     // --- end input validation ---
@@ -61,14 +58,14 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true, id: data.id }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   } catch (e) {
     console.error("[log-ab-event] error:", e);
     // D2 FIX: Never throw to caller — always return 200 with success: false
     return new Response(
       JSON.stringify({ success: false, error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });
