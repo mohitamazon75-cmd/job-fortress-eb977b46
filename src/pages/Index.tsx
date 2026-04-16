@@ -308,6 +308,11 @@ const Index = () => {
     }
   }, []);
 
+  const hasPendingResumeIntent = useCallback(() => {
+    const pending = getPendingInputContext();
+    return Boolean(pending?.hasResume);
+  }, [getPendingInputContext]);
+
   // On mount: restore input context if returning from OAuth redirect.
   // Keep the pending marker until auth is confirmed so we can skip old-scan restore.
   useEffect(() => {
@@ -410,11 +415,24 @@ const Index = () => {
   // Called after auth is confirmed — check for previous scans
   const handleAuthConfirmed = () => {
     track('auth_complete');
+
+    if (hasPendingResumeIntent() && !resumeFileRef.current) {
+      toast.error('Your resume was not retained. Please upload it again to run a fresh analysis.');
+      setPhase('input-method');
+      return;
+    }
+
     setPhase('rescan-check');
   };
 
   // Called when user wants to proceed with a new scan (from rescan check or directly)
   const handleProceedNewScan = () => {
+    if (hasPendingResumeIntent() && !resumeFileRef.current) {
+      toast.error('Please re-upload your resume before starting a new analysis.');
+      setPhase('input-method');
+      return;
+    }
+
     // Clear stale onboarding values so new scan starts fresh
     setIndustry('');
     setYearsExperience('');
@@ -542,6 +560,12 @@ const Index = () => {
   };
 
   const launchScan = async (metro: string, skills: string) => {
+    if (hasPendingResumeIntent() && !resumeFileRef.current) {
+      toast.error('Resume missing. Please upload your resume again — we blocked fallback to stale manual analysis.');
+      setPhase('input-method');
+      return;
+    }
+
     // P0-PROD-02 FIX: Gate free user rescan — show RateLimitUpsell if already scanned.
     // Use hasCompletedScanRef (not scanReport) because the upgrade-card rescan flow
     // clears scanReport before reaching launchScan — ref persists across state resets.
