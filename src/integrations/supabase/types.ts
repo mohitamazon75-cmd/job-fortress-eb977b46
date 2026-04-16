@@ -1454,6 +1454,51 @@ export type Database = {
         }
         Relationships: []
       }
+      scan_outcomes: {
+        Row: {
+          captured_at: string
+          days_since_scan: number | null
+          id: string
+          outcome: string
+          scan_country: string | null
+          scan_determinism_index: number | null
+          scan_id: string
+          scan_industry: string | null
+          scan_role: string | null
+          scan_seniority: string | null
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          captured_at?: string
+          days_since_scan?: number | null
+          id?: string
+          outcome: string
+          scan_country?: string | null
+          scan_determinism_index?: number | null
+          scan_id: string
+          scan_industry?: string | null
+          scan_role?: string | null
+          scan_seniority?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Update: {
+          captured_at?: string
+          days_since_scan?: number | null
+          id?: string
+          outcome?: string
+          scan_country?: string | null
+          scan_determinism_index?: number | null
+          scan_id?: string
+          scan_industry?: string | null
+          scan_role?: string | null
+          scan_seniority?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       scan_rate_limits: {
         Row: {
           client_ip: string
