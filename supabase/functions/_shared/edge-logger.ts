@@ -5,7 +5,7 @@
 
 import { createAdminClient } from "./supabase-client.ts";
 
-let _sb: ReturnType<typeof createClient> | null = null;
+let _sb: ReturnType<typeof createAdminClient> | null = null;
 
 function getSb() {
   if (!_sb) {

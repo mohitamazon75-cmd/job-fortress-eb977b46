@@ -201,6 +201,7 @@ function ObituaryPhase({ report, onContinue }: { report: import('@/lib/scan-engi
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const { track } = useAnalytics();
   const { withMutex, isLocked } = useRequestMutex();
 
@@ -561,7 +562,7 @@ const Index = () => {
     navigate('/', { replace: true });
     setPhase('hero');
     setStep(1);
-    setCountry(detectCountry());
+    setCountry('');
     setLinkedinUrl('');
     setIndustry('');
     setYearsExperience('');
