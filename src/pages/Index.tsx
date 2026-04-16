@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import HeroSection from '@/components/HeroSection';
 import SocialProofSection from '@/components/SocialProofSection';
 import InputMethodStep from '@/components/InputMethodStep';
-import AuthGuard from '@/components/AuthGuard';
+// ── AuthOrAnon replaces AuthGuard in the auth-gate phase (see Index.tsx:~89) ─
 import ReAuthModal from '@/components/ReAuthModal';
 import RescanDetector from '@/components/RescanDetector';
 import RateLimitUpsell from '@/components/RateLimitUpsell';
@@ -86,11 +86,46 @@ interface ExistingScanHydrationRow {
 }
 
 // Tiny component that fires onReady once on mount (avoids render-loop in AuthGuard children)
-function AuthAutoAdvance({ onReady }: { onReady: () => void }) {
+// ── AuthOrAnon ────────────────────────────────────────────────────────────────
+// Replaces the old AuthGuard + AuthAutoAdvance pattern in the auth-gate phase.
+// 
+// OLD (broken): AuthGuard navigated to /auth when no session existed, which:
+//   - Destroyed resumeFileRef (page reload)
+//   - Lost the scan context
+//   - Forced users to see their old account's scans on return
+//
+// NEW (fixed): Check for existing session → if found, advance immediately.
+//   If not found → create an anonymous Supabase session (no redirect, no page
+//   reload, resume stays in memory). The user can upgrade to a real account
+//   after seeing their results.
+function AuthOrAnon({ onReady }: { onReady: () => void }) {
   const fired = useRef(false);
+
   useEffect(() => {
-    if (!fired.current) { fired.current = true; onReady(); }
+    if (fired.current) return;
+    fired.current = true;
+
+    (async () => {
+      try {
+        // Check for existing session first
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          onReady();
+          return;
+        }
+        // No session — create anonymous one so the scan can proceed without redirect
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) {
+          console.warn('[AuthOrAnon] Anonymous sign-in failed, proceeding anyway:', error.message);
+        }
+        onReady();
+      } catch (e) {
+        console.warn('[AuthOrAnon] Auth check failed, proceeding anyway:', e);
+        onReady();
+      }
+    })();
   }, [onReady]);
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="animate-pulse text-muted-foreground">Preparing your analysis...</div>
@@ -281,19 +316,24 @@ const Index = () => {
     if (pendingInput) {
       try {
         sessionStorage.removeItem('jb_pending_input');
-        if (pendingInput.linkedinUrl) setLinkedinUrl(pendingInput.linkedinUrl);
-        if (pendingInput.hasResume) {
-          // FIX 3 (MEDIUM): Check if resume file ref is lost after OAuth redirect
-          if (!resumeFileRef.current) {
-            // Resume file can't survive a page redirect — clear the stale flag
-            pendingInput.hasResume = false;
-            console.warn('Resume file lost after redirect — user will need to re-upload');
+
+        if (pendingInput.linkedinUrl) {
+          // LinkedIn URL survives the redirect — restore and skip to onboarding
+          setLinkedinUrl(pendingInput.linkedinUrl);
+          setPhase('auth-gate'); // auth will auto-advance to rescan-check then onboarding
+        } else if (pendingInput.hasResume) {
+          if (resumeFileRef.current) {
+            // Resume file still in memory (same-session) — proceed normally
+            setPhase('auth-gate');
+          } else {
+            // CRITICAL FIX: Resume file is GONE after auth redirect (page reloaded).
+            // Do NOT proceed to rescan-check — that shows old scans from old account.
+            // Send user back to input-method so they re-upload the new resume.
+            // This is the correct UX: they uploaded a resume, they should finish uploading it.
+            console.warn('[Auth] Resume lost after redirect — routing to input-method for re-upload');
+            setPhase('input-method');
           }
-          // Resume file can't be persisted — user will need to re-select, but we skip to auth-gate
-          // which will auto-advance to rescan-check/onboarding
         }
-        // If we had pending input, jump straight to auth-gate (session may already exist)
-        setPhase('auth-gate');
       } catch {}
     }
   }, [routedScanId]);
@@ -611,27 +651,7 @@ const Index = () => {
         />
       )}
       {phase === 'auth-gate' && (
-        <AuthGuard
-          fallback={
-            <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
-              {/* Branded loading — shown during anonymous auth resolution (~3-4s) */}
-              <div className="flex flex-col items-center gap-3 animate-pulse">
-                <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
-                  <span className="text-2xl font-black text-primary/40">JB</span>
-                </div>
-                <div className="space-y-1.5 text-center">
-                  <div className="h-2.5 w-40 rounded-full bg-muted-foreground/20" />
-                  <div className="h-2 w-28 rounded-full bg-muted-foreground/10 mx-auto" />
-                </div>
-              </div>
-              <p className="text-[11px] text-muted-foreground/50 uppercase tracking-widest">
-                Securing your session…
-              </p>
-            </div>
-          }
-        >
-          {() => <AuthAutoAdvance onReady={handleAuthConfirmed} />}
-        </AuthGuard>
+        <AuthOrAnon onReady={handleAuthConfirmed} />
       )}
       {phase === 'rescan-check' && (
         <RescanDetector

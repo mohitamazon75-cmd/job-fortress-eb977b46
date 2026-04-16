@@ -23,6 +23,20 @@ export default function RescanDetector({ onViewPrevious, onStartNew }: RescanDet
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // If the user has pending input (was mid-upload before auth), skip straight to new scan.
+    // Without this, returning from /auth after uploading a resume shows the old-account scans,
+    // which is confusing — the user clearly wants to start fresh with their new resume.
+    try {
+      const pending = sessionStorage.getItem('jb_pending_input');
+      if (pending) {
+        const parsed = JSON.parse(pending);
+        if (parsed?.hasResume || parsed?.linkedinUrl) {
+          onStartNew();
+          return;
+        }
+      }
+    } catch { /* non-fatal */ }
+
     (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
