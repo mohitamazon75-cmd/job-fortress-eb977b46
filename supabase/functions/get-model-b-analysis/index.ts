@@ -1,6 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createAdminClient } from "../_shared/supabase-client.ts";
-import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 
 
@@ -31,6 +30,26 @@ Deno.serve(async (req) => {
 
     const supabase = createAdminClient();
 
+    const { data: scan, error: scanError } = await supabase
+      .from("scans")
+      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url")
+      .eq("id", analysis_id)
+      .maybeSingle();
+
+    if (scanError || !scan) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Analysis not found" }),
+        { status: 404, headers: jsonHeaders }
+      );
+    }
+
+    if (scan.user_id && scan.user_id !== user_id) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Forbidden" }),
+        { status: 403, headers: jsonHeaders }
+      );
+    }
+
     // ─── Check cache / completed results ───
     // TTL: card_data older than 2 hours is considered stale and will regenerate.
     // This ensures fresh analysis when users rescan with new resumes, and
@@ -40,6 +59,7 @@ Deno.serve(async (req) => {
       .from("model_b_results")
       .select("*")
       .eq("analysis_id", analysis_id)
+      .eq("user_id", user_id)
       .not("card_data", "is", null)
       .maybeSingle();
 
@@ -63,7 +83,8 @@ Deno.serve(async (req) => {
       console.log(`[model-b] Cache STALE for ${analysis_id} (age: ${Math.round(cacheAge / 60000)}min) — regenerating`);
       await supabase.from("model_b_results")
         .update({ card_data: null, gemini_raw: null })
-        .eq("analysis_id", analysis_id);
+        .eq("analysis_id", analysis_id)
+        .eq("user_id", user_id);
     }
 
     // ─── If polling, check if processing is in progress ───
@@ -72,6 +93,7 @@ Deno.serve(async (req) => {
         .from("model_b_results")
         .select("id, card_data")
         .eq("analysis_id", analysis_id)
+        .eq("user_id", user_id)
         .maybeSingle();
 
       if (pending && !pending.card_data) {
@@ -89,24 +111,6 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ success: true, status: "not_started" }),
         { headers: jsonHeaders }
-      );
-    }
-
-    // ─── Get resume text from scans table ───
-    // P-2-A: Select only the columns extractResumeText() and extractCity() actually use.
-    // Previously select("*") fetched the full row including all agent outputs,
-    // access_token, pgvector embeddings, etc. — up to 200KB of JSON per call.
-    // These 5 columns cover all code paths in extractResumeText() and extractCity().
-    const { data: scan, error: scanError } = await supabase
-      .from("scans")
-      .select("final_json_report, role_detected, industry, years_experience, linkedin_url")
-      .eq("id", analysis_id)
-      .maybeSingle();
-
-    if (scanError || !scan) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Analysis not found" }),
-        { status: 404, headers: jsonHeaders }
       );
     }
 
@@ -398,6 +402,7 @@ async function processAnalysis(
       job_match_count: insertPayload.job_match_count,
     })
     .eq("analysis_id", analysisId)
+    .eq("user_id", userId)
     .select("*")
     .single();
 
