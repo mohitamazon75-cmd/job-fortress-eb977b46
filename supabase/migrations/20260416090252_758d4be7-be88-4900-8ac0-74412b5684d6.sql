@@ -1,0 +1,1 @@
+UPDATE public.model_b_results SET card_data = null, gemini_raw = null WHERE card_data IS NOT NULL;
