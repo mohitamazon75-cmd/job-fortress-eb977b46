@@ -4,6 +4,8 @@ import { Plus, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport } from '@/lib/scan-engine';
 
+const PENDING_SCAN_MODE_KEY = 'jb_pending_scan_mode';
+
 interface PreviousScan {
   id: string;
   role_detected: string | null;
@@ -27,7 +29,8 @@ export default function RescanDetector({ onViewPrevious, onStartNew }: RescanDet
     try {
       const lsIntent = localStorage.getItem('jb_fresh_scan_intent');
       const ssPending = sessionStorage.getItem('jb_pending_input');
-      const hasPendingWork = lsIntent === '1' || Boolean(ssPending);
+      const pendingMode = localStorage.getItem(PENDING_SCAN_MODE_KEY);
+      const hasPendingWork = lsIntent === '1' || Boolean(ssPending) || pendingMode === 'resume' || pendingMode === 'linkedin';
       if (hasPendingWork) {
         localStorage.removeItem('jb_fresh_scan_intent');
         onStartNew();

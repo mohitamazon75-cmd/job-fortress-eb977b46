@@ -64,6 +64,8 @@ function createScanCheckClient(accessToken: string) {
   });
 }
 
+const PENDING_SCAN_MODE_KEY = 'jb_pending_scan_mode';
+
 // CQ-3-A: insight-cards | crisis-center | startup-autopsy | market-radar removed (permanently unreachable).
 // Features from these phases are now in ResultsModelB Tools tab.
 type AppPhase = 'hero' | 'input-method' | 'auth-gate' | 'rescan-check' | 'onboarding' | 'processing' | 'seven-cards' | 'money-shot' | 'reveal' | 'thank-you' | 'error';
@@ -305,10 +307,26 @@ const Index = () => {
     }
   }, []);
 
+  const getPendingScanMode = useCallback((): 'resume' | 'linkedin' | null => {
+    try {
+      const mode = localStorage.getItem(PENDING_SCAN_MODE_KEY);
+      return mode === 'resume' || mode === 'linkedin' ? mode : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const clearPendingScanIntent = useCallback(() => {
+    try { sessionStorage.removeItem('jb_pending_input'); } catch {}
+    try { localStorage.removeItem('jb_fresh_scan_intent'); } catch {}
+    try { localStorage.removeItem(PENDING_SCAN_MODE_KEY); } catch {}
+  }, []);
+
   const hasPendingResumeIntent = useCallback(() => {
     const pending = getPendingInputContext();
-    return Boolean(pending?.hasResume);
-  }, [getPendingInputContext]);
+    const pendingMode = getPendingScanMode();
+    return Boolean(pending?.hasResume || pendingMode === 'resume');
+  }, [getPendingInputContext, getPendingScanMode]);
 
   // On mount: restore input context if returning from OAuth redirect.
   // Keep the pending marker until auth is confirmed so we can skip old-scan restore.
@@ -316,15 +334,16 @@ const Index = () => {
     if (routedScanId) return;
 
     const pendingInput = getPendingInputContext();
-    if (!pendingInput) return;
+    const pendingMode = getPendingScanMode();
+    if (!pendingInput && !pendingMode) return;
 
-    if (pendingInput.linkedinUrl) setLinkedinUrl(pendingInput.linkedinUrl);
-    if (pendingInput.hasResume && !resumeFileRef.current) {
+    if (pendingInput?.linkedinUrl) setLinkedinUrl(pendingInput.linkedinUrl);
+    if ((pendingInput?.hasResume || pendingMode === 'resume') && !resumeFileRef.current) {
       console.warn('Resume file lost after redirect — user will need to re-upload');
     }
 
     setPhase('auth-gate');
-  }, [getPendingInputContext, routedScanId, setLinkedinUrl, setPhase, resumeFileRef]);
+  }, [getPendingInputContext, getPendingScanMode, routedScanId, setLinkedinUrl, setPhase, resumeFileRef]);
 
 
 
@@ -369,6 +388,7 @@ const Index = () => {
       setMetroTier('');
       setKeySkills('');
       try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true })); } catch {}
+      try { localStorage.setItem(PENDING_SCAN_MODE_KEY, 'resume'); } catch {}
       // Reset scan state then go straight to auth-gate (auth already exists)
       setScanReport(null);
       setScanId('');
@@ -390,6 +410,7 @@ const Index = () => {
     // Persist so OAuth redirect can restore context and skip old-scan recovery.
     try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ linkedinUrl: url })); } catch {}
     try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
+    try { localStorage.setItem(PENDING_SCAN_MODE_KEY, 'linkedin'); } catch {}
     setPhase('auth-gate');
   };
 
@@ -406,6 +427,7 @@ const Index = () => {
     setStep(1);
     try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true })); } catch {}
     try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
+    try { localStorage.setItem(PENDING_SCAN_MODE_KEY, 'resume'); } catch {}
     setPhase('auth-gate');
   };
 
@@ -456,6 +478,7 @@ const Index = () => {
     if (fromStep <= 1) {
       setLinkedinUrl('');
       resumeFileRef.current = null;
+      clearPendingScanIntent();
       setPhase('input-method');
     } else {
       setStep(fromStep - 1);
@@ -520,7 +543,7 @@ const Index = () => {
         console.error('Resume upload failed:', err);
         toast.error(err instanceof Error ? err.message : 'Resume upload failed. Please try again.');
         setPhase('input-method');
-        return;
+        return false;
       }
     }
 
@@ -530,8 +553,9 @@ const Index = () => {
     if (!trigger.accepted) {
       console.warn('Scan trigger rejected:', trigger.reason, trigger.error);
       setPhase('error');
-      return;
+      return false;
     }
+    return true;
   }, [track, navigate]);
 
 
@@ -595,7 +619,10 @@ const Index = () => {
         }
         setScanId(id);
         setAccessToken(token);
-        await startScanPipeline(id, token, true);
+        const started = await startScanPipeline(id, token, true);
+        if (started) {
+          clearPendingScanIntent();
+        }
       } catch (err) {
         console.error('Scan creation failed:', err);
         setPhase('error');
@@ -635,6 +662,7 @@ const Index = () => {
     setScanReport(null);
     setMoneyShotSeen(false);
     resumeFileRef.current = null;
+    clearPendingScanIntent();
   };
 
   // FIX 1 (HIGH): Remove duplicate session state — use useAuth() hook instead
