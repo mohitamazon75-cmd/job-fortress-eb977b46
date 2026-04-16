@@ -5,7 +5,7 @@ function sanitizeFilename(name: string): string {
   return name
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w.\-]/g, "_")
+    .replace(/[^\w.-]/g, "_")
     .replace(/_+/g, "_")
     .replace(/^_|_$/g, "");
 }
