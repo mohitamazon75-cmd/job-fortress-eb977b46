@@ -389,8 +389,12 @@ const Index = () => {
   const handleResumeSubmit = async (file: File) => {
     resumeFileRef.current = file;
     track('input_method_selected', { method: 'resume' });
-    // Persist in BOTH storages: sessionStorage for same-session restoration,
-    // localStorage for surviving OAuth redirects (incognito-safe within session)
+    // CRITICAL: Clear stale industry/years from previous scan so process-scan
+    // doesn't get biased toward old profile data (e.g. Marketing when uploading
+    // an engineering resume). This is the root cause of "same old results" bug.
+    setIndustry('');
+    setYearsExperience('');
+    setStep(1);
     try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true })); } catch {}
     try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
     setPhase('auth-gate');
@@ -404,6 +408,9 @@ const Index = () => {
 
   // Called when user wants to proceed with a new scan (from rescan check or directly)
   const handleProceedNewScan = () => {
+    // Clear stale onboarding values so new scan starts fresh
+    setIndustry('');
+    setYearsExperience('');
     setPhase('onboarding');
     setStep(1);
   };
