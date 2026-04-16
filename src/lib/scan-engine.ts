@@ -12,6 +12,12 @@ function createScanClient(accessToken: string) {
   });
 }
 
+function isAnonymousSession(session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']) {
+  const user = session?.user;
+  if (!user) return false;
+  return Boolean((user as { is_anonymous?: boolean }).is_anonymous || (!user.email && !user.phone));
+}
+
 // ─────────────────────────────────────────────────────────────
 // Issue #8: Safe ScanReport parsing helper
 // ─────────────────────────────────────────────────────────────
@@ -333,10 +339,14 @@ export async function createScan(params: {
   keySkills?: string;
   estimatedMonthlySalaryInr?: number | null; // Optional CTC — improves Replacement Invoice accuracy
 }): Promise<{ id: string; accessToken: string; triggered?: boolean }> {
-  // Check if user is authenticated to associate scan with user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { session }, error: authError } = await supabase.auth.getSession();
   if (authError) {
     throw new Error('Authentication check failed. Please sign in again.')
+  }
+
+  const user = session?.user ?? null;
+  if (!user || isAnonymousSession(session)) {
+    throw new Error('Please sign in with email or Google before starting a new analysis.');
   }
 
   // ── Use the create-scan edge function (service role) to bypass RLS ──
@@ -428,6 +438,10 @@ export async function uploadResume(file: File, scanId: string): Promise<string> 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
     throw new Error('Your session expired before the resume upload completed. Please try again.');
+  }
+
+  if (isAnonymousSession(session)) {
+    throw new Error('Please sign in with email or Google before uploading a new resume.');
   }
 
   const formData = new FormData();
