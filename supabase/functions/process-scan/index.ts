@@ -134,7 +134,12 @@ Deno.serve(async (req) => {
         generateMilestones: "failed",
       },
     };
-    const { data: scan, error: scanErr } = await supabase.from("scans").select("*").eq("id", scanId).single();
+    // P-1-A: Narrow select — process-scan uses only these 9 columns from the scan row.
+    // Previously select("*") fetched ~25 columns including final_json_report (50–200KB
+    // from a previous scan on rescans) that was immediately discarded.
+    const { data: scan, error: scanErr } = await supabase.from("scans")
+      .select("id, user_id, scan_status, access_token, linkedin_url, resume_file_path, resume_filename, industry, years_experience, metro_tier, country, enrichment_cache, final_json_report")
+      .eq("id", scanId).single();
     if (scanErr || !scan) {
       return new Response(JSON.stringify({ error: "Scan not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }

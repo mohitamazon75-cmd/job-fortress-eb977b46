@@ -110,6 +110,8 @@ Deno.serve(async (req) => {
     }
 
     // ─── Create placeholder row to signal "processing" ───
+    // P-4-A: .select("id") instead of bare .select() — the full row (card_data + gemini_raw
+    // can be 300KB+) was being fetched and immediately discarded. Only id is needed.
     await supabase
       .from("model_b_results")
       .upsert({
@@ -123,7 +125,7 @@ Deno.serve(async (req) => {
         job_match_count: null,
         gemini_raw: null,
       }, { onConflict: "analysis_id" })
-      .select()
+      .select("id")
       .single();
 
     // ─── Launch background AI processing ───
