@@ -83,12 +83,17 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
   const corsHeaders = getCorsHeaders(req);
   let globalTimer: ReturnType<typeof setTimeout> | undefined;
+  // Hoist scanId outside the try block so the catch-handler can mark the row as failed
+  // without needing to re-read req.body (which has already been consumed by req.json()).
+  // Previously the recovery path called `req.clone().json()` which throws "Body is unusable".
+  let scanId: string | undefined;
+  let forceRefresh: boolean | undefined;
 
   try {
     const blocked = guardRequest(req, corsHeaders);
     if (blocked) return blocked;
 
-    const { scanId, forceRefresh } = await req.json();
+    ({ scanId, forceRefresh } = await req.json());
     if (!scanId) {
       return new Response(JSON.stringify({ error: "scanId is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -315,13 +320,18 @@ Deno.serve(async (req) => {
     );
     const resolvedRoleHint = parsedLinkedinRole || linkedinInference.inferredRoleHint || "Unknown";
 
-    // Extract manual key skills from enrichment_cache (provided by manual-path users)
-    const manualKeySkills = (scan.enrichment_cache as any)?.key_skills || null;
+    // Extract manual key skills from enrichment_cache (provided by manual-path users).
+    // Shape varies by client: create-scan stores an array, older flows stored a comma-separated string.
+    // Normalize to string array defensively to avoid `.split is not a function` runtime errors.
+    const manualKeySkills = (scan.enrichment_cache as any)?.key_skills ?? null;
 
     // ── A1 FIX: Fuzzy-match manual skills to KG entries ──
     let manualMatchedSkills: string[] = [];
     if (manualKeySkills && !scan.linkedin_url && !hasResume) {
-      const rawSkills = manualKeySkills.split(/[,;\n]+/).map((s: string) => s.trim().toLowerCase()).filter((s: string) => s.length > 1);
+      const rawSkills: string[] = (Array.isArray(manualKeySkills)
+        ? manualKeySkills.map((s) => String(s ?? ""))
+        : String(manualKeySkills).split(/[,;\n]+/)
+      ).map((s: string) => s.trim().toLowerCase()).filter((s: string) => s.length > 1);
       if (rawSkills.length > 0) {
         // P-4-B: Use KG in-memory skill list — avoids a full skill_risk_matrix
         // table scan. The KG singleton is already loaded for role lookups.
@@ -1050,12 +1060,11 @@ Deno.serve(async (req) => {
     trackUsage("process-scan", true).catch(() => {});
 
     try {
-      const supabase = createAdminClient();
-      const body = await req.clone().json().catch(() => ({}));
-      if (body.scanId) {
-        const { data: current } = await supabase.from("scans").select("scan_status").eq("id", body.scanId).single();
+      if (scanId) {
+        const supabase = createAdminClient();
+        const { data: current } = await supabase.from("scans").select("scan_status").eq("id", scanId).single();
         if (current?.scan_status !== "complete") {
-          await supabase.from("scans").update({ scan_status: "failed" }).eq("id", body.scanId);
+          await supabase.from("scans").update({ scan_status: "failed" }).eq("id", scanId);
         }
       }
     } catch (recoveryErr) {
