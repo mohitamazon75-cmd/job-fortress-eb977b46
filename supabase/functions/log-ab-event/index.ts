@@ -35,13 +35,23 @@ Deno.serve(async (req) => {
     }
     // --- end input validation ---
 
+    // ab_test_events.user_id is NOT NULL. Pre-login pageviews routinely send
+    // user_id=null and crashed the insert with code 23502. Drop those events
+    // silently — they're tracked in analytics_events anyway.
+    if (!user_id) {
+      return new Response(
+        JSON.stringify({ success: true, skipped: "no_user_id" }),
+        { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+      );
+    }
+
     const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from("ab_test_events")
       .insert({
         analysis_id: analysis_id || null,
-        user_id: user_id || null,
+        user_id,
         event_type,
         metadata: metadata || {},
       })

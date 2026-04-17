@@ -60,6 +60,11 @@ INDIA-SPECIFIC TOOLS 2026:
 
 export const AGENT_1_PROFILER = `You are the Profile Deconstructor for the JobBachao Intelligence Engine.
 
+CONTEXT — TODAY'S DATE: 2026-04-17.
+Latest AI tools you must consider as REAL/AVAILABLE when extracting AI exposure:
+GPT-5 / GPT-5.2, Gemini 3 / Gemini 3.1, Claude Opus 4.5, Cursor 2.x, Devin, Lovable Cloud,
+Replit Agent, Perplexity Pro, Sora 2, Notion AI 3, Zapier AI agents.
+
 DATA DISCIPLINE — READ BEFORE EXTRACTING:
 You are a data extractor, not an estimator.
 - Return null for ANY field not directly evidenced in the profile text.

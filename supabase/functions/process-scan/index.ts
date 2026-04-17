@@ -48,6 +48,10 @@ import { recordScoreHistory, getPreviousScore } from "../_shared/score-history.t
 import { Agent1Schema, clampAgent1Output, validateAgentOutput, checkAutomationSignalConsistency } from "../_shared/zod-schemas.ts";
 import { getPromptVersion } from "../_shared/prompt-versions.ts";
 import { findCachedScan } from "../_shared/scan-cache.ts";
+// Static top-level import — was previously dynamic-only inside a try/catch,
+// which left `getKG` undefined for the manual-skill matching path below
+// (line ~340) and crashed every manual scan with `getKG is not defined`.
+import { getKG } from "../_shared/riskiq-knowledge-graph.ts";
 import { MAX_CONCURRENT_SCANS, MODELS } from "../_shared/constants.ts";
 import {
   updateScan,
@@ -255,7 +259,6 @@ Deno.serve(async (req) => {
     // kg-refresh and kg-node-updater write to kg_node_overrides table weekly.
     // Without this call, every scan ignores all DB-stored KG updates. Non-fatal.
     try {
-      const { getKG } = await import("../_shared/riskiq-knowledge-graph.ts");
       const kgInstance = getKG();
       const { applied: kgApplied } = await loadKGOverrides(supabase, kgInstance);
       if (kgApplied > 0) {
