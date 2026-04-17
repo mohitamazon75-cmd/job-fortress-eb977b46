@@ -774,9 +774,9 @@ Deno.serve(async (req) => {
       if (!ind) return false;
       return r === `${ind} professional` || r === `${ind} specialist` || r === ind;
     };
-    const agent1Role = isLazyIndustryEcho(agent1?.current_role) ? null : agent1?.current_role;
+    const agent1RoleClean = isLazyIndustryEcho(agent1?.current_role) ? null : agent1?.current_role;
     const hintRole = isLazyIndustryEcho(resolvedRoleHint) ? null : resolvedRoleHint;
-    const rawDetectedRole = verbatimParsedTitle || agent1Role || hintRole;
+    const rawDetectedRole = verbatimParsedTitle || agent1RoleClean || hintRole;
     // Final fallback: synthesize from seniority + a meaningful skill, not from industry echo.
     const seniorityWord = normalizedExperienceYears && normalizedExperienceYears >= 12 ? "Senior"
       : normalizedExperienceYears && normalizedExperienceYears >= 7 ? "Lead"
