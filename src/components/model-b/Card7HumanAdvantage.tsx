@@ -26,7 +26,7 @@ function WhatsAppCaptureBlock({ score }: { score: number }) {
     try {
       // Open WhatsApp with a pre-filled message — zero backend needed
       const msg = `Hi, I just scanned my career on JobBachao and got a score of ${score}/100. Please send me my weekly AI risk updates on WhatsApp. My number: +91${phone.replace(/\D/g,"")}`;
-      window.open(`https://wa.me/919999999999?text=${encodeURIComponent(msg)}`, "_blank");
+      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
       localStorage.setItem("jb_wa_subscribed", "1");
       setSubmitted(true);
     } finally {

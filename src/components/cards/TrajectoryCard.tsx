@@ -63,6 +63,7 @@ function ScoreBar({ label, score, max = 100, color, isUser = false }: {
 export default function TrajectoryCard({ analysisId, cardData }: { analysisId: string; cardData: any }) {
   const [trajectory, setTrajectory] = useState<TrajectoryData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     if (!analysisId) return;
@@ -74,6 +75,7 @@ export default function TrajectoryCard({ analysisId, cardData }: { analysisId: s
         if (data?.success) setTrajectory(data.data);
       } catch (e) {
         console.debug("[TrajectoryCard] fetch failed:", e);
+        setHasError(true);
       } finally {
         setLoading(false);
       }
@@ -86,7 +88,11 @@ export default function TrajectoryCard({ analysisId, cardData }: { analysisId: s
     </div>
   );
 
-  if (!trajectory) return null;
+  if (hasError || !trajectory) return (
+    <div style={{ padding: "20px 0", textAlign: "center", color: "var(--mb-ink3)", fontFamily: "'DM Sans',sans-serif", fontSize: 13 }}>
+      Trajectory data unavailable — rescan to compute your projection.
+    </div>
+  );
 
   const gap = trajectory.predicted_score_90d - trajectory.no_action_score_90d;
   const isImproving = gap > 2;

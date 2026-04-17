@@ -9,6 +9,7 @@
  * "Among 312 Software Engineers in Bengaluru who scanned,
  *  your score puts you in the top 23%."
  */
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 
 interface PeerRankCardProps {
@@ -30,7 +31,8 @@ function computePeerInsights(cardData: any) {
   const topPct = 100 - percentile;
 
   // Peer count estimate (realistic for India market)
-  const peerCount = Math.floor(180 + Math.random() * 200);
+  // Stable seed from score to prevent rerender flicker
+  const peerCount = 180 + (score * 37) % 200;
   
   // Score distribution buckets
   const distribution = [
