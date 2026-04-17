@@ -73,6 +73,24 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Hard-stop if the underlying scan never produced a usable report.
+    // Prevents model-b from spinning on failed/invalid_input scans and
+    // tells the frontend to surface a "rescan" CTA instead of looping.
+    if (
+      (scan.scan_status === "invalid_input" || scan.scan_status === "failed")
+      && !scan.final_json_report
+    ) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Original scan didn't complete. Please run a new scan.",
+          code: "SCAN_NOT_READY",
+          scan_status: scan.scan_status,
+        }),
+        { status: 409, headers: jsonHeaders }
+      );
+    }
+
     // ─── Check cache / completed results ───
     // TTL: card_data older than 2 hours is considered stale and will regenerate.
     // This ensures fresh analysis when users rescan with new resumes, and
