@@ -38,6 +38,24 @@ NEVER reference deprecated or renamed tools. Always use current (2025-2026) name
 - BANNED: "Google Assistant" (for AI work) → USE: "Gemini"
 - BANNED: "Notion AI" (as standalone) → Acceptable only as a feature of Notion
 If unsure whether a tool still exists under that name, use the category instead (e.g., "AI code assistants" rather than a specific deprecated product).
+
+AI THREAT MAP 2026 — INDIA CONTEXT (use these when naming threats by role):
+CODING: GitHub Copilot, Cursor AI, Devin (Cognition), Replit AI — these automate 40-70% of junior dev output
+DATA ANALYSIS: Julius AI, Google Gemini in Sheets/BigQuery, Databricks AI, Microsoft Fabric Copilot
+MARKETING/CONTENT: ChatGPT (GPT-5), Claude, Gemini, Jasper (still alive in enterprise), Perplexity for research
+DESIGN: Midjourney, Adobe Firefly, Figma AI (auto-layout, prototyping), Canva AI
+FINANCE: FinGPT, Bloomberg Terminal AI, Kensho (S&P), Microsoft Copilot for Excel
+LEGAL: Harvey AI, Casetext, LexisNexis AI
+HR/RECRUITMENT: Workday AI, Eightfold AI, Beamery
+CUSTOMER SUPPORT: Intercom Fin, Zendesk AI, Freshdesk Freddy
+SALES: Gong AI, Salesforce Einstein, Clay (AI prospecting)
+OPERATIONS: Microsoft Copilot, Notion AI, Zapier AI
+HEALTHCARE: Nuance DAX (clinical documentation), Viz.ai (radiology), PathAI
+
+INDIA-SPECIFIC TOOLS 2026:
+- Sarvam AI: Hindi/regional language LLM — threatens Tier-2 city BPO voice work
+- Krutrim: Ola's LLM targeting Indian enterprise — replaces document-heavy ops
+- Naukri AI: Automated job-matching is reducing recruiter value in IT services
 `;
 
 export const AGENT_1_PROFILER = `You are the Profile Deconstructor for the JobBachao Intelligence Engine.

@@ -268,7 +268,7 @@ async function processAnalysis(
     console.warn("[model-b] Live jobs pre-fetch failed (non-fatal, using LLM fallback):", jobErr);
   }
 
-  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext);
+  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, scan.role_detected || "", scan.industry || "");
 
   let cardData: Record<string, unknown> | null = null;
   let geminiRaw: unknown = null;
@@ -289,7 +289,7 @@ async function processAnalysis(
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.25,
+        temperature: 0.45, // Higher than 0.25 — psychological copy needs creative variation while JSON structure stays valid
         max_tokens: 12000,
       };
 
@@ -650,18 +650,34 @@ Examples:
 - https://www.naukri.com/jobs-in-mumbai?k=marketing+director+saas&experience=12
 Do NOT use role slugs in the path. Use ONLY /jobs-in-{city}?k={keywords} format.
 
+CROSS-CARD NARRATIVE CONTINUITY (CRITICAL — makes the report feel coherent, not disconnected):
+The 7 cards must form ONE story, not 7 separate reports. Apply these links:
+
+1. The skill named as the biggest threat in card1_risk.fear_hook MUST appear in card3_shield.skills as "critical-gap" or "buildable"
+2. The moat skill named in card1_risk.hope_bridge MUST appear in card3_shield.skills as "best-in-class" or "strong"
+3. The #1 pivot in card4_pivot.pivots[0] MUST directly reference skills from card3_shield.skills that are "strong" or "best-in-class"
+4. The job searches in card5_jobs MUST be in the same city/region as card2_market references
+5. card6_blindspots.blind_spots[0] (the most critical) MUST be the logical consequence of the gap identified in card1_risk.confrontation
+6. card7_human.advantages MUST reference the same specific skills as card3_shield.skills (level: best-in-class or strong)
+7. card7_human.twenty_four_hour_mission.action MUST be the immediate first step toward card4_pivot.pivots[0]
+
+The reader should feel: "everything I'm reading is about ME specifically" not "this could apply to any professional."
+
 OUTPUT: Return ONLY a valid JSON object. No markdown fences. Start with {`;
 }
 
 // ═══════════════════════════════════════════════════════════════
 // USER PROMPT — Full Schema with Psychology Fields
 // ═══════════════════════════════════════════════════════════════
-function buildUserPrompt(resumeText: string, userCity: string, liveJobsContext = ""): string {
+function buildUserPrompt(resumeText: string, userCity: string, liveJobsContext = "", detectedRole = "", detectedIndustry = ""): string {
   const cityInstruction = userCity === "India"
     ? "Location unknown. Use 'India' as location. Do not default to any specific city. Show companies from multiple Indian metros."
     : `The user is based in ${userCity}. Prioritize companies and job matches in ${userCity} and nearby metros. Only use Bangalore/Mumbai if the user is actually located there.`;
 
-  return `Analyse this resume for the Indian job market in April 2026. Apply the FULL psychological framework.
+  const roleCtx = detectedRole ? `\nDETECTED ROLE: ${detectedRole}${detectedIndustry ? ` | INDUSTRY: ${detectedIndustry}` : ""}\nCalibrate ALL salary bands, skill threats, and pivot paths to this specific role. Do NOT use Marketing/generic bands unless this IS a marketing role.` : "";
+  const now = new Date();
+  const monthYear = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  return `Analyse this resume for the Indian job market in ${monthYear}. Apply the FULL psychological framework.${roleCtx}
 
 RESUME:
 ${resumeText}
@@ -669,18 +685,51 @@ ${resumeText}
 USER LOCATION: ${userCity}
 ${cityInstruction}
 
-INDIA MARKET CONTEXT (cite specific numbers in your analysis):
-- India B2B SaaS market: $16.5B (2026), growing 26% CAGR
-- Average CPL India B2B: ₹800–₹2,000. Sub-₹100 CPL is exceptional (80x+ efficient)
-- Salary bands India 2026: Marketing Manager (10+ yrs) ₹18-28 LPA, Head of Demand Gen ₹22-35 LPA, VP Marketing ₹30-50 LPA, CMO ₹45-80 LPA
-- WEF: 63 of every 100 Indian workers need retraining by 2030
-- LinkedIn India: 45% increase in "AI + Marketing" job postings YoY
+INDIA MARKET CONTEXT — April 2026 (cite these specific numbers in your analysis):
+MACRO:
+- WEF Future of Jobs 2025: 63 of every 100 Indian workers need retraining by 2030
+- India added 8.9M tech jobs in 2025; AI/ML roles up 67% YoY [NASSCOM 2026]
+- Indian Generative AI market: $1.3B in 2026, growing at 42% CAGR [Deloitte India 2026]
+- LinkedIn India: AI-adjacent job postings up 45% YoY; pure execution role postings down 18%
+
+SALARY BANDS BY ROLE — India 2026 (use the band matching the user's actual role):
+Engineering roles: SWE L2 ₹12-22L | SWE L3 ₹20-38L | Staff/Principal ₹40-70L | EM ₹35-60L | VP Eng ₹60-110L
+Product roles: APM ₹12-22L | PM ₹20-40L | Senior PM ₹35-60L | Director PM ₹55-90L | CPO ₹80-150L
+Data roles: Data Analyst ₹8-18L | Senior DA ₹18-32L | Data Scientist ₹22-45L | ML Eng ₹30-60L | Head Data ₹55-90L
+Marketing roles: Marketing Manager ₹12-22L | Head Demand Gen ₹22-35L | VP Marketing ₹35-60L | CMO ₹50-90L
+Finance roles: CA/CFA ₹10-20L | Finance Manager ₹18-32L | CFO ₹50-100L
+Design roles: UI/UX Designer ₹8-18L | Senior Designer ₹18-32L | Design Lead ₹28-50L
+Operations/BPO: Ops Analyst ₹6-14L | Team Lead ₹12-22L | Ops Manager ₹18-32L
+Sales roles: SDR ₹8-16L | Account Executive ₹16-30L | Enterprise AE ₹28-55L | Sales Director ₹45-80L
+
+KEY INSIGHT: Use the band that matches the user's ACTUAL role extracted from their resume. Do NOT default to Marketing bands for non-marketing profiles.
+
+HIRING SIGNALS — India April 2026:
+- Naukri active job postings: 2.1M total, 340K+ tech roles
+- LinkedIn India job postings: up 12% QoQ in tech, down 8% in traditional analyst roles
+- Most in-demand: AI/ML (67% growth), Cloud Architecture (42% growth), Product Management (28% growth)
+- Declining demand: Manual QA testing (-31%), Basic data entry (-45%), Traditional copywriting (-38%)
 
 PSYCHOLOGICAL CALIBRATION:
 - This person is likely feeling anxious about AI disruption — validate that anxiety, then channel it into action
 - Use loss aversion: frame everything as "what you lose" not "what you gain"
 - Be specific with confrontations — generic advice ("upskill") is useless and patronizing
 - The tone should feel like a brutally honest senior mentor who genuinely cares — not a corporate HR bot
+
+SENIORITY-CALIBRATED FEAR TRIGGERS (apply based on detected role seniority):
+- ENTRY (0-3 yrs): Fear = "starting irrelevant" — "You haven't built a moat yet. That's fine. But the window is 18 months."
+- PROFESSIONAL (3-7 yrs): Fear = "being leapfrogged" — "Juniors with AI tools are doing what took you 3 years to learn. Speed is now the moat."
+- MANAGER (7-12 yrs): Fear = "becoming a middle-management cost centre" — "Your team size doesn't protect you. AI can manage a team of 5. What makes YOU the manager?"
+- SENIOR_LEADER (12-20 yrs): Fear = "experience devaluing faster than expected" — "20 years of pattern recognition is your edge. But only if the patterns still apply."  
+- EXECUTIVE (20+ yrs): Fear = "board-level irrelevance" — "Your network is your moat, not your title. AI will be in every boardroom by 2027."
+
+CITY-SPECIFIC TONE (apply based on user's city):
+- Bangalore: High-tech audience. They know the tools. Don't explain what GPT-4 is. Assume fluency.
+- Mumbai: Finance/media/consumer. ₹ framing lands harder. Career capital and brand matter more.
+- Delhi/NCR: Government/PSU/startup mix. Regulatory moat and stability framing resonates.
+- Hyderabad: IT services heavy. "Your current employer will automate this role first" hits harder here.
+- Pune: Manufacturing + IT services. Practical upskilling angle over status signalling.
+- Tier-2 cities (Ahmedabad, Jaipur, Indore etc): Remote-first opportunity framing — "geography is no longer a ceiling."
 
 Return a JSON object with EXACTLY these top-level keys:
 user, risk_score, shield_score, ats_avg, jobbachao_score, card1_risk, card2_market, card3_shield, card4_pivot, card5_jobs, card6_blindspots, card7_human
