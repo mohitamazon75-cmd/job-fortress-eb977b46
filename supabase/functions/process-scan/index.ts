@@ -592,10 +592,23 @@ Deno.serve(async (req) => {
           }
 
           // ── QUALITY GATES: Only reuse cached Agent1 if extraction quality is sufficient ──
+          // P0 fix: reject lazy "{Industry} Professional/Specialist" cached roles — they
+          // were polluting downstream cache for every new scan in the same industry.
           const cachedConfidence = cachedReport?.extraction_confidence || cachedReport?.rawExtractionQuality || "low";
           const cachedSkillCount = cachedReport?.all_skills?.length || 0;
           const cachedRole = cachedReport?.role || cachedReport?.role_detected || null;
-          const hasMinimumQuality = cachedConfidence !== "low" && cachedSkillCount >= 3 && cachedRole && cachedRole !== "Unknown" && cachedRole !== "Professional";
+          const indLower = (resolvedIndustry || "").trim().toLowerCase();
+          const cachedRoleLower = (cachedRole || "").trim().toLowerCase();
+          const isLazyCachedRole = !cachedRole
+            || cachedRole === "Unknown"
+            || cachedRole === "Professional"
+            || (indLower && (
+                 cachedRoleLower === `${indLower} professional`
+                 || cachedRoleLower === `${indLower} specialist`
+                 || cachedRoleLower === `${indLower} practitioner`
+                 || cachedRoleLower === indLower
+               ));
+          const hasMinimumQuality = cachedConfidence !== "low" && cachedSkillCount >= 3 && !isLazyCachedRole;
 
           if (cachedReport && cachedReport.all_skills?.length > 0 && hasMinimumQuality) {
             agent1 = {
