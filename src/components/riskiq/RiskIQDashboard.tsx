@@ -12,6 +12,7 @@ import remarkGfm from "remark-gfm";
 import type { RiskIQResult, RiskIQForm, DimensionScore, ThreatItem, PivotRole, SurvivalPhase } from "./RiskIQTypes";
 import { getTierColor, getTierBg, getTierHsl } from "./RiskIQTypes";
 import { getCoursesForSkills, getDefaultCourses, type CourseRecommendation } from "@/lib/india-course-map";
+import { buildResourceUrl } from "@/lib/resource-links";
 import { supabase } from "@/integrations/supabase/client";
 
 const fadeUp = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } } };
@@ -852,7 +853,7 @@ function UpskillContent({ recommendations }: { recommendations: CourseRecommenda
                 {rec.courses.map((course, ci) => (
                   <a
                     key={ci}
-                    href={course.url}
+                    href={buildResourceUrl(course.title, course.platform, 'course', course.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between py-2.5 px-3 rounded-lg border border-border hover:bg-muted/50 transition-colors group"

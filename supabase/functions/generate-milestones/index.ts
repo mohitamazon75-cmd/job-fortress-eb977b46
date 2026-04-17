@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
     const sb = createAdminClient();
 
     // Fetch the scan report
-    const { data: scanData, error: scanError } = await supabase
+    const { data: scanData, error: scanError } = await sb
       .from('scans')
       .select('final_json_report')
       .eq('id', scan_id)
@@ -211,7 +211,7 @@ Deno.serve(async (req) => {
     console.log("[generate-milestones] Processing scan:", scan_id, "for user:", user_id);
 
     // Generate milestones
-    const milestones = await generateMilestones(report, supabase);
+    const milestones = await generateMilestones(report, sb);
 
     // Insert milestones with idempotent handling (ON CONFLICT DO NOTHING)
     const milestoneInserts = milestones.map(m => ({
@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
       resource_url: m.resource_url,
     }));
 
-    const { error: insertError, data: insertData } = await supabase
+    const { error: insertError, data: insertData } = await sb
       .from('defense_milestones')
       .insert(milestoneInserts)
       .select();
