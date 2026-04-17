@@ -10,6 +10,7 @@ import Card4PivotPaths from "@/components/model-b/Card4PivotPaths";
 import Card5JobsTracker from "@/components/model-b/Card5JobsTracker";
 import Card6BlindSpots from "@/components/model-b/Card6BlindSpots";
 import Card7HumanAdvantage from "@/components/model-b/Card7HumanAdvantage";
+import Card0Verdict from "@/components/model-b/Card0Verdict";
 import PromptModal from "@/components/model-b/PromptModal";
 
 // Issue 1-A: Lazy-load the three highest-value previously-hidden features.
@@ -39,7 +40,7 @@ const LOADING_MESSAGES = [
 const STREAK_KEY = "jb_streak";
 const STREAK_DATE_KEY = "jb_streak_date";
 
-const TAB_LABELS = ["Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
+const TAB_LABELS = ["Verdict", "Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
 
 function useStreak() {
   const [streak, setStreak] = useState(1);
@@ -110,7 +111,7 @@ export default function ResultsModelB() {
   const [actionModal, setActionModal] = useState<{ title: string; promptText: string } | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [showSavePrompt, setShowSavePrompt] = useState(false); // show for any non-email user
   const [journeyDone, setJourneyDone] = useState(false);
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
@@ -142,7 +143,8 @@ export default function ResultsModelB() {
       const uid = user?.id || null;
       setUserId(uid);
       // Detect anonymous users (created by signInAnonymously) to show sign-in prompt
-      setIsAnonymous(!!(user?.is_anonymous || (user && !user.email && !user.phone)));
+      // Show save prompt if no email (anonymous or not logged in at all)
+      setShowSavePrompt(!user?.email);
 
       // First call triggers the background job
       const { data, error: fnError } = await supabase.functions.invoke("get-model-b-analysis", {
@@ -303,7 +305,7 @@ export default function ResultsModelB() {
   if (!analysisId) return null;
 
   // Progress is based on the 7 core content cards; Tools tab (index 7) is bonus
-  const progressPct = Math.min(100, ((Math.min(currentCard, 6) + 1) / 7) * 100);
+  const progressPct = Math.min(100, ((Math.min(currentCard, 8) + 1) / 9) * 100);
 
   const getTabState = (i: number) => {
     if (i === currentCard) return "active";
@@ -358,7 +360,7 @@ export default function ResultsModelB() {
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 16px 64px" }}>
 
         {/* ── Sign-in banner for anonymous users ── */}
-        {isAnonymous && cardData && (
+        {showSavePrompt && cardData && (
           <div style={{ background: "var(--mb-navy)", borderRadius: 14, padding: "14px 18px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <div>
               <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 800, color: "white", marginBottom: 2 }}>
@@ -490,24 +492,25 @@ export default function ResultsModelB() {
         {/* Main content */}
         {cardData && !loading && !error && (
           <>
-            {currentCard === 0 && <Card1RiskMirror cardData={cardData} onNext={() => handleTabChange(1)} monthlyScanCount={monthlyScanCount} />}
-            {currentCard === 1 && <Card2MarketRadar cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} />}
-            {currentCard === 2 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(1)} onNext={() => handleTabChange(3)} onUpgradePlan={() => {
+            {currentCard === 0 && <Card0Verdict cardData={cardData} onNext={() => handleTabChange(1)} />}
+            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} />}
+            {currentCard === 2 && <Card2MarketRadar cardData={cardData} onBack={() => handleTabChange(1)} onNext={() => handleTabChange(3)} />}
+            {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} onUpgradePlan={() => {
               logEvent("modal_opened", { source: "upgrade_plan" });
               setActionModal({
                 title: "60-Day Skill Upgrade Plan",
                 promptText: `Create a 60-day skill upgrade plan for ${cardData.user?.name} based on their resume.\n\nCurrent skills: ${(cardData.card3_shield?.skills || []).map((s: any) => s.name).join(", ")}\nSkill gaps: ${(cardData.card3_shield?.skills || []).filter((s: any) => s.level === "buildable" || s.level === "critical-gap").map((s: any) => s.name).join(", ")}\n\nFor each week:\n- Specific learning resources (free, India-accessible)\n- Practice exercises with measurable outcomes\n- Portfolio project milestones\n- Time estimates (assume 1hr/day on weekdays)`
               });
             }} />}
-            {currentCard === 3 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} />}
-            {currentCard === 4 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} analysisId={analysisId} />}
-            {currentCard === 5 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} />}
-            {currentCard === 6 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(5)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
+            {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} />}
+            {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
+            {currentCard === 6 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} />}
+            {currentCard === 7 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(6)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
 
-            {/* ── Issue 1-A: Tools tab (index 7) ─────────────────────────────────
+            {/* ── Tools tab (index 8) ─────────────────────────────────
                 Three fully-built features that were unreachable in the old flow.
                 Lazy-loaded — zero bundle cost until the user taps Tools. */}
-            {currentCard === 7 && (() => {
+            {currentCard === 8 && (() => {
               // Build a minimal ScanReport-shaped object from cardData so the
               // existing tool components (built for ScanReport) work without changes.
               const syntheticReport = {

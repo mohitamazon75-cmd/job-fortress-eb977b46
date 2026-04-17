@@ -108,15 +108,25 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             <span className="text-[10px] font-black uppercase tracking-[0.25em] text-primary leading-none mt-0.5">AI Career Intelligence</span>
           </div>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onStart}
-          className="px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-primary-foreground min-h-[44px]"
-          style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-primary)' }}
-        >
-          Get Started →
-        </motion.button>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <motion.a
+            href="/auth"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className="px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-foreground border border-border bg-background/80 min-h-[44px] flex items-center"
+          >
+            Sign In
+          </motion.a>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onStart}
+            className="px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-primary-foreground min-h-[44px]"
+            style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-primary)' }}
+          >
+            Get Started →
+          </motion.button>
+        </div>
       </motion.nav>
 
       {/* HERO */}
