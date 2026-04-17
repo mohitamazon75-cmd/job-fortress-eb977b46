@@ -19,6 +19,9 @@ import PromptModal from "@/components/model-b/PromptModal";
 const ScoreTrendCard  = lazy(() => import("@/components/cards/ScoreTrendCard"));
 const CareerGenomeDebate = lazy(() => import("@/components/dashboard/CareerGenomeDebate"));
 const ResumeWeaponizerCard = lazy(() => import("@/components/cards/ResumeWeaponizerCard"));
+const OfficePowerVocab = lazy(() => import("@/components/cards/OfficePowerVocab"));
+const SkillCompoundCalculator = lazy(() => import("@/components/cards/SkillCompoundCalculator"));
+const PeerRankCard = lazy(() => import("@/components/cards/PeerRankCard"));
 
 interface WeeklyIntelData {
   resources?: Array<{ title: string; url: string; type: string; time_commitment?: string }>;
@@ -597,6 +600,21 @@ export default function ResultsModelB() {
                     </div>
 
                   </Suspense>
+
+                  {/* Peer Rank Card */}
+                    <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
+                      <PeerRankCard cardData={cardData} />
+                    </div>
+
+                    {/* Skill Compound Calculator */}
+                    <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
+                      <SkillCompoundCalculator cardData={cardData} />
+                    </div>
+
+                    {/* Office Power Vocabulary */}
+                    <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
+                      <OfficePowerVocab cardData={cardData} />
+                    </div>
 
                   <button onClick={() => handleTabChange(0)} style={{ width: "100%", padding: "14px", background: "var(--mb-navy)", color: "white", border: "none", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>
                     ← Back to Risk Analysis
