@@ -321,10 +321,27 @@ Deno.serve(async (req) => {
       resource_url: m.resource_url,
     }));
 
+    // Upsert: insert new milestones, refresh resource_url on existing ones (e.g. after seeding catch-up)
     const { error: insertError, data: insertData } = await sb
       .from('defense_milestones')
-      .insert(milestoneInserts)
+      .upsert(milestoneInserts, { onConflict: 'user_id,scan_id,milestone_key', ignoreDuplicates: false })
       .select();
+
+    // Backfill: any existing rows for this scan with NULL resource_url get refreshed
+    try {
+      const { data: nullRows } = await sb
+        .from('defense_milestones')
+        .select('id, milestone_label')
+        .eq('scan_id', scan_id)
+        .is('resource_url', null);
+      if (nullRows && nullRows.length > 0) {
+        for (const row of nullRows) {
+          const url = await findResourceUrl(row.milestone_label as string, sb);
+          if (url) await sb.from('defense_milestones').update({ resource_url: url }).eq('id', row.id);
+        }
+        console.log(`[generate-milestones] Backfilled ${nullRows.length} resource URLs`);
+      }
+    } catch (e) { console.warn("[generate-milestones] Backfill failed:", e); }
 
     if (insertError) {
       console.error("[generate-milestones] Insert error:", insertError);
