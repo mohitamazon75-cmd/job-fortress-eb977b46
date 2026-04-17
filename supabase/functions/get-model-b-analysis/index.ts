@@ -43,11 +43,25 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Ownership: if the scan has no owner (created pre-auth), claim it for this user.
+    // Only forbid if the scan is owned by a *different* user.
     if (scan.user_id && scan.user_id !== user_id) {
       return new Response(
         JSON.stringify({ success: false, error: "Forbidden" }),
         { status: 403, headers: jsonHeaders }
       );
+    }
+    if (!scan.user_id) {
+      const { error: claimErr } = await supabase
+        .from("scans")
+        .update({ user_id })
+        .eq("id", analysis_id)
+        .is("user_id", null);
+      if (claimErr) {
+        console.warn("[model-b] failed to claim anonymous scan", claimErr);
+      } else {
+        scan.user_id = user_id;
+      }
     }
 
     // ─── Check cache / completed results ───
