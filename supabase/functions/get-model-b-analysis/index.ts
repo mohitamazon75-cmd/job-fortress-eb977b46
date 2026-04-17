@@ -168,7 +168,8 @@ Deno.serve(async (req) => {
     // ─── Launch background AI processing ───
     const processPromise = processAnalysis(
       supabase, LOVABLE_API_KEY, analysis_id, user_id,
-      resume_filename, resumeText, userCity
+      resume_filename, resumeText, userCity,
+      scan.role_detected || "", scan.industry || ""
     );
 
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
@@ -212,6 +213,8 @@ async function processAnalysis(
   resumeFilename: string,
   resumeText: string,
   userCity: string,
+  detectedRole = "",
+  detectedIndustry = "",
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
@@ -268,7 +271,7 @@ async function processAnalysis(
     console.warn("[model-b] Live jobs pre-fetch failed (non-fatal, using LLM fallback):", jobErr);
   }
 
-  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, scan.role_detected || "", scan.industry || "");
+  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry);
 
   let cardData: Record<string, unknown> | null = null;
   let geminiRaw: unknown = null;
