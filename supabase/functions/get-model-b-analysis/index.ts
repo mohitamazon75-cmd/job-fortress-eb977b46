@@ -271,7 +271,7 @@ async function processAnalysis(
     console.warn("[model-b] Live jobs pre-fetch failed (non-fatal, using LLM fallback):", jobErr);
   }
 
-  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, scan.role_detected || "", scan.industry || "");
+  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry);
 
   let cardData: Record<string, unknown> | null = null;
   let geminiRaw: unknown = null;
