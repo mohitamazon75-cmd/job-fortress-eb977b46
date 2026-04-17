@@ -136,7 +136,8 @@ export default function ResultsModelB() {
       'pivot_expanded','plan_action_checked','share_whatsapp','share_linkedin',
       'rescan_initiated','outcome_reported','tool_opened'];
     if (validActionTypes.includes(event_type)) {
-      supabase.from('user_action_signals').insert({
+      // Fire-and-forget insert to user_action_signals (table not yet in generated types).
+      (supabase.from as any)('user_action_signals').insert({
         scan_id: analysisId,
         action_type: event_type,
         action_payload: metadata || {},
@@ -144,7 +145,7 @@ export default function ResultsModelB() {
         scan_industry: cardData?.user?.industry || null,
         scan_score: cardData?.jobbachao_score || null,
         scan_city: cardData?.user?.location || null,
-      }).then(() => {}).catch(() => {}); // fire and forget
+      }).then(() => {}, () => {});
     }
     try {
       await supabase.functions.invoke("log-ab-event", {
