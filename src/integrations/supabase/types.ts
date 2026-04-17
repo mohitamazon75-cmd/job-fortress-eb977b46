@@ -1158,8 +1158,10 @@ export type Database = {
           created_at: string | null
           estimated_hours: number | null
           id: string
+          last_verified_at: string
           platform: string | null
           skill_category: string
+          source: string | null
           title: string
           url: string
         }
@@ -1167,8 +1169,10 @@ export type Database = {
           created_at?: string | null
           estimated_hours?: number | null
           id?: string
+          last_verified_at?: string
           platform?: string | null
           skill_category: string
+          source?: string | null
           title: string
           url: string
         }
@@ -1176,8 +1180,10 @@ export type Database = {
           created_at?: string | null
           estimated_hours?: number | null
           id?: string
+          last_verified_at?: string
           platform?: string | null
           skill_category?: string
+          source?: string | null
           title?: string
           url?: string
         }
