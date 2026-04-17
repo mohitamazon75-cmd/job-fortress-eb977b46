@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface HeroSectionProps {
   onStart: () => void;
+  onStartWithRole?: (role: string) => void;
 }
 
 // Glitch text effect
@@ -60,7 +61,7 @@ function LivePulse({ count, label }: { count: number; label: string }) {
   );
 }
 
-export default function HeroSection({ onStart }: HeroSectionProps) {
+export default function HeroSection({ onStart, onStartWithRole }: HeroSectionProps) {
   const BASE_COUNT = 5247;
   const [scanCount, setScanCount] = useState<number | null>(BASE_COUNT);
 
@@ -210,7 +211,7 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             {['Software Engineer', 'Product Manager', 'Data Analyst', 'Marketing Pro', 'Finance / CA', 'Designer'].map((role) => (
               <button
                 key={role}
-                onClick={onStart}
+                onClick={() => onStartWithRole ? onStartWithRole(role) : onStart()}
                 className="px-3 py-1.5 rounded-full text-xs font-bold border border-border bg-card hover:border-primary/40 hover:bg-primary/5 hover:text-primary transition-all duration-200 text-muted-foreground"
               >
                 {role}

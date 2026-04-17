@@ -92,7 +92,21 @@ Deno.serve(async (req) => {
       : currentScore;
 
     // 4. Compute decay
-    const monthlyDecay = DECAY_RATES[industry] ?? DECAY_RATES.default;
+    // Fuzzy industry matching — handles LLM variations like "FMCG", "Ad Tech", "SaaS"
+    const normalised = industry.toLowerCase();
+    const monthlyDecay = (() => {
+      if (normalised.includes("market") || normalised.includes("advertis") || normalised.includes("fmcg") || normalised.includes("brand")) return DECAY_RATES["Marketing & Advertising"];
+      if (normalised.includes("it") || normalised.includes("software") || normalised.includes("tech") || normalised.includes("saas") || normalised.includes("startup")) return DECAY_RATES["IT Services"];
+      if (normalised.includes("bank") || normalised.includes("finance") || normalised.includes("fintech") || normalised.includes("insurance")) return DECAY_RATES["Banking & Finance"];
+      if (normalised.includes("ecommerce") || normalised.includes("e-commerce") || normalised.includes("retail") || normalised.includes("commerce")) return DECAY_RATES["E-commerce & Retail"];
+      if (normalised.includes("consult")) return DECAY_RATES["Consulting"];
+      if (normalised.includes("media") || normalised.includes("entertainment") || normalised.includes("content")) return DECAY_RATES["Media & Entertainment"];
+      if (normalised.includes("manufactur")) return DECAY_RATES["Manufacturing"];
+      if (normalised.includes("educat") || normalised.includes("edtech") || normalised.includes("learn")) return DECAY_RATES["Education"];
+      if (normalised.includes("health") || normalised.includes("medic") || normalised.includes("pharma") || normalised.includes("hospital")) return DECAY_RATES["Healthcare"];
+      if (normalised.includes("legal") || normalised.includes("law")) return DECAY_RATES["Legal"];
+      return DECAY_RATES.default;
+    })();
 
     // 5. Compute action uplift from signals
     const signalTypes = (signals || []).map((s: any) => s.action_type);

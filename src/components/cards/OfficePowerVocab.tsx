@@ -62,7 +62,16 @@ const SITUATIONS = [
 ];
 
 export default function OfficePowerVocab({ cardData }: { cardData?: any }) {
-  const [filter, setFilter] = useState("all");
+  // Default to most relevant situation based on user's role and years
+  const getDefaultFilter = () => {
+    const title = (cardData?.user?.current_title || "").toLowerCase();
+    const years = parseInt(cardData?.user?.years_experience || "0");
+    if (years >= 8 || title.includes("lead") || title.includes("manager") || title.includes("director")) return "leadership";
+    if (title.includes("data") || title.includes("analyst") || title.includes("bi")) return "data";
+    if (title.includes("finance") || title.includes("ca") || title.includes("account")) return "negotiation";
+    return "all";
+  };
+  const [filter, setFilter] = useState(getDefaultFilter);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
 

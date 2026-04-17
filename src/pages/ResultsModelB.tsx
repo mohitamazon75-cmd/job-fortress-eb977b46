@@ -135,7 +135,8 @@ export default function ResultsModelB() {
     const validActionTypes = ['card_viewed','job_clicked','skill_selected','vocab_copied',
       'pivot_expanded','plan_action_checked','share_whatsapp','share_linkedin',
       'rescan_initiated','outcome_reported','tool_opened'];
-    if (validActionTypes.includes(event_type)) {
+    if (validActionTypes.includes(event_type) && analysisId) {
+      // Guard: only insert when we have an analysisId (prevents orphaned signals)
       supabase.from('user_action_signals').insert({
         scan_id: analysisId,
         action_type: event_type,

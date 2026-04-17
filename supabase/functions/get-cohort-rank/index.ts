@@ -16,7 +16,7 @@ Deno.serve(async (req: Request) => {
 
     // Try materialized view first (fast)
     const { data: cohortRows } = await supabase
-      .from('cohort_percentiles')
+      .from('cohort_cache')
       .select('city_percentile, national_percentile, cohort_size, metro_tier')
       .eq('role_detected', role ?? '')
       .order('determinism_index', { ascending: false })

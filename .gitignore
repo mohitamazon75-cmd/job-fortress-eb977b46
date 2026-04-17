@@ -34,3 +34,5 @@ src/_archive/
 
 # Stale design artifact at root
 hero-blueprint-card.jsx
+vite.config.ts.timestamp-*
+vitest.config.ts.timestamp-*

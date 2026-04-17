@@ -22,7 +22,7 @@ export default function LivingScoreCard({ userId, baseScore, role }: LivingScore
   useEffect(() => {
     async function fetchDrift() {
       try {
-        const { data: res } = await supabase.functions.invoke('score-drift', {
+        const { data: res, error: driftErr } = await supabase.functions.invoke('score-drift', {
           body: { userId },
         });
         if (res && Math.abs(res.drift) >= 0.5) {

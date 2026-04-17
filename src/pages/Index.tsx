@@ -403,6 +403,22 @@ const Index = () => {
     setPhase('input-method');
   };
 
+  // Role chip on landing page — pre-fills industry for a smoother onboarding
+  const ROLE_TO_INDUSTRY: Record<string, string> = {
+    'Software Engineer': 'IT Services',
+    'Product Manager': 'IT Services',
+    'Data Analyst': 'IT Services',
+    'Marketing Pro': 'Marketing & Advertising',
+    'Finance / CA': 'Banking & Finance',
+    'Designer': 'IT Services',
+  };
+  const handleStartWithRole = (role: string) => {
+    track('cta_click', { role_chip: role });
+    const mappedIndustry = ROLE_TO_INDUSTRY[role];
+    if (mappedIndustry) setIndustry(mappedIndustry);
+    setPhase('input-method');
+  };
+
   // After user commits to an input method, persist context & gate auth
   const handleLinkedinSubmit = (url: string) => {
     setLinkedinUrl(url);
@@ -700,7 +716,7 @@ const Index = () => {
           setPhase('money-shot');
         }}
       />
-      {phase === 'hero' && <HeroSection onStart={handleStart} />}
+      {phase === 'hero' && <HeroSection onStart={handleStart} onStartWithRole={handleStartWithRole} />}
       {phase === 'hero' && <SocialProofSection />}
       {phase === 'input-method' && (
         <InputMethodStep

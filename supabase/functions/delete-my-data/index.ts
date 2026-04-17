@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       await serviceClient.from("beta_signals").delete().in("profile_id", profileIds);
     }
     await serviceClient.from("beta_profiles").delete().eq("user_id", userId);
-    await serviceClient.from("beta_events").delete().eq("user_id", userId);
+    await serviceClient.from("analytics_events").delete().eq("user_id", userId);
 
     // 4. Delete profile
     await serviceClient.from("profiles").delete().eq("id", userId);

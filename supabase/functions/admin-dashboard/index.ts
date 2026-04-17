@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: false })
         .limit(200),
       // Funnel events (last 7 days)
-      sb.from("beta_events")
+      sb.from("analytics_events")
         .select("event_type, created_at, payload")
         .gte("created_at", last7d)
         .in("event_type", [

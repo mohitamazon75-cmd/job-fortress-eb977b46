@@ -32,7 +32,7 @@ export default function CohortRankCard({
   useEffect(() => {
     async function fetchCohort() {
       try {
-        const { data: res } = await supabase.functions.invoke('get-cohort-rank', {
+        const { data: res, error: cohortErr } = await supabase.functions.invoke('get-cohort-rank', {
           body: { userId, role, city, score },
         });
         if (res) {

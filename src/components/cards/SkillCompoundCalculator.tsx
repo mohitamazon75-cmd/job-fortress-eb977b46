@@ -32,10 +32,10 @@ function buildSkillOptions(cardData: any): SkillOption[] {
   ) || [];
 
   const defaults: SkillOption[] = [
-    { skill: "AI Prompt Engineering", currentRisk: 0, daysToLearn: 14, scoreBoost: 8, salaryLift: 12, tool: "ChatGPT / Claude", startHere: "Anthropic's Prompt Engineering Guide", startUrl: "https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview", effort: "1h/day for 2 weeks" },
-    { skill: "Python for Data Analysis", currentRisk: 0, daysToLearn: 30, scoreBoost: 11, salaryLift: 18, tool: "Cursor AI / Copilot", startHere: "CS50P (Free, Harvard)", startUrl: "https://cs50.harvard.edu/python/2022/", effort: "1.5h/day for 4 weeks" },
-    { skill: "Cloud Architecture (AWS/GCP)", currentRisk: 0, daysToLearn: 45, scoreBoost: 14, salaryLift: 24, tool: "AWS AI Services", startHere: "AWS Solutions Architect (Free tier + Udemy)", startUrl: "https://aws.amazon.com/training/", effort: "2h/day for 6 weeks" },
-    { skill: "SQL + Analytics", currentRisk: 0, daysToLearn: 21, scoreBoost: 9, salaryLift: 15, tool: "Google Looker / Power BI", startHere: "Mode SQL Tutorial (Free)", startUrl: "https://mode.com/sql-tutorial/", effort: "45min/day for 3 weeks" },
+    { skill: "AI Prompt Engineering", currentRisk: 0, daysToLearn: 14, scoreBoost: 8, salaryLift: 12, tool: "ChatGPT / Claude", startHere: "Anthropic Prompt Engineering Guide (Free)", startUrl: "https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview", effort: "1h/day for 2 weeks" },
+    { skill: "Python for Data Analysis", currentRisk: 0, daysToLearn: 30, scoreBoost: 11, salaryLift: 18, tool: "Cursor AI / GitHub Copilot", startHere: "CS50P by Harvard (Free, starts from zero)", startUrl: "https://cs50.harvard.edu/python/2022/", effort: "1.5h/day for 4 weeks" },
+    { skill: "Cloud Architecture (AWS)", currentRisk: 0, daysToLearn: 45, scoreBoost: 14, salaryLift: 24, tool: "AWS AI Services", startHere: "AWS Cloud Practitioner Essentials (Free)", startUrl: "https://explore.skillbuilder.aws/learn/course/external/view/elearning/134/aws-cloud-practitioner-essentials", effort: "2h/day for 6 weeks" },
+    { skill: "SQL + Data Analytics", currentRisk: 0, daysToLearn: 21, scoreBoost: 9, salaryLift: 15, tool: "Google Looker / Power BI Copilot", startHere: "Mode SQL Tutorial (Free, India accessible)", startUrl: "https://mode.com/sql-tutorial/introduction-to-sql/", effort: "45min/day for 3 weeks" },
   ];
 
   if (atRisk.length === 0) return defaults;
@@ -47,8 +47,8 @@ function buildSkillOptions(cardData: any): SkillOption[] {
     scoreBoost: [6, 9, 11, 8][i] || 8,
     salaryLift: [10, 14, 18, 12][i] || 12,
     tool: s.note?.includes("Replaced by") ? s.note.split("Replaced by")[1]?.trim() : "AI tools",
-    startHere: ["Google AI Essentials (Free)", "Coursera specialisation", "Udemy bestseller course", "YouTube crash course"][i] || "Coursera",
-    startUrl: ["https://grow.google/certificates/", "https://coursera.org", "https://udemy.com", "https://youtube.com"][i] || "https://coursera.org",
+    startHere: ["Google AI Essentials (Free)", "DeepLearning.AI Short Courses (Free)", "AWS Skill Builder (Free)", "Khan Academy (Free)"][i] || "Google AI Essentials",
+    startUrl: ["https://grow.google/certificates/", "https://www.deeplearning.ai/short-courses/", "https://explore.skillbuilder.aws/", "https://www.khanacademy.org/"][i] || "https://grow.google/certificates/",
     effort: ["45min/day × 2 weeks", "1h/day × 3 weeks", "1.5h/day × 4 weeks", "1h/day × 2 weeks"][i] || "1h/day",
   }));
 }
