@@ -113,6 +113,33 @@ export type Database = {
         }
         Relationships: []
       }
+      behavior_events: {
+        Row: {
+          created_at: string
+          event_name: string
+          id: string
+          properties: Json | null
+          scan_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          id?: string
+          properties?: Json | null
+          scan_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          id?: string
+          properties?: Json | null
+          scan_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       beta_ai_capability_map: {
         Row: {
           augmentation_potential: number
@@ -1649,6 +1676,36 @@ export type Database = {
         }
         Relationships: []
       }
+      score_events: {
+        Row: {
+          created_at: string
+          delta: number | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          scan_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta?: number | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          scan_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          scan_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       score_history: {
         Row: {
           created_at: string
@@ -1895,6 +1952,81 @@ export type Database = {
           model?: string
           prompt_tokens?: number | null
           total_tokens?: number | null
+        }
+        Relationships: []
+      }
+      trajectory_predictions: {
+        Row: {
+          cohort_median_delta: number | null
+          cohort_size: number | null
+          computed_at: string
+          confidence: string | null
+          predicted_score_180d: number | null
+          predicted_score_30d: number | null
+          predicted_score_90d: number | null
+          scan_id: string
+          top_actions: Json | null
+        }
+        Insert: {
+          cohort_median_delta?: number | null
+          cohort_size?: number | null
+          computed_at?: string
+          confidence?: string | null
+          predicted_score_180d?: number | null
+          predicted_score_30d?: number | null
+          predicted_score_90d?: number | null
+          scan_id: string
+          top_actions?: Json | null
+        }
+        Update: {
+          cohort_median_delta?: number | null
+          cohort_size?: number | null
+          computed_at?: string
+          confidence?: string | null
+          predicted_score_180d?: number | null
+          predicted_score_30d?: number | null
+          predicted_score_90d?: number | null
+          scan_id?: string
+          top_actions?: Json | null
+        }
+        Relationships: []
+      }
+      user_action_signals: {
+        Row: {
+          action_payload: Json | null
+          action_type: string
+          created_at: string
+          id: string
+          scan_city: string | null
+          scan_id: string | null
+          scan_industry: string | null
+          scan_role: string | null
+          scan_score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          action_payload?: Json | null
+          action_type: string
+          created_at?: string
+          id?: string
+          scan_city?: string | null
+          scan_id?: string | null
+          scan_industry?: string | null
+          scan_role?: string | null
+          scan_score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          action_payload?: Json | null
+          action_type?: string
+          created_at?: string
+          id?: string
+          scan_city?: string | null
+          scan_id?: string | null
+          scan_industry?: string | null
+          scan_role?: string | null
+          scan_score?: number | null
+          user_id?: string | null
         }
         Relationships: []
       }
