@@ -236,7 +236,7 @@ export function formatINRCompact(amount: number): string {
 // ─── Sample data for development ───────────────────────────────────────────────
 
 export const SAMPLE_DIAGNOSTIC_RESULT = {
-  jobTitle: "Marketing Manager",
+  jobTitle: "Software Engineer",
   monthlyCTC: 200000,
   experienceBand: "6-10 yrs",
   aiSkills: ["writing content", "research", "reporting", "market research", "social media posting", "making presentations"],

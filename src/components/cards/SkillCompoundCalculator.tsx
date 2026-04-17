@@ -114,9 +114,9 @@ export default function SkillCompoundCalculator({ cardData }: { cardData?: any }
       >
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
           {[
-            { label: "Career Score", before: baseScore, after: newScore, unit: "/100", color: newScore > baseScore ? "#16a34a" : "#dc2626" },
-            { label: "Salary Ceiling", before: `₹${baseSalary}L`, after: `₹${newSalary}L`, unit: "", color: "#16a34a" },
-            { label: "Annual Gain", before: "—", after: `+₹${annualGain}L`, unit: "/yr", color: "#16a34a" },
+            { label: "Career Score", before: baseScore, after: newScore, unit: "/100", color: newScore > baseScore ? "var(--mb-green, #16a34a)" : "var(--mb-red, #dc2626)" },
+            { label: "Salary Ceiling", before: `₹${baseSalary}L`, after: `₹${newSalary}L`, unit: "", color: "var(--mb-green, #16a34a)" },
+            { label: "Annual Gain", before: "—", after: `+₹${annualGain}L`, unit: "/yr", color: "var(--mb-green, #16a34a)" },
           ].map((metric, i) => (
             <div key={i} style={{ textAlign: "center", padding: "12px 8px", background: "var(--mb-paper)", borderRadius: 12, border: "1.5px solid var(--mb-rule)" }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: "var(--mb-ink3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>{metric.label}</div>

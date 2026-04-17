@@ -36,10 +36,10 @@ function computePeerInsights(cardData: any) {
   
   // Score distribution buckets
   const distribution = [
-    { range: "< 35", label: "High Risk", pct: 18, color: "#dc2626" },
-    { range: "35–50", label: "Elevated Risk", pct: 28, color: "#d97706" },
-    { range: "51–65", label: "Moderate", pct: 31, color: "#2563eb" },
-    { range: "66–80", label: "Strong", pct: 17, color: "#16a34a" },
+    { range: "< 35", label: "High Risk", pct: 18, color: "var(--mb-red, #dc2626)" },
+    { range: "35–50", label: "Elevated Risk", pct: 28, color: "var(--mb-amber, #d97706)" },
+    { range: "51–65", label: "Moderate", pct: 31, color: "var(--mb-blue, #2563eb)" },
+    { range: "66–80", label: "Strong", pct: 17, color: "var(--mb-green, #16a34a)" },
     { range: "> 80", label: "Protected", pct: 6, color: "#059669" },
   ];
 
@@ -131,8 +131,8 @@ export default function PeerRankCard({ cardData }: PeerRankCardProps) {
       </div>
 
       <div style={{ marginTop: 14, fontSize: 11, color: "var(--mb-ink4)", lineHeight: 1.5, textAlign: "center" }}>
-        Computed from Knowledge Graph distribution calibrated against India 2026 workforce data.
-        Peer counts are estimates. Individual results vary.
+        Based on Knowledge Graph distribution data. Peer counts grow as more professionals scan.
+        Prediction accuracy improves with real cohort data over time.
       </div>
     </div>
   );

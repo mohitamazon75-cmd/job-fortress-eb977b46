@@ -115,7 +115,7 @@ export default function TrajectoryCard({ analysisId, cardData }: { analysisId: s
       <div style={{ background: "rgba(220,38,38,0.05)", border: "1.5px solid rgba(220,38,38,0.15)", borderRadius: 12, padding: "12px 14px", marginBottom: 18, display: "flex", gap: 10, alignItems: "flex-start" }}>
         <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#dc2626", marginBottom: 3 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--mb-red, #dc2626)", marginBottom: 3 }}>
             Without action: {trajectory.no_action_score_90d}/100 in 90 days
           </div>
           <div style={{ fontSize: 12, color: "var(--mb-ink3)", lineHeight: 1.5 }}>
@@ -129,14 +129,14 @@ export default function TrajectoryCard({ analysisId, cardData }: { analysisId: s
         <div style={{ fontSize: 11, fontWeight: 800, color: "var(--mb-ink3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16 }}>
           Score projection — with your current actions
         </div>
-        <ScoreBar label="Today" score={trajectory.current_score} color="#2563eb" isUser />
-        <ScoreBar label="30 days" score={trajectory.predicted_score_30d} color={trajectory.predicted_score_30d >= trajectory.current_score ? "#16a34a" : "#d97706"} />
-        <ScoreBar label="90 days" score={trajectory.predicted_score_90d} color={trajectory.predicted_score_90d >= trajectory.current_score ? "#16a34a" : "#d97706"} />
-        <ScoreBar label="180 days" score={trajectory.predicted_score_180d} color={trajectory.predicted_score_180d >= trajectory.current_score ? "#16a34a" : "#dc2626"} />
+        <ScoreBar label="Today" score={trajectory.current_score} color="var(--mb-blue, #2563eb)" isUser />
+        <ScoreBar label="30 days" score={trajectory.predicted_score_30d} color={trajectory.predicted_score_30d >= trajectory.current_score ? "var(--mb-green, #16a34a)" : "var(--mb-amber, #d97706)"} />
+        <ScoreBar label="90 days" score={trajectory.predicted_score_90d} color={trajectory.predicted_score_90d >= trajectory.current_score ? "var(--mb-green, #16a34a)" : "var(--mb-amber, #d97706)"} />
+        <ScoreBar label="180 days" score={trajectory.predicted_score_180d} color={trajectory.predicted_score_180d >= trajectory.current_score ? "var(--mb-green, #16a34a)" : "var(--mb-red, #dc2626)"} />
 
         {isImproving && gap > 3 && (
           <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(22,163,74,0.06)", borderRadius: 10, border: "1px solid rgba(22,163,74,0.2)" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--mb-green, #16a34a)" }}>
               ✅ Your actions are adding +{gap} pts vs doing nothing
             </span>
           </div>
@@ -171,7 +171,7 @@ export default function TrajectoryCard({ analysisId, cardData }: { analysisId: s
               <span style={{ fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.4 }}>
                 {ACTION_LABELS[action.action] || action.action}
               </span>
-              <span style={{ fontSize: 12, fontWeight: 800, color: "#16a34a", flexShrink: 0, background: "rgba(22,163,74,0.08)", border: "1px solid rgba(22,163,74,0.2)", borderRadius: 8, padding: "3px 10px" }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "var(--mb-green, #16a34a)", flexShrink: 0, background: "rgba(22,163,74,0.08)", border: "1px solid rgba(22,163,74,0.2)", borderRadius: 8, padding: "3px 10px" }}>
                 +{action.expected_score_impact} pts
               </span>
             </div>

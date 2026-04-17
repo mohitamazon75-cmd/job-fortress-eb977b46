@@ -152,9 +152,8 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
 
           {/* Headline */}
           <motion.h1
-            initial={{ opacity: 0, y: 40 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.7, type: 'spring' }}
             className="text-[2.5rem] sm:text-7xl md:text-8xl lg:text-[8rem] font-black tracking-tighter leading-[0.88] mb-4 sm:mb-6"
           >
             <span className="text-foreground">Are You </span>
@@ -176,9 +175,6 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
 
           {/* Hope line — the shield after the knife */}
           <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
             className="text-lg sm:text-2xl md:text-3xl font-black text-primary mb-2 sm:mb-4"
           >
             Find out — and get your defense plan.

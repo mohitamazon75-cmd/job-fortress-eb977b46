@@ -146,12 +146,12 @@ export default function OfficePowerVocab({ cardData }: { cardData?: any }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {/* Weak phrase — struck through */}
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#dc2626", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>❌ Avoid</span>
-                      <span style={{ fontSize: 12, color: "#dc2626", textDecoration: "line-through", opacity: 0.7 }}>{entry.weak}</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "var(--mb-red, #dc2626)", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>❌ Avoid</span>
+                      <span style={{ fontSize: 12, color: "var(--mb-red, #dc2626)", textDecoration: "line-through", opacity: 0.7 }}>{entry.weak}</span>
                     </div>
                     {/* Power phrase */}
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#16a34a", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>✅ Say</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "var(--mb-green, #16a34a)", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>✅ Say</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.4 }}>{entry.power}</span>
                     </div>
                   </div>
@@ -176,7 +176,7 @@ export default function OfficePowerVocab({ cardData }: { cardData?: any }) {
                         <div style={{ fontSize: 12, color: "var(--mb-ink3)", fontStyle: "italic", marginBottom: 12 }}>📍 {entry.example}</div>
                         <button
                           onClick={() => handleCopy(idx, entry)}
-                          style={{ padding: "7px 14px", borderRadius: 10, background: copied === idx ? "#16a34a" : "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", color: copied === idx ? "white" : "var(--mb-ink3)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 150ms" }}
+                          style={{ padding: "7px 14px", borderRadius: 10, background: copied === idx ? "var(--mb-green, #16a34a)" : "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", color: copied === idx ? "white" : "var(--mb-ink3)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 150ms" }}
                         >
                           {copied === idx ? "✓ Copied" : "Copy phrase"}
                         </button>
