@@ -7,6 +7,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { callAgent } from "./ai-agent-caller.ts";
+import { trackAgentLatency } from "./edge-logger.ts";
 
 const TIER1 = "google/gemini-3.1-pro-preview";
 const TIER2 = "google/gemini-3-pro-preview";
