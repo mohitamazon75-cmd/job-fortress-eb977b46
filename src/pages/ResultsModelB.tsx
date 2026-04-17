@@ -136,8 +136,9 @@ export default function ResultsModelB() {
       'pivot_expanded','plan_action_checked','share_whatsapp','share_linkedin',
       'rescan_initiated','outcome_reported','tool_opened'];
     if (validActionTypes.includes(event_type) && analysisId) {
-      // Guard: only insert when we have an analysisId (prevents orphaned signals)
-      supabase.from('user_action_signals').insert({
+      // Guard: only insert when analysisId exists (prevents orphaned signals).
+      // Cast needed until Supabase types regenerate with new table.
+      (supabase.from as any)('user_action_signals').insert({
         scan_id: analysisId,
         action_type: event_type,
         action_payload: metadata || {},
@@ -145,7 +146,7 @@ export default function ResultsModelB() {
         scan_industry: cardData?.user?.industry || null,
         scan_score: cardData?.jobbachao_score || null,
         scan_city: cardData?.user?.location || null,
-      }).then(() => {}).catch(() => {}); // fire and forget
+      }).then(() => {}, () => {});
     }
     try {
       await supabase.functions.invoke("log-ab-event", {
