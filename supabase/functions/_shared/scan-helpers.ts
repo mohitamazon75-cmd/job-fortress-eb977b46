@@ -160,13 +160,16 @@ export function validateAgent1Output(
     }
   }
 
+  // P0 fix (2026-04-17): NEVER inject synthetic skill names. The previous
+  // "General Execution Tasks" fallback bled downstream into role titles
+  // ("Senior General Execution Tasks Specialist") and polluted the cache for
+  // every subsequent same-industry scan. Empty arrays force downstream callers
+  // to either use real signals or fail loudly.
   if (!agent1.execution_skills || agent1.execution_skills.length === 0) {
     warnings.push("No execution skills extracted");
-    corrections.execution_skills = ["General Execution Tasks", "Process Management", "Reporting"];
   }
   if (!agent1.strategic_skills || agent1.strategic_skills.length === 0) {
     warnings.push("No strategic skills extracted");
-    corrections.strategic_skills = ["Strategic Planning", "Stakeholder Management"];
   }
 
   if (agent1.industry && normalizeStr(agent1.industry) !== normalizeStr(resolvedIndustry)) {

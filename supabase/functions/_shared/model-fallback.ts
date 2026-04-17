@@ -14,7 +14,14 @@ const TIER2 = "google/gemini-3-pro-preview";
 const TIER3 = "google/gemini-3-flash-preview";
 const OPENAI_PRIMARY = "openai/gpt-5";
 const OPENAI_SECONDARY = "openai/gpt-5-mini";
+// gemini-2.5-pro consistently times out on quality-critical agents
+// (every prod log line shows it aborting at 24s while gemini-3-pro completes
+// in 5–8s). Keep it as a last-resort emergency only.
 const EMERGENCY = "google/gemini-2.5-pro";
+
+// Quality-critical agents skip the EMERGENCY tier entirely — better to fail
+// loudly than ship a low-fidelity 2.5-pro response.
+const QUALITY_CRITICAL_SKIPS_EMERGENCY = true;
 
 // Agents where Flash produces unacceptably degraded output
 const QUALITY_CRITICAL_AGENTS = ["Agent1", "Agent2A", "Agent2B", "Agent2C", "JudoStrategy"];
@@ -118,7 +125,10 @@ export async function callAgentWithFallback(
   if (preferredModel !== OPENAI_PRIMARY) models.push(OPENAI_PRIMARY);
   if (preferredModel !== OPENAI_SECONDARY) models.push(OPENAI_SECONDARY);
   if (!isQualityCritical && preferredModel !== TIER3) models.push(TIER3);
-  models.push(EMERGENCY);
+  // Quality-critical paths skip the slow gemini-2.5-pro emergency tier.
+  if (!(isQualityCritical && QUALITY_CRITICAL_SKIPS_EMERGENCY)) {
+    models.push(EMERGENCY);
+  }
   const uniqueModels = [...new Set(models)];
 
   if (isQualityCritical) {
