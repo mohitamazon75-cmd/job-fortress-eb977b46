@@ -64,3 +64,7 @@ verify_jwt = false
 
 [functions.coach-nudge]
 verify_jwt = false
+
+# Scheduled scan watchdog/recovery (cron-driven, no user JWT)
+[functions.recover-stuck-scans]
+verify_jwt = false
