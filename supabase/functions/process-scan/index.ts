@@ -315,13 +315,18 @@ Deno.serve(async (req) => {
     );
     const resolvedRoleHint = parsedLinkedinRole || linkedinInference.inferredRoleHint || "Unknown";
 
-    // Extract manual key skills from enrichment_cache (provided by manual-path users)
-    const manualKeySkills = (scan.enrichment_cache as any)?.key_skills || null;
+    // Extract manual key skills from enrichment_cache (provided by manual-path users).
+    // Shape varies by client: create-scan stores an array, older flows stored a comma-separated string.
+    // Normalize to string array defensively to avoid `.split is not a function` runtime errors.
+    const manualKeySkills = (scan.enrichment_cache as any)?.key_skills ?? null;
 
     // ── A1 FIX: Fuzzy-match manual skills to KG entries ──
     let manualMatchedSkills: string[] = [];
     if (manualKeySkills && !scan.linkedin_url && !hasResume) {
-      const rawSkills = manualKeySkills.split(/[,;\n]+/).map((s: string) => s.trim().toLowerCase()).filter((s: string) => s.length > 1);
+      const rawSkills: string[] = (Array.isArray(manualKeySkills)
+        ? manualKeySkills.map((s) => String(s ?? ""))
+        : String(manualKeySkills).split(/[,;\n]+/)
+      ).map((s: string) => s.trim().toLowerCase()).filter((s: string) => s.length > 1);
       if (rawSkills.length > 0) {
         // P-4-B: Use KG in-memory skill list — avoids a full skill_risk_matrix
         // table scan. The KG singleton is already loaded for role lookups.
