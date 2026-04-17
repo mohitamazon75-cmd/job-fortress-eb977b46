@@ -35,59 +35,150 @@ const defaultMilestones: Milestone[] = [
   { phase: 4, milestone_key: 'phase4_rescan', milestone_label: 'Rescan your profile to measure improvement' },
 ];
 
-// Keyword to skill category mapping for resource lookup
-const keywordMapping: Record<string, string> = {
-  'cursor': 'cursor_ai',
-  'copilot': 'cursor_ai',
-  'ai tool': 'cursor_ai',
-  'ai-augmentation': 'cursor_ai',
-  'python': 'python_ml',
-  'machine learning': 'python_ml',
-  'ml': 'python_ml',
-  'prompt': 'prompt_engineering',
-  'prompt engineering': 'prompt_engineering',
-  'visualization': 'data_visualization',
-  'tableau': 'data_visualization',
-  'power bi': 'data_visualization',
-  'communication': 'communication',
-  'leadership': 'leadership',
-  'sql': 'sql',
-  'linkedin': 'linkedin_optimization',
-  'linkedin headline': 'linkedin_optimization',
-  'excel': 'excel_advanced',
-  'ai for everyone': 'ai_tools_general',
-  'ai tools': 'ai_tools_general',
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// Smart resource resolver
+// ─────────────────────────────────────────────────────────────────────────────
+// Strategy:
+// 1. Extract a concrete skill phrase from the milestone label.
+// 2. Check 30-day cache in `learning_resources` (per skill phrase).
+// 3. On cache miss → live Tavily search restricted to TRUSTED domains only.
+// 4. Validate result domain, cache it, return URL.
+// 5. On full failure → safe platform-search URL (never broken).
+//
+// Why: hardcoded course lists go stale within 6 months. Live search keeps
+// recommendations current, allowlist prevents hallucinated/spam links.
 
-async function findResourceUrl(label: string, supabase: ReturnType<typeof createClient>): Promise<string | null> {
-  const labelLower = label.toLowerCase();
+const TRUSTED_LEARNING_DOMAINS = [
+  "coursera.org", "edx.org", "udemy.com", "freecodecamp.org",
+  "khanacademy.org", "youtube.com", "linkedin.com",
+  "deeplearning.ai", "fast.ai", "kaggle.com",
+  "developers.google.com", "learn.microsoft.com", "docs.cursor.com",
+  "cursor.sh", "openai.com", "anthropic.com", "huggingface.co",
+  "github.com", "ocw.mit.edu", "harvard.edu", "stanford.edu",
+  "wharton.upenn.edu", "nptel.ac.in", "swayam.gov.in",
+  "hbr.org", "mckinsey.com", "ted.com", "promptingguide.ai",
+];
 
-  // Find matching skill category from keywords
-  let category: string | null = null;
-  for (const [keyword, cat] of Object.entries(keywordMapping)) {
-    if (labelLower.includes(keyword.toLowerCase())) {
-      category = cat;
-      break;
-    }
+const STOP_PHRASES = [
+  "audit your", "update linkedin", "share one", "apply to", "research",
+  "complete mock", "prepare salary", "rescan", "build one portfolio",
+  "connect with", "start learning",
+];
+
+/**
+ * Extract the concrete learnable phrase from a milestone label.
+ * Examples:
+ *   "Start learning one AI-augmentation tool (Cursor or Copilot)" → "Cursor Copilot"
+ *   "Build skill in Python for data analysis" → "Python data analysis"
+ *   "Update LinkedIn headline" → null (action, not a learnable skill)
+ */
+function extractSkillQuery(label: string): string | null {
+  const lower = label.toLowerCase();
+
+  // Pull noun phrases inside parentheses first (most specific signal)
+  const paren = label.match(/\(([^)]+)\)/);
+  if (paren) {
+    const inside = paren[1].replace(/\b(or|and|like|such as|e\.g\.?)\b/gi, " ").trim();
+    if (inside.length > 2) return inside;
   }
 
-  if (!category) {
-    return null;
-  }
+  // Strip common verb prefixes
+  let cleaned = label
+    .replace(/^(start |begin |learn |build |master |complete |finish |take |study )/i, "")
+    .replace(/\b(course|courses|tool|tools|skill|skills|fundamentals|basics)\b/gi, "")
+    .replace(/[(),.]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-  // Fetch a resource for this category
-  const { data, error } = await supabase
-    .from('learning_resources')
-    .select('url')
-    .eq('skill_category', category)
+  // Skip pure-action milestones (no learnable target)
+  if (STOP_PHRASES.some((p) => lower.includes(p)) && !paren) return null;
+  if (cleaned.length < 4) return null;
+  return cleaned.slice(0, 80);
+}
+
+/**
+ * Find a fresh, real URL via Tavily live search restricted to trusted domains.
+ * Returns null if no suitable result found.
+ */
+async function tavilyFindResource(query: string): Promise<{ url: string; title: string } | null> {
+  const resp = await tavilySearch(
+    {
+      query: `best free ${query} course tutorial 2026`,
+      searchDepth: "basic",
+      maxResults: 5,
+      includeDomains: TRUSTED_LEARNING_DOMAINS,
+      includeAnswer: false,
+      days: 365, // courses don't need to be hourly-fresh
+    },
+    12000,
+    1,
+  );
+
+  if (!resp || !resp.results?.length) return null;
+
+  // Pick highest-scoring result whose hostname matches allowlist
+  for (const r of resp.results.sort((a, b) => b.score - a.score)) {
+    try {
+      const host = new URL(r.url).hostname.replace(/^www\./, "");
+      if (TRUSTED_LEARNING_DOMAINS.some((d) => host === d || host.endsWith("." + d))) {
+        return { url: r.url, title: r.title || query };
+      }
+    } catch { /* skip malformed URLs */ }
+  }
+  return null;
+}
+
+/**
+ * Build a safe platform-search fallback URL.
+ * Always works because search pages always exist.
+ */
+function platformSearchFallback(query: string): string {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query + " tutorial 2026")}`;
+}
+
+async function findResourceUrl(
+  label: string,
+  supabase: ReturnType<typeof createClient>,
+): Promise<string | null> {
+  const query = extractSkillQuery(label);
+  if (!query) return null;
+
+  const cacheKey = query.toLowerCase().trim();
+  const THIRTY_DAYS_AGO = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  // 1. Try cache (fresh within 30 days)
+  const { data: cached } = await supabase
+    .from("learning_resources")
+    .select("url, last_verified_at")
+    .eq("skill_category", cacheKey)
+    .gte("last_verified_at", THIRTY_DAYS_AGO)
+    .order("last_verified_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
-    return null;
+  if (cached?.url) return cached.url as string;
+
+  // 2. Live Tavily search
+  try {
+    const found = await tavilyFindResource(query);
+    if (found) {
+      // Cache it (fire-and-forget; ignore conflicts)
+      await supabase.from("learning_resources").insert({
+        skill_category: cacheKey,
+        title: found.title.slice(0, 200),
+        url: found.url,
+        platform: (() => { try { return new URL(found.url).hostname.replace(/^www\./, ""); } catch { return null; } })(),
+        source: "tavily",
+        last_verified_at: new Date().toISOString(),
+      });
+      return found.url;
+    }
+  } catch (e) {
+    console.warn("[generate-milestones] Tavily lookup failed for", query, e);
   }
 
-  return data.url;
+  // 3. Fallback — never a broken link
+  return platformSearchFallback(query);
 }
 
 async function generateMilestones(
