@@ -533,15 +533,18 @@ const Index = () => {
 
     // P0-3 FIX: Upload resume BEFORE triggering scan to prevent race condition
     if (resumeFileRef.current) {
+      const sizeKb = Math.round(resumeFileRef.current.size / 1024);
+      const uploadToastId = toast.loading(`Uploading your resume (${sizeKb} KB)…`);
       try {
         const filePath = await uploadResume(resumeFileRef.current, id);
         const { supabase: sb } = await import('@/integrations/supabase/client');
         await sb.from('scans')
           .update({ resume_file_path: filePath } as any)
           .eq('id', id);
+        toast.success('Resume uploaded — starting analysis', { id: uploadToastId });
       } catch (err) {
         console.error('Resume upload failed:', err);
-        toast.error(err instanceof Error ? err.message : 'Resume upload failed. Please try again.');
+        toast.error(err instanceof Error ? err.message : 'Resume upload failed. Please try again.', { id: uploadToastId });
         setPhase('input-method');
         return false;
       }
