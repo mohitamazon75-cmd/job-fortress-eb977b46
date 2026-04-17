@@ -805,15 +805,22 @@ Deno.serve(async (req) => {
     const agent1RoleClean = isLazyIndustryEcho(agent1?.current_role) ? null : agent1?.current_role;
     const hintRole = isLazyIndustryEcho(resolvedRoleHint) ? null : resolvedRoleHint;
     const rawDetectedRole = verbatimParsedTitle || agent1RoleClean || hintRole;
-    // Final fallback: synthesize from seniority + a meaningful skill, not from industry echo.
-    const seniorityWord = normalizedExperienceYears && normalizedExperienceYears >= 12 ? "Senior"
-      : normalizedExperienceYears && normalizedExperienceYears >= 7 ? "Lead"
-      : normalizedExperienceYears && normalizedExperienceYears >= 3 ? "" : "Junior";
-    const skillAnchor = String(manualMatchedSkills[0] || agent1?.execution_skills?.[0] || agent1?.strategic_skills?.[0] || "");
-    const fallbackRoleStr = skillAnchor
-      ? `${seniorityWord} ${skillAnchor} Specialist`.replace(/\s+/g, " ").trim()
-      : `${seniorityWord} ${resolvedIndustry || "IT"} Practitioner`.replace(/\s+/g, " ").trim();
-    const detectedRole = (!rawDetectedRole || rawDetectedRole === "Unknown") ? fallbackRoleStr : rawDetectedRole;
+    // P0 fix (2026-04-17): NEVER emit synthetic "{Skill} Specialist" titles when the
+    // profiler+parsed-title pipeline produced nothing useful. These junk titles
+    // ("Senior General Execution Tasks Specialist") shipped to users and destroyed
+    // trust. Fail loudly: mark scan invalid_input so the UI surfaces a retry CTA.
+    if (!rawDetectedRole || rawDetectedRole === "Unknown") {
+      console.error(`[RoleGuard] No usable role title (parsed=${verbatimParsedTitle}, agent1=${agent1?.current_role}, hint=${resolvedRoleHint}) — failing scan instead of synthesizing junk`);
+      await supabase.from("scans").update({
+        scan_status: "invalid_input",
+        feedback_flag: "role_extraction_failed",
+      }).eq("id", scanId);
+      return new Response(JSON.stringify({
+        error: "Could not detect role from your profile. Please add your current job title and re-run the scan.",
+        code: "ROLE_EXTRACTION_FAILED",
+      }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const detectedRole = rawDetectedRole;
     if (verbatimParsedTitle && agent1?.current_role && verbatimParsedTitle.toLowerCase() !== agent1.current_role.toLowerCase()) {
       // Security: do not log verbatim job titles — they are PII-adjacent
       console.warn(`[RoleGuard] Agent1 title differs from parsed title — using parsed title`);

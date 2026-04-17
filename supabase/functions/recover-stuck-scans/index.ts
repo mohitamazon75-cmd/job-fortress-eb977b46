@@ -7,9 +7,9 @@
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { logEdgeError } from "../_shared/edge-logger.ts";
 
-const PENDING_TIMEOUT_MIN = 2;     // pending > 2 min → re-trigger
-const PROCESSING_TIMEOUT_MIN = 10; // processing > 10 min → mark error (worker likely crashed)
-const MAX_PER_RUN = 25;            // safety cap
+const PENDING_TIMEOUT_MIN = 1;     // pending > 1 min → re-trigger (was 2)
+const PROCESSING_TIMEOUT_MIN = 8;  // processing > 8 min → mark error (was 10; tighter w/ raised agent timeouts)
+const MAX_PER_RUN = 50;            // safety cap (was 25; cron now runs every 1m)
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,9 +39,11 @@ Deno.serve(async (req) => {
       .lt("created_at", pendingCutoff)
       .limit(MAX_PER_RUN);
 
-    for (const scan of (pendingScans ?? []) as Array<{ id: string; created_at: string }>) {
+    // Fire all retriggers concurrently — process-scan takes ~120s; awaiting serially
+    // means a 25-row backlog takes 50 minutes to clear. The edge runtime keeps each
+    // request alive via EdgeRuntime.waitUntil inside process-scan itself.
+    const triggers = (pendingScans ?? []).map(async (scan: { id: string; created_at: string }) => {
       try {
-        // Re-invoke process-scan with this scanId
         const resp = await fetch(`${supabaseUrl}/functions/v1/process-scan`, {
           method: "POST",
           headers: {
@@ -50,7 +52,6 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({ scanId: scan.id, forceRefresh: true }),
         });
-        // Drain body to avoid resource leak
         await resp.text().catch(() => "");
         if (!resp.ok) {
           result.errors.push(`pending ${scan.id} retry HTTP ${resp.status}`);
@@ -60,7 +61,9 @@ Deno.serve(async (req) => {
       } catch (e) {
         result.errors.push(`pending ${scan.id}: ${(e as Error).message}`);
       }
-    }
+    });
+    // Wait for all dispatches to be sent (not for processing to complete)
+    await Promise.allSettled(triggers);
 
     // 2. Mark long-stuck processing scans as error so UI shows retry button
     const processingCutoff = new Date(Date.now() - PROCESSING_TIMEOUT_MIN * 60_000).toISOString();
