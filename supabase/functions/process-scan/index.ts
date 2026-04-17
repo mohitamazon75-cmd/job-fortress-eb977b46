@@ -592,10 +592,23 @@ Deno.serve(async (req) => {
           }
 
           // ── QUALITY GATES: Only reuse cached Agent1 if extraction quality is sufficient ──
+          // P0 fix: reject lazy "{Industry} Professional/Specialist" cached roles — they
+          // were polluting downstream cache for every new scan in the same industry.
           const cachedConfidence = cachedReport?.extraction_confidence || cachedReport?.rawExtractionQuality || "low";
           const cachedSkillCount = cachedReport?.all_skills?.length || 0;
           const cachedRole = cachedReport?.role || cachedReport?.role_detected || null;
-          const hasMinimumQuality = cachedConfidence !== "low" && cachedSkillCount >= 3 && cachedRole && cachedRole !== "Unknown" && cachedRole !== "Professional";
+          const indLower = (resolvedIndustry || "").trim().toLowerCase();
+          const cachedRoleLower = (cachedRole || "").trim().toLowerCase();
+          const isLazyCachedRole = !cachedRole
+            || cachedRole === "Unknown"
+            || cachedRole === "Professional"
+            || (indLower && (
+                 cachedRoleLower === `${indLower} professional`
+                 || cachedRoleLower === `${indLower} specialist`
+                 || cachedRoleLower === `${indLower} practitioner`
+                 || cachedRoleLower === indLower
+               ));
+          const hasMinimumQuality = cachedConfidence !== "low" && cachedSkillCount >= 3 && !isLazyCachedRole;
 
           if (cachedReport && cachedReport.all_skills?.length > 0 && hasMinimumQuality) {
             agent1 = {
@@ -644,7 +657,22 @@ Deno.serve(async (req) => {
       if (!agent1) {
         console.error("[Agent1:Profiler] Profiler failed — falling back to synthesized deterministic profile");
         usedAgent1SyntheticFallback = true;
-        const fallbackRole = parsedLinkedinRole || resolvedRoleHint || `${resolvedIndustry || "IT"} Professional`;
+        // P0 fix: never synthesize "{Industry} Professional" — produce a specific, skill/seniority-anchored title.
+        const indLower = (resolvedIndustry || "").trim().toLowerCase();
+        const synthHintIsLazy = !resolvedRoleHint
+          || resolvedRoleHint === "Unknown"
+          || (indLower && (resolvedRoleHint.trim().toLowerCase() === `${indLower} professional`
+              || resolvedRoleHint.trim().toLowerCase() === `${indLower} specialist`
+              || resolvedRoleHint.trim().toLowerCase() === indLower));
+        const synthSeniority = normalizedExperienceYears && normalizedExperienceYears >= 12 ? "Senior"
+          : normalizedExperienceYears && normalizedExperienceYears >= 7 ? "Lead"
+          : normalizedExperienceYears && normalizedExperienceYears >= 3 ? ""
+          : "Junior";
+        const synthSkill = String(manualMatchedSkills[0] || skillMapRows?.[0]?.skill_name || "");
+        const synthFallback = synthSkill
+          ? `${synthSeniority} ${synthSkill} Specialist`.replace(/\s+/g, " ").trim()
+          : `${synthSeniority} ${resolvedIndustry || "IT"} Practitioner`.replace(/\s+/g, " ").trim();
+        const fallbackRole = parsedLinkedinRole || (synthHintIsLazy ? synthFallback : resolvedRoleHint);
         const fallbackSkills = Array.from(new Set([
           ...manualMatchedSkills,
           ...skillMapRows.slice(0, 8).map((skill) => skill.skill_name),

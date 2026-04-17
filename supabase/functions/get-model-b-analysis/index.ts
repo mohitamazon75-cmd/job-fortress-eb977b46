@@ -92,6 +92,26 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ─── Re-entrancy guard ───
+    // If a placeholder row exists with null card_data and was created/updated in the last
+    // 90 seconds, another invocation is already generating — do not re-trigger.
+    // After 90s with no completion, treat as failed and allow regeneration.
+    const PROCESSING_LOCK_MS = 90 * 1000;
+    const cachedAgeMs = cached?.updated_at
+      ? Date.now() - new Date(cached.updated_at as string).getTime()
+      : Infinity;
+    const isProcessingLocked = cached
+      && !cached.card_data
+      && cachedAgeMs < PROCESSING_LOCK_MS;
+
+    if (isProcessingLocked) {
+      console.log(`[model-b] Processing lock held for ${analysis_id} (age: ${Math.round(cachedAgeMs / 1000)}s) — returning processing`);
+      return new Response(
+        JSON.stringify({ success: true, status: "processing" }),
+        { headers: jsonHeaders }
+      );
+    }
+
     // Stale or missing — clear and regenerate
     if (cached?.card_data && !cacheValid) {
       console.log(`[model-b] Cache STALE for ${analysis_id} (age: ${Math.round(cacheAge / 60000)}min) — regenerating`);
@@ -105,12 +125,22 @@ Deno.serve(async (req) => {
     if (poll) {
       const { data: pending } = await supabase
         .from("model_b_results")
-        .select("id, card_data")
+        .select("id, card_data, updated_at")
         .eq("analysis_id", analysis_id)
         .eq("user_id", user_id)
         .maybeSingle();
 
       if (pending && !pending.card_data) {
+        const pendingAge = pending.updated_at
+          ? Date.now() - new Date(pending.updated_at as string).getTime()
+          : 0;
+        // If pending older than 3 minutes, treat as failed
+        if (pendingAge > 3 * 60 * 1000) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Analysis timed out. Please retry." }),
+            { status: 408, headers: jsonHeaders }
+          );
+        }
         return new Response(
           JSON.stringify({ success: true, status: "processing" }),
           { headers: jsonHeaders }
@@ -146,9 +176,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ─── P1: Per-user daily cap (cost guardrail) ───
+    // Block if this user has triggered >5 fresh model-b generations in the last 24h.
+    try {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count } = await supabase
+        .from("model_b_results")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user_id)
+        .gte("updated_at", since);
+      if ((count ?? 0) > 5) {
+        console.warn(`[model-b] Daily cap exceeded for user ${user_id}: ${count} runs in 24h`);
+        return new Response(
+          JSON.stringify({ success: false, error: "Daily analysis limit reached. Please try again tomorrow." }),
+          { status: 429, headers: jsonHeaders }
+        );
+      }
+    } catch (e) {
+      console.warn("[model-b] daily-cap check failed (non-fatal):", e);
+    }
+
     // ─── Create placeholder row to signal "processing" ───
-    // P-4-A: .select("id") instead of bare .select() — the full row (card_data + gemini_raw
-    // can be 300KB+) was being fetched and immediately discarded. Only id is needed.
+    // Updated_at is bumped by upsert — this also resets the processing lock window.
     await supabase
       .from("model_b_results")
       .upsert({
@@ -161,6 +210,7 @@ Deno.serve(async (req) => {
         ats_avg: null,
         job_match_count: null,
         gemini_raw: null,
+        updated_at: new Date().toISOString(),
       }, { onConflict: "analysis_id" })
       .select("id")
       .single();
