@@ -151,6 +151,9 @@ export async function callAgentWithFallback(
       if (chain.length > 1) {
         console.log(`[FallbackChain] ${agentName} succeeded on fallback ${model.split("/").pop()} (attempt ${chain.length})`);
       }
+      // Roll-up outcome metric (one entry per logical agent call). Per-attempt
+      // metrics are still emitted by callAgent under `${agentName}[model]`.
+      trackAgentLatency(agentName, Date.now() - start, false, model).catch(() => {});
       return { data: result, model_used: model, fallback_chain: chain, skipped_models: skipped, latency_ms: Date.now() - start };
     }
 
@@ -158,5 +161,7 @@ export async function callAgentWithFallback(
     console.warn(`[FallbackChain] ${agentName} failed on ${model.split("/").pop()}, trying next...`);
   }
 
+  // All models exhausted — true failure.
+  trackAgentLatency(agentName, Date.now() - start, true, "none").catch(() => {});
   return { data: null, model_used: "none", fallback_chain: chain, skipped_models: skipped, latency_ms: Date.now() - start };
 }
