@@ -27,14 +27,15 @@ interface WeeklyIntelData {
 }
 
 const LOADING_MESSAGES = [
-  "Reading your resume with fresh eyes...",
-  "Mapping your skills to India's 2026 market...",
-  "Checking live ATS match scores...",
-  "Finding pivot roles that match your profile...",
-  "Scanning salary benchmarks for your tier...",
-  "Identifying blind spots competitors miss...",
-  "Extracting your irreplaceable advantages...",
-  "Building your personalised career strategy...",
+  "📄 Extracting skills and experience from your resume...",
+  "🧠 Matching your profile against 98 role archetypes...",
+  "⚡ Computing your AI exposure score — 6 deterministic factors...",
+  "🔍 Identifying which specific AI tools threaten each skill...",
+  "📊 Fetching live salary data for your role and city...",
+  "💼 Searching Naukri, LinkedIn, Indeed for matching roles...",
+  "🛡️ Mapping your moat skills — what AI can't replicate...",
+  "🎯 Building your personalised 90-day defense plan...",
+  "🔄 Running final calibration against India 2026 data...",
 ];
 
 const STREAK_KEY = "jb_streak";
@@ -415,42 +416,43 @@ export default function ResultsModelB() {
           </div>
         )}
 
-        {/* Tabs */}
+        {/* Navigation — scrollable pill row, works on any screen size */}
         {cardData && !loading && (
-          <div style={{ display: "flex", gap: 3, marginBottom: 22, overflowX: "auto" }}>
-            {TAB_LABELS.map((label, i) => {
-              const state = getTabState(i);
-              const colors = tabColors[state];
-              return (
-                <button
-                  key={i}
-                  onClick={() => handleTabChange(i)}
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    padding: "10px 4px",
-                    background: colors.bg,
-                    border: state === "active" ? "1px solid var(--mb-navy-tint2)" : "1px solid transparent",
-                    borderRadius: 10,
-                    cursor: "pointer",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 5,
-                    position: "relative",
-                    minHeight: 48,
-                    transition: "all 150ms",
-                    boxShadow: state === "active" ? "var(--mb-shadow-sm)" : "none",
-                  }}
-                >
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: colors.dot, transition: "background 150ms" }} />
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 700, color: colors.label, whiteSpace: "nowrap", letterSpacing: "0.02em" }}>{label}</span>
-                  {state === "done" && i !== currentCard && (
-                    <span style={{ position: "absolute", top: 3, right: 4, fontSize: 8, color: "#1A6B3C", fontWeight: 700 }}>✓</span>
-                  )}
-                </button>
-              );
-            })}
+          <div style={{ marginBottom: 20, WebkitOverflowScrolling: "touch" }}>
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              {TAB_LABELS.map((label, i) => {
+                const state = getTabState(i);
+                const isActive = state === "active";
+                const isDone = state === "done";
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleTabChange(i)}
+                    style={{
+                      flexShrink: 0,
+                      padding: "8px 14px",
+                      background: isActive ? "var(--mb-navy)" : isDone ? "rgba(26,107,60,0.08)" : "var(--mb-paper)",
+                      border: isActive ? "1.5px solid var(--mb-navy)" : isDone ? "1.5px solid rgba(26,107,60,0.25)" : "1.5px solid var(--mb-rule)",
+                      borderRadius: 20,
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 12,
+                      fontWeight: isActive ? 800 : 600,
+                      color: isActive ? "white" : isDone ? "#1A6B3C" : "var(--mb-ink3)",
+                      whiteSpace: "nowrap",
+                      transition: "all 150ms",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      minHeight: 36,
+                    }}
+                  >
+                    {isDone && !isActive && <span style={{ fontSize: 10 }}>✓</span>}
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -474,18 +476,25 @@ export default function ResultsModelB() {
           </div>
         )}
 
-        {/* Error state */}
+        {/* Error state — with auto-retry and clear messaging */}
         {error && !loading && (
-          <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: "var(--mb-red)", marginBottom: 8 }}>{error}</div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink3)", marginBottom: 20, lineHeight: 1.65, maxWidth: 400, margin: "0 auto 20px" }}>
-              This is usually temporary — our AI might be busy. Your resume data is safe. Tap below to try again without refreshing.
+          <div style={{ textAlign: "center", padding: "60px 20px" }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8 }}>
+              Analysis still generating
+            </div>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 24, lineHeight: 1.7, maxWidth: 380, margin: "0 auto 24px" }}>
+              Our AI engine is processing your profile. This usually takes 30–60 seconds. Your data is safe — tap below to check again.
             </div>
             <button
               onClick={() => { setError(""); fetchAnalysis(); }}
-              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "white", background: "var(--mb-navy)", border: "none", borderRadius: 8, padding: "12px 28px", cursor: "pointer", minHeight: 44 }}
-            >Try again</button>
+              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "none", borderRadius: 12, padding: "14px 32px", cursor: "pointer", minHeight: 48, display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
+              ↻ Check again
+            </button>
+            <div style={{ marginTop: 16, fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)" }}>
+              {error.includes("non-2xx") ? "AI engine busy — this resolves automatically" : error}
+            </div>
           </div>
         )}
 

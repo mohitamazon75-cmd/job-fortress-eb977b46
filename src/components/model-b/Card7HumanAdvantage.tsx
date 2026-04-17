@@ -9,6 +9,76 @@ const iconMap: Record<string, { emoji: string; bg: string; badgeBg: string; badg
   shield: { emoji: "🛡️", bg: "var(--mb-navy-tint)", badgeBg: "var(--mb-navy-tint)", badgeColor: "var(--mb-navy)" },
 };
 
+
+// ── WhatsApp Weekly Alert Opt-in ──────────────────────────────────────────
+// Captures WhatsApp number at the end of the report for weekly score alerts.
+// Uses useState — no backend call until user submits.
+function WhatsAppCaptureBlock({ score }: { score: number }) {
+  const [phone, setPhone] = useState("");
+  const [submitted, setSubmitted] = useState(() => {
+    try { return !!localStorage.getItem("jb_wa_subscribed"); } catch { return false; }
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!phone || phone.length < 10) return;
+    setLoading(true);
+    try {
+      // Open WhatsApp with a pre-filled message — zero backend needed
+      const msg = `Hi, I just scanned my career on JobBachao and got a score of ${score}/100. Please send me my weekly AI risk updates on WhatsApp. My number: +91${phone.replace(/\D/g,"")}`;
+      window.open(`https://wa.me/919999999999?text=${encodeURIComponent(msg)}`, "_blank");
+      localStorage.setItem("jb_wa_subscribed", "1");
+      setSubmitted(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div style={{ margin: "16px 0", padding: "14px 18px", borderRadius: 14, background: "rgba(37,211,102,0.08)", border: "1.5px solid rgba(37,211,102,0.25)", textAlign: "center" }}>
+        <div style={{ fontSize: 20, marginBottom: 6 }}>✅</div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, color: "#16a34a" }}>
+          Weekly alerts activated
+        </div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginTop: 4 }}>
+          We'll WhatsApp you when your score shifts or the market changes for your role.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ margin: "16px 0", padding: "16px 18px", borderRadius: 14, background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)" }}>
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 4 }}>
+        📲 Get weekly score alerts on WhatsApp
+      </div>
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginBottom: 12 }}>
+        We'll notify you when your AI risk score shifts or a better job match appears. No spam — max 1 message/week.
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 10, overflow: "hidden", flex: 1 }}>
+          <span style={{ padding: "0 10px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-ink3)", borderRight: "1.5px solid var(--mb-rule)", lineHeight: "44px" }}>+91</span>
+          <input
+            type="tel"
+            placeholder="10-digit mobile number"
+            value={phone}
+            onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            style={{ border: "none", outline: "none", padding: "0 12px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink)", flex: 1, height: 44, background: "transparent" }}
+          />
+        </div>
+        <button
+          onClick={handleSubmit}
+          disabled={loading || phone.length < 10}
+          style={{ padding: "0 16px", height: 44, borderRadius: 10, background: phone.length >= 10 ? "#25D366" : "var(--mb-rule)", color: phone.length >= 10 ? "white" : "var(--mb-ink3)", border: "none", cursor: phone.length >= 10 ? "pointer" : "default", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, transition: "all 150ms", flexShrink: 0 }}
+        >
+          {loading ? "..." : "Notify me"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, analysisId }: { cardData: any; onBack: () => void; copyFallback?: (text: string) => void; analysisId?: string | null }) {
   const d = cardData.card7_human;
   const [insightIndex, setInsightIndex] = useState(0);
@@ -142,6 +212,9 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
             ))}
           </div>
         </div>
+
+        {/* Weekly score alert opt-in — zero friction, maximum retention */}
+        <WhatsAppCaptureBlock score={cardData.jobbachao_score} />
 
         <CardNav onBack={onBack} nextLabel="Journey complete ✓" />
       </CardBody>

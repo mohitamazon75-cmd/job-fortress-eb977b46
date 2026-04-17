@@ -173,6 +173,11 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--mb-ink3)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                 <span style={{ fontSize: 11 }}>🔍</span>
                 Search live openings on Naukri and LinkedIn above
+                {job.match_pct && (
+                  <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--mb-ink3)", fontStyle: "italic" }}>
+                    {job.match_pct}% match · scanned live
+                  </span>
+                )}
               </div>
               {/* Urgency narrative */}
               {job.urgency_narrative && (

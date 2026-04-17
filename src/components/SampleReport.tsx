@@ -12,57 +12,57 @@ interface SampleReportProps {
 
 /* ─── SAMPLE DATA ─── */
 const PROFILE = {
-  name: 'Ananya R.',
-  role: 'Marketing Manager',
-  experience: '7 yrs',
-  city: 'Mumbai',
-  industry: 'FMCG',
+  name: 'Arjun S.',
+  role: 'Senior Software Engineer',
+  experience: '6 yrs',
+  city: 'Bengaluru',
+  industry: 'IT Services / SaaS',
   tier: 'Tier-1 Metro',
-  score: 47,
-  doomMonths: 22,
-  salaryBleed: 18400,
+  score: 61,
+  doomMonths: 31,
+  salaryBleed: 24600,
 };
 
 const SCORE_FACTORS = [
-  { label: 'AI Exposure Index', pts: -18, desc: '62% of daily tasks automatable' },
-  { label: 'Human Edge Skills', pts: +12, desc: 'Stakeholder mgmt, negotiation' },
-  { label: 'Career Capital', pts: +11, desc: 'Moat depth · experience · adaptability · peer validation' },
-  { label: 'Market Demand', pts: +7, desc: 'Role still hiring in Tier-1' },
-  { label: 'Income Risk', pts: -4, desc: 'Salary above AI-replacement threshold' },
-  { label: 'Skill Freshness', pts: -8, desc: 'No AI-era upskilling detected' },
+  { label: 'AI Exposure Index', pts: -12, desc: '48% of daily coding tasks automatable by GitHub Copilot' },
+  { label: 'Human Edge Skills', pts: +14, desc: 'System design, code review, technical mentorship' },
+  { label: 'Career Capital', pts: +13, desc: 'Moat depth · distributed systems · team leadership' },
+  { label: 'Market Demand', pts: +9, desc: 'Senior engineers in high demand across Tier-1' },
+  { label: 'Income Risk', pts: -6, desc: 'Salary above AI-replacement threshold for basic CRUD' },
+  { label: 'Skill Freshness', pts: -7, desc: 'No cloud-native or AI tooling certifications' },
 ];
 
 const SKILLS_AT_RISK = [
-  { name: 'Data Analysis & Reporting', risk: 82, tool: 'Power BI Copilot', timeline: '8 mo' },
-  { name: 'Campaign Performance Tracking', risk: 76, tool: 'Google Analytics AI', timeline: '12 mo' },
-  { name: 'Market Research', risk: 65, tool: 'Perplexity AI', timeline: '18 mo' },
-  { name: 'Content Brief Writing', risk: 71, tool: 'Claude / GPT-5', timeline: '6 mo' },
+  { name: 'Boilerplate Code Writing', risk: 87, tool: 'GitHub Copilot', timeline: '6 mo' },
+  { name: 'Unit Test Generation', risk: 79, tool: 'Cursor AI / Devin', timeline: '9 mo' },
+  { name: 'Basic CRUD Development', risk: 72, tool: 'Replit AI / Lovable', timeline: '14 mo' },
+  { name: 'Code Documentation', risk: 68, tool: 'Claude / GPT-4o', timeline: '8 mo' },
 ];
 
 const SKILLS_SAFE = [
-  { name: 'Client Relationship Mgmt', safety: 88, edge: 'Trust & empathy' },
-  { name: 'Cross-functional Leadership', safety: 91, edge: 'Org navigation' },
-  { name: 'Brand Strategy', safety: 79, edge: 'Creative judgment' },
-  { name: 'Vendor Negotiation', safety: 85, edge: 'Human leverage' },
+  { name: 'System Architecture Design', safety: 94, edge: 'Judgment + context AI lacks' },
+  { name: 'Cross-team Technical Leadership', safety: 91, edge: 'Org navigation + trust' },
+  { name: 'Production Incident Response', safety: 88, edge: 'Pressure + intuition' },
+  { name: 'Technical Mentorship', safety: 85, edge: 'Human context + pattern recognition' },
 ];
 
 const DEFENSE_ACTIONS = [
-  { phase: 'Week 1–2', action: 'Complete Google AI Marketing certification', impact: '+6 pts', status: 'critical' },
-  { phase: 'Week 3–4', action: 'Build 3 AI-augmented campaign case studies', impact: '+4 pts', status: 'important' },
-  { phase: 'Month 2', action: 'Lead one AI tool adoption in your team', impact: '+8 pts', status: 'important' },
-  { phase: 'Month 3', action: 'Publish thought leadership on AI+Marketing', impact: '+5 pts', status: 'bonus' },
+  { phase: 'Week 1–2', action: 'Complete AWS Solutions Architect Associate certification', impact: '+7 pts', status: 'critical' },
+  { phase: 'Week 3–4', action: 'Build one AI-integrated feature using LangChain or GPT-4 API', impact: '+5 pts', status: 'important' },
+  { phase: 'Month 2', action: 'Lead AI tooling adoption (GitHub Copilot/Cursor) for your team', impact: '+8 pts', status: 'important' },
+  { phase: 'Month 3', action: 'Publish architecture case study on system design + AI integration', impact: '+6 pts', status: 'bonus' },
 ];
 
 const SAMPLE_JOBS = [
-  { title: 'Marketing Strategy Lead', company: 'Hindustan Unilever', match: 87, safety: 82, fit: 'STRONG', location: 'Mumbai', salary: '28-35 LPA' },
-  { title: 'Brand Manager – Digital', company: 'ITC Limited', match: 74, safety: 76, fit: 'GOOD', location: 'Kolkata / Hybrid', salary: '22-28 LPA' },
-  { title: 'Growth Marketing Manager', company: 'Swiggy', match: 69, safety: 71, fit: 'GOOD', location: 'Bengaluru', salary: '30-40 LPA' },
+  { title: 'Senior Software Engineer – Platform', company: 'Razorpay', match: 89, safety: 91, fit: 'STRONG', location: 'Bengaluru', salary: '32-45 LPA' },
+  { title: 'Staff Engineer – Distributed Systems', company: 'Swiggy', match: 76, safety: 88, fit: 'GOOD', location: 'Bengaluru / Remote', salary: '40-55 LPA' },
+  { title: 'Senior Backend Engineer', company: 'CRED', match: 71, safety: 85, fit: 'GOOD', location: 'Bengaluru', salary: '28-40 LPA' },
 ];
 
 const PIVOT_PATHS = [
-  { role: 'Product Marketing Manager', transferPct: 82, salaryDelta: '+15%', demand: 'High', risk: 34 },
-  { role: 'Customer Success Director', transferPct: 71, salaryDelta: '+22%', demand: 'Very High', risk: 21 },
-  { role: 'Marketing Analytics Lead', transferPct: 65, salaryDelta: '+30%', demand: 'High', risk: 28 },
+  { role: 'Engineering Manager', transferPct: 85, salaryDelta: '+28%', demand: 'Very High', risk: 18 },
+  { role: 'Solutions Architect', transferPct: 79, salaryDelta: '+35%', demand: 'High', risk: 22 },
+  { role: 'AI/ML Platform Engineer', transferPct: 68, salaryDelta: '+42%', demand: 'Explosive', risk: 15 },
 ];
 
 /* ─── MINI COMPONENTS ─── */
@@ -164,7 +164,7 @@ export default function SampleReport({ onCTA }: SampleReportProps) {
           </span>
         </h2>
         <p className="text-base text-muted-foreground mt-2 max-w-2xl mx-auto leading-relaxed">
-          Real output from our engine for a <span className="text-foreground font-bold">Marketing Manager in Mumbai</span>. Your report will be even more detailed with your actual profile data.
+          Real output from our engine for a <span className="text-foreground font-bold">Senior Software Engineer in Bengaluru</span>. Your report will be even more detailed with your actual profile data.
         </p>
       </motion.div>
 

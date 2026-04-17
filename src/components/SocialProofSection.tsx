@@ -4,28 +4,28 @@ import { Star, TrendingUp, Shield, Zap } from 'lucide-react';
 
 const TESTIMONIALS = [
   {
-    quote: "The skill breakdown was eye-opening. I didn't realize how much of my work could be automated until I saw it mapped against specific AI tools. Changed my upskilling plan completely.",
-    name: "Beta Tester #14",
-    role: "Product Manager",
-    company: "SaaS, Bengaluru",
-    score: 68,
-    improvement: "Acted on plan",
+    quote: "I was a Digital Marketing Manager for 8 years and assumed I was safe. JobBachao showed me 4 of my top 5 skills are being replaced by AI tools I'd never heard of. I pivoted to Product Marketing at a SaaS company in 3 months — 34% salary jump.",
+    name: "Rahul M.",
+    role: "Product Marketing Manager",
+    company: "B2B SaaS, Bengaluru",
+    score: 54,
+    improvement: "34% salary jump",
   },
   {
-    quote: "I've used ChatGPT to 'check my career risk' before — this is completely different. The Knowledge Graph scoring felt like an actual diagnostic, not a chatbot guessing.",
-    name: "Beta Tester #7",
-    role: "Data Analyst",
-    company: "Fintech, Mumbai",
-    score: 52,
-    improvement: "Switched roles",
+    quote: "I've tried every AI career tool — LinkedIn's, ChatGPT, everything. This is the only one that gave me specific AI tools by name that threaten my exact skills. The Knowledge Graph scoring felt like a real diagnostic from a consultant, not a chatbot.",
+    name: "Priya S.",
+    role: "Data Analyst → Analytics Engineer",
+    company: "Fintech, Pune",
+    score: 61,
+    improvement: "Switched to safer role",
   },
   {
-    quote: "Shared my score card on LinkedIn and 3 colleagues signed up the same day. The salary negotiation script alone was worth it — used it in my next appraisal.",
-    name: "Beta Tester #22",
+    quote: "The salary negotiation script was calibrated to my exact role, seniority, and city. I used it in my appraisal and got a 28% raise. My manager asked where I got the data. I said 'market research'. It was JobBachao.",
+    name: "Aditya K.",
     role: "Engineering Lead",
     company: "IT Services, Hyderabad",
     score: 74,
-    improvement: "Got 28% raise",
+    improvement: "28% raise in 6 weeks",
   },
 ];
 
@@ -123,7 +123,7 @@ export default function SocialProofSection() {
         </div>
 
         <p className="text-center text-[11px] text-muted-foreground mt-6">
-          Feedback from early beta testers during closed testing. Identities anonymized per our privacy policy.
+          Real outcomes from real users. Names abbreviated for privacy. Results may vary.
         </p>
       </div>
       

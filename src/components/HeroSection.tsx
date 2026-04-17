@@ -199,6 +199,25 @@ export default function HeroSection({ onStart }: HeroSectionProps) {
             <span className="text-primary font-black">Know your risk. Own your future.</span>
           </motion.p>
 
+          {/* Role selector — lets users self-identify before scanning */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55, duration: 0.4 }}
+            className="flex flex-wrap items-center justify-center gap-2 mb-6 sm:mb-8"
+          >
+            <span className="text-xs text-muted-foreground font-medium mr-1">I'm a:</span>
+            {['Software Engineer', 'Product Manager', 'Data Analyst', 'Marketing Pro', 'Finance / CA', 'Designer'].map((role) => (
+              <button
+                key={role}
+                onClick={onStart}
+                className="px-3 py-1.5 rounded-full text-xs font-bold border border-border bg-card hover:border-primary/40 hover:bg-primary/5 hover:text-primary transition-all duration-200 text-muted-foreground"
+              >
+                {role}
+              </button>
+            ))}
+          </motion.div>
+
           {/* Dual CTA */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
