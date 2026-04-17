@@ -22,6 +22,7 @@ const ResumeWeaponizerCard = lazy(() => import("@/components/cards/ResumeWeaponi
 const OfficePowerVocab = lazy(() => import("@/components/cards/OfficePowerVocab"));
 const SkillCompoundCalculator = lazy(() => import("@/components/cards/SkillCompoundCalculator"));
 const PeerRankCard = lazy(() => import("@/components/cards/PeerRankCard"));
+const TrajectoryCard = lazy(() => import("@/components/cards/TrajectoryCard"));
 
 interface WeeklyIntelData {
   resources?: Array<{ title: string; url: string; type: string; time_commitment?: string }>;
@@ -130,6 +131,21 @@ export default function ResultsModelB() {
 
   // Log helper
   const logEvent = useCallback(async (event_type: string, metadata?: Record<string, unknown>) => {
+    // Also log to user_action_signals for the behavioral flywheel
+    const validActionTypes = ['card_viewed','job_clicked','skill_selected','vocab_copied',
+      'pivot_expanded','plan_action_checked','share_whatsapp','share_linkedin',
+      'rescan_initiated','outcome_reported','tool_opened'];
+    if (validActionTypes.includes(event_type)) {
+      supabase.from('user_action_signals').insert({
+        scan_id: analysisId,
+        action_type: event_type,
+        action_payload: metadata || {},
+        scan_role: cardData?.user?.current_title || null,
+        scan_industry: cardData?.user?.industry || null,
+        scan_score: cardData?.jobbachao_score || null,
+        scan_city: cardData?.user?.location || null,
+      }).then(() => {}).catch(() => {}); // fire and forget
+    }
     try {
       await supabase.functions.invoke("log-ab-event", {
         body: { analysis_id: analysisId, user_id: userId, event_type, metadata },
@@ -600,6 +616,11 @@ export default function ResultsModelB() {
                     </div>
 
                   </Suspense>
+
+                  {/* Career Trajectory Engine — first tool, highest IP value */}
+                    <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
+                      <TrajectoryCard analysisId={analysisId ?? ""} cardData={cardData} />
+                    </div>
 
                   {/* Peer Rank Card */}
                     <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
