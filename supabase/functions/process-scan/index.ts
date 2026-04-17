@@ -655,24 +655,27 @@ Deno.serve(async (req) => {
         console.log(`[Agent1:Profiler] Completed on ${profilerResult.model_used.split("/").pop()} (${profilerResult.latency_ms}ms, chain: ${profilerResult.fallback_chain.map(m => m.split("/").pop()).join(" → ")})`);
       }
       if (!agent1) {
-        console.error("[Agent1:Profiler] Profiler failed — falling back to synthesized deterministic profile");
+        // P0 fix (2026-04-17): When the profiler agent fails entirely, prefer the
+        // verbatim parsed LinkedIn/resume title if we have one. If not, mark the
+        // scan invalid_input rather than synthesizing a "{Skill} Specialist" stub
+        // — those titles polluted production with junk like "Senior General
+        // Execution Tasks Specialist". Better to ask the user to retry with a job
+        // title than to ship a meaningless analysis.
+        if (!parsedLinkedinRole || parsedLinkedinRole === "Unknown") {
+          console.error("[Agent1:Profiler] Profiler failed AND no parsed title — marking scan invalid_input");
+          await supabase.from("scans").update({
+            scan_status: "invalid_input",
+            feedback_flag: "profiler_failed_no_title",
+          }).eq("id", scanId);
+          return new Response(JSON.stringify({
+            error: "Could not extract your profile. Please add your job title and key skills, then re-run the scan.",
+            code: "PROFILER_FAILED",
+          }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        console.warn(`[Agent1:Profiler] Profiler failed — using parsed title "${parsedLinkedinRole}" as fallback`);
         usedAgent1SyntheticFallback = true;
-        // P0 fix: never synthesize "{Industry} Professional" — produce a specific, skill/seniority-anchored title.
-        const indLower = (resolvedIndustry || "").trim().toLowerCase();
-        const synthHintIsLazy = !resolvedRoleHint
-          || resolvedRoleHint === "Unknown"
-          || (indLower && (resolvedRoleHint.trim().toLowerCase() === `${indLower} professional`
-              || resolvedRoleHint.trim().toLowerCase() === `${indLower} specialist`
-              || resolvedRoleHint.trim().toLowerCase() === indLower));
-        const synthSeniority = normalizedExperienceYears && normalizedExperienceYears >= 12 ? "Senior"
-          : normalizedExperienceYears && normalizedExperienceYears >= 7 ? "Lead"
-          : normalizedExperienceYears && normalizedExperienceYears >= 3 ? ""
-          : "Junior";
-        const synthSkill = String(manualMatchedSkills[0] || skillMapRows?.[0]?.skill_name || "");
-        const synthFallback = synthSkill
-          ? `${synthSeniority} ${synthSkill} Specialist`.replace(/\s+/g, " ").trim()
-          : `${synthSeniority} ${resolvedIndustry || "IT"} Practitioner`.replace(/\s+/g, " ").trim();
-        const fallbackRole = parsedLinkedinRole || (synthHintIsLazy ? synthFallback : resolvedRoleHint);
+        const fallbackRole = parsedLinkedinRole;
         const fallbackSkills = Array.from(new Set([
           ...manualMatchedSkills,
           ...skillMapRows.slice(0, 8).map((skill) => skill.skill_name),
@@ -805,15 +808,22 @@ Deno.serve(async (req) => {
     const agent1RoleClean = isLazyIndustryEcho(agent1?.current_role) ? null : agent1?.current_role;
     const hintRole = isLazyIndustryEcho(resolvedRoleHint) ? null : resolvedRoleHint;
     const rawDetectedRole = verbatimParsedTitle || agent1RoleClean || hintRole;
-    // Final fallback: synthesize from seniority + a meaningful skill, not from industry echo.
-    const seniorityWord = normalizedExperienceYears && normalizedExperienceYears >= 12 ? "Senior"
-      : normalizedExperienceYears && normalizedExperienceYears >= 7 ? "Lead"
-      : normalizedExperienceYears && normalizedExperienceYears >= 3 ? "" : "Junior";
-    const skillAnchor = String(manualMatchedSkills[0] || agent1?.execution_skills?.[0] || agent1?.strategic_skills?.[0] || "");
-    const fallbackRoleStr = skillAnchor
-      ? `${seniorityWord} ${skillAnchor} Specialist`.replace(/\s+/g, " ").trim()
-      : `${seniorityWord} ${resolvedIndustry || "IT"} Practitioner`.replace(/\s+/g, " ").trim();
-    const detectedRole = (!rawDetectedRole || rawDetectedRole === "Unknown") ? fallbackRoleStr : rawDetectedRole;
+    // P0 fix (2026-04-17): NEVER emit synthetic "{Skill} Specialist" titles when the
+    // profiler+parsed-title pipeline produced nothing useful. These junk titles
+    // ("Senior General Execution Tasks Specialist") shipped to users and destroyed
+    // trust. Fail loudly: mark scan invalid_input so the UI surfaces a retry CTA.
+    if (!rawDetectedRole || rawDetectedRole === "Unknown") {
+      console.error(`[RoleGuard] No usable role title (parsed=${verbatimParsedTitle}, agent1=${agent1?.current_role}, hint=${resolvedRoleHint}) — failing scan instead of synthesizing junk`);
+      await supabase.from("scans").update({
+        scan_status: "invalid_input",
+        feedback_flag: "role_extraction_failed",
+      }).eq("id", scanId);
+      return new Response(JSON.stringify({
+        error: "Could not detect role from your profile. Please add your current job title and re-run the scan.",
+        code: "ROLE_EXTRACTION_FAILED",
+      }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const detectedRole = rawDetectedRole;
     if (verbatimParsedTitle && agent1?.current_role && verbatimParsedTitle.toLowerCase() !== agent1.current_role.toLowerCase()) {
       // Security: do not log verbatim job titles — they are PII-adjacent
       console.warn(`[RoleGuard] Agent1 title differs from parsed title — using parsed title`);

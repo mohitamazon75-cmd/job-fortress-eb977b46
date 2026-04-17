@@ -49,6 +49,41 @@ Deno.serve(async (req: Request) => {
       // Silently discard out-of-range values — no error response (avoids info leakage)
     }
 
+    // ── P1 (2026-04-17): Per-user daily scan cap (cost guardrail) ──
+    // Without this, a single bad actor can drain the AI budget overnight.
+    // Free users: 3/day. Pro users: 50/day.
+    if (userId && typeof userId === "string") {
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count: dailyCount } = await supabase
+        .from("scans")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .gte("created_at", dayAgo);
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("subscription_tier, subscription_expires_at")
+        .eq("id", userId)
+        .maybeSingle();
+      const isPro = profile?.subscription_tier === "pro"
+        && profile?.subscription_expires_at
+        && new Date(profile.subscription_expires_at as string) > new Date();
+      const dailyLimit = isPro ? 50 : 3;
+
+      if ((dailyCount ?? 0) >= dailyLimit) {
+        console.warn(`[create-scan] Daily cap reached for user ${userId}: ${dailyCount}/${dailyLimit}`);
+        return new Response(
+          JSON.stringify({
+            error: isPro
+              ? "Daily Pro scan limit reached (50/day). Try again tomorrow."
+              : "Daily scan limit reached. Upgrade to Pro for 50 scans/day.",
+            code: "DAILY_LIMIT_REACHED",
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const insertPayload: Record<string, unknown> = {
       linkedin_url: linkedinUrl || null,
       resume_file_path: resumeFilePath || null,
