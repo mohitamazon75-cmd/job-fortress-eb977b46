@@ -11,6 +11,8 @@ serve(async (req) => {
     return new Response(null, { headers: getCorsHeaders(req) });
   }
 
+  const corsHeaders = getCorsHeaders(req);
+
   try {
     const { prompt, title } = await req.json();
 
