@@ -173,7 +173,24 @@ export default function ResultsModelB() {
         body: { analysis_id: analysisId, user_id: uid, resume_filename: "Your Resume" },
       });
 
-      if (fnError) throw new Error(fnError.message || "Analysis failed");
+      if (fnError) {
+        // Edge function returned non-2xx — try to surface a useful message
+        const ctx: any = (fnError as any).context;
+        let parsed: any = null;
+        try { parsed = ctx?.body ? JSON.parse(ctx.body) : null; } catch {}
+        if (parsed?.code === "SCAN_NOT_READY") {
+          setError("This scan didn't complete. Start a new scan to view your analysis.");
+          setLoading(false);
+          return;
+        }
+        if (parsed?.code === "AUTH_REQUIRED") {
+          setError("Please sign in to view this analysis.");
+          setShowSavePrompt(true);
+          setLoading(false);
+          return;
+        }
+        throw new Error(parsed?.error || fnError.message || "Analysis failed");
+      }
       if (!data?.success) throw new Error(data?.error || "Analysis failed");
 
       // If we got data immediately (cache hit), use it

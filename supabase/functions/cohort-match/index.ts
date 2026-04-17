@@ -193,13 +193,35 @@ Deno.serve(async (req: Request) => {
     // ── 1. Load the scan report ──────────────────────────────
     const { data: scan, error: scanError } = await supabase
       .from("scans")
-      .select("id, final_json_report, user_id")
+      .select("id, final_json_report, user_id, scan_status")
       .eq("id", scan_id)
       .maybeSingle();
 
-    if (scanError || !scan || !scan.final_json_report) {
+    if (scanError || !scan) {
       return new Response(JSON.stringify({ error: "Scan not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Scan exists but has no completed report — return graceful empty cohort
+    // instead of 404 so the frontend hook stops surfacing this as a runtime error.
+    if (!scan.final_json_report) {
+      const emptyPayload = {
+        scan_id,
+        cohort_size: 0,
+        cohort_label: "professionals",
+        pct_improved: null,
+        top_skill_gain: null,
+        median_doom_months: null,
+        median_stability: null,
+        insight_text: scan.scan_status === "processing"
+          ? "Cohort intelligence will be available once your scan finishes processing."
+          : "Cohort intelligence isn't available for this scan yet.",
+        computed_at: new Date().toISOString(),
+        scan_status: scan.scan_status,
+      };
+      return new Response(JSON.stringify(emptyPayload), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 

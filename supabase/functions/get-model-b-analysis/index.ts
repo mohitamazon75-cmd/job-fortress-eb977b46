@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
 
     const { data: scan, error: scanError } = await supabase
       .from("scans")
-      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url")
+      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url, scan_status")
       .eq("id", analysis_id)
       .maybeSingle();
 
@@ -43,15 +43,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Ownership: if the scan has no owner (created pre-auth), claim it for this user.
-    // Only forbid if the scan is owned by a *different* user.
+    // Ownership check.
+    // - If user_id is missing from the request (anonymous viewer / no session),
+    //   surface a clear AUTH_REQUIRED instead of a generic Forbidden so the
+    //   frontend can prompt sign-in instead of treating it as a runtime error.
+    // - If the scan is owned by a different user, return Forbidden.
+    if (scan.user_id && !user_id) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Sign in to view this analysis", code: "AUTH_REQUIRED" }),
+        { status: 401, headers: jsonHeaders }
+      );
+    }
     if (scan.user_id && scan.user_id !== user_id) {
       return new Response(
         JSON.stringify({ success: false, error: "Forbidden" }),
         { status: 403, headers: jsonHeaders }
       );
     }
-    if (!scan.user_id) {
+    if (!scan.user_id && user_id) {
       const { error: claimErr } = await supabase
         .from("scans")
         .update({ user_id })
@@ -62,6 +71,24 @@ Deno.serve(async (req) => {
       } else {
         scan.user_id = user_id;
       }
+    }
+
+    // Hard-stop if the underlying scan never produced a usable report.
+    // Prevents model-b from spinning on failed/invalid_input scans and
+    // tells the frontend to surface a "rescan" CTA instead of looping.
+    if (
+      (scan.scan_status === "invalid_input" || scan.scan_status === "failed")
+      && !scan.final_json_report
+    ) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Original scan didn't complete. Please run a new scan.",
+          code: "SCAN_NOT_READY",
+          scan_status: scan.scan_status,
+        }),
+        { status: 409, headers: jsonHeaders }
+      );
     }
 
     // ─── Check cache / completed results ───
