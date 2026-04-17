@@ -657,7 +657,22 @@ Deno.serve(async (req) => {
       if (!agent1) {
         console.error("[Agent1:Profiler] Profiler failed — falling back to synthesized deterministic profile");
         usedAgent1SyntheticFallback = true;
-        const fallbackRole = parsedLinkedinRole || resolvedRoleHint || `${resolvedIndustry || "IT"} Professional`;
+        // P0 fix: never synthesize "{Industry} Professional" — produce a specific, skill/seniority-anchored title.
+        const indLower = (resolvedIndustry || "").trim().toLowerCase();
+        const synthHintIsLazy = !resolvedRoleHint
+          || resolvedRoleHint === "Unknown"
+          || (indLower && (resolvedRoleHint.trim().toLowerCase() === `${indLower} professional`
+              || resolvedRoleHint.trim().toLowerCase() === `${indLower} specialist`
+              || resolvedRoleHint.trim().toLowerCase() === indLower));
+        const synthSeniority = normalizedExperienceYears && normalizedExperienceYears >= 12 ? "Senior"
+          : normalizedExperienceYears && normalizedExperienceYears >= 7 ? "Lead"
+          : normalizedExperienceYears && normalizedExperienceYears >= 3 ? ""
+          : "Junior";
+        const synthSkill = String(manualMatchedSkills[0] || skillMapRows?.[0]?.skill_name || "");
+        const synthFallback = synthSkill
+          ? `${synthSeniority} ${synthSkill} Specialist`.replace(/\s+/g, " ").trim()
+          : `${synthSeniority} ${resolvedIndustry || "IT"} Practitioner`.replace(/\s+/g, " ").trim();
+        const fallbackRole = parsedLinkedinRole || (synthHintIsLazy ? synthFallback : resolvedRoleHint);
         const fallbackSkills = Array.from(new Set([
           ...manualMatchedSkills,
           ...skillMapRows.slice(0, 8).map((skill) => skill.skill_name),
