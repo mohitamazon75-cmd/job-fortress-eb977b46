@@ -259,7 +259,13 @@ async function generateMilestones(
   // If we have fewer than 8 milestones, fall back to defaults
   if (milestones.length < 8) {
     console.log(`[generate-milestones] Generated ${milestones.length} milestones, falling back to defaults`);
-    return defaultMilestones;
+    const enriched = await Promise.all(
+      defaultMilestones.map(async (m) => ({
+        ...m,
+        resource_url: await findResourceUrl(m.milestone_label, supabase),
+      })),
+    );
+    return enriched;
   }
 
   return milestones;
