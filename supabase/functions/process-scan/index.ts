@@ -83,12 +83,17 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
   const corsHeaders = getCorsHeaders(req);
   let globalTimer: ReturnType<typeof setTimeout> | undefined;
+  // Hoist scanId outside the try block so the catch-handler can mark the row as failed
+  // without needing to re-read req.body (which has already been consumed by req.json()).
+  // Previously the recovery path called `req.clone().json()` which throws "Body is unusable".
+  let scanId: string | undefined;
+  let forceRefresh: boolean | undefined;
 
   try {
     const blocked = guardRequest(req, corsHeaders);
     if (blocked) return blocked;
 
-    const { scanId, forceRefresh } = await req.json();
+    ({ scanId, forceRefresh } = await req.json());
     if (!scanId) {
       return new Response(JSON.stringify({ error: "scanId is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -1055,12 +1060,11 @@ Deno.serve(async (req) => {
     trackUsage("process-scan", true).catch(() => {});
 
     try {
-      const supabase = createAdminClient();
-      const body = await req.clone().json().catch(() => ({}));
-      if (body.scanId) {
-        const { data: current } = await supabase.from("scans").select("scan_status").eq("id", body.scanId).single();
+      if (scanId) {
+        const supabase = createAdminClient();
+        const { data: current } = await supabase.from("scans").select("scan_status").eq("id", scanId).single();
         if (current?.scan_status !== "complete") {
-          await supabase.from("scans").update({ scan_status: "failed" }).eq("id", body.scanId);
+          await supabase.from("scans").update({ scan_status: "failed" }).eq("id", scanId);
         }
       }
     } catch (recoveryErr) {
