@@ -617,14 +617,12 @@ export default function ResultsModelB() {
                       <ResumeWeaponizerCard report={syntheticReport} scanId={analysisId ?? ""} />
                     </div>
 
-                  </Suspense>
-
-                  {/* Career Trajectory Engine — first tool, highest IP value */}
+                    {/* Career Trajectory Engine */}
                     <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
                       <TrajectoryCard analysisId={analysisId ?? ""} cardData={cardData} />
                     </div>
 
-                  {/* Peer Rank Card */}
+                    {/* Peer Rank */}
                     <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
                       <PeerRankCard cardData={cardData} />
                     </div>
@@ -634,10 +632,12 @@ export default function ResultsModelB() {
                       <SkillCompoundCalculator cardData={cardData} />
                     </div>
 
-                    {/* Office Power Vocabulary */}
+                    {/* Office Power Vocabulary — Use This Not That */}
                     <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
                       <OfficePowerVocab cardData={cardData} />
                     </div>
+
+                  </Suspense>
 
                   <button onClick={() => handleTabChange(0)} style={{ width: "100%", padding: "14px", background: "var(--mb-navy)", color: "white", border: "none", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>
                     ← Back to Risk Analysis
