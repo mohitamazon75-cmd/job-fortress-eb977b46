@@ -765,8 +765,27 @@ Deno.serve(async (req) => {
     // TRUST HIERARCHY: Resume/LinkedIn parsed title > Agent1 extraction > URL inference > fallback
     // Agent1 may hallucinate/inflate titles (e.g., "Manager" → "Director"), so prefer verbatim parsed title
     const verbatimParsedTitle = parsedLinkedinRole && parsedLinkedinRole !== "Unknown" && parsedLinkedinRole !== "Professional" ? parsedLinkedinRole : null;
-    const rawDetectedRole = verbatimParsedTitle || agent1?.current_role || resolvedRoleHint;
-    const detectedRole = (!rawDetectedRole || rawDetectedRole === "Unknown") ? `${resolvedIndustry || "IT"} Professional` : rawDetectedRole;
+    // Reject lazy "{Industry} Professional" echoes from Agent1 (e.g. "Marketing & Advertising Professional")
+    // — these are useless for downstream personalization. Treat as if Agent1 had no role.
+    const isLazyIndustryEcho = (role: string | null | undefined): boolean => {
+      if (!role) return true;
+      const r = role.trim().toLowerCase();
+      const ind = (resolvedIndustry || "").trim().toLowerCase();
+      if (!ind) return false;
+      return r === `${ind} professional` || r === `${ind} specialist` || r === ind;
+    };
+    const agent1Role = isLazyIndustryEcho(agent1?.current_role) ? null : agent1?.current_role;
+    const hintRole = isLazyIndustryEcho(resolvedRoleHint) ? null : resolvedRoleHint;
+    const rawDetectedRole = verbatimParsedTitle || agent1Role || hintRole;
+    // Final fallback: synthesize from seniority + a meaningful skill, not from industry echo.
+    const seniorityWord = normalizedExperienceYears && normalizedExperienceYears >= 12 ? "Senior"
+      : normalizedExperienceYears && normalizedExperienceYears >= 7 ? "Lead"
+      : normalizedExperienceYears && normalizedExperienceYears >= 3 ? "" : "Junior";
+    const skillAnchor = String(manualMatchedSkills[0] || agent1?.execution_skills?.[0] || agent1?.strategic_skills?.[0] || "");
+    const fallbackRoleStr = skillAnchor
+      ? `${seniorityWord} ${skillAnchor} Specialist`.replace(/\s+/g, " ").trim()
+      : `${seniorityWord} ${resolvedIndustry || "IT"} Practitioner`.replace(/\s+/g, " ").trim();
+    const detectedRole = (!rawDetectedRole || rawDetectedRole === "Unknown") ? fallbackRoleStr : rawDetectedRole;
     if (verbatimParsedTitle && agent1?.current_role && verbatimParsedTitle.toLowerCase() !== agent1.current_role.toLowerCase()) {
       // Security: do not log verbatim job titles — they are PII-adjacent
       console.warn(`[RoleGuard] Agent1 title differs from parsed title — using parsed title`);

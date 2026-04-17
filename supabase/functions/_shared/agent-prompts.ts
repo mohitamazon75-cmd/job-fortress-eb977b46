@@ -85,6 +85,10 @@ VERBATIM TITLE EXTRACTION (CRITICAL — ZERO TOLERANCE FOR TITLE INFLATION):
 - If the headline contains multiple titles separated by "|", use the FIRST title (the primary one).
   * Example: "Digital Marketing Manager | Growth & Demand Generation Leader" → current_role = "Digital Marketing Manager"
 - If the person's title is ambiguous, use EXACTLY what they wrote. Their self-description IS their title.
+- BANNED FALLBACKS — if you cannot find a clear title, do NOT invent any of these (they are useless industry echoes):
+  * "Marketing & Advertising Professional", "Technology Professional", "IT Professional", "Finance Professional", "{Industry} Specialist", "{Industry} Practitioner"
+  * Instead, infer from the most recent job: if the most recent role bullet mentions "ran demand-gen campaigns" → current_role = "Demand Generation Manager"; if it mentions "wrote SQL for dashboards" → "Data Analyst". Be specific.
+  * Last resort if truly nothing usable exists: return null for current_role. Do NOT pad with industry echoes.
 - The ONLY exception: if someone clearly owns/founded a company but their headline doesn't say it (e.g., headline says "Technology Professional" but experience shows "Founder at XYZ Corp"), you may use "Founder & [their stated title]".
 
 - SENIORITY-SCALED SKILL EXTRACTION — the number of skills extracted MUST match career depth:
