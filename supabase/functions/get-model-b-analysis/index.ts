@@ -213,6 +213,8 @@ async function processAnalysis(
   resumeFilename: string,
   resumeText: string,
   userCity: string,
+  detectedRole = "",
+  detectedIndustry = "",
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
