@@ -498,26 +498,56 @@ export default function ResultsModelB() {
         )}
 
         {/* Error state — with auto-retry and clear messaging */}
-        {error && !loading && (
-          <div style={{ textAlign: "center", padding: "60px 20px" }}>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8 }}>
-              Analysis still generating
+        {error && !loading && (() => {
+          const isForbidden = /forbidden|403|different account|not found|404/i.test(error);
+          if (isForbidden) {
+            return (
+              <div style={{ textAlign: "center", padding: "60px 20px", maxWidth: 440, margin: "0 auto" }}>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>🔒</div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8 }}>
+                  This scan belongs to another account
+                </div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 24, lineHeight: 1.7 }}>
+                  You're signed in with a different email than the one that created this analysis. Sign in with the original account, or run a fresh scan now — it takes about a minute.
+                </div>
+                <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => { window.location.href = "/"; }}
+                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "none", borderRadius: 12, padding: "14px 28px", cursor: "pointer", minHeight: 48 }}
+                  >
+                    Start a fresh scan
+                  </button>
+                  <button
+                    onClick={async () => { await supabase.auth.signOut(); window.location.href = "/auth"; }}
+                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-ink)", background: "transparent", border: "1.5px solid var(--mb-ink)", borderRadius: 12, padding: "14px 28px", cursor: "pointer", minHeight: 48 }}
+                  >
+                    Switch account
+                  </button>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8 }}>
+                Analysis still generating
+              </div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 24, lineHeight: 1.7, maxWidth: 380, margin: "0 auto 24px" }}>
+                Our AI engine is processing your profile. This usually takes 30–60 seconds. Your data is safe — tap below to check again.
+              </div>
+              <button
+                onClick={() => { setError(""); fetchAnalysis(); }}
+                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "none", borderRadius: 12, padding: "14px 32px", cursor: "pointer", minHeight: 48, display: "inline-flex", alignItems: "center", gap: 8 }}
+              >
+                ↻ Check again
+              </button>
+              <div style={{ marginTop: 16, fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)" }}>
+                {error.includes("non-2xx") ? "AI engine busy — this resolves automatically" : error}
+              </div>
             </div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 24, lineHeight: 1.7, maxWidth: 380, margin: "0 auto 24px" }}>
-              Our AI engine is processing your profile. This usually takes 30–60 seconds. Your data is safe — tap below to check again.
-            </div>
-            <button
-              onClick={() => { setError(""); fetchAnalysis(); }}
-              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "none", borderRadius: 12, padding: "14px 32px", cursor: "pointer", minHeight: 48, display: "inline-flex", alignItems: "center", gap: 8 }}
-            >
-              ↻ Check again
-            </button>
-            <div style={{ marginTop: 16, fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)" }}>
-              {error.includes("non-2xx") ? "AI engine busy — this resolves automatically" : error}
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Main content */}
         {cardData && !loading && !error && (
