@@ -517,6 +517,26 @@ export default function ResultsModelB() {
         {/* Error state — with auto-retry and clear messaging */}
         {error && !loading && (() => {
           const isForbidden = /forbidden|403|different account|not found|404/i.test(error);
+          const isScanIncomplete = /didn't complete|not ready|scan_not_ready|run a new scan|start a new scan/i.test(error);
+          if (isScanIncomplete) {
+            return (
+              <div style={{ textAlign: "center", padding: "60px 20px", maxWidth: 440, margin: "0 auto" }}>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8 }}>
+                  This scan didn't complete
+                </div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 24, lineHeight: 1.7 }}>
+                  The original scan failed before producing a report — usually because the resume or LinkedIn URL couldn't be parsed. Run a fresh scan to get your analysis (takes about a minute).
+                </div>
+                <button
+                  onClick={() => { window.location.href = "/"; }}
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "none", borderRadius: 12, padding: "14px 32px", cursor: "pointer", minHeight: 48 }}
+                >
+                  Start a fresh scan
+                </button>
+              </div>
+            );
+          }
           if (isForbidden) {
             return (
               <div style={{ textAlign: "center", padding: "60px 20px", maxWidth: 440, margin: "0 auto" }}>
