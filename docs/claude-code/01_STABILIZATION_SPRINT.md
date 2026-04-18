@@ -49,7 +49,7 @@ Currently both `bun.lock`, `bun.lockb`, and `package-lock.json` exist. Pick one 
 ### Sprint A acceptance criteria
 - [ ] v2 question resolved
 - [ ] `.git_old*` dirs removed
-- [ ] KidSutra references purged
+- [x] KidSutra references purged
 - [ ] New `CLAUDE.md` in place
 - [ ] `docs/claude-code/` populated
 - [ ] Lockfiles unified
