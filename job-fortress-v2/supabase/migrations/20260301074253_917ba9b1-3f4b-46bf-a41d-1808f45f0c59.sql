@@ -1,1 +1,0 @@
-DELETE FROM scan_rate_limits WHERE client_ip = '122.177.240.39';

@@ -1,1 +1,0 @@
-ALTER TABLE public.scans ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'IN';
