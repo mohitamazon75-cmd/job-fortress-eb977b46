@@ -1,0 +1,1 @@
+UPDATE public.scans SET feedback_flag = 'legacy_lazy_role' WHERE id = 'd47bf824-8e85-4e7c-891b-0c985cb3d01a' AND role_detected ILIKE '%General Execution%';
