@@ -49,6 +49,22 @@ Deno.serve(async (req: Request) => {
       // Silently discard out-of-range values — no error response (avoids info leakage)
     }
 
+    // ── P0 (2026-04-17): Reject scans with no profile source ──
+    // Without a resume OR a LinkedIn URL, the Profiler has nothing to extract from
+    // and the scan is guaranteed to fail. Block at insert time instead of burning
+    // AI tokens to fail. Discovered after 3 back-to-back `failed` scans today.
+    const hasResume = typeof resumeFilePath === "string" && resumeFilePath.trim().length > 0;
+    const hasLinkedIn = typeof linkedinUrl === "string" && linkedinUrl.trim().length > 0;
+    if (!hasResume && !hasLinkedIn) {
+      return new Response(
+        JSON.stringify({
+          error: "Upload a resume or paste a LinkedIn URL to start the scan.",
+          code: "MISSING_PROFILE_SOURCE",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ── P1 (2026-04-17): Per-user daily scan cap (cost guardrail) ──
     // Without this, a single bad actor can drain the AI budget overnight.
     // Free users: 3/day. Pro users: 50/day.
