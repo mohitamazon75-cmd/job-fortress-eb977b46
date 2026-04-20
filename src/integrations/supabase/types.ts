@@ -614,6 +614,89 @@ export type Database = {
         }
         Relationships: []
       }
+      cohort_data: {
+        Row: {
+          ai_tools_used: Json
+          city: string
+          commit_recency: string | null
+          created_at: string
+          exp_band: string
+          id: string
+          job_nature: string | null
+          role: string
+          scan_id: string
+          tools: Json
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_tools_used?: Json
+          city: string
+          commit_recency?: string | null
+          created_at?: string
+          exp_band: string
+          id?: string
+          job_nature?: string | null
+          role: string
+          scan_id: string
+          tools?: Json
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_tools_used?: Json
+          city?: string
+          commit_recency?: string | null
+          created_at?: string
+          exp_band?: string
+          id?: string
+          job_nature?: string | null
+          role?: string
+          scan_id?: string
+          tools?: Json
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_data_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: true
+            referencedRelation: "scans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cohort_market_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          expires_at: string
+          id: string
+          payload: Json
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          payload: Json
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          payload?: Json
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cohort_percentiles: {
         Row: {
           city_percentile: number | null
@@ -692,6 +775,39 @@ export type Database = {
           industry?: string
           last_updated?: string
           risk_tier?: string
+        }
+        Relationships: []
+      }
+      crc_learning_resources: {
+        Row: {
+          created_at: string
+          curated_at: string
+          id: string
+          resource_duration_min: number | null
+          resource_title: string
+          resource_url: string
+          skill_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          curated_at?: string
+          id?: string
+          resource_duration_min?: number | null
+          resource_title: string
+          resource_url: string
+          skill_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          curated_at?: string
+          id?: string
+          resource_duration_min?: number | null
+          resource_title?: string
+          resource_url?: string
+          skill_name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -999,6 +1115,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled_for_user_ids: string[]
+          enabled_percentage: number
+          flag_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled_for_user_ids?: string[]
+          enabled_percentage?: number
+          flag_name: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled_for_user_ids?: string[]
+          enabled_percentage?: number
+          flag_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       intel_watchlist: {
         Row: {
@@ -1604,6 +1750,7 @@ export type Database = {
       scans: {
         Row: {
           access_token: string | null
+          career_reality_check_data: Json | null
           country: string | null
           created_at: string
           determinism_index: number | null
@@ -1631,6 +1778,7 @@ export type Database = {
         }
         Insert: {
           access_token?: string | null
+          career_reality_check_data?: Json | null
           country?: string | null
           created_at?: string
           determinism_index?: number | null
@@ -1658,6 +1806,7 @@ export type Database = {
         }
         Update: {
           access_token?: string | null
+          career_reality_check_data?: Json | null
           country?: string | null
           created_at?: string
           determinism_index?: number | null
