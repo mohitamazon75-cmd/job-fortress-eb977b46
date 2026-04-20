@@ -48,6 +48,7 @@ import { recordScoreHistory, getPreviousScore } from "../_shared/score-history.t
 import { Agent1Schema, clampAgent1Output, validateAgentOutput, checkAutomationSignalConsistency } from "../_shared/zod-schemas.ts";
 import { getPromptVersion } from "../_shared/prompt-versions.ts";
 import { findCachedScan } from "../_shared/scan-cache.ts";
+import { isFeatureEnabled } from "../_shared/feature-flags.ts";
 // Static top-level import — was previously dynamic-only inside a try/catch,
 // which left `getKG` undefined for the manual-skill matching path below
 // (line ~340) and crashed every manual scan with `getKG is not defined`.
@@ -792,6 +793,44 @@ Deno.serve(async (req) => {
         },
       });
     } catch (logErr) { console.warn("[process-scan] Agent1 quality log write failed:", logErr); }
+
+    // ── B3 Fabrication Guard ──────────────────────────────────────
+    // When Agent 1 produced a synthetic fallback OR the all-skills MERGED_FALLBACK
+    // fired, the downstream pipeline would ship a fabricated report (skills/risk
+    // sourced from the matched job_family rather than the user's actual profile).
+    // Master switch per docs/claude-code/SCAN_PIPELINE_TRIAGE_2026-04-20.md §9.
+    // Gated by feature flag `enable_fabrication_guard` (default OFF). The helper
+    // is fail-closed: any DB/runtime error returns false, preserving existing
+    // behavior when the flag infra is unavailable.
+    const wouldFabricate = usedAgent1SyntheticFallback || fallbacksUsed.includes("all→MERGED_FALLBACK");
+    if (wouldFabricate && await isFeatureEnabled(supabase, "enable_fabrication_guard", scan.user_id || scanId)) {
+      console.error(`[FabricationGuard] Blocking fabricated report — fallbacks=[${fallbacksUsed.join(" | ")}] targetFamily=${targetFamily} profile_text_length=${rawProfileText.length} synthetic=${usedAgent1SyntheticFallback}`);
+      try {
+        await supabase.from("edge_function_logs").insert({
+          function_name: "process-scan:fabrication-guard",
+          status: "blocked",
+          error_code: "FABRICATION_GUARD",
+          error_message: `Blocked fabricated report for ${resolvedIndustry} / ${resolvedRoleHint}`,
+          request_meta: {
+            scan_id: scanId,
+            fallbacks_used: fallbacksUsed,
+            job_family_matched: targetFamily,
+            profile_text_length: rawProfileText.length,
+            synthetic_fallback_used: usedAgent1SyntheticFallback,
+            linkedin_url: scan.linkedin_url ? "present" : "absent",
+          },
+        });
+      } catch (logErr) { console.warn("[FabricationGuard] Diagnostic log write failed (non-fatal):", logErr); }
+      await supabase.from("scans").update({
+        scan_status: "invalid_input",
+        feedback_flag: "fabrication_guard",
+      }).eq("id", scanId);
+      clearTimeout(globalTimer);
+      return new Response(JSON.stringify({
+        error: "We couldn't reliably read your profile data. Please add your current job title and 3–5 key skills, then re-run the scan.",
+        code: "FABRICATION_GUARD",
+      }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Compound role handling
     let compoundRole = false;
