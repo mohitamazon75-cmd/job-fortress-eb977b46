@@ -327,7 +327,7 @@ async function enrichFromLinkedin(
         name = profile.name && profile.name !== "Unknown" ? profile.name : linkedinInferenceName;
         company = profile.company || null;
         industry = profile.suggestedIndustry || profile.matchedIndustry || null;
-        role = profile.headline || profile.matchedJobFamily || null;
+        role = profile.experience?.[0]?.title || profile.headline || profile.matchedJobFamily || null;
 
         if (profile.name && profile.name !== "Unknown") rawProfileText += `Name: ${profile.name}\n`;
         if (profile.headline && profile.headline !== "Unknown" && profile.headline !== "Professional") rawProfileText += `Headline: ${profile.headline}\n`;
