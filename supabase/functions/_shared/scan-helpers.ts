@@ -364,19 +364,6 @@ export function matchRoleToJobFamily(role: string, jobs: Record<string, unknown>
       for (const ft of familyTokens) {
         if (rt === ft) score += 20;
         else if (rt.includes(ft) || ft.includes(rt)) score += 10;
-        else {
-          const maxLen = Math.max(rt.length, ft.length);
-          if (maxLen > 0) {
-            let common = 0;
-            const shorter = rt.length < ft.length ? rt : ft;
-            const longer = rt.length < ft.length ? ft : rt;
-            for (const ch of shorter) {
-              if (longer.includes(ch)) common++;
-            }
-            const similarity = common / maxLen;
-            if (similarity > 0.7) score += 5;
-          }
-        }
       }
     }
 
