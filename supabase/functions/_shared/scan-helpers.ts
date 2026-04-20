@@ -361,6 +361,7 @@ export function matchRoleToJobFamily(role: string, jobs: Record<string, unknown>
     }
 
     for (const rt of roleTokens) {
+      if (rt.length < 3) continue;
       for (const ft of familyTokens) {
         if (rt === ft) score += 20;
         else if (rt.includes(ft) || ft.includes(rt)) score += 10;
