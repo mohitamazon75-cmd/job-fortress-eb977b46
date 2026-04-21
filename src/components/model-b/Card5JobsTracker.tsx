@@ -94,19 +94,21 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
           </div>
         )}
 
-        {/* Stat grid */}
+        {/* Stat grid — hidden when live counts unavailable (Day 3 pipeline will populate) */}
+        {(d?.active_count != null || d?.senior_count != null || d?.strong_match_count != null) && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 22 }}>
           {[
             { val: d?.active_count, label: "Active openings", color: "var(--mb-green)" },
             { val: d?.senior_count, label: "Senior roles", color: "var(--mb-navy)" },
             { val: d?.strong_match_count, label: "Strong matches", color: "var(--mb-teal)" },
-          ].map((s, i) => (
+          ].filter(s => s.val != null).map((s, i) => (
             <div key={i} style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
               <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 28, fontWeight: 800, color: s.color, marginBottom: 6 }}>{s.val}</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: "var(--mb-ink2)", fontFamily: "'DM Sans', sans-serif" }}>{s.label}</div>
             </div>
           ))}
         </div>
+        )}
 
         {/* Job cards */}
         {jobs.map((job: any, i: number) => {
