@@ -756,7 +756,7 @@ const Index = () => {
       )}
       {/* ── Optional CTC input — shown after onboarding, before scan launch ── */}
       {phase === 'processing' && <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><MatrixLoading onComplete={handleLoadingComplete} scanReady={!!scanReport} scanId={scanId} seniorityTier={
-        yearsExperience === '0-2' ? 'ENTRY' : yearsExperience === '3-5' ? 'PROFESSIONAL' : yearsExperience === '6-10' ? 'MANAGER' : yearsExperience === '10+' ? 'SENIOR_LEADER' : null
+        yearsExperience === '0-2' ? 'ENTRY' : yearsExperience === '3-5' ? 'PROFESSIONAL' : yearsExperience === '6-10' ? 'MANAGER' : yearsExperience === '10+' ? 'SENIOR_LEADER' : yearsExperience === '15+' ? 'EXECUTIVE' : yearsExperience === '20+' ? 'EXECUTIVE' : yearsExperience === '25+' ? 'EXECUTIVE' : null
       } /></Suspense>}
       {/* ── NEW: 7-card unified experience (replaces reveal → money-shot → insight-cards sequence) ── */}
       {phase === 'seven-cards' && (scanReport ? (
