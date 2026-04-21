@@ -729,10 +729,10 @@ WRITING RULES — apply to ALL text fields:
 - No MBA-speak: never use "depreciating", "AI-driven systems", "displacement susceptibility", "synthesize complex", "disruption", "transformation journey", "paradigm shift"
 - No trailing questions. End with statements.
 
-Replace generic "emotion_message" with this 3-part structure:
-- fear_hook: Name the actual skills. Use ₹0/month framing. End on "your employer will know this."
-- tough_love: "{X} years executing. The next {X} will reward people who direct." — personal.
-- hope_bridge: "{actual_moat_skill} is your shield. AI cannot replicate judgment."
+Replace generic "emotion_message" with this 3-part structure (GUIDANCE, not fixed templates — adapt language to the user; never copy these examples verbatim):
+- fear_hook: 2 SHORT sentences, max 35 words total. Name 2-3 specific tools or market movements CURRENTLY doing the user's billable work. Present-tense observation only (e.g. "Three tools in your stack now handle first-pass architecture design"). NEVER use the phrase "your employer will know." NEVER use absolute-date predictions ("by 2027"). Voice Guide Rule 2.
+- tough_love: 2 SHORT sentences, max 30 words total. First: ACKNOWLEDGE what the user has built (Voice Guide Rule 4). Second: name the shift their current work faces. NEVER use the template "the next {X} years will reward…" — that phrasing assumes future career duration and inflates. Match tone to risk_score (Voice Guide Rule 8).
+- hope_bridge: 1-2 sentences, max 25 words total. Point to ONE specific asset from the user's resume (named skill, named pattern of decisions, named domain). Explain defensibility in evidence-based terms — NEVER "AI cannot replicate" absolutes. Prefer: "AI can't synthesize [specific thing the user has done repeatedly]." Voice Guide Rule 7.
 
 Also include:
 - confrontation: Directly challenge them. End with a specific action, not a question.
@@ -854,10 +854,10 @@ jobbachao_score: integer 0-100
 
 card1_risk: {
   headline: string (max 8 words — personalised, provocative, present tense),
-  subline: string (statement, NOT a question — use years + the specific skill being replaced, e.g. "12 years in. Copywriting is already being replaced."),
-  fear_hook: string (3 SHORT lines. Line 1: name the top 3 execution skills being automated, separated by periods. Line 2: "These are your top billed skills — and AI does all three for ₹0/month." Line 3: "By {disruption_year}, your employer will know this." — max 40 words total, NO jargon, NO "depreciating" or "AI-driven systems"),
-  tough_love: string (2 short lines. Line 1: "You've spent {years} years executing." Line 2: "The next {years} will reward people who direct." — personal, uses their actual years),
-  hope_bridge: string (2 short lines. Line 1: "{their_top_moat_skill} is your shield." Line 2: "AI cannot replicate judgment. It can only replicate execution." — name the actual skill, keep under 25 words),
+  subline: string (statement — acknowledge tenure, then observe current shift. Example: "15 years of enterprise consulting. The delivery layer of your work is shifting to AI-first." — NOT prediction-based),
+  fear_hook: string (2 SHORT sentences, max 35 words total. First sentence names 2-3 specific tools or market movements CURRENTLY doing the user's billable work — present-tense observation only. No absolute-date predictions. No "your employer will know" phrasing. No jargon from the MBA-speak ban list above. See VOICE GUIDE Rule 2 + the guidance block above.),
+  tough_love: string (2 SHORT sentences, max 30 words total. First: acknowledge what the user built over their years in the field. Second: name the current shift and how their billable work relates. NEVER assume a specific duration of future career (no "the next X years will reward…"). Match tone to risk_score. See VOICE GUIDE Rule 4 + Rule 8.),
+  hope_bridge: string (1-2 sentences, max 25 words total. Point to ONE specific asset from the user's resume. Explain why it's defensible with evidence-based reasoning — NOT "AI cannot replicate" absolutes. Prefer: "AI can't synthesize [specific thing they have done repeatedly across years]." See VOICE GUIDE Rule 7.),
   confrontation: string (3 short sentences. End with a specific action: "Fix that this week. One case study. One number. One outcome you own." — never end with a question),
   emotion_message: string (combine fear_hook + hope_bridge for backward compatibility),
   risk_score: integer,
