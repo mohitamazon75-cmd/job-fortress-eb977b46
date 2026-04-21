@@ -104,7 +104,9 @@ export default function ObituaryPage() {
                       <option value="0-2">0–2 years</option>
                       <option value="3-5">3–5 years</option>
                       <option value="6-10">6–10 years</option>
-                      <option value="10+">10+ years</option>
+                      <option value="15+">11–15 years</option>
+                      <option value="20+">16–20 years</option>
+                      <option value="25+">21+ years</option>
                     </select>
                   </div>
                   <div>

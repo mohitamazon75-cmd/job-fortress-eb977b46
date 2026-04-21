@@ -45,7 +45,9 @@ export const EXPERIENCE_LEVELS = [
   { label: '0–2 years', value: '0-2' },
   { label: '3–5 years', value: '3-5' },
   { label: '6–10 years', value: '6-10' },
-  { label: '10+ years', value: '10+' },
+  { label: '11–15 years', value: '15+' },
+  { label: '16–20 years', value: '20+' },
+  { label: '21+ years', value: '25+' },
 ] as const;
 
 export const METRO_TIERS_BY_COUNTRY: Record<string, readonly { label: string; description: string; value: string }[]> = {
