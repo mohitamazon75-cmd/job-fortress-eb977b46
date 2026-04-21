@@ -427,13 +427,13 @@ Deno.serve(async (req) => {
 
     let primaryJob: JobTaxonomyRow | null = matchRoleToJobFamily(resolvedRoleHint, allIndustryJobs);
     
-    // Smart fallback: pick the most common job family for the industry rather than hardcoding full_stack_developer
+    // Default to a deterministic industry-neutral family when role-matching and executive-detection both fail
     let targetFamily: string;
     if (primaryJob?.job_family) {
       targetFamily = primaryJob.job_family;
     } else {
       // Check if role hint OR raw profile text contains executive/founder signals
-      const executiveKeywords = ["founder", "co-founder", "cofounder", "ceo", "cto", "cfo", "coo", "cmo", "cpo", "head of", "vp ", "vice president", "director", "president", "owner", "managing director", "chief", "partner", "advisory", "board member", "strategy", "business management"];
+      const executiveKeywords = ["founder", "co-founder", "cofounder", "ceo", "cto", "cfo", "coo", "cmo", "cpo", "head of", "vp ", "vice president", "director", "president", "owner", "managing director", "chief", "partner", "advisory", "board member", "strategy", "business management", "consultant", "consulting", "digital transformation", "digital strategy"];
       const textToCheck = `${(resolvedRoleHint || "").toLowerCase()} ${rawProfileText.toLowerCase().slice(0, 2000)}`;
       const isExecutive = executiveKeywords.some(k => textToCheck.includes(k));
       
@@ -446,9 +446,9 @@ Deno.serve(async (req) => {
         // Security: log the matched family (internal enum) not the raw user-supplied role hint
         console.log(`[Orchestrator] Executive tier detected, mapped to: ${targetFamily}`);
       } else {
-        // Use first industry job or generic fallback
-        targetFamily = allIndustryJobs[0]?.job_family || "full_stack_developer";
-        console.log(`[Orchestrator] No role match for "${resolvedRoleHint}", using industry default: ${targetFamily}`);
+        // Deterministic default — taxonomy-heap-order independence (was allIndustryJobs[0])
+        targetFamily = "management_consultant";
+        console.log(`[Orchestrator] No role match for "${resolvedRoleHint}", using deterministic default: ${targetFamily}`);
       }
     }
 
