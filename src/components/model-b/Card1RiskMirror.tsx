@@ -91,9 +91,11 @@ export default function Card1RiskMirror({ cardData, onNext, monthlyScanCount }: 
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8, lineHeight: 1.3 }}>
               {c1.risk_score >= 70 ? "🔴 High risk — act now" : c1.risk_score >= 40 ? "🟡 Moderate — your framing costs you" : "🟢 Low risk — strong position"}
             </div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, fontWeight: 500 }}>
-              India average for this role: <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{c1.india_average || 61}%</strong>. You're {(c1.risk_score || 0) > (c1.india_average || 61) ? "above" : "below"} it.
-            </div>
+            {c1.india_average != null && (
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, fontWeight: 500 }}>
+                India average for this role: <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{c1.india_average}%</strong>. You're {(c1.risk_score || 0) > c1.india_average ? "above" : "below"} it.
+              </div>
+            )}
           </div>
         </div>
 
@@ -119,7 +121,9 @@ export default function Card1RiskMirror({ cardData, onNext, monthlyScanCount }: 
           </>
         )}
 
-        {/* ATS Section */}
+        {/* ATS Section — hidden until Day 3 JD-matching pipeline populates real scores */}
+        {c1.ats_scores != null && c1.ats_scores.length > 0 && (
+        <>
         <SectionLabel label="ATS resume match · 3 target India JDs right now" />
         <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 16, overflow: "hidden", marginBottom: 22, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1.5px solid var(--mb-rule)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -165,6 +169,8 @@ export default function Card1RiskMirror({ cardData, onNext, monthlyScanCount }: 
             )}
           </div>
         </div>
+        </>
+        )}
 
         {/* Tasks at risk / safe */}
         <SectionLabel label="What AI is replacing in your role right now" />
@@ -199,7 +205,7 @@ export default function Card1RiskMirror({ cardData, onNext, monthlyScanCount }: 
               <div key={i} style={{ width: 26, height: 26, borderRadius: "50%", background: a.bg, color: a.color, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", fontSize: 9, fontWeight: 800, border: "2px solid white", marginLeft: i > 0 ? -6 : 0 }}>{a.initials}</div>
             ))}
           </div>
-          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600 }}><strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{scanCount}+</strong> professionals checked this month · India avg: <strong style={{ fontWeight: 800, color: "var(--mb-red)" }}>{c1.india_average || 61}%</strong></span>
+          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600 }}><strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{scanCount}+</strong> professionals checked this month{c1.india_average != null && <> · India avg: <strong style={{ fontWeight: 800, color: "var(--mb-red)" }}>{c1.india_average}%</strong></>}</span>
         </div>
         )}
 
