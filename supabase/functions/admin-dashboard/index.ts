@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
       funnelEventsRes,
       tokenCostRes,
       roleSourceRes,
+      profileConfRes,
     ] = await Promise.all([
       sb.from("daily_usage_stats")
         .select("*")
