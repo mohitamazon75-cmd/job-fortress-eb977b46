@@ -108,7 +108,7 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
             </div>
             <div style={{ fontSize: 15, fontWeight: 600, color: "var(--mb-ink, #111827)", lineHeight: 1.5 }}>
               {typeof topThreat === "string" && topThreat.length > 5
-                ? `${topThreat.charAt(0).toUpperCase() + topThreat.slice(1)} is already being automated — and your employer will know by ${c1?.disruption_year || "2027"}.`
+                ? `${topThreat.charAt(0).toUpperCase() + topThreat.slice(1)} is already being automated in your stack today.`
                 : `Your top execution skills are already being automated.`}
             </div>
           </div>

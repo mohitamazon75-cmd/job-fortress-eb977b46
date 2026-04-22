@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Sparkles, Star, Users, Loader2, AlertCircle } from 'lucide-react';
+import { X, Check, Sparkles, Star, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
@@ -57,12 +57,7 @@ const PRO_FEATURES = [
   { label: 'Your score updates every month as AI advances — track it before your manager does' },
 ];
 
-const SOCIAL_PROOF_AVATARS = [
-  { initials: 'RK', color: 'bg-blue-500' },
-  { initials: 'AS', color: 'bg-pink-500' },
-  { initials: 'PM', color: 'bg-amber-500' },
-  { initials: 'SJ', color: 'bg-emerald-500' },
-];
+// (Removed SOCIAL_PROOF_AVATARS — fake hardcoded peer initials are a credibility risk.)
 
 export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTier = 'year' }: ProUpgradeModalProps) {
   const [selected, setSelected] = useState<'month' | 'year'>(defaultTier);
@@ -238,17 +233,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
               ))}
               <span className="text-[11px] font-semibold text-foreground ml-1">4.9/5</span>
             </div>
-            <p className="text-[11px] text-muted-foreground flex-1 text-center">2,847 professionals upgraded this week</p>
-            <div className="flex -space-x-2">
-              {SOCIAL_PROOF_AVATARS.map(({ initials, color }, idx) => (
-                <div
-                  key={idx}
-                  className={`w-6 h-6 ${color} rounded-full flex items-center justify-center text-[9px] font-black text-white border border-background ring-1 ring-border`}
-                >
-                  {initials}
-                </div>
-              ))}
-            </div>
+            <p className="text-[11px] text-muted-foreground flex-1 text-center">Backed by deterministic scoring · India-specific market data</p>
           </div>
 
           {/* Pricing toggle */}
