@@ -125,6 +125,13 @@ Deno.serve(async (req) => {
         .eq("function_name", "process-scan:role-source")
         .gte("created_at", last24h)
         .limit(2000),
+      // Profile-extraction confidence distribution (last 24h) — companion to role-source.
+      // high>80% = healthy; 60-80% = watch; <60% = degraded (Card 1 quality at risk).
+      sb.from("edge_function_logs")
+        .select("request_meta, created_at")
+        .eq("function_name", "process-scan:profile-confidence")
+        .gte("created_at", last24h)
+        .limit(2000),
     ]);
 
     const usage = usageRes.data || [];
