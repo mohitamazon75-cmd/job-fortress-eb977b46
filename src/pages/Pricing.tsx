@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Star, Zap, Shield } from 'lucide-react';
+import SEO from '@/components/SEO';
+import { useTrack } from '@/hooks/use-track';
 
 const FREE_FEATURES = [
   'Full AI career scan',
@@ -26,9 +28,19 @@ const PRO_FEATURES = [
 export default function Pricing() {
   const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
+  const { track } = useTrack();
+
+  useEffect(() => {
+    track('pricing_view');
+  }, [track]);
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Pricing — JobBachao Free & Pro Plans | AI Career Risk Score"
+        description="Start free with full AI career scan and Career Position Score. Upgrade to Pro for unlimited scans, AI Strategic Dossier, side hustle generator and weekly briefs."
+        canonical="https://jobbachao.com/pricing"
+      />
       {/* Header */}
       <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
