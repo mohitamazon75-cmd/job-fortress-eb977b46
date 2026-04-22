@@ -187,7 +187,7 @@ CRITICAL RULES:
               role: "user",
               content: [
                 { type: "text", text: "Extract every professional detail from this resume. Be exhaustive on skills, technologies, and achievements. The headline MUST be verbatim — do NOT upgrade or inflate:" },
-                { type: "image_url", image_url: { url: `data:application/pdf;base64,${resumeBase64}` } },
+                { type: "file", file: { filename: "resume.pdf", file_data: `data:application/pdf;base64,${resumeBase64}` } },
               ],
             },
           ],
