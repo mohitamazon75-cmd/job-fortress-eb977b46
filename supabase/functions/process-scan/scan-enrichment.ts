@@ -138,12 +138,16 @@ async function parseResume(
     };
 
     const { signal, cancel } = createTimeoutController(RESUME_PARSE_TIMEOUT_MS);
+    const resumeParseModel = "google/gemini-3-flash-preview";
+    if (activeModel !== resumeParseModel) {
+      console.log(`[parseResume] Overriding requested model ${activeModel} → ${resumeParseModel} for document extraction speed`);
+    }
     try {
       const aiResp = await fetch(AI_URL, {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: activeModel,
+          model: resumeParseModel,
           messages: [
             {
               role: "system",
@@ -204,7 +208,7 @@ CRITICAL RULES:
       }
 
       const aiData = await aiResp.json();
-      logTokenUsage("process-scan", "resume-parser", activeModel, aiData);
+      logTokenUsage("process-scan", "resume-parser", resumeParseModel, aiData);
       const content = aiData.choices?.[0]?.message?.content;
       if (!content) return await buildAffindaFallback();
 
