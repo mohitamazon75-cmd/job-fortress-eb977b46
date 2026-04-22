@@ -649,7 +649,6 @@ export function subscribeScanStatus(
   let resolved = false;
   let pollTimeout: ReturnType<typeof setTimeout> | null = null;
   let hardTimeout: ReturnType<typeof setTimeout> | null = null;
-  let realtimeConnected = false;
 
   const isWithinRetryGraceWindow = () => Date.now() - subscriptionStartedAt < TERMINAL_RETRY_GRACE_MS;
 
@@ -738,13 +737,11 @@ export function subscribeScanStatus(
     }
   };
 
-  // SECURITY: Realtime subscription disabled — the `scans` channel previously
-  // leaked any user's scan updates (including final_json_report and access_token)
-  // to any authenticated subscriber. Polling fallback below is fully sufficient.
-  // See migration 20260422_remove_scans_from_realtime.sql for the publication change.
-  const channel: { unsubscribe?: () => void } | null = null;
-  startPolling();
-  void immediateCheck();
+  // SECURITY: Realtime subscription removed — the public.scans channel
+  // previously leaked any user's scan updates (final_json_report, access_token)
+  // to any authenticated subscriber. Polling (declared below) is now the sole
+  // signal source. Paired with a migration that removes public.scans from the
+  // supabase_realtime publication.
 
   // FALLBACK: Polling with exponential backoff
   const getPollingInterval = (attempt: number) =>
