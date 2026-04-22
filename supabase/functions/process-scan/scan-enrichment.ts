@@ -184,6 +184,13 @@ async function parseResume(
         }).then(({ error }: { error: unknown }) => {
           if (error) console.warn("[parseResume] role-source log insert failed:", error);
         });
+        supabaseClient.from("edge_function_logs").insert({
+          function_name: "process-scan:profile-confidence",
+          status: "success",
+          request_meta: { confidence: "low", role_source: "affinda" },
+        }).then(({ error }: { error: unknown }) => {
+          if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
+        });
         return {
           rawText: rescueRawText,
           name: null,
@@ -202,6 +209,13 @@ async function parseResume(
         request_meta: { role_source: "NONE" },
       }).then(({ error }: { error: unknown }) => {
         if (error) console.warn("[parseResume] role-source log insert failed:", error);
+      });
+      supabaseClient.from("edge_function_logs").insert({
+        function_name: "process-scan:profile-confidence",
+        status: "success",
+        request_meta: { confidence: "low", role_source: "NONE" },
+      }).then(({ error }: { error: unknown }) => {
+        if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
       });
       return fallback;
     };
