@@ -150,19 +150,29 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
       }
       await loadRazorpaySDK();
       const config = TIER_CONFIG[selected];
-      const RZP_KEY = import.meta.env.VITE_RAZORPAY_KEY_ID;
-      if (!RZP_KEY) {
-        toast.info("You're on the early access list!", {
-          description: "We'll notify you the moment payments go live. You'll get first access at this price.",
-          duration: 5000,
-        });
-        onClose();
+
+      // ── Create order on the server (server is the source of truth for amount) ──
+      const order = await createServerOrder(config.tier, session.access_token);
+      if (!order.success || !order.order_id || !order.amount || !order.key_id) {
+        // If Razorpay isn't configured server-side, fall back to early-access list.
+        if (order.error?.toLowerCase().includes('not configured')) {
+          toast.info("You're on the early access list!", {
+            description: "We'll notify you the moment payments go live. You'll get first access at this price.",
+            duration: 5000,
+          });
+          onClose();
+          return;
+        }
+        setPaymentError(order.error || 'Could not start checkout. Please try again.');
+        setLoading(false);
         return;
       }
+
       const options = {
-        key: RZP_KEY,
-        amount: config.amount,
-        currency: 'INR',
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        order_id: order.order_id,
         name: 'JobBachao Pro',
         description: config.description,
         image: '/favicon.png',
@@ -187,7 +197,6 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
               description: 'All Pro features are now unlocked. Scroll down to see everything.',
               duration: 5000,
             });
-            // Dispatch custom event to notify dashboard to refresh Pro status
             window.dispatchEvent(new Event('subscription-updated'));
             onSuccess?.(config.tier);
             onClose();
