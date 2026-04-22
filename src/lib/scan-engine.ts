@@ -812,15 +812,8 @@ export function subscribeScanStatus(
     reject();
   }, MAX_TOTAL_WAIT_MS);
 
-  // Grace period: start polling as a safety net even when Realtime is connected
-  setTimeout(() => {
-    if (!resolved) {
-      if (!realtimeConnected) {
-        console.warn('[Scan] Realtime grace period expired, starting safety polling');
-      }
-      startPolling();
-    }
-  }, 10_000);
+  // Start polling immediately (no realtime to wait on anymore)
+  startPolling();
 
   return () => {
     resolved = true;
