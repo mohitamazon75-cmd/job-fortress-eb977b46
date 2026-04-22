@@ -2271,6 +2271,14 @@ export type Database = {
           total_roles: number
         }[]
       }
+      get_public_feature_flags: {
+        Args: never
+        Returns: {
+          description: string
+          enabled_percentage: number
+          flag_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

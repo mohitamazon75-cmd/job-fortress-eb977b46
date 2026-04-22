@@ -649,7 +649,6 @@ export function subscribeScanStatus(
   let resolved = false;
   let pollTimeout: ReturnType<typeof setTimeout> | null = null;
   let hardTimeout: ReturnType<typeof setTimeout> | null = null;
-  let realtimeConnected = false;
 
   const isWithinRetryGraceWindow = () => Date.now() - subscriptionStartedAt < TERMINAL_RETRY_GRACE_MS;
 
@@ -662,7 +661,6 @@ export function subscribeScanStatus(
     if (resolved) return;
     resolved = true;
     clearTimers();
-    channel.unsubscribe();
     onComplete(report);
   };
 
@@ -670,7 +668,6 @@ export function subscribeScanStatus(
     if (resolved) return;
     resolved = true;
     clearTimers();
-    channel.unsubscribe();
     onError?.();
   };
 
@@ -740,42 +737,11 @@ export function subscribeScanStatus(
     }
   };
 
-  // PRIMARY: Realtime subscription
-  const channel = supabase
-    .channel(`scan-${scanId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'scans',
-        filter: `id=eq.${scanId}`,
-      },
-      (payload) => {
-        const row = payload.new as any;
-        if (row.scan_status === 'complete' && row.final_json_report) {
-          const parsed = parseScanReport(row.final_json_report);
-          if (parsed) {
-            resolve(parsed);
-          }
-        } else if (TERMINAL_SCAN_STATUSES.has(String(row.scan_status || ''))) {
-          void verifyTerminalState('Realtime update');
-        }
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        realtimeConnected = true;
-        console.debug('[Scan] Realtime connected');
-        // Re-check immediately after realtime connects to catch updates during connection
-        immediateCheck();
-      }
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        console.warn('[Scan] Realtime failed, activating polling fallback');
-        realtimeConnected = false;
-        startPolling();
-      }
-    });
+  // SECURITY: Realtime subscription removed — the public.scans channel
+  // previously leaked any user's scan updates (final_json_report, access_token)
+  // to any authenticated subscriber. Polling (declared below) is now the sole
+  // signal source. Paired with a migration that removes public.scans from the
+  // supabase_realtime publication.
 
   // FALLBACK: Polling with exponential backoff
   const getPollingInterval = (attempt: number) =>
@@ -843,20 +809,12 @@ export function subscribeScanStatus(
     reject();
   }, MAX_TOTAL_WAIT_MS);
 
-  // Grace period: start polling as a safety net even when Realtime is connected
-  setTimeout(() => {
-    if (!resolved) {
-      if (!realtimeConnected) {
-        console.warn('[Scan] Realtime grace period expired, starting safety polling');
-      }
-      startPolling();
-    }
-  }, 10_000);
+  // Start polling immediately (no realtime to wait on anymore)
+  startPolling();
 
   return () => {
     resolved = true;
     clearTimers();
-    channel.unsubscribe();
   };
 }
 
