@@ -416,6 +416,17 @@ CRITICAL RULES:
         roleSource === "affinda" || roleSource === "regex" ? "medium" :
         "low";
 
+      // Persist profile-extraction confidence for admin-dashboard aggregation
+      // (fire-and-forget). Companion to role-source: tells us whether Card 1
+      // is being fed high-trust data or degraded heuristics.
+      supabaseClient.from("edge_function_logs").insert({
+        function_name: "process-scan:profile-confidence",
+        status: "success",
+        request_meta: { confidence: dynamicConfidence, role_source: roleSource },
+      }).then(({ error }: { error: unknown }) => {
+        if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
+      });
+
       return {
         rawText,
         name: parsed.name || null,
