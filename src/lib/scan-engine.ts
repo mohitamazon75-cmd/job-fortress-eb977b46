@@ -610,11 +610,15 @@ export function subscribeScanStatus(
   const scanClient = createScanClient(accessToken);
   const ACTIVE_SCAN_STATUSES = new Set(['processing', 'running']);
   const TERMINAL_SCAN_STATUSES = new Set(['failed', 'invalid_input', 'error']);
+  const TERMINAL_RETRY_GRACE_MS = 45_000;
+  const subscriptionStartedAt = Date.now();
 
   let resolved = false;
   let pollTimeout: ReturnType<typeof setTimeout> | null = null;
   let hardTimeout: ReturnType<typeof setTimeout> | null = null;
   let realtimeConnected = false;
+
+  const isWithinRetryGraceWindow = () => Date.now() - subscriptionStartedAt < TERMINAL_RETRY_GRACE_MS;
 
   const clearTimers = () => {
     if (pollTimeout) clearTimeout(pollTimeout);
@@ -661,6 +665,12 @@ export function subscribeScanStatus(
 
       if (ACTIVE_SCAN_STATUSES.has(status)) {
         console.warn(`[Scan] ${source} saw transient terminal signal while scan is still active; continuing to poll`);
+        startPolling();
+        return;
+      }
+
+      if (TERMINAL_SCAN_STATUSES.has(status) && isWithinRetryGraceWindow()) {
+        console.warn(`[Scan] ${source} saw stale terminal status "${status}" during retry grace window; continuing to poll`);
         startPolling();
         return;
       }
