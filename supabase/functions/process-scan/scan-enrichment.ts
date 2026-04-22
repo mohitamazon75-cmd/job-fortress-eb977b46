@@ -177,6 +177,13 @@ async function parseResume(
         }
         rescueRawText += `\n(Resume parsed via Affinda structured extraction — Gemini vision unavailable. Data is from structured fields only; limited skills/achievements context.)`;
         console.log(`[parseResume] Gemini failed — Affinda rescue: role="${aff.current_job_title}" years=${aff.accurate_years_experience ?? "null"} certs=${aff.certifications?.length ?? 0}`);
+        supabaseClient.from("edge_function_logs").insert({
+          function_name: "process-scan:role-source",
+          status: "success",
+          request_meta: { role_source: "affinda" },
+        }).then(({ error }: { error: unknown }) => {
+          if (error) console.warn("[parseResume] role-source log insert failed:", error);
+        });
         return {
           rawText: rescueRawText,
           name: null,
@@ -189,6 +196,13 @@ async function parseResume(
         };
       }
       console.log(`[parseResume] Gemini failed — Affinda has no title either — no rescue available`);
+      supabaseClient.from("edge_function_logs").insert({
+        function_name: "process-scan:role-source",
+        status: "error",
+        request_meta: { role_source: "NONE" },
+      }).then(({ error }: { error: unknown }) => {
+        if (error) console.warn("[parseResume] role-source log insert failed:", error);
+      });
       return fallback;
     };
 
