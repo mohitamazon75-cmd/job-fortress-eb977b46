@@ -152,7 +152,49 @@ async function parseResume(
             {
               role: "system",
               content: `You are an expert resume analyst. Extract every professionally meaningful detail from this resume. Return ONLY valid JSON — no markdown, no explanation.
-...
+
+SCHEMA:
+{
+  "name": string,
+  "headline": string (VERBATIM job title — copy character by character, never upgrade or inflate),
+  "company": string (current/most recent company),
+  "location": string,
+  "yearsOfExperience": number,
+  "inferredIndustry": string,
+  "inferredSubSector": string (specific sub-sector: e.g. "Fintech SaaS", "IT Services & Outsourcing", "E-commerce Platform"),
+  "skills": [string] (SPECIFIC granular skills only — 15-25 items. Good: "React.js", "PostgreSQL", "Jest unit testing", "CI/CD with GitHub Actions", "REST API design", "Agile sprint planning". Bad: "programming", "communication", "teamwork", "presentation"),
+  "techStack": [string] (every specific technology, language, framework, tool, platform mentioned anywhere in the resume — be exhaustive: "Python", "AWS Lambda", "Docker", "Kubernetes", "Selenium", "Jenkins", "Jira", "Confluence", "Figma", "Tableau", etc.),
+  "certifications": [string] (AWS Certified, Google Cloud, PMP, Scrum Master, CFA, etc.),
+  "experience": [
+    {
+      "title": string,
+      "company": string,
+      "duration": string,
+      "keyAchievements": [string] (extract 2-4 bullet-point achievements verbatim or paraphrased closely — include numbers, metrics, scope: "Led migration of 3 legacy services to microservices, reducing latency by 40%", "Managed team of 8 engineers across 2 locations", "Built real-time inventory system handling 50K daily transactions"),
+      "technologiesUsed": [string] (specific tech used in THIS role)
+    }
+  ],
+  "education": [{ "degree": string, "institution": string, "year": string | null }],
+  "projects": [{ "name": string, "description": string, "techUsed": [string] }],
+  "openSource": string | null (any GitHub, open source, publications mentioned),
+  "domainExpertise": [string] (deep domain knowledge signals: "payments processing", "healthcare compliance", "supply chain optimization", "credit risk modeling" — NOT generic skills)
+}
+
+CRITICAL RULES:
+- headline MUST be the EXACT title from the resume. Never upgrade. "Senior QA Engineer" stays "Senior QA Engineer".
+- skills: extract from ALL sections — skills section, experience bullets, projects, certifications. If resume mentions "Selenium WebDriver" extract "Selenium WebDriver", not "testing".
+- keyAchievements: this is the most important field. Extract real numbers and impact. "Improved test coverage from 40% to 85%" is gold. "Responsible for testing" is useless.
+- techStack: be exhaustive. If resume says "worked with AWS services including EC2, S3, RDS, Lambda" — extract all four separately.
+- domainExpertise: what industry problems has this person solved? "e-commerce checkout optimization", "banking fraud detection", "clinical trial data management" etc.`,
+            },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Extract every professional detail from this resume. Be exhaustive on skills, technologies, and achievements. The headline MUST be verbatim — do NOT upgrade or inflate:" },
+                { type: "file", file: { filename: "resume.pdf", file_data: `data:application/pdf;base64,${resumeBase64}` } },
+              ],
+            },
+          ],
           temperature: 0.05,
           generationConfig: { responseMimeType: "application/json" },
         }),
