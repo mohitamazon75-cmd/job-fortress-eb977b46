@@ -58,6 +58,7 @@ Deno.serve(async (req) => {
       agent1QualityRes,
       funnelEventsRes,
       tokenCostRes,
+      roleSourceRes,
     ] = await Promise.all([
       sb.from("daily_usage_stats")
         .select("*")
@@ -116,6 +117,13 @@ Deno.serve(async (req) => {
         .gte("created_at", last7d)
         .order("created_at", { ascending: false })
         .limit(1000),
+      // Role-source distribution (last 24h) — feeds the Gemini-quality health metric.
+      // >20% regex = Gemini-quality issue to investigate; <5% = healthy safety net.
+      sb.from("edge_function_logs")
+        .select("request_meta, created_at")
+        .eq("function_name", "process-scan:role-source")
+        .gte("created_at", last24h)
+        .limit(2000),
     ]);
 
     const usage = usageRes.data || [];
