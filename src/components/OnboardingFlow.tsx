@@ -289,7 +289,7 @@ export default function OnboardingFlow({
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => onSelectIndustry(customIndustry.trim())}
+                      onClick={() => onSelectIndustry(sanitizePromptInput(customIndustry, { maxLength: 60 }))}
                       className="h-12 px-5 rounded-xl font-semibold text-sm text-primary-foreground shrink-0"
                       style={{ background: 'var(--gradient-primary)' }}
                     >
