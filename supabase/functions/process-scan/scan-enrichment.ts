@@ -379,6 +379,17 @@ CRITICAL RULES:
       const roleSource = roleFromHeadline ? "headline" : roleFromExperience ? "experience[0]" : roleFromAffinda ? "affinda" : roleFromRegex ? "regex" : "NONE";
       console.log(`[parseResume] Role source: ${roleSource} | headline=${roleFromHeadline ? "present" : "null"} exp[0]=${roleFromExperience ? "present" : "null"} affinda=${roleFromAffinda ? "present" : "null"} regex=${roleFromRegex ? "present" : "null"}`);
 
+      // Persist role-source for admin-dashboard aggregation (fire-and-forget — never blocks scan).
+      // Stored in edge_function_logs with a dedicated function_name so the admin endpoint
+      // can compute the Role Source Distribution metric in O(N) over a 24h window.
+      supabaseClient.from("edge_function_logs").insert({
+        function_name: "process-scan:role-source",
+        status: "success",
+        request_meta: { role_source: roleSource },
+      }).then(({ error }: { error: unknown }) => {
+        if (error) console.warn("[parseResume] role-source log insert failed:", error);
+      });
+
       // Confidence is downgraded when we fall back to less-trustworthy sources
       // so process-scan/index.ts injects dataQualityWarning into Agent 1's prompt
       // and the final report carries an honest profileExtractionConfidence value.
