@@ -262,12 +262,23 @@ CRITICAL RULES:
 
       console.debug(`[Ingestion] Resume parsed (rich): name=${parsed.name ? "[present]" : "[absent]"}, role=${parsed.headline ? "[present]" : "[absent]"}, skills=${parsed.skills?.length ?? 0}, tech=${parsed.techStack?.length ?? 0}, achievements=${parsed.experience?.reduce((n: number, e: any) => n + (e.keyAchievements?.length ?? 0), 0) ?? 0}, exp=${extractedYears ?? "absent"}${affindaResult ? " (affinda-verified)" : ""}`);
 
+      // 3-layer role-extraction fallback (Day 2 fix for role_extraction_failed bug):
+      // 1. Gemini's verbatim headline (best — exact title from resume top)
+      // 2. Gemini's first experience entry title (good — structured backup)
+      // 3. Affinda's most-recent workExperience[0].jobTitle (reliable structured extraction independent of vision LLM)
+      const roleFromHeadline = (typeof parsed.headline === "string" && parsed.headline.trim()) ? parsed.headline.trim() : null;
+      const roleFromExperience = (typeof parsed.experience?.[0]?.title === "string" && parsed.experience[0].title.trim()) ? parsed.experience[0].title.trim() : null;
+      const roleFromAffinda = affindaResult?.current_job_title ?? null;
+      const role = roleFromHeadline ?? roleFromExperience ?? roleFromAffinda ?? null;
+      const roleSource = roleFromHeadline ? "headline" : roleFromExperience ? "experience[0]" : roleFromAffinda ? "affinda" : "NONE";
+      console.log(`[parseResume] Role source: ${roleSource} | headline=${roleFromHeadline ? "present" : "null"} exp[0]=${roleFromExperience ? "present" : "null"} affinda=${roleFromAffinda ? "present" : "null"}`);
+
       return {
         rawText,
         name: parsed.name || null,
         company: parsed.company || null,
         industry: parsed.inferredIndustry || null,
-        role: parsed.headline || null,
+        role,
         confidence: "high",
         extractedYears,
       };
