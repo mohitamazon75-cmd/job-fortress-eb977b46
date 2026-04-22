@@ -38,6 +38,7 @@ export interface AffindaParseResult {
   certifications: string[];                  // structured cert list
   education_tier: "tier1" | "tier2" | null; // IIT/NIT vs others
   raw_work_months: number | null;            // total months worked (for validation)
+  current_job_title: string | null;          // most-recent job title from workExperience[0] — used as fallback when LLM headline extraction fails
 }
 
 // ── Date parsing helpers ──────────────────────────────────────────
@@ -191,6 +192,14 @@ export async function parseResumeWithAffinda(
     const totalMonths = computeTotalMonths(workHistory);
     const accurateYears = totalMonths > 0 ? Math.round((totalMonths / 12) * 10) / 10 : null;
 
+    // Extract most-recent job title (workExperience is typically reverse-chronological).
+    // Defensive: handle missing entry, non-string title, snake_case variant.
+    const wh0 = workHistory[0];
+    const currentJobTitle: string | null =
+      (typeof wh0?.jobTitle === "string" && wh0.jobTitle.trim() ? wh0.jobTitle.trim() : null)
+      ?? (typeof wh0?.job_title === "string" && wh0.job_title.trim() ? wh0.job_title.trim() : null)
+      ?? null;
+
     // Guard against clearly bad values
     const clampedYears = accurateYears && accurateYears > 0 && accurateYears < 60
       ? accurateYears
@@ -210,6 +219,7 @@ export async function parseResumeWithAffinda(
       certifications,
       education_tier: educationTier,
       raw_work_months: totalMonths || null,
+      current_job_title: currentJobTitle,
     };
   } catch (err: any) {
     clearTimeout(timer);
