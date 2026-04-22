@@ -388,9 +388,42 @@ export async function createScan(params: {
       return { id: scanId, accessToken, triggered };
     }
 
-    // Log edge function error but fall through to direct insert attempt
+    // Surface user-actionable errors instead of silently falling through to a
+    // direct insert (which will RLS-fail and produce a confusing blank screen).
+    // Daily-limit 429 → throw a tagged error the UI can convert into the
+    // RateLimitUpsell drawer; other 4xx → throw the server message verbatim.
+    const ctx: any = (fnError as any)?.context;
+    const status: number | undefined = ctx?.status;
+    let serverMsg: string | undefined;
+    let serverCode: string | undefined;
+    try {
+      if (typeof ctx?.json === 'function') {
+        const body = await ctx.json();
+        serverMsg = body?.error;
+        serverCode = body?.code;
+      } else if (ctx?.body) {
+        const body = typeof ctx.body === 'string' ? JSON.parse(ctx.body) : ctx.body;
+        serverMsg = body?.error;
+        serverCode = body?.code;
+      }
+    } catch {}
+
+    if (status === 429 || serverCode === 'DAILY_LIMIT_REACHED') {
+      const e = new Error(serverMsg || 'Daily scan limit reached. Upgrade to Pro for 50 scans/day.');
+      (e as any).code = 'DAILY_LIMIT_REACHED';
+      throw e;
+    }
+    if (status && status >= 400 && status < 500) {
+      throw new Error(serverMsg || `Scan creation rejected (${status}).`);
+    }
+
+    // 5xx / network — log and fall through to direct insert as a best-effort retry
     console.warn('[Scan] create-scan edge function failed, trying direct insert:', fnError);
   } catch (fnErr) {
+    // Re-throw user-actionable errors (rate limit, validation) so the UI can react.
+    if (fnErr instanceof Error && ((fnErr as any).code === 'DAILY_LIMIT_REACHED' || /limit|invalid|required/i.test(fnErr.message))) {
+      throw fnErr;
+    }
     console.warn('[Scan] create-scan edge function threw, trying direct insert:', fnErr);
   }
 
