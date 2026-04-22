@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { INDUSTRIES, EXPERIENCE_LEVELS, METRO_TIERS_BY_COUNTRY, COUNTRIES } from '@/lib/types';
+import { sanitizePromptInput } from '@/lib/prompt-safety';
 import { Briefcase, Clock, MapPin, Check, Globe, ArrowLeft, Sparkles, Monitor, Landmark, Megaphone, Heart, Factory, Palette, BookOpen, Building2, Truck, ShoppingCart, Utensils, Plane, Scale } from 'lucide-react';
 
 interface OnboardingFlowProps {
@@ -63,14 +64,19 @@ export default function OnboardingFlow({
   const showSkillsStep = isManualPath && step === 5;
 
   const handleSkillsSubmit = () => {
-    const rawSkills = skillsInput.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
-    if (rawSkills.length > 20) {
+    // Sanitize each skill individually so injection phrases get filtered
+    // before they ever reach the LLM pipeline.
+    const cleanedSkills = skillsInput
+      .split(/[,\n]+/)
+      .map(s => sanitizePromptInput(s, { maxLength: 60 }))
+      .filter(Boolean);
+    if (cleanedSkills.length > 20) {
       setSkillsError('Please enter your top 20 skills maximum');
       onSkillsError?.('Please enter your top 20 skills maximum');
       return;
     }
     setSkillsError('');
-    onSelectSkills?.(skillsInput.trim());
+    onSelectSkills?.(cleanedSkills.join(', '));
   };
 
   const stepConfig = [
@@ -283,7 +289,7 @@ export default function OnboardingFlow({
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => onSelectIndustry(customIndustry.trim())}
+                      onClick={() => onSelectIndustry(sanitizePromptInput(customIndustry, { maxLength: 60 }))}
                       className="h-12 px-5 rounded-xl font-semibold text-sm text-primary-foreground shrink-0"
                       style={{ background: 'var(--gradient-primary)' }}
                     >

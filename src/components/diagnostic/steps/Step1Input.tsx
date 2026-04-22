@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import SkillChip from "../shared/SkillChip";
 import { AI_SKILLS, HUMAN_SKILLS, EXPERIENCE_BANDS, formatINR } from "@/utils/diagnosticCalculations";
+import { sanitizePromptInput } from "@/lib/prompt-safety";
 import type { useDiagnostic } from "@/hooks/useDiagnostic";
 
 type HookReturn = ReturnType<typeof useDiagnostic>;
@@ -37,7 +38,8 @@ export default function Step1Input({ hook, errors }: Props) {
           type="text"
           placeholder="e.g. Marketing Manager, Senior Engineer"
           value={state.jobTitle}
-          onChange={(e) => setJobTitle(e.target.value)}
+          onChange={(e) => setJobTitle(sanitizePromptInput(e.target.value, { maxLength: 80 }))}
+          maxLength={80}
           className="w-full rounded-lg border border-border bg-background px-3.5 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
         />
         {errors.jobTitle && (
