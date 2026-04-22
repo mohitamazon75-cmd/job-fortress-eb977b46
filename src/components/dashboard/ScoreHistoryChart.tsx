@@ -22,8 +22,12 @@ export interface ScoreHistoryChartProps {
 export default function ScoreHistoryChart({ data, onSelectScan }: ScoreHistoryChartProps) {
   if (!data || data.length === 0) {
     return (
-      <div className="w-full h-64 flex items-center justify-center text-muted-foreground">
-        No score history data available
+      <div className="w-full h-64 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 px-6 text-center">
+        <div className="text-3xl opacity-60" aria-hidden>📈</div>
+        <p className="text-sm font-semibold text-foreground">No history yet</p>
+        <p className="text-xs text-muted-foreground max-w-xs">
+          Run a second scan in a few weeks to track how your Career Position Score moves over time.
+        </p>
       </div>
     );
   }
