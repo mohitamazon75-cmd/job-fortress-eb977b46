@@ -315,6 +315,7 @@ Deno.serve(async (req) => {
         by_function: tokenCostComparison,
         total_token_calls_7d: tokenLogs.length,
       },
+      role_source_distribution: roleSourceDistribution,
     }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
