@@ -78,6 +78,19 @@ interface AdminData {
     }[];
     total_token_calls_7d: number;
   };
+  role_source_distribution?: {
+    total: number;
+    window_hours: number;
+    counts: Record<string, number>;
+    pct: {
+      headline: number;
+      "experience[0]": number;
+      affinda: number;
+      regex: number;
+      NONE: number;
+    };
+    health: 'healthy' | 'watch' | 'degraded';
+  };
 }
 
 export default function AdminDashboard() {
