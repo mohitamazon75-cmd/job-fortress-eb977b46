@@ -94,6 +94,49 @@ async function parseResume(
     // the LLM output is used unchanged. No await blocking the LLM path.
     const affindaPromise = parseResumeWithAffinda(resumeBase64).catch(() => null);
 
+    // When Gemini fails (non-2xx, empty content, timeout, JSON parse error),
+    // await the parallel Affinda call and use its structured data as rescue.
+    // PR #21 only applied the Affinda fallback on the happy path; this closure
+    // broadens the rescue to every Gemini-failure site below. Builds a minimal
+    // rawText from Affinda's available fields (role, years, certs, edu tier) so
+    // Agent 1 still has input to extract from, even without Gemini's rich output.
+    const buildAffindaFallback = async (): Promise<{
+      rawText: string;
+      name: string | null;
+      company: string | null;
+      industry: string | null;
+      role: string | null;
+      confidence: string;
+      extractedYears: number | null;
+    }> => {
+      const aff = await affindaPromise;
+      if (aff?.current_job_title) {
+        let rescueRawText = `Name: Unknown\nCurrent Role: ${aff.current_job_title}\n`;
+        if (aff.accurate_years_experience !== null) {
+          rescueRawText += `Years Experience: ${aff.accurate_years_experience}\n`;
+        }
+        if (aff.certifications && aff.certifications.length > 0) {
+          rescueRawText += `Certifications: ${aff.certifications.join(", ")}\n`;
+        }
+        if (aff.education_tier) {
+          rescueRawText += `Education Tier: ${aff.education_tier === "tier1" ? "Tier-1 India institution (IIT/NIT/IIM equivalent)" : "Tier-2 institution"}\n`;
+        }
+        rescueRawText += `\n(Resume parsed via Affinda structured extraction — Gemini vision unavailable. Data is from structured fields only; limited skills/achievements context.)`;
+        console.log(`[parseResume] Gemini failed — Affinda rescue: role="${aff.current_job_title}" years=${aff.accurate_years_experience ?? "null"} certs=${aff.certifications?.length ?? 0}`);
+        return {
+          rawText: rescueRawText,
+          name: null,
+          company: null,
+          industry: null,
+          role: aff.current_job_title,
+          confidence: "low",
+          extractedYears: aff.accurate_years_experience,
+        };
+      }
+      console.log(`[parseResume] Gemini failed — Affinda has no title either — no rescue available`);
+      return fallback;
+    };
+
     const { signal, cancel } = createTimeoutController(RESUME_PARSE_TIMEOUT_MS);
     try {
       const aiResp = await fetch(AI_URL, {
@@ -157,13 +200,13 @@ CRITICAL RULES:
 
       if (!aiResp.ok) {
         await aiResp.text();
-        return fallback;
+        return await buildAffindaFallback();
       }
 
       const aiData = await aiResp.json();
       logTokenUsage("process-scan", "resume-parser", activeModel, aiData);
       const content = aiData.choices?.[0]?.message?.content;
-      if (!content) return fallback;
+      if (!content) return await buildAffindaFallback();
 
       const parsed = JSON.parse(content);
 
@@ -289,7 +332,7 @@ CRITICAL RULES:
       } else {
         console.error("[Ingestion] Resume parsing JSON failed:", e);
       }
-      return fallback;
+      return await buildAffindaFallback();
     }
   } catch (e) {
     console.error("[Ingestion] Resume parsing failed:", e);
