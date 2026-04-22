@@ -91,6 +91,13 @@ interface AdminData {
     };
     health: 'healthy' | 'watch' | 'degraded';
   };
+  profile_confidence_distribution?: {
+    total: number;
+    window_hours: number;
+    counts: Record<string, number>;
+    pct: { high: number; medium: number; low: number };
+    health: 'healthy' | 'watch' | 'degraded';
+  };
 }
 
 export default function AdminDashboard() {
