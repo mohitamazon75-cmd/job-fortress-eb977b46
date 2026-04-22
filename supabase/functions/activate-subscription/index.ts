@@ -126,6 +126,14 @@ Deno.serve(async (req: Request) => {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      // Defense in depth: verify the payment was made against the order_id we created.
+      if (order_id && payment.order_id && payment.order_id !== order_id) {
+        console.error(`[activate-subscription] order_id mismatch: payment.order_id=${payment.order_id}, claimed=${order_id}`);
+        return new Response(JSON.stringify({ error: "Payment order mismatch" }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // ── Grant subscription ────────────────────────────────────
