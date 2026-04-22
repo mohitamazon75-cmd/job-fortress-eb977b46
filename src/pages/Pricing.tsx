@@ -41,13 +41,13 @@ export default function Pricing() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-16 space-y-12">
+      <div className="max-w-5xl mx-auto px-4 py-10 sm:py-16 space-y-10 sm:space-y-12">
         {/* Hero */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-black text-foreground">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
             Start free. Upgrade when you want the full intelligence advantage.
           </p>
         </div>
@@ -69,9 +69,9 @@ export default function Pricing() {
         </div>
 
         {/* Plans */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
           {/* Free */}
-          <div className="rounded-2xl border border-border bg-card p-8 space-y-6">
+          <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Shield className="w-5 h-5 text-muted-foreground" />
@@ -100,7 +100,7 @@ export default function Pricing() {
           </div>
 
           {/* Pro */}
-          <div className="rounded-2xl border-2 border-primary bg-card p-8 space-y-6 relative">
+          <div className="rounded-2xl border-2 border-primary bg-card p-6 sm:p-8 space-y-6 relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold">
               MOST POPULAR
             </div>

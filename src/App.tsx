@@ -29,14 +29,36 @@ const Methodology = lazy(() => import("./pages/Methodology"));
 
 const queryClient = new QueryClient();
 
-/** Lightweight fallback while a route chunk is loading. */
+/**
+ * Lightweight skeleton fallback while a route chunk loads.
+ * Mimics typical page chrome (top bar, hero block, content rows) so the
+ * user perceives near-instant navigation instead of a blank spinner screen.
+ */
 function RouteFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-muted-foreground font-medium">Loading…</p>
+    <div className="min-h-screen bg-background">
+      {/* Top bar skeleton */}
+      <div className="border-b border-border/50 px-4 sm:px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="h-6 w-28 rounded-md bg-muted animate-pulse" />
+          <div className="h-8 w-20 rounded-lg bg-muted animate-pulse" />
+        </div>
       </div>
+      {/* Hero skeleton */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 pb-8 space-y-4">
+        <div className="h-10 w-3/4 rounded-lg bg-muted animate-pulse" />
+        <div className="h-10 w-1/2 rounded-lg bg-muted animate-pulse" />
+        <div className="h-4 w-2/3 rounded bg-muted/70 animate-pulse mt-6" />
+        <div className="h-4 w-1/2 rounded bg-muted/70 animate-pulse" />
+      </div>
+      {/* Content rows */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-12 space-y-3">
+        <div className="h-24 w-full rounded-2xl bg-muted/60 animate-pulse" />
+        <div className="h-24 w-full rounded-2xl bg-muted/60 animate-pulse" />
+        <div className="h-24 w-full rounded-2xl bg-muted/60 animate-pulse" />
+      </div>
+      {/* Visually-hidden status for screen readers */}
+      <span className="sr-only" role="status" aria-live="polite">Loading page…</span>
     </div>
   );
 }
@@ -85,26 +107,26 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <BrowserRouter>
-          <ErrorBoundary>
+          <ErrorBoundary scope="app">
             <Suspense fallback={<RouteFallback />}>
               <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/advanced-beta" element={<AdvancedBeta />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/methodology" element={<Methodology />} />
-                <Route path="/share/:scanId" element={<ShareScan />} />
-                <Route path="/share/challenge/:challengeCode" element={<ChallengeResult />} />
-                <Route path="/admin/monitor" element={<AuthGuard requiredRole="admin">{() => <AdminDashboard />}</AuthGuard>} />
+                <Route path="/" element={<ErrorBoundary scope="landing"><Index /></ErrorBoundary>} />
+                <Route path="/advanced-beta" element={<ErrorBoundary scope="advanced-beta"><AdvancedBeta /></ErrorBoundary>} />
+                <Route path="/auth" element={<ErrorBoundary scope="auth"><Auth /></ErrorBoundary>} />
+                <Route path="/reset-password" element={<ErrorBoundary scope="reset-password"><ResetPassword /></ErrorBoundary>} />
+                <Route path="/terms" element={<ErrorBoundary scope="terms"><Terms /></ErrorBoundary>} />
+                <Route path="/privacy" element={<ErrorBoundary scope="privacy"><Privacy /></ErrorBoundary>} />
+                <Route path="/pricing" element={<ErrorBoundary scope="pricing"><Pricing /></ErrorBoundary>} />
+                <Route path="/methodology" element={<ErrorBoundary scope="methodology"><Methodology /></ErrorBoundary>} />
+                <Route path="/share/:scanId" element={<ErrorBoundary scope="share"><ShareScan /></ErrorBoundary>} />
+                <Route path="/share/challenge/:challengeCode" element={<ErrorBoundary scope="challenge"><ChallengeResult /></ErrorBoundary>} />
+                <Route path="/admin/monitor" element={<AuthGuard requiredRole="admin">{() => <ErrorBoundary scope="admin"><AdminDashboard /></ErrorBoundary>}</AuthGuard>} />
                 {/* Diagnostic feature */}
-                <Route path="/diagnostic" element={<DiagnosticPage />} />
-                <Route path="/diagnostic/:token" element={<DiagnosticShare />} />
-                <Route path="/obituary" element={<ObituaryPage />} />
-                <Route path="/results/choose" element={<ResultsChoose />} />
-                <Route path="/results/model-b" element={<ResultsModelB />} />
+                <Route path="/diagnostic" element={<ErrorBoundary scope="diagnostic"><DiagnosticPage /></ErrorBoundary>} />
+                <Route path="/diagnostic/:token" element={<ErrorBoundary scope="diagnostic-share"><DiagnosticShare /></ErrorBoundary>} />
+                <Route path="/obituary" element={<ErrorBoundary scope="obituary"><ObituaryPage /></ErrorBoundary>} />
+                <Route path="/results/choose" element={<ErrorBoundary scope="results-choose"><ResultsChoose /></ErrorBoundary>} />
+                <Route path="/results/model-b" element={<ErrorBoundary scope="results"><ResultsModelB /></ErrorBoundary>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -6,24 +6,36 @@ interface ErrorBoundaryState {
   errorId: string;
 }
 
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  /** Optional scope label shown in the UI ("dashboard", "scan", etc.). */
+  scope?: string;
+  /** Optional custom fallback. Receives the error and a soft-reset handler. */
+  fallback?: (error: Error, reset: () => void) => React.ReactNode;
+}
+
 export default class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
+  ErrorBoundaryProps,
   ErrorBoundaryState
 > {
-  constructor(props: { children: React.ReactNode }) {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null, errorId: '' };
   }
 
+  /** Soft retry — re-mounts children without nuking session state. */
+  private softReset = () => {
+    this.setState({ hasError: false, error: null, errorId: '' });
+  };
+
+  /** Hard reset — clears app state and navigates home. Last resort. */
   private hardReset = () => {
     try {
-      // Always clear app-specific scan state
       sessionStorage.removeItem('jb_pending_input');
       sessionStorage.removeItem('jb_lazy_retry_once');
       localStorage.removeItem('anon_scan_ids');
       localStorage.removeItem('anon_scans');
 
-      // Only clear auth tokens if this is an auth-related error
       const message = this.state.error?.message || '';
       const isAuthError = message.includes('auth') ||
                           message.includes('JWT') ||
@@ -31,7 +43,6 @@ export default class ErrorBoundary extends React.Component<
                           message.includes('token');
 
       if (isAuthError) {
-        // Remove stale auth/session keys only for auth errors
         for (const key of Object.keys(localStorage)) {
           if (key.includes('-auth-token') || key.startsWith('sb-')) {
             localStorage.removeItem(key);
@@ -53,7 +64,7 @@ export default class ErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     const message = error?.message || 'Unknown error';
-    console.error('[ErrorBoundary] Uncaught error:', message, error?.stack);
+    console.error(`[ErrorBoundary${this.props.scope ? `:${this.props.scope}` : ''}] Uncaught error:`, message, error?.stack);
     console.error('[ErrorBoundary] Component stack:', info.componentStack);
 
     // Auto-recover once for stale lazy chunk errors after deploys
@@ -72,7 +83,12 @@ export default class ErrorBoundary extends React.Component<
   }
 
   render() {
-    if (this.state.hasError) {
+    if (this.state.hasError && this.state.error) {
+      // Custom fallback wins if provided
+      if (this.props.fallback) {
+        return this.props.fallback(this.state.error, this.softReset);
+      }
+
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-6">
           <div className="max-w-md text-center space-y-6">
@@ -81,7 +97,9 @@ export default class ErrorBoundary extends React.Component<
             </div>
             <h1 className="text-2xl font-black text-foreground">Something Went Wrong</h1>
             <p className="text-muted-foreground text-sm">
-              We reset local app state to recover from stale cache/session errors.
+              {this.props.scope
+                ? `The ${this.props.scope} hit an unexpected error. You can retry, or start over from the home page.`
+                : 'An unexpected error occurred. Try again, or start over from the home page.'}
             </p>
             <p className="text-xs text-muted-foreground bg-muted rounded-lg p-3">
               Error ID: {this.state.errorId || Date.now().toString(36).toUpperCase()}
@@ -91,12 +109,20 @@ export default class ErrorBoundary extends React.Component<
                 {this.state.error.message}
               </p>
             )}
-            <button
-              onClick={this.hardReset}
-              className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all"
-            >
-              Start Over
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={this.softReset}
+                className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={this.hardReset}
+                className="px-6 py-3 rounded-xl border border-border bg-card text-foreground font-semibold hover:bg-muted transition-all"
+              >
+                Start Over
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -105,3 +131,4 @@ export default class ErrorBoundary extends React.Component<
     return this.props.children;
   }
 }
+
