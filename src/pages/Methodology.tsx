@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Shield, Brain, BarChart3, Clock, BookOpen } from 'lucide-react';
+import SEO from '@/components/SEO';
 
 /**
  * /methodology — How JobBachao's scoring works.
@@ -12,6 +13,11 @@ export default function Methodology() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Methodology — How JobBachao's AI Career Risk Score Works"
+        description="Transparent breakdown of how the JobBachao Career Position Score is computed: 98 role archetypes, 30 skill categories, real-time India market signals and deterministic scoring."
+        canonical="https://jobbachao.com/methodology"
+      />
       {/* Header */}
       <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
