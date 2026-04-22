@@ -189,6 +189,17 @@ export default function ResultsModelB() {
           setLoading(false);
           return;
         }
+        if (parsed?.code === "FORBIDDEN") {
+          // Stale/shared link pointing at another account's scan.
+          // Clear cached pointers so the next scan starts cleanly.
+          try {
+            localStorage.removeItem("jb_last_scan_id");
+            localStorage.removeItem("lastScanId");
+          } catch {}
+          setError(parsed.error || "This analysis belongs to a different account. Start a new scan.");
+          setLoading(false);
+          return;
+        }
         throw new Error(parsed?.error || fnError.message || "Analysis failed");
       }
       if (!data?.success) throw new Error(data?.error || "Analysis failed");
