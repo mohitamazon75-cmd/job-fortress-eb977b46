@@ -87,13 +87,22 @@ function extractRoleFromRawText(rawText: string): string | null {
   }
 
   // Tier 2: first line that looks like a title (Title Case + role keyword)
-  const titleKeywords = /\b(Engineer|Developer|Manager|Director|Lead|Head|Architect|Designer|Analyst|Consultant|Specialist|Officer|Executive|Founder|CEO|CTO|CFO|COO|VP|President|Owner|Partner|Coordinator|Associate|Strategist|Marketer|Producer|Writer|Editor|Researcher|Scientist|Accountant|Recruiter|Trainer|Advisor|Planner|Administrator|Supervisor|Counsel|Counselor|Therapist|Nurse|Doctor|Surgeon|Pilot|Chef|Teacher|Professor|Principal)\b/i;
+  // Includes India-common abbreviations (AGM/DGM/Sr/Asst/Dy etc.) so seniority
+  // prefixes don't dodge detection on Indian resumes.
+  const titleKeywords = /\b(Engineer|Developer|Manager|Director|Lead|Head|Architect|Designer|Analyst|Consultant|Specialist|Officer|Executive|Founder|CEO|CTO|CFO|COO|VP|President|Owner|Partner|Coordinator|Associate|Strategist|Marketer|Producer|Writer|Editor|Researcher|Scientist|Accountant|Recruiter|Trainer|Advisor|Planner|Administrator|Supervisor|Counsel|Counselor|Therapist|Nurse|Doctor|Surgeon|Pilot|Chef|Teacher|Professor|Principal|AGM|DGM|GM|Sr|Jr|Asst|Dy|Deputy|Assistant|Senior|Junior|Staff|Chief)\b/i;
   for (const line of head.split(/\n+/).slice(0, 25)) {
     const trimmed = line.trim().replace(/[•·\-*\u2022]+\s*/g, "").trim();
     if (trimmed.length < 3 || trimmed.length > 100) continue;
     if (!titleKeywords.test(trimmed)) continue;
     // skip lines that look like sentences (start with verb, contain " I ", " my ")
     if (/[.!?]$/.test(trimmed) || /\b(I|my|we|our)\b/.test(trimmed)) continue;
+    // Skip objective/summary sentences masquerading as titles (Indian-resume anti-pattern:
+    // "Dynamic Engineer with 5 years at TCS building scalable systems...")
+    if (/\b(years?|experience|expertise|building|leading|managing|working|seeking|passionate|dynamic|experienced|results-driven|motivated|talented|innovative|strategic)\b/i.test(trimmed)) continue;
+    // Skip lines with conjunctions — real titles don't say "and"/"with"/"who"
+    if (/\b(with|and|who|that|which|having|including)\b/i.test(trimmed)) continue;
+    // Real titles are short. Anything longer is almost always a sentence.
+    if (trimmed.length > 60) continue;
     return trimmed.replace(/\s{2,}/g, " ");
   }
 
