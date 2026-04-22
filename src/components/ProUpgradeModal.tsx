@@ -238,17 +238,7 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
               ))}
               <span className="text-[11px] font-semibold text-foreground ml-1">4.9/5</span>
             </div>
-            <p className="text-[11px] text-muted-foreground flex-1 text-center">2,847 professionals upgraded this week</p>
-            <div className="flex -space-x-2">
-              {SOCIAL_PROOF_AVATARS.map(({ initials, color }, idx) => (
-                <div
-                  key={idx}
-                  className={`w-6 h-6 ${color} rounded-full flex items-center justify-center text-[9px] font-black text-white border border-background ring-1 ring-border`}
-                >
-                  {initials}
-                </div>
-              ))}
-            </div>
+            <p className="text-[11px] text-muted-foreground flex-1 text-center">Backed by deterministic scoring · India-specific market data</p>
           </div>
 
           {/* Pricing toggle */}
