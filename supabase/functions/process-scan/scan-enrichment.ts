@@ -43,6 +43,12 @@ export interface EnrichmentResult {
   parsedLinkedinRole: string | null;
   normalizedExperienceYears: number | null;
   resumeExtractedYears: number | null;
+  /**
+   * Which extraction tier produced the role title. Surfaced for admin diagnostics
+   * so we can monitor regex-rescue rate. Values: "headline" | "experience[0]"
+   * | "affinda" | "regex" | "NONE" | null (LinkedIn-only path).
+   */
+  roleSource: string | null;
 }
 
 // ── Constants ──
