@@ -12,10 +12,36 @@ interface ProUpgradeModalProps {
   defaultTier?: 'month' | 'year';
 }
 
+// Server is the source of truth for amounts. Client only sends `tier`.
 const TIER_CONFIG = {
-  month: { label: '₹300/month', amount: 30000, tier: 'pro_monthly', description: 'Monthly pro access' },
-  year: { label: '₹1,999/year', amount: 199900, tier: 'pro', description: 'Annual pro access' },
+  month: { label: '₹300/month', tier: 'pro_monthly', description: 'Monthly pro access' },
+  year: { label: '₹1,999/year', tier: 'pro', description: 'Annual pro access' },
 } as const;
+
+interface RazorpayOrderResponse {
+  success: boolean;
+  order_id?: string;
+  amount?: number;
+  currency?: string;
+  key_id?: string;
+  error?: string;
+}
+
+async function createServerOrder(tier: string, authToken: string): Promise<RazorpayOrderResponse> {
+  const url = `${SUPABASE_URL}/functions/v1/create-razorpay-order`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify({ tier }),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) return { success: false, error: (data as any).error || 'Order creation failed' };
+  return data as RazorpayOrderResponse;
+}
 
 async function loadRazorpaySDK(): Promise<void> {
   if ((window as any).Razorpay) return;
