@@ -86,8 +86,8 @@ No markdown, no explanation, only JSON.`,
             content: [
               { type: "text", text: "Extract all professional data from this resume. The headline field MUST be the VERBATIM job title — do NOT upgrade, paraphrase, or inflate it:" },
               {
-                type: "image_url",
-                image_url: { url: `data:${mimeType};base64,${base64}` },
+                type: "file",
+                file: { filename: `resume.${mimeType === "application/pdf" ? "pdf" : "docx"}`, file_data: `data:${mimeType};base64,${base64}` },
               },
             ],
           },
