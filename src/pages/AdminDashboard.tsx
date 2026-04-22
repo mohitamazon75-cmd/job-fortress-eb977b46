@@ -293,7 +293,7 @@ function StatCard({ label, value, icon, danger, accent }: { label: string; value
 
 // ─── Overview Tab ───
 function OverviewTab({ data }: { data: AdminData }) {
-  const { usage_by_function, active_alerts, summary, agent1_quality: a1, role_source_distribution: rsd } = data;
+  const { usage_by_function, active_alerts, summary, agent1_quality: a1, role_source_distribution: rsd, profile_confidence_distribution: pcd } = data;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
