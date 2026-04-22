@@ -244,6 +244,37 @@ Deno.serve(async (req) => {
     const totalActualCost7d = tokenCostComparison.reduce((s, c) => s + c.actual_total_cost, 0);
     const totalEstimatedCost7d = tokenCostComparison.reduce((s, c) => s + c.estimated_per_call * c.calls_7d, 0);
 
+    // ─── Role Source Distribution (last 24h) ───
+    // Tracks which extraction tier produced the role title for each scan.
+    // Health bands: regex >20% = Gemini-quality regression to investigate.
+    //               regex <5%  = healthy (regex is purely a safety net).
+    const roleSourceLogs = (roleSourceRes.data || []) as any[];
+    const roleSourceCounts: Record<string, number> = {
+      headline: 0, "experience[0]": 0, affinda: 0, regex: 0, NONE: 0,
+    };
+    for (const log of roleSourceLogs) {
+      const src = log.request_meta?.role_source;
+      if (typeof src === "string" && src in roleSourceCounts) roleSourceCounts[src]++;
+    }
+    const roleSourceTotal = roleSourceLogs.length;
+    const pct = (n: number) => roleSourceTotal > 0 ? Math.round((n / roleSourceTotal) * 1000) / 10 : 0;
+    const regexPct = pct(roleSourceCounts.regex);
+    const roleSourceHealth: "healthy" | "watch" | "degraded" =
+      regexPct < 5 ? "healthy" : regexPct <= 20 ? "watch" : "degraded";
+    const roleSourceDistribution = {
+      total: roleSourceTotal,
+      window_hours: 24,
+      counts: roleSourceCounts,
+      pct: {
+        headline: pct(roleSourceCounts.headline),
+        "experience[0]": pct(roleSourceCounts["experience[0]"]),
+        affinda: pct(roleSourceCounts.affinda),
+        regex: regexPct,
+        NONE: pct(roleSourceCounts.NONE),
+      },
+      health: roleSourceHealth,
+    };
+
     return new Response(JSON.stringify({
       summary: {
         date: today,
