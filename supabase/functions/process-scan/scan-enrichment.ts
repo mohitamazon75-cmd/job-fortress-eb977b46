@@ -161,6 +161,7 @@ async function parseResume(
       role: string | null;
       confidence: string;
       extractedYears: number | null;
+      roleSource: string | null;
     }> => {
       const aff = await affindaPromise;
       if (aff?.current_job_title) {
@@ -184,6 +185,7 @@ async function parseResume(
           role: aff.current_job_title,
           confidence: "low",
           extractedYears: aff.accurate_years_experience,
+          roleSource: "affinda",
         };
       }
       console.log(`[parseResume] Gemini failed — Affinda has no title either — no rescue available`);
