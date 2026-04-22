@@ -85,26 +85,26 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <BrowserRouter>
-          <ErrorBoundary>
+          <ErrorBoundary scope="app">
             <Suspense fallback={<RouteFallback />}>
               <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/advanced-beta" element={<AdvancedBeta />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/methodology" element={<Methodology />} />
-                <Route path="/share/:scanId" element={<ShareScan />} />
-                <Route path="/share/challenge/:challengeCode" element={<ChallengeResult />} />
-                <Route path="/admin/monitor" element={<AuthGuard requiredRole="admin">{() => <AdminDashboard />}</AuthGuard>} />
+                <Route path="/" element={<ErrorBoundary scope="landing"><Index /></ErrorBoundary>} />
+                <Route path="/advanced-beta" element={<ErrorBoundary scope="advanced-beta"><AdvancedBeta /></ErrorBoundary>} />
+                <Route path="/auth" element={<ErrorBoundary scope="auth"><Auth /></ErrorBoundary>} />
+                <Route path="/reset-password" element={<ErrorBoundary scope="reset-password"><ResetPassword /></ErrorBoundary>} />
+                <Route path="/terms" element={<ErrorBoundary scope="terms"><Terms /></ErrorBoundary>} />
+                <Route path="/privacy" element={<ErrorBoundary scope="privacy"><Privacy /></ErrorBoundary>} />
+                <Route path="/pricing" element={<ErrorBoundary scope="pricing"><Pricing /></ErrorBoundary>} />
+                <Route path="/methodology" element={<ErrorBoundary scope="methodology"><Methodology /></ErrorBoundary>} />
+                <Route path="/share/:scanId" element={<ErrorBoundary scope="share"><ShareScan /></ErrorBoundary>} />
+                <Route path="/share/challenge/:challengeCode" element={<ErrorBoundary scope="challenge"><ChallengeResult /></ErrorBoundary>} />
+                <Route path="/admin/monitor" element={<AuthGuard requiredRole="admin">{() => <ErrorBoundary scope="admin"><AdminDashboard /></ErrorBoundary>}</AuthGuard>} />
                 {/* Diagnostic feature */}
-                <Route path="/diagnostic" element={<DiagnosticPage />} />
-                <Route path="/diagnostic/:token" element={<DiagnosticShare />} />
-                <Route path="/obituary" element={<ObituaryPage />} />
-                <Route path="/results/choose" element={<ResultsChoose />} />
-                <Route path="/results/model-b" element={<ResultsModelB />} />
+                <Route path="/diagnostic" element={<ErrorBoundary scope="diagnostic"><DiagnosticPage /></ErrorBoundary>} />
+                <Route path="/diagnostic/:token" element={<ErrorBoundary scope="diagnostic-share"><DiagnosticShare /></ErrorBoundary>} />
+                <Route path="/obituary" element={<ErrorBoundary scope="obituary"><ObituaryPage /></ErrorBoundary>} />
+                <Route path="/results/choose" element={<ErrorBoundary scope="results-choose"><ResultsChoose /></ErrorBoundary>} />
+                <Route path="/results/model-b" element={<ErrorBoundary scope="results"><ResultsModelB /></ErrorBoundary>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
