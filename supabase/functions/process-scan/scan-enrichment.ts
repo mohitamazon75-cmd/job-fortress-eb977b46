@@ -124,8 +124,9 @@ async function parseResume(
   role: string | null;
   confidence: string;
   extractedYears: number | null;
+  roleSource: string | null;
 }> {
-  const fallback = { rawText: "", name: null, company: null, industry: null, role: null, confidence: "low", extractedYears: null };
+  const fallback = { rawText: "", name: null, company: null, industry: null, role: null, confidence: "low", extractedYears: null, roleSource: "NONE" as string | null };
 
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) return fallback;
