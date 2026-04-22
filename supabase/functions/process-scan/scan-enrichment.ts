@@ -613,6 +613,7 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
   let parsedLinkedinIndustry: string | null = null;
   let parsedLinkedinRole: string | null = null;
   let resumeExtractedYears: number | null = null;
+  let roleSource: string | null = null;
 
   // Resume parsing (takes priority)
   if (hasResume && scan.resume_file_path) {
@@ -625,6 +626,7 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
     parsedLinkedinIndustry = resumeResult.industry;
     parsedLinkedinRole = resumeResult.role;
     resumeExtractedYears = resumeResult.extractedYears;
+    roleSource = resumeResult.roleSource;
 
     // Reconcile experience: resume is ground truth
     if (resumeExtractedYears !== null) {
@@ -650,6 +652,7 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
     linkedinCompany = linkedinResult.company;
     parsedLinkedinIndustry = linkedinResult.industry;
     parsedLinkedinRole = linkedinResult.role;
+    // roleSource stays null on the LinkedIn-only path (different extraction tier set)
   }
 
   return {
@@ -661,5 +664,6 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
     parsedLinkedinRole,
     normalizedExperienceYears,
     resumeExtractedYears,
+    roleSource,
   };
 }
