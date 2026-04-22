@@ -2,6 +2,7 @@
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
+import { isFeatureEnabled } from "../_shared/feature-flags.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
@@ -31,6 +32,9 @@ Deno.serve(async (req) => {
 
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const APIFY_API_TOKEN = Deno.env.get("APIFY_API_TOKEN");
+    const APIFY_ACTOR_ID = "harvestapi~linkedin-profile-scraper";
+    const APIFY_TIMEOUT_MS = 60_000;
 
     // Extract username from URL for search
     const slug = extractLinkedinSlug(linkedinUrl);
@@ -40,6 +44,59 @@ Deno.serve(async (req) => {
     let profileMarkdown = "";
     let firecrawlWorked = false;
     let extractionSource = "none";
+
+    // ═══════════════════════════════════════════════════════
+    // STRATEGY 0: Apify harvestapi direct scrape (paid actor, structured data, primary)
+    // Bypasses Firecrawl/Tavily/Gemini chain when successful — Apify returns
+    // pre-structured JSON, no LLM extraction needed. Falls through to existing
+    // chain on any failure (token missing, flag off, timeout, empty dataset,
+    // thin data). Gated by `enable_apify_scraper` feature flag with linkedinUrl
+    // as the bucket key (parse-linkedin doesn't receive user_id).
+    // ═══════════════════════════════════════════════════════
+    if (APIFY_API_TOKEN) {
+      const flagSupabase = createAdminClient();
+      const apifyEnabled = await isFeatureEnabled(flagSupabase, "enable_apify_scraper", linkedinUrl);
+      if (apifyEnabled) {
+        const apifyItem = await fetchProfileFromApify(linkedinUrl, APIFY_API_TOKEN, APIFY_ACTOR_ID, APIFY_TIMEOUT_MS);
+        if (apifyItem) {
+          const normalized = normalizeApifyProfile(apifyItem);
+          // Quality gate: require usable headline AND at least one experience entry
+          if (normalized.headline && normalized.experience.length > 0) {
+            // Apify success — do DB enrichment inline and return immediately.
+            // Skip Firecrawl/Tavily/Gemini entirely (Apify data is already structured).
+            const { data: jobs } = await flagSupabase
+              .from("job_taxonomy")
+              .select("job_family, category, disruption_baseline");
+            const matchedJob = fuzzyMatchJob(normalized.headline, jobs || []);
+            const { data: allSkills } = await flagSupabase
+              .from("skill_risk_matrix")
+              .select("skill_name, automation_risk, replacement_tools");
+            const matchedSkills = matchSkills(normalized.skills, allSkills || []);
+            console.log(`[parse-linkedin] Apify scrape succeeded — ${normalized.experience.length} roles, ${normalized.skills.length} skills`);
+            return new Response(
+              JSON.stringify({
+                name: normalized.name || nameGuess,
+                headline: normalized.headline,
+                company: normalized.company,
+                location: normalized.location,
+                skills: normalized.skills,
+                experience: normalized.experience,
+                matchedJobFamily: matchedJob?.job_family || null,
+                matchedIndustry: matchedJob?.category || null,
+                matchedSkills,
+                suggestedIndustry: matchedJob?.category || "Other",
+                rawExtractionQuality: "high",
+                source: "apify_harvestapi",
+                extraction_confidence: "high",
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          console.warn(`[parse-linkedin] Apify returned thin data (headline=${normalized.headline ? "present" : "missing"}, exp=${normalized.experience.length}) — falling through to Firecrawl chain`);
+        }
+        // Apify null or thin — fall through silently to existing chain
+      }
+    }
 
     // ═══════════════════════════════════════════════════════
     // STRATEGY 1: Firecrawl direct scrape (best quality)
@@ -537,4 +594,114 @@ function levenshteinSimilarity(a: string, b: string): number {
   }
   const maxLen = Math.max(a.length, b.length);
   return maxLen === 0 ? 1 : 1 - matrix[a.length][b.length] / maxLen;
+}
+
+// ============================================================
+// Apify harvestapi/linkedin-profile-scraper integration
+// ============================================================
+
+type NormalizedApifyProfile = {
+  name: string | null;
+  headline: string | null;
+  company: string;
+  location: string;
+  skills: string[];
+  experience: { title: string; company: string; duration: string }[];
+};
+
+/**
+ * Calls the Apify harvestapi/linkedin-profile-scraper actor synchronously
+ * for a single LinkedIn URL. Returns the raw first dataset item, or null on
+ * any failure (no token, non-2xx, timeout, empty dataset, error item).
+ * Uses run-sync-get-dataset-items (blocks until actor completes).
+ * 60s AbortController timeout to fit within process-scan's 150s budget.
+ */
+async function fetchProfileFromApify(
+  linkedinUrl: string,
+  apiToken: string,
+  actorId: string,
+  timeoutMs: number,
+): Promise<Record<string, unknown> | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const url = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${apiToken}`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profileUrls: [linkedinUrl] }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!resp.ok) {
+      console.error(`[parse-linkedin] Apify HTTP ${resp.status}`);
+      return null;
+    }
+    const items = await resp.json();
+    if (!Array.isArray(items) || items.length === 0) {
+      console.warn("[parse-linkedin] Apify returned empty dataset");
+      return null;
+    }
+    const item = items[0];
+    if (!item || typeof item !== "object" || (item as Record<string, unknown>).error) {
+      console.warn(`[parse-linkedin] Apify error item: ${(item as Record<string, unknown>)?.error ?? "unknown"}`);
+      return null;
+    }
+    return item as Record<string, unknown>;
+  } catch (e) {
+    clearTimeout(timer);
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("abort")) console.error(`[parse-linkedin] Apify timeout after ${timeoutMs}ms`);
+    else console.error(`[parse-linkedin] Apify fetch failed: ${msg}`);
+    return null;
+  }
+}
+
+/**
+ * Maps a harvestapi/linkedin-profile-scraper raw item to the parse-linkedin
+ * internal contract. CRITICAL DPDP: strips emails[] (never persist).
+ * CRITICAL storage minimization: drops recommendations, moreProfiles,
+ * profilePicture/coverPicture URLs.
+ */
+function normalizeApifyProfile(item: Record<string, unknown>): NormalizedApifyProfile {
+  const firstName = (item.firstName as string) ?? "";
+  const lastName = (item.lastName as string) ?? "";
+  const fullName = (item.fullName as string) || `${firstName} ${lastName}`.trim() || null;
+
+  const currentPositionRaw = item.currentPosition;
+  const currentPosition = Array.isArray(currentPositionRaw) && currentPositionRaw.length > 0
+    ? (currentPositionRaw[0] as Record<string, unknown>)
+    : null;
+
+  const expRaw = (item.experience as unknown) ?? (item.experiences as unknown) ?? [];
+  const exp = Array.isArray(expRaw) ? (expRaw as Record<string, unknown>[]) : [];
+
+  const headline = (item.headline as string) || (currentPosition?.position as string) || null;
+
+  const company = (currentPosition?.companyName as string)
+    || (exp[0]?.companyName as string)
+    || "";
+
+  const locationObj = item.location as Record<string, unknown> | undefined;
+  const location = (locationObj?.linkedinText as string) || "";
+
+  const skillsRaw = (item.skills as unknown) ?? [];
+  const skills = Array.isArray(skillsRaw)
+    ? (skillsRaw as unknown[])
+        .map((s) => typeof s === "string" ? s : ((s as Record<string, unknown>)?.name as string))
+        .filter((s): s is string => Boolean(s) && s.trim().length > 0)
+    : [];
+
+  const experience = exp.map((entry) => {
+    const title = (entry.position as string) || (entry.title as string) || "";
+    const expCompany = (entry.companyName as string) || (entry.company as string) || "";
+    const sd = entry.startDate as Record<string, unknown> | undefined;
+    const ed = entry.endDate as Record<string, unknown> | undefined;
+    const startText = (sd?.text as string) || "";
+    const endText = (ed?.text as string) || "Present";
+    const duration = startText ? `${startText} – ${endText}` : "";
+    return { title, company: expCompany, duration };
+  }).filter((e) => e.title && e.company);
+
+  return { name: fullName, headline, company, location, skills, experience };
 }
