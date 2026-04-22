@@ -346,6 +346,7 @@ Deno.serve(async (req) => {
         total_token_calls_7d: tokenLogs.length,
       },
       role_source_distribution: roleSourceDistribution,
+      profile_confidence_distribution: profileConfidenceDistribution,
     }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
