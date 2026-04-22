@@ -79,7 +79,11 @@ Deno.serve(async (req) => {
       }
       if (!transferred) {
         return new Response(
-          JSON.stringify({ success: false, error: "Forbidden" }),
+          JSON.stringify({
+            success: false,
+            error: "This analysis belongs to a different account. Sign in with the original account or start a new scan.",
+            code: "FORBIDDEN",
+          }),
           { status: 403, headers: jsonHeaders }
         );
       }
