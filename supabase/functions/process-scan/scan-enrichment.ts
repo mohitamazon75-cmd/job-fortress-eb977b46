@@ -379,14 +379,27 @@ CRITICAL RULES:
       const roleSource = roleFromHeadline ? "headline" : roleFromExperience ? "experience[0]" : roleFromAffinda ? "affinda" : roleFromRegex ? "regex" : "NONE";
       console.log(`[parseResume] Role source: ${roleSource} | headline=${roleFromHeadline ? "present" : "null"} exp[0]=${roleFromExperience ? "present" : "null"} affinda=${roleFromAffinda ? "present" : "null"} regex=${roleFromRegex ? "present" : "null"}`);
 
+      // Confidence is downgraded when we fall back to less-trustworthy sources
+      // so process-scan/index.ts injects dataQualityWarning into Agent 1's prompt
+      // and the final report carries an honest profileExtractionConfidence value.
+      // - headline / experience[0] : Gemini saw the resume properly → "high"
+      // - affinda                  : different provider, structured  → "medium"
+      // - regex                    : heuristic rescue, no semantics   → "medium"
+      // - NONE                     : already returned via fallback    → "low"
+      const dynamicConfidence =
+        roleSource === "headline" || roleSource === "experience[0]" ? "high" :
+        roleSource === "affinda" || roleSource === "regex" ? "medium" :
+        "low";
+
       return {
         rawText,
         name: parsed.name || null,
         company: parsed.company || null,
         industry: parsed.inferredIndustry || null,
         role,
-        confidence: "high",
+        confidence: dynamicConfidence,
         extractedYears,
+        roleSource,
       };
     } catch (e) {
       cancel();
