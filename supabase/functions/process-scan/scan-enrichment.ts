@@ -58,6 +58,43 @@ function createTimeoutController(ms: number): { signal: AbortSignal; cancel: () 
   return { signal: controller.signal, cancel: () => clearTimeout(timer) };
 }
 
+/**
+ * Last-ditch role extractor — only fires when Gemini headline, Gemini experience[0],
+ * and Affinda all returned no role. Sniffs the raw resume text for common title
+ * patterns to keep the scan alive instead of failing as `role_extraction_failed`.
+ *
+ * Returns a likely role title or null. Prefers explicit "Title:" / "Position:" /
+ * "Role:" labels, then falls back to the first line that matches common title
+ * shapes (e.g. "Senior Software Engineer", "Marketing Manager", "Product Lead").
+ *
+ * Conservative by design: returns null rather than guessing junk like "Professional".
+ */
+function extractRoleFromRawText(rawText: string): string | null {
+  if (!rawText || rawText.length < 20) return null;
+  const head = rawText.slice(0, 1500);
+
+  // Tier 1: explicit label
+  const labelMatch = head.match(/(?:^|\n)\s*(?:Title|Position|Role|Designation|Job\s*Title|Current\s*Role|Headline)\s*[:\-–]\s*([^\n]{3,100})/i);
+  if (labelMatch?.[1]) {
+    const cleaned = labelMatch[1].trim().replace(/\s{2,}/g, " ");
+    if (cleaned.length >= 3 && cleaned.length <= 100 && !/^unknown$/i.test(cleaned)) return cleaned;
+  }
+
+  // Tier 2: first line that looks like a title (Title Case + role keyword)
+  const titleKeywords = /\b(Engineer|Developer|Manager|Director|Lead|Head|Architect|Designer|Analyst|Consultant|Specialist|Officer|Executive|Founder|CEO|CTO|CFO|COO|VP|President|Owner|Partner|Coordinator|Associate|Strategist|Marketer|Producer|Writer|Editor|Researcher|Scientist|Accountant|Recruiter|Trainer|Advisor|Planner|Administrator|Supervisor|Counsel|Counselor|Therapist|Nurse|Doctor|Surgeon|Pilot|Chef|Teacher|Professor|Principal)\b/i;
+  for (const line of head.split(/\n+/).slice(0, 25)) {
+    const trimmed = line.trim().replace(/[•·\-*\u2022]+\s*/g, "").trim();
+    if (trimmed.length < 3 || trimmed.length > 100) continue;
+    if (!titleKeywords.test(trimmed)) continue;
+    // skip lines that look like sentences (start with verb, contain " I ", " my ")
+    if (/[.!?]$/.test(trimmed) || /\b(I|my|we|our)\b/.test(trimmed)) continue;
+    return trimmed.replace(/\s{2,}/g, " ");
+  }
+
+  return null;
+}
+
+
 // ── Resume Parsing ──
 
 async function parseResume(
@@ -309,16 +346,20 @@ CRITICAL RULES:
 
       console.debug(`[Ingestion] Resume parsed (rich): name=${parsed.name ? "[present]" : "[absent]"}, role=${parsed.headline ? "[present]" : "[absent]"}, skills=${parsed.skills?.length ?? 0}, tech=${parsed.techStack?.length ?? 0}, achievements=${parsed.experience?.reduce((n: number, e: any) => n + (e.keyAchievements?.length ?? 0), 0) ?? 0}, exp=${extractedYears ?? "absent"}${affindaResult ? " (affinda-verified)" : ""}`);
 
-      // 3-layer role-extraction fallback (Day 2 fix for role_extraction_failed bug):
+      // 4-layer role-extraction fallback (2026-04-22: added regex tier):
       // 1. Gemini's verbatim headline (best — exact title from resume top)
       // 2. Gemini's first experience entry title (good — structured backup)
-      // 3. Affinda's most-recent workExperience[0].jobTitle (reliable structured extraction independent of vision LLM)
+      // 3. Affinda's most-recent workExperience[0].jobTitle (structured, vision-LLM-independent)
+      // 4. Regex sniff from rawText (last-ditch — keeps scan alive instead of role_extraction_failed)
       const roleFromHeadline = (typeof parsed.headline === "string" && parsed.headline.trim()) ? parsed.headline.trim() : null;
       const roleFromExperience = (typeof parsed.experience?.[0]?.title === "string" && parsed.experience[0].title.trim()) ? parsed.experience[0].title.trim() : null;
       const roleFromAffinda = affindaResult?.current_job_title ?? null;
-      const role = roleFromHeadline ?? roleFromExperience ?? roleFromAffinda ?? null;
-      const roleSource = roleFromHeadline ? "headline" : roleFromExperience ? "experience[0]" : roleFromAffinda ? "affinda" : "NONE";
-      console.log(`[parseResume] Role source: ${roleSource} | headline=${roleFromHeadline ? "present" : "null"} exp[0]=${roleFromExperience ? "present" : "null"} affinda=${roleFromAffinda ? "present" : "null"}`);
+      const roleFromRegex = roleFromHeadline || roleFromExperience || roleFromAffinda
+        ? null
+        : extractRoleFromRawText(rawText);
+      const role = roleFromHeadline ?? roleFromExperience ?? roleFromAffinda ?? roleFromRegex ?? null;
+      const roleSource = roleFromHeadline ? "headline" : roleFromExperience ? "experience[0]" : roleFromAffinda ? "affinda" : roleFromRegex ? "regex" : "NONE";
+      console.log(`[parseResume] Role source: ${roleSource} | headline=${roleFromHeadline ? "present" : "null"} exp[0]=${roleFromExperience ? "present" : "null"} affinda=${roleFromAffinda ? "present" : "null"} regex=${roleFromRegex ? "present" : "null"}`);
 
       return {
         rawText,
