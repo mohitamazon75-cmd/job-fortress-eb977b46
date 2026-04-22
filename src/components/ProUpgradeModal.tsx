@@ -57,12 +57,7 @@ const PRO_FEATURES = [
   { label: 'Your score updates every month as AI advances — track it before your manager does' },
 ];
 
-const SOCIAL_PROOF_AVATARS = [
-  { initials: 'RK', color: 'bg-blue-500' },
-  { initials: 'AS', color: 'bg-pink-500' },
-  { initials: 'PM', color: 'bg-amber-500' },
-  { initials: 'SJ', color: 'bg-emerald-500' },
-];
+// (Removed SOCIAL_PROOF_AVATARS — fake hardcoded peer initials are a credibility risk.)
 
 export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTier = 'year' }: ProUpgradeModalProps) {
   const [selected, setSelected] = useState<'month' | 'year'>(defaultTier);
