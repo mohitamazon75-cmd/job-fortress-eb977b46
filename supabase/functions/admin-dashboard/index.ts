@@ -283,6 +283,28 @@ Deno.serve(async (req) => {
       health: roleSourceHealth,
     };
 
+    // ─── Profile Confidence Distribution (last 24h) ───
+    // Tracks confidence tier of resume parse feeding Card 1.
+    // high>80% healthy; 60-80% watch; <60% degraded.
+    const profileConfLogs = (profileConfRes.data || []) as any[];
+    const confCounts: Record<string, number> = { high: 0, medium: 0, low: 0 };
+    for (const log of profileConfLogs) {
+      const c = log.request_meta?.confidence;
+      if (typeof c === "string" && c in confCounts) confCounts[c]++;
+    }
+    const confTotal = profileConfLogs.length;
+    const cpct = (n: number) => confTotal > 0 ? Math.round((n / confTotal) * 1000) / 10 : 0;
+    const highPct = cpct(confCounts.high);
+    const profileConfHealth: "healthy" | "watch" | "degraded" =
+      highPct > 80 ? "healthy" : highPct >= 60 ? "watch" : "degraded";
+    const profileConfidenceDistribution = {
+      total: confTotal,
+      window_hours: 24,
+      counts: confCounts,
+      pct: { high: highPct, medium: cpct(confCounts.medium), low: cpct(confCounts.low) },
+      health: profileConfHealth,
+    };
+
     return new Response(JSON.stringify({
       summary: {
         date: today,
