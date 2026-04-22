@@ -2,7 +2,7 @@ import { buildDossierPrompt, buildProfileContext } from "./prompt-builder.ts";
 import { createTokenTrackingTransform } from "../_shared/token-tracker.ts";
 // Pro gate disabled during beta/waitlist phase — all users get full access
 // import { requirePro } from "../_shared/subscription-guard.ts";
-import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 
 

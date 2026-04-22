@@ -662,7 +662,6 @@ export function subscribeScanStatus(
     if (resolved) return;
     resolved = true;
     clearTimers();
-    channel.unsubscribe();
     onComplete(report);
   };
 
@@ -670,7 +669,6 @@ export function subscribeScanStatus(
     if (resolved) return;
     resolved = true;
     clearTimers();
-    channel.unsubscribe();
     onError?.();
   };
 
@@ -827,7 +825,6 @@ export function subscribeScanStatus(
   return () => {
     resolved = true;
     clearTimers();
-    channel.unsubscribe();
   };
 }
 
