@@ -644,6 +644,14 @@ const Index = () => {
         }
       } catch (err) {
         console.error('Scan creation failed:', err);
+        const code = (err as any)?.code;
+        const msg = err instanceof Error ? err.message : 'Could not start scan. Please try again.';
+        if (code === 'DAILY_LIMIT_REACHED' || /daily.*limit/i.test(msg)) {
+          setShowRateLimitUpsell(true);
+          setPhase('hero');
+          return;
+        }
+        toast.error(msg);
         setPhase('error');
       }
     });
