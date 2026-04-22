@@ -286,10 +286,71 @@ function StatCard({ label, value, icon, danger, accent }: { label: string; value
 
 // ─── Overview Tab ───
 function OverviewTab({ data }: { data: AdminData }) {
-  const { usage_by_function, active_alerts, summary, agent1_quality: a1 } = data;
+  const { usage_by_function, active_alerts, summary, agent1_quality: a1, role_source_distribution: rsd } = data;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Role Source Distribution — Gemini-quality health (last 24h) */}
+      {rsd && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
+          <div className="flex items-center gap-2 mb-1">
+            <Filter className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Role Source Distribution (last 24h)</h3>
+            <span className="text-[10px] text-muted-foreground">{rsd.total} scans</span>
+            <span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+              rsd.health === 'healthy' ? 'bg-green-500/10 text-green-600' :
+              rsd.health === 'watch' ? 'bg-yellow-500/10 text-yellow-600' :
+              'bg-destructive/10 text-destructive'
+            }`}>
+              {rsd.health === 'healthy' ? 'Healthy' : rsd.health === 'watch' ? 'Watch' : 'Degraded'}
+            </span>
+          </div>
+          <p className="text-[10px] text-muted-foreground mb-4">
+            Which extraction tier produced each role title. Healthy: regex &lt; 5% (pure safety net). Watch: 5–20%. Degraded: regex &gt; 20% — Gemini-quality regression to investigate.
+          </p>
+
+          {rsd.total === 0 ? (
+            <div className="text-xs text-muted-foreground italic">No resume scans in the last 24h.</div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="rounded-lg p-3 border border-green-500/30 bg-green-500/5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Headline</p>
+                <p className="text-2xl font-black text-green-600">{rsd.pct.headline}%</p>
+                <p className="text-[10px] text-muted-foreground">{rsd.counts.headline} scans · Gemini ✓</p>
+              </div>
+              <div className="rounded-lg p-3 border border-green-500/30 bg-green-500/5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Experience[0]</p>
+                <p className="text-2xl font-black text-green-600">{rsd.pct['experience[0]']}%</p>
+                <p className="text-[10px] text-muted-foreground">{rsd.counts['experience[0]']} scans · Gemini ✓</p>
+              </div>
+              <div className="rounded-lg p-3 border border-yellow-500/30 bg-yellow-500/5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Affinda</p>
+                <p className="text-2xl font-black text-yellow-600">{rsd.pct.affinda}%</p>
+                <p className="text-[10px] text-muted-foreground">{rsd.counts.affinda} scans · structured fallback</p>
+              </div>
+              <div className={`rounded-lg p-3 border ${
+                rsd.pct.regex < 5 ? 'border-green-500/30 bg-green-500/5' :
+                rsd.pct.regex <= 20 ? 'border-yellow-500/30 bg-yellow-500/5' :
+                'border-destructive/30 bg-destructive/5'
+              }`}>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Regex</p>
+                <p className={`text-2xl font-black ${
+                  rsd.pct.regex < 5 ? 'text-green-600' :
+                  rsd.pct.regex <= 20 ? 'text-yellow-600' :
+                  'text-destructive'
+                }`}>{rsd.pct.regex}%</p>
+                <p className="text-[10px] text-muted-foreground">{rsd.counts.regex} scans · safety net</p>
+              </div>
+              <div className={`rounded-lg p-3 border ${rsd.counts.NONE === 0 ? 'border-border bg-muted/30' : 'border-destructive/30 bg-destructive/5'}`}>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">None</p>
+                <p className={`text-2xl font-black ${rsd.counts.NONE === 0 ? 'text-foreground' : 'text-destructive'}`}>{rsd.pct.NONE}%</p>
+                <p className="text-[10px] text-muted-foreground">{rsd.counts.NONE} scans · failed</p>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {/* Agent1 Profiler Quality — top priority widget */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
         <div className="flex items-center gap-2 mb-4">
