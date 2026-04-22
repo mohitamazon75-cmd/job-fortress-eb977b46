@@ -309,16 +309,20 @@ CRITICAL RULES:
 
       console.debug(`[Ingestion] Resume parsed (rich): name=${parsed.name ? "[present]" : "[absent]"}, role=${parsed.headline ? "[present]" : "[absent]"}, skills=${parsed.skills?.length ?? 0}, tech=${parsed.techStack?.length ?? 0}, achievements=${parsed.experience?.reduce((n: number, e: any) => n + (e.keyAchievements?.length ?? 0), 0) ?? 0}, exp=${extractedYears ?? "absent"}${affindaResult ? " (affinda-verified)" : ""}`);
 
-      // 3-layer role-extraction fallback (Day 2 fix for role_extraction_failed bug):
+      // 4-layer role-extraction fallback (2026-04-22: added regex tier):
       // 1. Gemini's verbatim headline (best — exact title from resume top)
       // 2. Gemini's first experience entry title (good — structured backup)
-      // 3. Affinda's most-recent workExperience[0].jobTitle (reliable structured extraction independent of vision LLM)
+      // 3. Affinda's most-recent workExperience[0].jobTitle (structured, vision-LLM-independent)
+      // 4. Regex sniff from rawText (last-ditch — keeps scan alive instead of role_extraction_failed)
       const roleFromHeadline = (typeof parsed.headline === "string" && parsed.headline.trim()) ? parsed.headline.trim() : null;
       const roleFromExperience = (typeof parsed.experience?.[0]?.title === "string" && parsed.experience[0].title.trim()) ? parsed.experience[0].title.trim() : null;
       const roleFromAffinda = affindaResult?.current_job_title ?? null;
-      const role = roleFromHeadline ?? roleFromExperience ?? roleFromAffinda ?? null;
-      const roleSource = roleFromHeadline ? "headline" : roleFromExperience ? "experience[0]" : roleFromAffinda ? "affinda" : "NONE";
-      console.log(`[parseResume] Role source: ${roleSource} | headline=${roleFromHeadline ? "present" : "null"} exp[0]=${roleFromExperience ? "present" : "null"} affinda=${roleFromAffinda ? "present" : "null"}`);
+      const roleFromRegex = roleFromHeadline || roleFromExperience || roleFromAffinda
+        ? null
+        : extractRoleFromRawText(rawText);
+      const role = roleFromHeadline ?? roleFromExperience ?? roleFromAffinda ?? roleFromRegex ?? null;
+      const roleSource = roleFromHeadline ? "headline" : roleFromExperience ? "experience[0]" : roleFromAffinda ? "affinda" : roleFromRegex ? "regex" : "NONE";
+      console.log(`[parseResume] Role source: ${roleSource} | headline=${roleFromHeadline ? "present" : "null"} exp[0]=${roleFromExperience ? "present" : "null"} affinda=${roleFromAffinda ? "present" : "null"} regex=${roleFromRegex ? "present" : "null"}`);
 
       return {
         rawText,
