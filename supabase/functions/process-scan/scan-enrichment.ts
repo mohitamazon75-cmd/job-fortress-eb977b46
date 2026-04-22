@@ -43,6 +43,12 @@ export interface EnrichmentResult {
   parsedLinkedinRole: string | null;
   normalizedExperienceYears: number | null;
   resumeExtractedYears: number | null;
+  /**
+   * Which extraction tier produced the role title. Surfaced for admin diagnostics
+   * so we can monitor regex-rescue rate. Values: "headline" | "experience[0]"
+   * | "affinda" | "regex" | "NONE" | null (LinkedIn-only path).
+   */
+  roleSource: string | null;
 }
 
 // ── Constants ──
@@ -81,13 +87,22 @@ function extractRoleFromRawText(rawText: string): string | null {
   }
 
   // Tier 2: first line that looks like a title (Title Case + role keyword)
-  const titleKeywords = /\b(Engineer|Developer|Manager|Director|Lead|Head|Architect|Designer|Analyst|Consultant|Specialist|Officer|Executive|Founder|CEO|CTO|CFO|COO|VP|President|Owner|Partner|Coordinator|Associate|Strategist|Marketer|Producer|Writer|Editor|Researcher|Scientist|Accountant|Recruiter|Trainer|Advisor|Planner|Administrator|Supervisor|Counsel|Counselor|Therapist|Nurse|Doctor|Surgeon|Pilot|Chef|Teacher|Professor|Principal)\b/i;
+  // Includes India-common abbreviations (AGM/DGM/Sr/Asst/Dy etc.) so seniority
+  // prefixes don't dodge detection on Indian resumes.
+  const titleKeywords = /\b(Engineer|Developer|Manager|Director|Lead|Head|Architect|Designer|Analyst|Consultant|Specialist|Officer|Executive|Founder|CEO|CTO|CFO|COO|VP|President|Owner|Partner|Coordinator|Associate|Strategist|Marketer|Producer|Writer|Editor|Researcher|Scientist|Accountant|Recruiter|Trainer|Advisor|Planner|Administrator|Supervisor|Counsel|Counselor|Therapist|Nurse|Doctor|Surgeon|Pilot|Chef|Teacher|Professor|Principal|AGM|DGM|GM|Sr|Jr|Asst|Dy|Deputy|Assistant|Senior|Junior|Staff|Chief)\b/i;
   for (const line of head.split(/\n+/).slice(0, 25)) {
     const trimmed = line.trim().replace(/[•·\-*\u2022]+\s*/g, "").trim();
     if (trimmed.length < 3 || trimmed.length > 100) continue;
     if (!titleKeywords.test(trimmed)) continue;
     // skip lines that look like sentences (start with verb, contain " I ", " my ")
     if (/[.!?]$/.test(trimmed) || /\b(I|my|we|our)\b/.test(trimmed)) continue;
+    // Skip objective/summary sentences masquerading as titles (Indian-resume anti-pattern:
+    // "Dynamic Engineer with 5 years at TCS building scalable systems...")
+    if (/\b(years?|experience|expertise|building|leading|managing|working|seeking|passionate|dynamic|experienced|results-driven|motivated|talented|innovative|strategic)\b/i.test(trimmed)) continue;
+    // Skip lines with conjunctions — real titles don't say "and"/"with"/"who"
+    if (/\b(with|and|who|that|which|having|including)\b/i.test(trimmed)) continue;
+    // Real titles are short. Anything longer is almost always a sentence.
+    if (trimmed.length > 60) continue;
     return trimmed.replace(/\s{2,}/g, " ");
   }
 
@@ -109,8 +124,9 @@ async function parseResume(
   role: string | null;
   confidence: string;
   extractedYears: number | null;
+  roleSource: string | null;
 }> {
-  const fallback = { rawText: "", name: null, company: null, industry: null, role: null, confidence: "low", extractedYears: null };
+  const fallback = { rawText: "", name: null, company: null, industry: null, role: null, confidence: "low", extractedYears: null, roleSource: "NONE" as string | null };
 
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) return fallback;
@@ -145,6 +161,7 @@ async function parseResume(
       role: string | null;
       confidence: string;
       extractedYears: number | null;
+      roleSource: string | null;
     }> => {
       const aff = await affindaPromise;
       if (aff?.current_job_title) {
@@ -168,6 +185,7 @@ async function parseResume(
           role: aff.current_job_title,
           confidence: "low",
           extractedYears: aff.accurate_years_experience,
+          roleSource: "affinda",
         };
       }
       console.log(`[parseResume] Gemini failed — Affinda has no title either — no rescue available`);
@@ -361,14 +379,27 @@ CRITICAL RULES:
       const roleSource = roleFromHeadline ? "headline" : roleFromExperience ? "experience[0]" : roleFromAffinda ? "affinda" : roleFromRegex ? "regex" : "NONE";
       console.log(`[parseResume] Role source: ${roleSource} | headline=${roleFromHeadline ? "present" : "null"} exp[0]=${roleFromExperience ? "present" : "null"} affinda=${roleFromAffinda ? "present" : "null"} regex=${roleFromRegex ? "present" : "null"}`);
 
+      // Confidence is downgraded when we fall back to less-trustworthy sources
+      // so process-scan/index.ts injects dataQualityWarning into Agent 1's prompt
+      // and the final report carries an honest profileExtractionConfidence value.
+      // - headline / experience[0] : Gemini saw the resume properly → "high"
+      // - affinda                  : different provider, structured  → "medium"
+      // - regex                    : heuristic rescue, no semantics   → "medium"
+      // - NONE                     : already returned via fallback    → "low"
+      const dynamicConfidence =
+        roleSource === "headline" || roleSource === "experience[0]" ? "high" :
+        roleSource === "affinda" || roleSource === "regex" ? "medium" :
+        "low";
+
       return {
         rawText,
         name: parsed.name || null,
         company: parsed.company || null,
         industry: parsed.inferredIndustry || null,
         role,
-        confidence: "high",
+        confidence: dynamicConfidence,
         extractedYears,
+        roleSource,
       };
     } catch (e) {
       cancel();
@@ -582,6 +613,7 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
   let parsedLinkedinIndustry: string | null = null;
   let parsedLinkedinRole: string | null = null;
   let resumeExtractedYears: number | null = null;
+  let roleSource: string | null = null;
 
   // Resume parsing (takes priority)
   if (hasResume && scan.resume_file_path) {
@@ -594,6 +626,7 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
     parsedLinkedinIndustry = resumeResult.industry;
     parsedLinkedinRole = resumeResult.role;
     resumeExtractedYears = resumeResult.extractedYears;
+    roleSource = resumeResult.roleSource;
 
     // Reconcile experience: resume is ground truth
     if (resumeExtractedYears !== null) {
@@ -619,6 +652,7 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
     linkedinCompany = linkedinResult.company;
     parsedLinkedinIndustry = linkedinResult.industry;
     parsedLinkedinRole = linkedinResult.role;
+    // roleSource stays null on the LinkedIn-only path (different extraction tier set)
   }
 
   return {
@@ -630,5 +664,6 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
     parsedLinkedinRole,
     normalizedExperienceYears,
     resumeExtractedYears,
+    roleSource,
   };
 }
