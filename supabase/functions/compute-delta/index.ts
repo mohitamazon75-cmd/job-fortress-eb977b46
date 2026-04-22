@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
     const sb = createAdminClient();
 
     // Fetch the 2 most recent score_history records for this user
-    const { data: records, error: fetchError } = await supabase
+    const { data: records, error: fetchError } = await sb
       .from("score_history")
       .select("id, scan_id, determinism_index, survivability_score, moat_score, role_detected, created_at")
       .eq("user_id", user_id)
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
         summary_text: summaryText,
       };
 
-      await supabase
+      await sb
         .from("score_history")
         .update({ delta_summary: delta })
         .eq("id", records[0].id);
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
     };
 
     // Update the newer record with delta_summary
-    const { error: updateError } = await supabase
+    const { error: updateError } = await sb
       .from("score_history")
       .update({ delta_summary: delta })
       .eq("id", newer.id);

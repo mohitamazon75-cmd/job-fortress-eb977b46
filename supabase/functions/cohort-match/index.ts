@@ -173,13 +173,19 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createAdminClient();
 
-    // Verify JWT and get user
+    // Allow service-role bypass (called internally by process-scan)
     const jwt = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const isServiceRole = SERVICE_ROLE_KEY && jwt === SERVICE_ROLE_KEY;
+
+    if (!isServiceRole) {
+      // Verify JWT and get user
+      const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Invalid token" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const body = await req.json();
