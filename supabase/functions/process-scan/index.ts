@@ -43,7 +43,7 @@ import { runScanPipeline } from "./scan-pipeline.ts";
 // New shared modules
 import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
 import { callAgent, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
-import { callAgentWithFallback } from "../_shared/model-fallback.ts";
+import { callAgentWithFallback, callAgentRace } from "../_shared/model-fallback.ts";
 import { recordScoreHistory, getPreviousScore } from "../_shared/score-history.ts";
 import { Agent1Schema, clampAgent1Output, validateAgentOutput, checkAutomationSignalConsistency } from "../_shared/zod-schemas.ts";
 import { getPromptVersion } from "../_shared/prompt-versions.ts";
@@ -642,8 +642,8 @@ Deno.serve(async (req) => {
     }
 
     if (!agent1) {
-      const profilerResult = await callAgentWithFallback(LOVABLE_API_KEY, "Agent1:Profiler", AGENT_1_PROFILER,
-        agent1UserPrompt, PRO_MODEL, 0.1, 30_000);
+      const profilerResult = await callAgentRace(LOVABLE_API_KEY, "Agent1:Profiler", AGENT_1_PROFILER,
+        agent1UserPrompt, PRO_MODEL, "google/gemini-3-flash-preview", 0.1, 25_000);
       agent1 = profilerResult.data;
       // Validate and clamp Agent 1 output ranges
       if (agent1) {

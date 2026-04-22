@@ -90,6 +90,89 @@ function recordSuccess(model: string): void {
   }
 }
 
+/**
+ * Race two models in parallel and return whichever succeeds first.
+ * Used for Agent 1 Profiler specifically to eliminate the 60-100s serial
+ * retry chain that was causing synthetic fallbacks when Pro was slow.
+ *
+ * Primary (Pro) and secondary (Flash) are fired simultaneously.
+ * First valid response wins. Loser is abandoned (its timeout will cancel it).
+ * If BOTH fail within timeout, falls through to the serial chain as last resort.
+ */
+export async function callAgentRace(
+  apiKey: string,
+  agentName: string,
+  systemPrompt: string,
+  userPrompt: string,
+  primaryModel = TIER1,
+  secondaryModel = TIER3,
+  temperature = 0.3,
+  timeoutMs = 25_000,
+): Promise<FallbackResult> {
+  const start = Date.now();
+
+  const primaryOpen = isCircuitOpen(primaryModel);
+  const secondaryOpen = isCircuitOpen(secondaryModel);
+
+  if (primaryOpen && secondaryOpen) {
+    console.warn(`[Race] ${agentName}: both models have open circuits — using serial chain fallback`);
+    return callAgentWithFallback(apiKey, agentName, systemPrompt, userPrompt, TIER2, temperature, timeoutMs);
+  }
+
+  const racers: Promise<{ data: any; model: string } | null>[] = [];
+
+  if (!primaryOpen) {
+    racers.push(
+      callAgent(apiKey, `${agentName}[${primaryModel.split("/").pop()}]`, systemPrompt, userPrompt,
+        primaryModel, temperature, timeoutMs)
+        .then(data => data ? { data, model: primaryModel } : null)
+        .catch(() => null)
+    );
+  }
+
+  if (!secondaryOpen) {
+    racers.push(
+      callAgent(apiKey, `${agentName}[${secondaryModel.split("/").pop()}]`, systemPrompt, userPrompt,
+        secondaryModel, temperature, timeoutMs)
+        .then(data => data ? { data, model: secondaryModel } : null)
+        .catch(() => null)
+    );
+  }
+
+  // Race — first non-null result wins
+  const winner = await Promise.race([
+    ...racers,
+    new Promise<null>(resolve => setTimeout(() => resolve(null), timeoutMs + 2_000)),
+  ]);
+
+  if (winner) {
+    recordSuccess(winner.model);
+    const latency = Date.now() - start;
+    console.log(`[Race] ${agentName} won by ${winner.model.split("/").pop()} in ${latency}ms`);
+    trackAgentLatency(agentName, latency, false, winner.model).catch(() => {});
+    return {
+      data: winner.data,
+      model_used: winner.model,
+      fallback_chain: [winner.model],
+      skipped_models: [],
+      latency_ms: latency,
+    };
+  }
+
+  // Both failed — settle then fall through to serial chain
+  const settled = await Promise.all(racers);
+  for (const r of settled) {
+    if (!r) {
+      if (!primaryOpen) recordFailure(primaryModel);
+      if (!secondaryOpen) recordFailure(secondaryModel);
+      break;
+    }
+  }
+
+  console.warn(`[Race] ${agentName}: both parallel models failed, falling through to serial chain`);
+  return callAgentWithFallback(apiKey, agentName, systemPrompt, userPrompt, OPENAI_PRIMARY, temperature, timeoutMs);
+}
+
 export interface FallbackResult<T = any> {
   data: T | null;
   model_used: string;
