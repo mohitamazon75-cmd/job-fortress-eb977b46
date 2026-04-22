@@ -119,12 +119,22 @@ export async function callAgentWithFallback(
   const isQualityCritical = QUALITY_CRITICAL_AGENTS.some(prefix => agentName.startsWith(prefix));
 
   // Build fallback order
+  // Strategy: try Pro-tier models first (quality), then OpenAI siblings,
+  // then Flash as a LAST-RESORT before giving up. For quality-critical
+  // agents (Agent1 etc.) Flash output is degraded but vastly better than
+  // the generic synthetic/template fallback the caller is forced into when
+  // we return null. Empirically: synthetic produces "Your CEO role is
+  // shifting fast" boilerplate that any user can spot. Flash produces a
+  // real profile from the resume — slightly less nuanced but personalised.
   const models = [preferredModel];
   if (preferredModel !== TIER1) models.push(TIER1);
   if (preferredModel !== TIER2) models.push(TIER2);
   if (preferredModel !== OPENAI_PRIMARY) models.push(OPENAI_PRIMARY);
   if (preferredModel !== OPENAI_SECONDARY) models.push(OPENAI_SECONDARY);
-  if (!isQualityCritical && preferredModel !== TIER3) models.push(TIER3);
+  // Flash is now ALWAYS in the chain. For non-critical agents it sits
+  // earlier (cheaper); for critical agents it's the last real attempt
+  // before the slow EMERGENCY tier (which is itself skipped for critical).
+  if (preferredModel !== TIER3) models.push(TIER3);
   // Quality-critical paths skip the slow gemini-2.5-pro emergency tier.
   if (!(isQualityCritical && QUALITY_CRITICAL_SKIPS_EMERGENCY)) {
     models.push(EMERGENCY);
@@ -132,7 +142,7 @@ export async function callAgentWithFallback(
   const uniqueModels = [...new Set(models)];
 
   if (isQualityCritical) {
-    console.log(`[FallbackChain] ${agentName} is quality-critical — Flash excluded`);
+    console.log(`[FallbackChain] ${agentName} is quality-critical — Flash kept as last-resort, EMERGENCY skipped`);
   }
 
   for (const model of uniqueModels) {
