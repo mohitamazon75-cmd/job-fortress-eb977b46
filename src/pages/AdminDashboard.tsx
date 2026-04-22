@@ -358,7 +358,56 @@ function OverviewTab({ data }: { data: AdminData }) {
         </motion.div>
       )}
 
-      {/* Agent1 Profiler Quality — top priority widget */}
+      {/* Profile Confidence Distribution — Card 1 quality health (last 24h) */}
+      {pcd && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
+          <div className="flex items-center gap-2 mb-1">
+            <Brain className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Profile Confidence Distribution (last 24h)</h3>
+            <span className="text-[10px] text-muted-foreground">{pcd.total} scans</span>
+            <span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+              pcd.health === 'healthy' ? 'bg-green-500/10 text-green-600' :
+              pcd.health === 'watch' ? 'bg-yellow-500/10 text-yellow-600' :
+              'bg-destructive/10 text-destructive'
+            }`}>
+              {pcd.health === 'healthy' ? 'Healthy' : pcd.health === 'watch' ? 'Watch' : 'Degraded'}
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            Card 1 cites tools/skills confidently only when confidence=high. Healthy: high&gt;80% · Watch: 60–80% · Degraded: &lt;60%.
+          </p>
+
+          {pcd.total === 0 ? (
+            <div className="text-xs text-muted-foreground italic">No resume scans in the last 24h.</div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              <div className={`rounded-lg p-3 border ${
+                pcd.pct.high > 80 ? 'border-green-500/30 bg-green-500/5' :
+                pcd.pct.high >= 60 ? 'border-yellow-500/30 bg-yellow-500/5' :
+                'border-destructive/30 bg-destructive/5'
+              }`}>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">High</p>
+                <p className={`text-2xl font-black ${
+                  pcd.pct.high > 80 ? 'text-green-600' :
+                  pcd.pct.high >= 60 ? 'text-yellow-600' :
+                  'text-destructive'
+                }`}>{pcd.pct.high}%</p>
+                <p className="text-[10px] text-muted-foreground">{pcd.counts.high} scans · Gemini ✓</p>
+              </div>
+              <div className="rounded-lg p-3 border border-yellow-500/30 bg-yellow-500/5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Medium</p>
+                <p className="text-2xl font-black text-yellow-600">{pcd.pct.medium}%</p>
+                <p className="text-[10px] text-muted-foreground">{pcd.counts.medium} scans · fallback rescue</p>
+              </div>
+              <div className={`rounded-lg p-3 border ${pcd.counts.low === 0 ? 'border-border bg-muted/30' : 'border-destructive/30 bg-destructive/5'}`}>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Low</p>
+                <p className={`text-2xl font-black ${pcd.counts.low === 0 ? 'text-foreground' : 'text-destructive'}`}>{pcd.pct.low}%</p>
+                <p className="text-[10px] text-muted-foreground">{pcd.counts.low} scans · degraded</p>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
         <div className="flex items-center gap-2 mb-4">
           <Brain className="w-4 h-4 text-primary" />
