@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
       funnelEventsRes,
       tokenCostRes,
       roleSourceRes,
+      profileConfRes,
     ] = await Promise.all([
       sb.from("daily_usage_stats")
         .select("*")
@@ -122,6 +123,13 @@ Deno.serve(async (req) => {
       sb.from("edge_function_logs")
         .select("request_meta, created_at")
         .eq("function_name", "process-scan:role-source")
+        .gte("created_at", last24h)
+        .limit(2000),
+      // Profile-extraction confidence distribution (last 24h) — companion to role-source.
+      // high>80% = healthy; 60-80% = watch; <60% = degraded (Card 1 quality at risk).
+      sb.from("edge_function_logs")
+        .select("request_meta, created_at")
+        .eq("function_name", "process-scan:profile-confidence")
         .gte("created_at", last24h)
         .limit(2000),
     ]);
@@ -275,6 +283,28 @@ Deno.serve(async (req) => {
       health: roleSourceHealth,
     };
 
+    // ─── Profile Confidence Distribution (last 24h) ───
+    // Tracks confidence tier of resume parse feeding Card 1.
+    // high>80% healthy; 60-80% watch; <60% degraded.
+    const profileConfLogs = (profileConfRes.data || []) as any[];
+    const confCounts: Record<string, number> = { high: 0, medium: 0, low: 0 };
+    for (const log of profileConfLogs) {
+      const c = log.request_meta?.confidence;
+      if (typeof c === "string" && c in confCounts) confCounts[c]++;
+    }
+    const confTotal = profileConfLogs.length;
+    const cpct = (n: number) => confTotal > 0 ? Math.round((n / confTotal) * 1000) / 10 : 0;
+    const highPct = cpct(confCounts.high);
+    const profileConfHealth: "healthy" | "watch" | "degraded" =
+      highPct > 80 ? "healthy" : highPct >= 60 ? "watch" : "degraded";
+    const profileConfidenceDistribution = {
+      total: confTotal,
+      window_hours: 24,
+      counts: confCounts,
+      pct: { high: highPct, medium: cpct(confCounts.medium), low: cpct(confCounts.low) },
+      health: profileConfHealth,
+    };
+
     return new Response(JSON.stringify({
       summary: {
         date: today,
@@ -316,6 +346,7 @@ Deno.serve(async (req) => {
         total_token_calls_7d: tokenLogs.length,
       },
       role_source_distribution: roleSourceDistribution,
+      profile_confidence_distribution: profileConfidenceDistribution,
     }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });

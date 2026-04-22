@@ -184,6 +184,13 @@ async function parseResume(
         }).then(({ error }: { error: unknown }) => {
           if (error) console.warn("[parseResume] role-source log insert failed:", error);
         });
+        supabaseClient.from("edge_function_logs").insert({
+          function_name: "process-scan:profile-confidence",
+          status: "success",
+          request_meta: { confidence: "low", role_source: "affinda" },
+        }).then(({ error }: { error: unknown }) => {
+          if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
+        });
         return {
           rawText: rescueRawText,
           name: null,
@@ -202,6 +209,13 @@ async function parseResume(
         request_meta: { role_source: "NONE" },
       }).then(({ error }: { error: unknown }) => {
         if (error) console.warn("[parseResume] role-source log insert failed:", error);
+      });
+      supabaseClient.from("edge_function_logs").insert({
+        function_name: "process-scan:profile-confidence",
+        status: "success",
+        request_meta: { confidence: "low", role_source: "NONE" },
+      }).then(({ error }: { error: unknown }) => {
+        if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
       });
       return fallback;
     };
@@ -415,6 +429,17 @@ CRITICAL RULES:
         roleSource === "headline" || roleSource === "experience[0]" ? "high" :
         roleSource === "affinda" || roleSource === "regex" ? "medium" :
         "low";
+
+      // Persist profile-extraction confidence for admin-dashboard aggregation
+      // (fire-and-forget). Companion to role-source: tells us whether Card 1
+      // is being fed high-trust data or degraded heuristics.
+      supabaseClient.from("edge_function_logs").insert({
+        function_name: "process-scan:profile-confidence",
+        status: "success",
+        request_meta: { confidence: dynamicConfidence, role_source: roleSource },
+      }).then(({ error }: { error: unknown }) => {
+        if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
+      });
 
       return {
         rawText,
