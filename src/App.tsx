@@ -29,14 +29,36 @@ const Methodology = lazy(() => import("./pages/Methodology"));
 
 const queryClient = new QueryClient();
 
-/** Lightweight fallback while a route chunk is loading. */
+/**
+ * Lightweight skeleton fallback while a route chunk loads.
+ * Mimics typical page chrome (top bar, hero block, content rows) so the
+ * user perceives near-instant navigation instead of a blank spinner screen.
+ */
 function RouteFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-muted-foreground font-medium">Loading…</p>
+    <div className="min-h-screen bg-background">
+      {/* Top bar skeleton */}
+      <div className="border-b border-border/50 px-4 sm:px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="h-6 w-28 rounded-md bg-muted animate-pulse" />
+          <div className="h-8 w-20 rounded-lg bg-muted animate-pulse" />
+        </div>
       </div>
+      {/* Hero skeleton */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 pb-8 space-y-4">
+        <div className="h-10 w-3/4 rounded-lg bg-muted animate-pulse" />
+        <div className="h-10 w-1/2 rounded-lg bg-muted animate-pulse" />
+        <div className="h-4 w-2/3 rounded bg-muted/70 animate-pulse mt-6" />
+        <div className="h-4 w-1/2 rounded bg-muted/70 animate-pulse" />
+      </div>
+      {/* Content rows */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-12 space-y-3">
+        <div className="h-24 w-full rounded-2xl bg-muted/60 animate-pulse" />
+        <div className="h-24 w-full rounded-2xl bg-muted/60 animate-pulse" />
+        <div className="h-24 w-full rounded-2xl bg-muted/60 animate-pulse" />
+      </div>
+      {/* Visually-hidden status for screen readers */}
+      <span className="sr-only" role="status" aria-live="polite">Loading page…</span>
     </div>
   );
 }
