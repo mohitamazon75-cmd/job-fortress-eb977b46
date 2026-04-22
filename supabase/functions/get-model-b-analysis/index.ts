@@ -54,11 +54,35 @@ Deno.serve(async (req) => {
         { status: 401, headers: jsonHeaders }
       );
     }
-    if (scan.user_id && scan.user_id !== user_id) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Forbidden" }),
-        { status: 403, headers: jsonHeaders }
-      );
+    if (scan.user_id && user_id && scan.user_id !== user_id) {
+      // Check if previous owner is an anonymous user (no email) — if so,
+      // transfer ownership to the currently authenticated user. This handles
+      // the common case where a user scanned anonymously then signed in,
+      // creating a fresh auth user that doesn't match the original scan owner.
+      let transferred = false;
+      try {
+        const { data: prevUser } = await supabase.auth.admin.getUserById(scan.user_id);
+        const isAnon = !prevUser?.user?.email && (prevUser?.user?.is_anonymous ?? true);
+        if (isAnon) {
+          const { error: xferErr } = await supabase
+            .from("scans")
+            .update({ user_id })
+            .eq("id", analysis_id);
+          if (!xferErr) {
+            scan.user_id = user_id;
+            transferred = true;
+            console.log(`[model-b] transferred scan ${analysis_id} from anon ${prevUser?.user?.id} to ${user_id}`);
+          }
+        }
+      } catch (e) {
+        console.warn("[model-b] ownership transfer check failed", e);
+      }
+      if (!transferred) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Forbidden" }),
+          { status: 403, headers: jsonHeaders }
+        );
+      }
     }
     if (!scan.user_id && user_id) {
       const { error: claimErr } = await supabase
