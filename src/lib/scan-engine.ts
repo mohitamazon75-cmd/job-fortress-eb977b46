@@ -740,42 +740,13 @@ export function subscribeScanStatus(
     }
   };
 
-  // PRIMARY: Realtime subscription
-  const channel = supabase
-    .channel(`scan-${scanId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'scans',
-        filter: `id=eq.${scanId}`,
-      },
-      (payload) => {
-        const row = payload.new as any;
-        if (row.scan_status === 'complete' && row.final_json_report) {
-          const parsed = parseScanReport(row.final_json_report);
-          if (parsed) {
-            resolve(parsed);
-          }
-        } else if (TERMINAL_SCAN_STATUSES.has(String(row.scan_status || ''))) {
-          void verifyTerminalState('Realtime update');
-        }
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        realtimeConnected = true;
-        console.debug('[Scan] Realtime connected');
-        // Re-check immediately after realtime connects to catch updates during connection
-        immediateCheck();
-      }
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        console.warn('[Scan] Realtime failed, activating polling fallback');
-        realtimeConnected = false;
-        startPolling();
-      }
-    });
+  // SECURITY: Realtime subscription disabled — the `scans` channel previously
+  // leaked any user's scan updates (including final_json_report and access_token)
+  // to any authenticated subscriber. Polling fallback below is fully sufficient.
+  // See migration 20260422_remove_scans_from_realtime.sql for the publication change.
+  const channel: { unsubscribe?: () => void } | null = null;
+  startPolling();
+  void immediateCheck();
 
   // FALLBACK: Polling with exponential backoff
   const getPollingInterval = (attempt: number) =>
