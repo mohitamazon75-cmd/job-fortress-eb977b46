@@ -2232,6 +2232,33 @@ export type Database = {
       }
     }
     Views: {
+      feature_flags_public: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          enabled_percentage: number | null
+          flag_name: string | null
+          id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          enabled_percentage?: number | null
+          flag_name?: string | null
+          id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          enabled_percentage?: number | null
+          flag_name?: string | null
+          id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       scan_accuracy_by_family: {
         Row: {
           avg_accuracy: number | null
