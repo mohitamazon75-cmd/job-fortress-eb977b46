@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { report, targetRole } = body;
+  const { report, targetRole, jdText, angle } = body;
   if (!report) {
     return new Response(JSON.stringify({ error: "Missing report" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -132,9 +132,14 @@ Deno.serve(async (req) => {
   const company = report.company_detected || "Current Company";
   const metro = report.metro_tier || "tier1";
 
-  // Cache check
+  // Trim JD to keep token usage sane (recruiter JDs > 4k chars are common)
+  const jdSnippet = typeof jdText === "string" ? jdText.trim().slice(0, 3500) : "";
+  const hasJD = jdSnippet.length > 80;
+
+  // Cache check — JD changes the output significantly, so cache key must include a JD hash
   const supabase = createAdminClient();
-  const cacheKey = `rw:${role}_${industry}_${allSkills.slice(0, 30)}_${targetRole || "same"}`.toLowerCase().replace(/\s+/g, '_');
+  const jdHash = hasJD ? jdSnippet.slice(0, 60).replace(/\s+/g, '_').toLowerCase() : 'no_jd';
+  const cacheKey = `rw:${role}_${industry}_${allSkills.slice(0, 30)}_${targetRole || "same"}_${jdHash}_${angle || 'default'}`.toLowerCase().replace(/\s+/g, '_').slice(0, 200);
   try {
     const { data: cached } = await supabase
       .from("enrichment_cache")
@@ -142,14 +147,23 @@ Deno.serve(async (req) => {
       .eq("cache_key", cacheKey)
       .single();
     if (cached && Date.now() - new Date(cached.cached_at).getTime() < CACHE_TTL_MS) {
-      console.log(`[ResumeWeaponizer] Cache hit for ${role}`);
+      console.log(`[ResumeWeaponizer] Cache hit for ${role}${hasJD ? ' (with JD)' : ''}`);
       return new Response(JSON.stringify({ ...cached.data as object, cached: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
   } catch { /* cache miss */ }
 
-  console.log(`[ResumeWeaponizer] Starting for ${role} in ${industry}, user ${userId}`);
+  console.log(`[ResumeWeaponizer] Starting for ${role} in ${industry}, user ${userId}, JD=${hasJD}, angle=${angle || 'none'}`);
+
+  // Angle modifier — lets users refine ("more senior", "leadership", "career change")
+  const angleModifier = angle === 'senior'
+    ? "\n\n═══ ANGLE OVERRIDE ═══\nReposition this person 1 level more senior. Inflate scope language (lead → director, manage → orchestrate cross-functional). Frame outcomes at org-wide impact."
+    : angle === 'leadership'
+    ? "\n\n═══ ANGLE OVERRIDE ═══\nLead every bullet with people/team/stakeholder verbs. Highlight team size, mentorship, cross-functional influence over technical execution."
+    : angle === 'career-change'
+    ? "\n\n═══ ANGLE OVERRIDE ═══\nDe-emphasise current industry-specific terminology. Translate every achievement into transferable, domain-agnostic language (problem-solving, scale, growth, P&L)."
+    : "";
 
   try {
     const userPrompt = `
@@ -158,7 +172,7 @@ Current Role: ${role}
 Company: ${company}
 Industry: ${industry}
 Seniority: ${seniority}
-Location Tier: ${metro}
+Location Tier: ${metro} ${metro === 'tier1' ? '(Bengaluru / Mumbai / Delhi NCR / Hyderabad / Pune)' : '(Tier-2 India)'}
 Target Role: ${targetRole || role + " (same role, stronger positioning)"}
 
 ═══ THREAT ANALYSIS ═══
@@ -172,14 +186,20 @@ All Current Skills: ${allSkills || "Not specified"}
 Identified Skill Gaps: ${gaps || "None mapped"}
 Suggested Safer Pivot Roles: ${pivots || "None"}
 
+${hasJD ? `═══ TARGET JOB DESCRIPTION (REVERSE-ENGINEER THIS) ═══
+${jdSnippet}
+
+CRITICAL: Tailor the entire output to match this JD. Extract its top 10-15 keywords, weave them into headline_skills, strategic_keywords, and at least 3 experience_bullets. Compute jd_match_analysis.match_pct honestly — score the rewritten resume against this JD's requirements.` : '═══ NO JD PROVIDED ═══\nWrite a strong general rewrite for the target role. Set jd_match_analysis appropriately.'}
+${angleModifier}
+
 ═══ MISSION ═══
 Rewrite this person's resume to:
 1. HIDE vulnerabilities — reframe automatable skills as human-augmented capabilities
 2. AMPLIFY moat skills — make them the headline narrative
 3. BRIDGE gaps — add keywords for skills they should be developing
-4. POSITION for ${targetRole || "maximum market value"} in ${metro === 'tier1' ? 'Tier 1 metro (Bangalore/Mumbai/Delhi NCR)' : 'Tier 2 city'} India market, 2025-2026
-
-The resume should make a hiring manager think: "This person is ALREADY adapting to AI — they're ahead of the curve."
+4. POSITION for ${targetRole || "maximum market value"} in ${metro === 'tier1' ? 'Tier-1 metro India' : 'Tier-2 India'} market, 2025-2026
+5. PASS Naukri / LinkedIn India / Instahyre ATS keyword filters
+6. Make a hiring manager think: "This person is ALREADY adapting to AI — they're ahead of the curve."
 `;
 
     const fallbackResult = await callAgentWithFallback(
