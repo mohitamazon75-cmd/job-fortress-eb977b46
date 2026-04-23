@@ -254,69 +254,90 @@ Deno.serve(async (req) => {
       const upskillRoles = SAFER_ROLE_MAP[matchedKey] || SAFER_ROLE_MAP.default;
       const searchUrls = buildJobSearchUrls(role, skills || [], city || "India");
 
-    // ── Search for LIVE jobs via Tavily ──
-    let jobs: JobListing[] = [];
-    let source: "tavily" | "adzuna" | "deterministic" = "deterministic";
+      // ── Search for LIVE jobs via Tavily ──
+      let jobs: JobListing[] = [];
+      let source: "tavily" | "adzuna" | "deterministic" = "deterministic";
 
-    // Domain set + query template depends on tier
-    const execDomains = ["linkedin.com", "naukri.com", "iimjobs.com", "hirist.tech", "instahyre.com", "cutshort.io", "blueprintleadership.com", "thefederal.com", "vahura.com"];
-    const icDomains = ["naukri.com", "linkedin.com", "indeed.co.in", "foundit.in", "instahyre.com", "cutshort.io", "wellfound.com", "hirist.tech"];
+      // Domain set + query template depends on tier
+      const execDomains = ["linkedin.com", "naukri.com", "iimjobs.com", "hirist.tech", "instahyre.com", "cutshort.io", "blueprintleadership.com", "thefederal.com", "vahura.com"];
+      const icDomains = ["naukri.com", "linkedin.com", "indeed.co.in", "foundit.in", "instahyre.com", "cutshort.io", "wellfound.com", "hirist.tech"];
 
-    // PRIMARY: Tavily search for real job listings
-    try {
-      const skillStr = (skills || []).slice(0, 3).join(" ");
-      const cityStr = city || "India";
-      const expStr = experience ? `${experience} years` : "";
+      // PRIMARY: Tavily search for real job listings (with telemetry)
+      try {
+        const skillStr = skillsArr.slice(0, 3).join(" ");
+        const cityStr = city || "India";
+        const expStr = experience ? `${experience} years` : "";
 
-      // Exec queries focus on senior outcomes; IC queries focus on apply-now postings.
-      // Quotes around role keep multi-word titles intact in Tavily.
-      const searchQuery = detectedExec
-        ? `("${role}" OR "Chief Operating" OR "Chief Executive" OR "Head of") hiring India ${cityStr} 2025 2026 -salary -review -"salary insights"`
-        : `"${role}" jobs apply now hiring "${cityStr}" ${skillStr} ${expStr} -salary -review -"salary insights"`;
+        const searchQuery = detectedExec
+          ? `("${role}" OR "Chief Operating" OR "Chief Executive" OR "Head of") hiring India ${cityStr} 2025 2026 -salary -review -"salary insights"`
+          : `"${role}" jobs apply now hiring "${cityStr}" ${skillStr} ${expStr} -salary -review -"salary insights"`;
 
-      console.log(`[india-jobs] Tavily search (exec=${detectedExec}): "${searchQuery}"`);
+        console.log(`[india-jobs] Tavily search (exec=${detectedExec}): "${searchQuery}"`);
 
-      const tavilyResult = await tavilySearch({
-        query: searchQuery,
-        searchDepth: "advanced",
-        maxResults: detectedExec ? 25 : 15,
-        includeDomains: detectedExec ? execDomains : icDomains,
-        excludeDomains: [
-          "glassdoor.co.in", "glassdoor.com", "ambitionbox.com",
-          "payscale.com", "salary.com", "levels.fyi",
-        ],
-        days: detectedExec ? 45 : 14,  // Exec listings turn over slower
-        topic: "general",
-        includeAnswer: false,
-      }, 15000, 2);
+        const tavilyResult = await withTelemetry(
+          {
+            provider: "tavily",
+            endpoint: "search",
+            function_name: "india-jobs",
+            cache_key: cacheKey,
+            metadata: { exec: detectedExec, role, city: cityStr },
+          },
+          () => tavilySearch({
+            query: searchQuery,
+            searchDepth: "advanced",
+            maxResults: detectedExec ? 25 : 15,
+            includeDomains: detectedExec ? execDomains : icDomains,
+            excludeDomains: [
+              "glassdoor.co.in", "glassdoor.com", "ambitionbox.com",
+              "payscale.com", "salary.com", "levels.fyi",
+            ],
+            days: detectedExec ? 45 : 14,
+            topic: "general",
+            includeAnswer: false,
+          }, 15000, 2),
+        );
 
-      if (tavilyResult?.results?.length) {
-        jobs = parseTavilyJobResults(tavilyResult.results);
-        if (jobs.length > 0) {
-          source = "tavily";
-          console.log(`[india-jobs] Tavily returned ${jobs.length} job listings`);
+        if (tavilyResult?.results?.length) {
+          jobs = parseTavilyJobResults(tavilyResult.results);
+          if (jobs.length > 0) {
+            source = "tavily";
+            console.log(`[india-jobs] Tavily returned ${jobs.length} job listings`);
+          }
         }
+      } catch (e: any) {
+        console.warn("[india-jobs] Tavily search failed (non-fatal):", e.message);
       }
-    } catch (e: any) {
-      console.warn("[india-jobs] Tavily search failed (non-fatal):", e.message);
-    }
 
-    // FALLBACK: Adzuna — SKIP for executives (Adzuna has poor exec inventory in India)
-    if (jobs.length === 0 && !detectedExec) {
-      const ADZUNA_API_KEY = Deno.env.get("ADZUNA_API_KEY");
-      const ADZUNA_API_ID = Deno.env.get("ADZUNA_API_ID");
-      if (ADZUNA_API_KEY && ADZUNA_API_ID) {
-        try {
-          const searchTerms = [role, ...(skills || []).slice(0, 2)].join(" ");
-          const adzunaUrl = `https://api.adzuna.com/v1/api/jobs/in/search/1?app_id=${ADZUNA_API_ID}&app_key=${ADZUNA_API_KEY}&results_per_page=8&what=${encodeURIComponent(searchTerms)}&where=${encodeURIComponent(city || "India")}&content-type=application/json`;
+      // FALLBACK: Adzuna — SKIP for executives (poor exec inventory in India)
+      if (jobs.length === 0 && !detectedExec) {
+        const ADZUNA_API_KEY = Deno.env.get("ADZUNA_API_KEY");
+        const ADZUNA_API_ID = Deno.env.get("ADZUNA_API_ID");
+        if (ADZUNA_API_KEY && ADZUNA_API_ID) {
+          try {
+            const searchTerms = [role, ...skillsArr.slice(0, 2)].join(" ");
+            const adzunaUrl = `https://api.adzuna.com/v1/api/jobs/in/search/1?app_id=${ADZUNA_API_ID}&app_key=${ADZUNA_API_KEY}&results_per_page=8&what=${encodeURIComponent(searchTerms)}&where=${encodeURIComponent(city || "India")}&content-type=application/json`;
 
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000);
-          const resp = await fetch(adzunaUrl, { signal: controller.signal });
-          clearTimeout(timeout);
+            const data = await withTelemetry(
+              {
+                provider: "adzuna",
+                endpoint: "jobs/in/search",
+                function_name: "india-jobs",
+                cache_key: cacheKey,
+                metadata: { role, city: city || "India" },
+              },
+              async () => {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 8000);
+                try {
+                  const resp = await fetch(adzunaUrl, { signal: controller.signal });
+                  if (!resp.ok) throw new Error(`Adzuna HTTP ${resp.status}`);
+                  return await resp.json();
+                } finally {
+                  clearTimeout(timeout);
+                }
+              },
+            );
 
-          if (resp.ok) {
-            const data = await resp.json();
             jobs = (data.results || []).slice(0, 8).map((j: any) => ({
               title: j.title || "",
               company: j.company?.display_name || "Company",
@@ -330,61 +351,80 @@ Deno.serve(async (req) => {
             }));
             source = "adzuna";
             console.log(`[india-jobs] Adzuna returned ${jobs.length} jobs`);
+          } catch (e: any) {
+            console.warn("[india-jobs] Adzuna failed (non-fatal):", e.message);
           }
-        } catch (e: any) {
-          console.warn("[india-jobs] Adzuna failed (non-fatal):", e.message);
         }
       }
-    }
 
-    // Personalize upskill roles based on risk score
-    const personalizedRoles = upskillRoles.map(r => ({
-      ...r,
-      why_safer: risk_score && risk_score > 60
-        ? `${r.why_safer}. With your risk score at ${risk_score}%, this move is urgent.`
-        : r.why_safer,
-    }));
+      // Personalize upskill roles based on risk score
+      const personalizedRoles = upskillRoles.map(r => ({
+        ...r,
+        why_safer: risk_score && risk_score > 60
+          ? `${r.why_safer}. With your risk score at ${risk_score}%, this move is urgent.`
+          : r.why_safer,
+      }));
 
-    // Enrich upskill roles with India salary data — AmbitionBox → Glassdoor → Adzuna
-    // AmbitionBox has 30M+ India-specific salary points vs Adzuna's global data.
-    let enrichedRoles = personalizedRoles;
-    try {
-      enrichedRoles = await enrichRolesWithIndiaSalary(personalizedRoles);
-    } catch (e: any) {
-      console.warn("[india-jobs] India salary enrichment failed (non-fatal):", e.message);
-      // Fallback to Adzuna if AmbitionBox/Glassdoor chain fails
+      // Salary enrichment: race AmbitionBox/India chain vs Adzuna in PARALLEL.
+      // First successful enrichment wins; the other is logged and discarded.
+      // This cuts worst-case latency roughly in half vs sequential.
+      let enrichedRoles = personalizedRoles;
       try {
-        enrichedRoles = await enrichRolesWithAdzunaSalary(personalizedRoles, {
+        const indiaP = enrichRolesWithIndiaSalary(personalizedRoles)
+          .then(r => ({ tag: "india", roles: r }));
+        const adzunaP = enrichRolesWithAdzunaSalary(personalizedRoles, {
           ADZUNA_API_ID: Deno.env.get("ADZUNA_API_ID") || "",
           ADZUNA_API_KEY: Deno.env.get("ADZUNA_API_KEY") || "",
-        });
-      } catch (e2: any) {
-        console.warn("[india-jobs] Adzuna fallback also failed (non-fatal):", e2.message);
+        }).then(r => ({ tag: "adzuna", roles: r }));
+
+        // Promise.any returns the first FULFILLED promise; if both reject,
+        // we fall through to the catch and keep personalizedRoles unchanged.
+        const winner = await Promise.any([indiaP, adzunaP]);
+        enrichedRoles = winner.roles;
+        console.log(`[india-jobs] Salary enrichment winner: ${winner.tag}`);
+      } catch (e: any) {
+        console.warn("[india-jobs] All salary enrichment paths failed (non-fatal):", e?.message || e);
       }
+
+      const result = {
+        jobs,
+        total_found: jobs.length,
+        search_query: role,
+        source,
+        cached: false,
+        data_age_minutes: 0,
+        generated_at: new Date().toISOString(),
+        upskill_roles: enrichedRoles,
+        search_urls: searchUrls,
+        salary_data_source: enrichedRoles.some(r => r.avg_salary_inr) ? "live" : "not_available",
+      };
+
+      // ── Cache result ──
+      sb.from("enrichment_cache").upsert({
+        cache_key: cacheKey,
+        data: result,
+        cached_at: new Date().toISOString(),
+      }, { onConflict: "cache_key" }).then(() => {});
+
+      return result;
+    })();
+
+    inflight.set(cacheKey, workPromise);
+    try {
+      const result = await workPromise;
+      return json(result);
+    } finally {
+      // Always clear inflight entry — even on error — so retries don't hang forever
+      inflight.delete(cacheKey);
     }
-
-    const result = {
-      jobs,
-      total_found: jobs.length,
-      search_query: role,
-      source,
-      cached: false,
-      generated_at: new Date().toISOString(),
-      upskill_roles: enrichedRoles,
-      search_urls: searchUrls,
-      salary_data_source: enrichedRoles.some(r => r.avg_salary_inr) ? "adzuna_live" : "not_available",
-    };
-
-    // ── Cache result ──
-    await sb.from("enrichment_cache").upsert({
-      cache_key: cacheKey,
-      data: result,
-      cached_at: new Date().toISOString(),
-    }, { onConflict: "cache_key" }).then(() => {});
-
-    return json(result);
   } catch (e: any) {
     console.error("[india-jobs] error:", e.message);
+    logExternalApiCall({
+      provider: "india-jobs",
+      function_name: "india-jobs",
+      status: "error",
+      metadata: { error: String(e?.message || e).slice(0, 200) },
+    });
     return json({ error: "Internal error" }, 500);
   }
 });
