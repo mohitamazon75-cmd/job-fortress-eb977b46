@@ -112,14 +112,26 @@ function buildJobSearchUrls(role: string, skills: string[], city: string) {
 }
 
 // ── Parse Tavily results into JobListings ──
+const VALID_INDIA_CITIES = /^(Mumbai|Bangalore|Bengaluru|Delhi|NCR|New Delhi|Hyderabad|Chennai|Pune|Kolkata|Gurgaon|Gurugram|Noida|Ahmedabad|Jaipur|Kochi|Chandigarh|Indore|Lucknow|Dubai|Remote|India|Anywhere)$/i;
+
+function isLikelyJobUrl(url: string): boolean {
+  const u = url.toLowerCase();
+  // Drop people-profile, post, article, blog, content pages
+  if (u.includes("/blog/") || u.includes("/article/") || u.includes("wikipedia.org")) return false;
+  if (u.includes("/salaries") || u.includes("/salary") || u.includes("/reviews") || u.includes("/interview") || u.includes("ambitionbox") || u.includes("payscale")) return false;
+  if (u.includes("/posts/") || u.includes("/pulse/") || u.includes(".pdf")) return false;
+  // LinkedIn profile pages: linkedin.com/in/<slug> are people, NOT jobs.
+  // Only allow linkedin.com/jobs/* listings.
+  if (/linkedin\.com\/in\//.test(u)) return false;
+  if (u.includes("linkedin.com") && !u.includes("/jobs/")) return false;
+  return true;
+}
+
 function parseTavilyJobResults(results: any[]): JobListing[] {
   const jobs: JobListing[] = [];
   for (const r of results) {
     if (!r.title || !r.url) continue;
-    // Skip non-job pages
-    const url = r.url.toLowerCase();
-    if (url.includes("/blog/") || url.includes("/article/") || url.includes("wikipedia.org")) continue;
-    if (url.includes("/salaries") || url.includes("/salary") || url.includes("/reviews") || url.includes("/interview") || url.includes("ambitionbox") || url.includes("payscale")) continue;
+    if (!isLikelyJobUrl(r.url)) continue;
 
     // Extract company from title or content
     const titleParts = r.title.split(/\s+[-–|at@]\s+/);
