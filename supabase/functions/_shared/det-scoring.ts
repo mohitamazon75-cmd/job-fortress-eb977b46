@@ -40,15 +40,33 @@ export function calculateMoatScore(
   ).length;
   const lowRiskRatio = rawStrategic > 0 ? Math.min(100, Math.round((lowRiskSkills / Math.max(1, rawStrategic)) * 100)) : 30;
 
+  // ── IC managerial-leverage bonus (non-exec moat) ──
+  // Captures "would my boss actually replace me?" — the soft moat that the KG can't see.
+  // Each signal contributes a bounded bonus; total capped at +20 to prevent runaway moats.
+  // Rationale: Indian career coaches consistently flag this as the #1 stability predictor
+  // for ICs/managers. AI doesn't replace people — managers do. If the manager won't, you're safe.
+  const ic = profile.ic_leverage;
+  let icLeverageBonus = 0;
+  if (ic) {
+    if (ic.owns_key_relationships) icLeverageBonus += 7;
+    if (ic.cross_team_dependence) icLeverageBonus += 5;
+    if (ic.niche_replacement_difficulty) icLeverageBonus += 6;
+    if (ic.vendor_displacement_history) icLeverageBonus += 4;
+    if (ic.tenure_in_function_years && ic.tenure_in_function_years >= 5) icLeverageBonus += 3;
+    icLeverageBonus = Math.min(20, icLeverageBonus);
+  }
+
   let moat: number;
 
   switch (tier) {
     case 'ENTRY': {
       moat = skillCoverage * 0.3 + adaptability * 0.2 + strategicSkillDepth * 0.3 + lowRiskRatio * 0.2;
+      moat += icLeverageBonus * 0.5; // ENTRY: smaller weight (less leverage credibility)
       break;
     }
     case 'PROFESSIONAL': {
       moat = experienceDepth * 0.2 + skillCoverage * 0.2 + strategicSkillDepth * 0.3 + lowRiskRatio * 0.15 + adaptability * 0.15;
+      moat += icLeverageBonus; // PROFESSIONAL: full IC leverage credit
       break;
     }
     case 'MANAGER': {
@@ -59,6 +77,7 @@ export function calculateMoatScore(
         ? Math.min(100, Math.round(Math.log10(Math.max(1, impact.budget_authority_usd / 100_000)) * 40))
         : 35;
       moat = teamScale * 0.2 + budgetScope * 0.2 + strategicSkillDepth * 0.3 + domainSpecialization * 0.3;
+      moat += icLeverageBonus * 0.6; // MANAGER: leverage applies but exec-impact dominates
       break;
     }
     case 'SENIOR_LEADER':

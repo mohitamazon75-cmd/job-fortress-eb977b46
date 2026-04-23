@@ -12,7 +12,7 @@ import { calculateObsolescenceTimeline, calculateSalaryBleed, calculateSurvivabi
 import type {
   ProfileInput, SkillRiskRow, JobSkillMapRow, JobTaxonomyRow,
   MarketSignalRow, ReplacingTool, DataQuality, ScoreBreakdown,
-  DeterministicResult, KGSkillIndex,
+  DeterministicResult, KGSkillIndex, CohortBenchmark,
 } from "./det-types.ts";
 
 // ═══════════════════════════════════════════════════════════════
@@ -192,7 +192,8 @@ export function computeAll(
   companyHealthScore?: number | null,
   subSector?: string | null,
   profileCompletenessPct?: number,
-  profileGaps?: string[]
+  profileGaps?: string[],
+  cohortBenchmark?: CohortBenchmark | null,
 ): DeterministicResult {
   const jobBaseline = jobData?.disruption_baseline || 60;
   const industryFloor = getIndustryAutomationFloor(industry || jobData?.category || null, subSector);
@@ -269,7 +270,7 @@ export function computeAll(
   const salaryBleed = calculateSalaryBleed(determinismIndex, monthlySalary, marketSignal);
 
   // 5. Survivability
-  const survivability = calculateSurvivability(profile, determinismIndex);
+  const survivability = calculateSurvivability(profile, determinismIndex, cohortBenchmark ?? null);
   if (essential && survivability.score < CALIBRATION.ESSENTIAL_ROLE_SURVIVABILITY_FLOOR) {
     survivability.score = CALIBRATION.ESSENTIAL_ROLE_SURVIVABILITY_FLOOR;
   }
