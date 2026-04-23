@@ -163,6 +163,14 @@ export interface ScoreBreakdown {
   final_clamped: number;
   company_health_modifier: number;
   company_health_score: number | null;
+  /** AUDIT (#4): IC managerial-leverage bonus applied to survivability (+0..+20). 0 = none. */
+  ic_leverage_bonus?: number;
+  /** AUDIT (#12): Tier-2 geo gating decision — 'allowed' | 'blocked_senior_role' | 'blocked_no_geo'. */
+  geo_gating_decision?: 'allowed' | 'blocked_senior_role' | 'blocked_no_geo' | 'allowed_self_reported';
+  /** AUDIT (#12): Headline-score cap reason if engine forced down. null when no cap fired. */
+  headline_cap_reason?: 'already_in_warning' | 'majority_skills_dead' | 'months_remaining_critical' | null;
+  /** AUDIT (#12): Salary bleed grounding flag — true when actual salary was estimated, false when fabricated from null input. */
+  salary_bleed_grounded?: boolean;
   salary_bleed_breakdown: {
     depreciation_rate: number;
     market_amplifier: number;
@@ -204,6 +212,10 @@ export interface DeterministicResult {
   score_variability: ScoreVariability;
   moat_score: number;
   urgency_score: number;
+  /** AUDIT (#2): true if salary_bleed_monthly was computed from a real estimate; false = fabricated, hide UI. */
+  salary_bleed_grounded: boolean;
+  /** AUDIT (#1, #8, #9): true if engine forced headline tone down due to contradictions (warning, majority dead, etc.). */
+  headline_capped: boolean;
 }
 
 /** Pre-built hashmap index for O(1) KG skill lookups. */

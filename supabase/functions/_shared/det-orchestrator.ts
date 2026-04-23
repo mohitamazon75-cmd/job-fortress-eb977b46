@@ -360,9 +360,52 @@ export function computeAll(
   // respects both job-family baselines and high-risk industry/sub-sector anchors.
   const score_variability = calculateScoreVariability(determinismIndex, diResult.matchedCount, monthlySalary, marketSignal, structuralFloor);
 
-  // Moat & Urgency
-  const moat_score = calculateMoatScore(profile, skillRiskData, diResult.matchedCount);
+  // Moat & Urgency — moat now returns IC leverage bonus separately for audit (#4)
+  const moatResult = calculateMoatScore(profile, skillRiskData, diResult.matchedCount);
+  const moat_score = moatResult.score;
   const urgency_score = calculateUrgencyScore(profile, determinismIndex, marketSignal);
+
+  // ── AUDIT (#4): Attach IC leverage bonus to score_breakdown for transparency ──
+  score_breakdown.ic_leverage_bonus = moatResult.ic_leverage_bonus;
+
+  // ── AUDIT (#2): Salary bleed grounding flag ──
+  // True only when we had a real agent estimate or a KG-derived avg_salary_lpa to anchor on.
+  // If both inputs were null and the engine fell back to a default of 10 LPA, the bleed is
+  // mathematically real but semantically fabricated — UI must suppress it.
+  const salary_bleed_grounded = !!(profile.estimated_monthly_salary_inr && profile.estimated_monthly_salary_inr > 10000)
+    || !!(jobData?.avg_salary_lpa && jobData.avg_salary_lpa > 0);
+  score_breakdown.salary_bleed_grounded = salary_bleed_grounded;
+
+  // ── AUDIT (#1, #8, #9): Headline contradiction guard ──
+  // Engine refuses to label a profile "STABLE" when its own internals contradict.
+  // Inputs we trust: timeline.already_in_warning, executionSkillsDead ratio, monthsRemaining.
+  let finalToneTag = toneTag;
+  let headline_capped = false;
+  let headline_cap_reason: 'already_in_warning' | 'majority_skills_dead' | 'months_remaining_critical' | null = null;
+
+  const totalExecSkills = profile.execution_skills.length;
+  const deadRatio = totalExecSkills > 0 ? executionSkillsDead.length / totalExecSkills : 0;
+  const isExecOrSeniorTone = profile.seniority_tier === 'EXECUTIVE' || profile.seniority_tier === 'SENIOR_LEADER';
+
+  // Senior leaders/execs frame as restructuring risk (not personal displacement) so the
+  // contradiction threshold is gentler — we still cap STABLE→MODERATE but not all the way to CRITICAL.
+  if (timeline.already_in_warning && (toneTag === 'STABLE' || toneTag === 'MODERATE')) {
+    finalToneTag = isExecOrSeniorTone ? 'MODERATE' : 'WARNING';
+    headline_capped = true;
+    headline_cap_reason = 'already_in_warning';
+  } else if (deadRatio >= 0.5 && toneTag === 'STABLE') {
+    finalToneTag = 'MODERATE';
+    headline_capped = true;
+    headline_cap_reason = 'majority_skills_dead';
+  } else if (monthsRemaining <= 12 && toneTag === 'STABLE') {
+    finalToneTag = isExecOrSeniorTone ? 'MODERATE' : 'WARNING';
+    headline_capped = true;
+    headline_cap_reason = 'months_remaining_critical';
+  }
+  if (headline_capped) {
+    console.warn(`[DeterministicEngine] Headline cap fired: tone ${toneTag}→${finalToneTag} (reason=${headline_cap_reason}, dead_ratio=${deadRatio.toFixed(2)}, months=${monthsRemaining})`);
+  }
+  score_breakdown.headline_cap_reason = headline_cap_reason;
 
   if (profileCompletenessPct !== undefined) dataQuality.profile_completeness_pct = profileCompletenessPct;
   if (profileGaps !== undefined) dataQuality.profile_gaps = profileGaps;
@@ -375,11 +418,13 @@ export function computeAll(
     salary_bleed_monthly: salaryBleed.monthly,
     total_5yr_loss_inr: salaryBleed.total5yr,
     obsolescence_timeline: timeline,
-    survivability, tone_tag: toneTag,
+    survivability, tone_tag: finalToneTag,
     replacing_tools: replacingTools,
     execution_skills_dead: executionSkillsDead,
     data_quality: dataQuality,
     score_breakdown, score_variability,
     moat_score, urgency_score,
+    salary_bleed_grounded,
+    headline_capped,
   };
 }

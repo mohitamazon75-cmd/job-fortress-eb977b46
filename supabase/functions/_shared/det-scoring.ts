@@ -15,11 +15,15 @@ import type {
 // MOAT SCORE — Standalone metric measuring irreplaceable value
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * AUDIT (#4): Now returns the IC leverage bonus alongside the moat score
+ * so the report can attribute the survivability boost in score_breakdown.
+ */
 export function calculateMoatScore(
   profile: ProfileInput,
   skillRiskData: SkillRiskRow[],
   matchedSkillCount: number
-): number {
+): { score: number; ic_leverage_bonus: number } {
   const tier = profile.seniority_tier || 'PROFESSIONAL';
   const years = profile.experience_years || 0;
   const impact = profile.executive_impact;
@@ -106,7 +110,7 @@ export function calculateMoatScore(
       moat = strategicSkillDepth * 0.3 + adaptability * 0.2 + experienceDepth * 0.25 + lowRiskRatio * 0.25;
   }
 
-  return Math.min(95, Math.max(5, Math.round(moat)));
+  return { score: Math.min(95, Math.max(5, Math.round(moat))), ic_leverage_bonus: icLeverageBonus };
 }
 
 // ═══════════════════════════════════════════════════════════════
