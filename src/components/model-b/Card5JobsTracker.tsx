@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CardShell, CardHead, CardBody, CardNav, Badge, LivePill, SectionLabel } from "./SharedUI";
 import { supabase } from "@/integrations/supabase/client";
 import PromptModal from "./PromptModal";
-import { buildBoardLinks, formatLiveTimestamp, getMatchTone, normalizeCity } from "@/lib/jobsTab";
+import { buildBoardLinks, formatLiveTimestamp, getMatchTone, normalizeCity, detectExecutive, EXECUTIVE_SEARCH_FIRMS } from "@/lib/jobsTab";
 
 const KANBAN_KEY = "jb_kanban";
 type KanbanState = { saved: string[]; applied: string[]; interview: string[]; offer: string[] };
