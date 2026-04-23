@@ -467,6 +467,39 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
         7 intelligence cards · Score decomposition · Live market data · 90-day plan
       </p>
 
+      {/* Auto-advance hint — gentle nudge after 6s, never auto-skips */}
+      {hintVisible && (
+        <motion.button
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={onNext}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            margin: "10px auto 0",
+            padding: "6px 14px",
+            background: "transparent",
+            border: "1px dashed var(--mb-rule, #d1d5db)",
+            borderRadius: 999,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--mb-muted, #6b7280)",
+            cursor: "pointer",
+            fontFamily: "'DM Sans', sans-serif",
+            letterSpacing: "0.04em",
+          }}
+        >
+          <motion.span
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 1.6, repeat: Infinity }}
+            style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--mb-muted, #9ca3af)" }}
+          />
+          Card 1 of 7 · Risk Mirror is next
+          <ArrowRight size={12} />
+        </motion.button>
+      )}
+
       {/* Share row */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -532,40 +565,8 @@ function StatPill({ icon, value, label, tone }: { icon: React.ReactNode; value: 
   );
 }
 
-function VerdictRow({ delay, icon, accent, accentBg, accentBorder, label, body }: {
-  delay: number; icon: React.ReactNode; accent: string; accentBg: string; accentBorder: string; label: string; body: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, ease: [0.16, 1, 0.3, 1] }}
-      style={{
-        background: accentBg,
-        border: `1.5px solid ${accentBorder}`,
-        borderRadius: 16,
-        padding: "16px 18px",
-        display: "flex",
-        gap: 14,
-        alignItems: "flex-start",
-      }}
-    >
-      <div style={{
-        width: 36, height: 36, borderRadius: 10,
-        background: "white",
-        border: `1.5px solid ${accentBorder}`,
-        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-      }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: accent, marginBottom: 5 }}>
-          {label}
-        </div>
-        <div style={{ fontSize: 15.5, fontWeight: 600, color: "var(--mb-ink, #111827)", lineHeight: 1.5, letterSpacing: "-0.003em" }}>
-          {body}
-        </div>
-      </div>
-    </motion.div>
-  );
+/* Capitalize first letter helper */
+function cap(s: string): string {
+  if (!s || typeof s !== "string") return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
