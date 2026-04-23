@@ -183,6 +183,10 @@ export default function ScoreHistoryTab({ userId, locale = 'en' }: ScoreHistoryT
     );
   }
 
+  // Helper: convert raw determinism_index (automation risk) to the user-facing
+  // Career Position Score (100 - DI) so the history matches the hero number.
+  const toCareerScore = (di: number) => Math.max(0, Math.min(100, 100 - (di ?? 0)));
+
   // Single scan state
   if (records.length === 1) {
     const record = records[0];
@@ -194,7 +198,7 @@ export default function ScoreHistoryTab({ userId, locale = 'en' }: ScoreHistoryT
             data={[
               {
                 date: record.created_at,
-                score: record.determinism_index,
+                score: toCareerScore(record.determinism_index),
                 scanId: record.scan_id,
                 deltaText: record.delta_summary?.summary_text,
               },
@@ -223,7 +227,7 @@ export default function ScoreHistoryTab({ userId, locale = 'en' }: ScoreHistoryT
   // Multiple scans state (≥2)
   const chartData = records.map((r) => ({
     date: r.created_at,
-    score: r.determinism_index,
+    score: toCareerScore(r.determinism_index),
     scanId: r.scan_id,
     deltaText: r.delta_summary?.summary_text,
   }));
