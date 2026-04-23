@@ -14,17 +14,21 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 // Call AI via Lovable AI gateway to generate a 1-sentence summary
+// NOTE: Career Position Score = 100 - determinism_index.
+// Higher determinism_index = HIGHER automation risk = WORSE for the user.
+// `careerScoreDelta` here is the change in Career Position (so positive = better).
 async function generateDeltaSummary(
-  currentDI: number,
-  previousDI: number,
-  scoreDelta: number
+  currentCareerScore: number,
+  previousCareerScore: number,
+  careerScoreDelta: number,
 ): Promise<string> {
   if (!LOVABLE_API_KEY) {
-    return `Your score ${scoreDelta > 0 ? 'improved' : 'declined'} by ${Math.abs(scoreDelta)} points since your last scan.`;
+    return `Your Career Position ${careerScoreDelta > 0 ? 'improved' : 'declined'} by ${Math.abs(careerScoreDelta)} points since your last scan.`;
   }
 
   try {
-    const prompt = `You are a career AI analyst. In one short sentence (max 15 words), describe the career impact of someone whose automation risk determinism index changed from ${previousDI} to ${currentDI} (delta: ${scoreDelta > 0 ? '+' : ''}${scoreDelta}). Be encouraging if delta is positive, cautionary if negative. Respond with ONLY the sentence, no quotes.`;
+    const direction = careerScoreDelta > 0 ? 'improved' : 'declined';
+    const prompt = `You are a career AI analyst. In one short sentence (max 15 words), describe the career impact of someone whose Career Position Score (higher = safer from AI displacement, lower = more at risk) ${direction} from ${previousCareerScore} to ${currentCareerScore} (delta: ${careerScoreDelta > 0 ? '+' : ''}${careerScoreDelta}). Be encouraging if delta is positive, cautionary if negative. Respond with ONLY the sentence, no quotes.`;
 
     const aiCtrl = new AbortController();
     const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
