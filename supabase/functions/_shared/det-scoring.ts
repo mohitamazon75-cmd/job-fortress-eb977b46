@@ -145,7 +145,8 @@ export function calculateDeterminismIndex(
   marketSignal: MarketSignalRow | null,
   industry?: string | null,
   subSector?: string | null,
-  kgIndex?: KGSkillIndex
+  kgIndex?: KGSkillIndex,
+  metroTier?: string | null
 ): DIResult {
   const isExec = profile.seniority_tier === 'EXECUTIVE' || profile.seniority_tier === 'SENIOR_LEADER';
   const isManager = profile.seniority_tier === 'MANAGER';
