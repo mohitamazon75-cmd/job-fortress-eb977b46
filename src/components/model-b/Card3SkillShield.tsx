@@ -6,6 +6,7 @@ interface Props {
   onBack: () => void;
   onNext: () => void;
   onUpgradePlan?: () => void;
+  overallScore?: number;
 }
 
 const skillBadgeMap: Record<string, { label: string; bg: string; color: string; border: string }> = {
@@ -15,7 +16,7 @@ const skillBadgeMap: Record<string, { label: string; bg: string; color: string; 
   "critical-gap": { label: "🚨 Critical gap", bg: "var(--mb-red-tint)", color: "var(--mb-red)", border: "rgba(174,40,40,0.25)" },
 };
 
-export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePlan }: Props) {
+export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePlan, overallScore }: Props) {
   const c3 = cardData.card3_shield;
   if (!c3) return null;
 
@@ -54,13 +55,16 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
 
         {/* Shield row */}
         <div style={{ display: "flex", gap: 16, alignItems: "center", padding: 18, background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, marginBottom: 18 }}>
-          <svg width={88} height={88} viewBox="0 0 80 80">
-            <circle cx={40} cy={40} r={r} fill="none" stroke="var(--mb-rule)" strokeWidth={8} />
-            <circle cx={40} cy={40} r={r} fill="none" stroke="var(--mb-green)" strokeWidth={8} strokeLinecap="round" transform="rotate(-90 40 40)" strokeDasharray={C} strokeDashoffset={greenOffset} />
-            <circle cx={40} cy={40} r={r} fill="none" stroke="var(--mb-amber)" strokeWidth={8} strokeLinecap="round" transform="rotate(-90 40 40)" strokeDasharray={`${amberDash} ${C}`} strokeDashoffset={amberOffset} />
-            <text x={40} y={36} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: "'DM Mono', monospace", fontSize: 22, fontWeight: 800, fill: "var(--mb-ink)" }}>{c3.shield_score}</text>
-            <text x={40} y={52} textAnchor="middle" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 700, fill: "var(--mb-ink3)" }}>/100</text>
-          </svg>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 800, color: "var(--mb-ink3)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Shield Sub-Score</div>
+            <svg width={88} height={88} viewBox="0 0 80 80">
+              <circle cx={40} cy={40} r={r} fill="none" stroke="var(--mb-rule)" strokeWidth={8} />
+              <circle cx={40} cy={40} r={r} fill="none" stroke="var(--mb-green)" strokeWidth={8} strokeLinecap="round" transform="rotate(-90 40 40)" strokeDasharray={C} strokeDashoffset={greenOffset} />
+              <circle cx={40} cy={40} r={r} fill="none" stroke="var(--mb-amber)" strokeWidth={8} strokeLinecap="round" transform="rotate(-90 40 40)" strokeDasharray={`${amberDash} ${C}`} strokeDashoffset={amberOffset} />
+              <text x={40} y={36} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: "'DM Mono', monospace", fontSize: 22, fontWeight: 800, fill: "var(--mb-ink)" }}>{c3.shield_score}</text>
+              <text x={40} y={52} textAnchor="middle" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 700, fill: "var(--mb-ink3)" }}>/100</text>
+            </svg>
+          </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
               <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "var(--mb-ink)" }}>
@@ -70,6 +74,11 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
                 <span style={{ fontSize: 12, background: "var(--mb-green-tint)", color: "var(--mb-green)", border: "1.5px solid rgba(26,107,60,0.25)", padding: "3px 12px", borderRadius: 20, fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>{c3.badge_text}</span>
               )}
             </div>
+            {typeof overallScore === "number" && overallScore > 0 && (
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginTop: 4, fontWeight: 600 }}>
+                One of 4 inputs to your overall Career Safety Score of <strong style={{ color: "var(--mb-navy)" }}>{overallScore}/100</strong>
+              </div>
+            )}
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.65, marginTop: 6, fontWeight: 500 }}>{c3.shield_body}</div>
             <div
               onClick={onUpgradePlan}
