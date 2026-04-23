@@ -200,7 +200,7 @@ export function computeAll(
   const kgIndex = buildKGSkillIndex(skillRiskData);
 
   // 1. Determinism Index
-  const diResult = calculateDeterminismIndex(profile, skillRiskData, jobSkillMap, jobBaseline, marketSignal, industry, subSector, kgIndex);
+  const diResult = calculateDeterminismIndex(profile, skillRiskData, jobSkillMap, jobBaseline, marketSignal, industry, subSector, kgIndex, metroTier);
   let determinismIndex = diResult.index;
 
   // Essential role safeguard

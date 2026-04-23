@@ -14,6 +14,12 @@ export interface SkillRiskRow {
   replacement_tools: string[];
   india_demand_trend: string;
   category: string;
+  /** Skills using this tool LOWER user risk (AI-augmented operator) */
+  ai_tool_native?: boolean;
+  /** Hindi/regional language work — AI-resistant moat in India for 24mo+ */
+  vernacular_moat?: boolean;
+  /** IT-services / BPO template work — receives explicit risk boost */
+  bpo_template_flag?: boolean;
 }
 
 export interface JobTaxonomyRow {
