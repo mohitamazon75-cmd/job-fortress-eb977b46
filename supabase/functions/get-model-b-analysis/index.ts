@@ -1,6 +1,11 @@
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { detectExecutiveTier, buildExecutiveModeBlock } from "../_shared/executive-mode.ts";
+import { CircuitBreaker } from "../_shared/circuit-breaker.ts";
+
+// Module-level breaker — shared across invocations on the same isolate.
+// 3 consecutive india-jobs failures → 60s cooldown using LLM fallback.
+const indiaJobsBreaker = new CircuitBreaker("india-jobs", { threshold: 3, cooldownMs: 60_000 });
 
 
 
