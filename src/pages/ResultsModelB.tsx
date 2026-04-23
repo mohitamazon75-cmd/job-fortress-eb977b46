@@ -687,12 +687,12 @@ export default function ResultsModelB() {
                       </div>
                     )}
 
-                    {/* Career Genome Debate — 3 AI agents argue about your future */}
-                    <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
+                    {/* Career Genome Debate — temporarily hidden to focus tokens on Resume Weaponizer */}
+                    {/* <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>
                       <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-navy)", textTransform: "uppercase" as const, letterSpacing: "0.12em", marginBottom: 12 }}>🧬 Career Genome Debate</div>
                       <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 14, lineHeight: 1.6 }}>3 AI agents debate your career future. Pessimist. Optimist. Realist. Who's right?</div>
                       <CareerGenomeDebate report={syntheticReport} scanId={analysisId ?? ""} />
-                    </div>
+                    </div> */}
 
                     {/* Resume Weaponizer — rewrite your resume for the AI era */}
                     <div style={{ marginBottom: 20, background: "white", borderRadius: 16, padding: "20px", border: "1px solid var(--mb-rule)", boxShadow: "var(--mb-shadow-sm)" }}>

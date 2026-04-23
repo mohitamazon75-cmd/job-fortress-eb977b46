@@ -674,27 +674,7 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
         <ArrowRight className="w-5 h-5 text-primary" />
       </button>
 
-      {/* Career Genome Debate CTA */}
-      <button
-        onClick={() => setActiveScreen('dossier')}
-        className="w-full mt-6 p-4 rounded-xl border-2 border-dashed border-primary/40 bg-gradient-to-r from-red-500/5 via-amber-500/5 to-emerald-500/5 hover:border-primary/70 transition-all group text-left"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500/20 via-amber-500/20 to-emerald-500/20 border border-primary/20 flex items-center justify-center text-xl flex-shrink-0">
-            🧬
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className="text-sm font-black text-foreground flex items-center gap-2">
-              Career Genome Sequencer
-              <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary uppercase tracking-wider">Live AI Debate</span>
-            </span>
-            <span className="text-[11px] text-muted-foreground block mt-0.5">
-              3 competing AI agents (Prosecutor, Defender, Judge) argue about your career fate in real-time. Watch the debate unfold live.
-            </span>
-          </div>
-          <ArrowRight className="w-5 h-5 text-primary group-hover:translate-x-1 transition-transform flex-shrink-0" />
-        </div>
-      </button>
+      {/* Career Genome Debate CTA — hidden to save tokens & focus user attention */}
 
       {/* Micro feedback */}
       <div className="mt-4 flex justify-end">
