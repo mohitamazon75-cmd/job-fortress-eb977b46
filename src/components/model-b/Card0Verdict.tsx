@@ -30,7 +30,6 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     let frame: number;
     const tick = (t: number) => {
       const p = Math.min(1, (t - start) / dur);
-      // ease-out cubic
       const eased = 1 - Math.pow(1 - p, 3);
       setAnimScore(Math.round(rawScore * eased));
       if (p < 1) frame = requestAnimationFrame(tick);
@@ -39,14 +38,29 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     return () => cancelAnimationFrame(frame);
   }, [rawScore]);
 
-  // Derive content from real LLM data
-  const topThreat = c1?.tasks_at_risk?.[0] || c1?.fear_hook?.split(".")?.[0] || "your top execution skills";
-  const topMoat = c3?.skills?.find((s: any) => s.level === "best-in-class" || s.level === "strong")?.name
+  // Auto-advance hint countdown — appears after 6s, gentle nudge not auto-skip
+  const [hintVisible, setHintVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setHintVisible(true), 6000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Sharper fear — pull SPECIFIC tools/timeframes from the data
+  const threatTask = c1?.tasks_at_risk?.[0];
+  const threatPct = c1?.ai_coverage_pct || c1?.exposure_pct;
+  const threatTool = c1?.ai_tools_replacing?.[0] || c1?.tools?.[0];
+  const topMoatSkill = c3?.skills?.find((s: any) => s.level === "best-in-class" || s.level === "strong");
+  const topMoat = topMoatSkill?.name
     || c1?.hope_bridge?.split(".")?.[0]?.replace(" is your shield", "")
-    || "your judgment and experience";
-  const topMove = c4?.pivots?.[0]?.role
-    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
-    : (c1?.confrontation?.split(".")?.[0] + "." || "Start with one concrete case study this week.");
+    || "your judgment and pattern-recognition";
+
+  // Build the visceral fear→hope couplet
+  const fearLine = threatTask && threatPct
+    ? `${cap(threatTask)} — ${threatPct}% of it${threatTool ? ` is already done by ${threatTool}` : " can be automated"} today.`
+    : threatTask
+    ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
+    : "Your top execution skills are being automated today — not in five years.";
+  const hopeLine = `But ${topMoat} is what AI cannot replicate — and that is your unfair edge.`;
 
   // Risk tier — drives the entire color story
   const tier = rawScore >= 70
@@ -57,10 +71,20 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     ? { label: "AT RISK", sub: "High displacement risk", color: "#b91c1c", glow: "rgba(185,28,28,0.18)", ring: "#dc2626", arc: "Threat" }
     : { label: "CRITICAL", sub: "Severe displacement risk", color: "#7f1d1d", glow: "rgba(127,29,29,0.22)", ring: "#991b1b", arc: "Crisis" };
 
+  // Confidence + freshness derived from data depth
+  const dataDepth = (c1 ? 1 : 0) + (c3 ? 1 : 0) + (c4 ? 1 : 0);
+  const confidenceLabel = dataDepth >= 3 ? "High" : dataDepth >= 2 ? "Medium" : "Building";
+  const confidenceColor = dataDepth >= 3 ? "#15803d" : dataDepth >= 2 ? "#b45309" : "#6b7280";
+
   // Stats below the score — pulls real intelligence
   const aiCoverage = c1?.ai_coverage_pct || c1?.exposure_pct || null;
   const moatCount = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong")?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
+
+  // Top move — keep solid navy CTA card
+  const topMove = c4?.pivots?.[0]?.role
+    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
+    : (c1?.confrontation?.split(".")?.[0] + "." || "Start with one concrete case study this week.");
 
   // Conic-gradient ring percentage
   const ringPct = Math.max(0, Math.min(100, rawScore));
