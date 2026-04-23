@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, AlertTriangle, Zap, Loader2, Copy, Check, ChevronDown, FileText, Lock, Target, Cpu, Linkedin, Download, FileSearch } from 'lucide-react';
+import { ArrowRight, Zap, Loader2, Copy, Check, ChevronDown, FileText, Target, Cpu, Linkedin, Download, FileSearch } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
 import ProUpgradeModal from '@/components/ProUpgradeModal';
@@ -332,10 +332,10 @@ export default function ResumeWeaponizerCard({ report, scanId }: { report: ScanR
       {/* JD Match Analysis — shown when user pasted a JD */}
       {data.jd_match_analysis && (data.jd_match_analysis.match_pct ?? 0) > 0 && (
         <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border-2 border-amber-500/30 bg-amber-500/[0.04] p-4 space-y-2">
+          className="rounded-xl border-2 border-prophet-gold/30 bg-prophet-gold/[0.05] p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">JD Match Score</p>
-            <p className="text-2xl font-black text-amber-700 dark:text-amber-400">{data.jd_match_analysis.match_pct}%</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-prophet-gold">JD Match Score</p>
+            <p className="text-2xl font-black text-prophet-gold">{data.jd_match_analysis.match_pct}%</p>
           </div>
           {data.jd_match_analysis.verdict && (
             <p className="text-xs text-foreground/80 italic">{data.jd_match_analysis.verdict}</p>
