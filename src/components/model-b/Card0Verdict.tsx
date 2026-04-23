@@ -6,7 +6,7 @@
  * one threat, one moat, one move. Built for screenshot virality.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, AlertTriangle, Shield, Zap, TrendingDown, Sparkles } from "lucide-react";
+import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface Card0VerdictProps {
