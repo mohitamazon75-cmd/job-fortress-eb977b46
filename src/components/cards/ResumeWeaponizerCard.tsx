@@ -264,18 +264,34 @@ export default function ResumeWeaponizerCard({ report, scanId }: { report: ScanR
               Our scan identified skills in your profile that AI is beginning to replicate. Let AI rewrite your resume to highlight your <span className="text-prophet-green font-bold">human moats</span> and pass ATS filters.
             </p>
           </div>
-          <div className="max-w-xs mx-auto">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1 block text-left">
-              Target role (optional)
-            </label>
-            <input type="text" value={targetRole} onChange={(e) => setTargetRole(e.target.value)}
-              placeholder={`e.g. Senior ${role}`}
-              className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3" />
+          <div className="max-w-md mx-auto space-y-2">
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1 block text-left">
+                Target role (optional)
+              </label>
+              <input type="text" value={targetRole} onChange={(e) => setTargetRole(e.target.value)}
+                placeholder={`e.g. Senior ${role}`}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div className="text-left">
+              <button type="button" onClick={() => setShowJdInput(v => !v)}
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:underline">
+                <FileSearch className="w-3 h-3" />
+                {showJdInput ? 'Hide' : '+ Paste a target Job Description'} <span className="text-muted-foreground font-normal">(boosts ATS match by ~20%)</span>
+              </button>
+              {showJdInput && (
+                <textarea value={jdText} onChange={(e) => setJdText(e.target.value)}
+                  placeholder="Paste the full JD from Naukri / LinkedIn / company site. We'll reverse-engineer its keywords."
+                  rows={5}
+                  maxLength={3500}
+                  className="mt-2 w-full px-3 py-2 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y" />
+              )}
+            </div>
           </div>
           <button onClick={() => fetchWeaponized()} disabled={loading}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-destructive text-destructive-foreground font-black text-sm hover:bg-destructive/90 transition-colors disabled:opacity-50">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-            {loading ? 'Rewriting...' : 'Weaponize My Resume'}
+            {loading ? 'Rewriting...' : (jdText.trim().length > 80 ? 'Weaponize for This JD' : 'Weaponize My Resume')}
           </button>
         </motion.div>
         {error && (
