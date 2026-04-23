@@ -314,6 +314,53 @@ export default function ResumeWeaponizerCard({ report, scanId }: { report: ScanR
 
   return (
     <div className="space-y-3">
+      {/* LinkedIn Headline — single highest-leverage line for inbound recruiters */}
+      {data.linkedin_headline && (
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border-2 border-primary/30 bg-primary/[0.04] p-4">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+              <Linkedin className="w-3.5 h-3.5" /> LinkedIn Headline ({data.linkedin_headline.length}/220)
+            </p>
+            <CopyBtn text={data.linkedin_headline} id="li-headline" />
+          </div>
+          <p className="text-sm text-foreground font-bold leading-relaxed">{data.linkedin_headline}</p>
+          <p className="text-[10px] text-muted-foreground italic mt-2">Paste this into your LinkedIn headline — recruiters search by these keywords.</p>
+        </motion.div>
+      )}
+
+      {/* JD Match Analysis — shown when user pasted a JD */}
+      {data.jd_match_analysis && (data.jd_match_analysis.match_pct ?? 0) > 0 && (
+        <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border-2 border-amber-500/30 bg-amber-500/[0.04] p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">JD Match Score</p>
+            <p className="text-2xl font-black text-amber-700 dark:text-amber-400">{data.jd_match_analysis.match_pct}%</p>
+          </div>
+          {data.jd_match_analysis.verdict && (
+            <p className="text-xs text-foreground/80 italic">{data.jd_match_analysis.verdict}</p>
+          )}
+          {(data.jd_match_analysis.missing_keywords?.length ?? 0) > 0 && (
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-destructive mb-1">⚠ Add these manually</p>
+              <div className="flex flex-wrap gap-1">
+                {data.jd_match_analysis.missing_keywords!.map((kw, i) => (
+                  <span key={i} className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20">+{kw}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Download bundle */}
+      <div className="flex justify-end">
+        <button onClick={downloadResumeBundle}
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors">
+          <Download className="w-3.5 h-3.5" /> Download full bundle (.txt)
+        </button>
+      </div>
+
       {ats && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
           className="rounded-xl border-2 border-prophet-green/30 bg-prophet-green/[0.05] p-4">
