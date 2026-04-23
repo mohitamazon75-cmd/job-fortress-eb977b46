@@ -288,6 +288,27 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
         }}>
           {tier.sub}
         </div>
+
+        {/* Confidence + freshness micro-line */}
+        <div style={{
+          marginTop: 10,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          fontSize: 10.5,
+          fontWeight: 700,
+          color: "var(--mb-muted, #6b7280)",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          zIndex: 1,
+        }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: confidenceColor }} />
+            Confidence: {confidenceLabel}
+          </span>
+          <span style={{ opacity: 0.4 }}>·</span>
+          <span>Refreshed today</span>
+        </div>
       </motion.div>
 
       {/* QUICK STATS — three pill-cards */}
