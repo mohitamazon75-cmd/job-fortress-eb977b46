@@ -17,7 +17,8 @@ import PromptModal from "@/components/model-b/PromptModal";
 // These were fully built but permanently unreachable in the old flow.
 // They load only when the user taps the Tools tab — zero bundle cost otherwise.
 const ScoreTrendCard  = lazy(() => import("@/components/cards/ScoreTrendCard"));
-const CareerGenomeDebate = lazy(() => import("@/components/dashboard/CareerGenomeDebate"));
+// CareerGenomeDebate hidden — to re-enable, uncomment this import and the JSX block below.
+// const CareerGenomeDebate = lazy(() => import("@/components/dashboard/CareerGenomeDebate"));
 const ResumeWeaponizerCard = lazy(() => import("@/components/cards/ResumeWeaponizerCard"));
 const OfficePowerVocab = lazy(() => import("@/components/cards/OfficePowerVocab"));
 const SkillCompoundCalculator = lazy(() => import("@/components/cards/SkillCompoundCalculator"));

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ChevronLeft, ChevronRight, Shield, Rocket, FileText, Briefcase, DollarSign, Brain, Search, Clock, Network, Shuffle, Target, Calendar, Users, Swords, Skull, Flame, Trophy, TrendingUp, Radar, type LucideIcon } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Shield, Rocket, FileText, Briefcase, DollarSign, Brain, Search, Clock, Network, Shuffle, Target, Calendar, Users, Skull, Flame, Trophy, TrendingUp, Radar, type LucideIcon } from 'lucide-react';
 import { type ScanReport, normalizeTools } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
 import { inferSeniorityTier, isExecutiveTier } from '@/lib/seniority-utils';
