@@ -178,6 +178,7 @@ Deno.serve(async (req: Request) => {
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const isServiceRole = SERVICE_ROLE_KEY && jwt === SERVICE_ROLE_KEY;
 
+    let authedUserId: string | null = null;
     if (!isServiceRole) {
       // Verify JWT and get user
       const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
@@ -186,6 +187,7 @@ Deno.serve(async (req: Request) => {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      authedUserId = user.id;
     }
 
     const body = await req.json();
