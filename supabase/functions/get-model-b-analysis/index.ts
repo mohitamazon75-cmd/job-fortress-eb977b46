@@ -337,10 +337,21 @@ async function processAnalysis(
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Extract role hint from resume text (first 500 chars usually has current title)
+    // Extract role hint from resume — prefer detected role (LLM-classified), fall back to regex
     const roleLine = resumeText.slice(0, 500).split("\n")
-      .find(l => /engineer|manager|analyst|developer|director|lead|head|specialist|consultant/i.test(l));
-    const roleHint = roleLine?.trim().slice(0, 80) || "";
+      .find(l => /engineer|manager|analyst|developer|director|lead|head|specialist|consultant|founder|ceo|cto|cfo|coo|president|partner|chief/i.test(l));
+    const roleHint = (detectedRole && detectedRole.length > 2)
+      ? detectedRole
+      : (roleLine?.trim().slice(0, 80) || "Professional");
+
+    // Extract top skills from resume for live search relevance (cheap regex pull)
+    const skillLine = resumeText.match(/\b(skills?|expertise|technologies)[:\-\s]([^\n]{20,300})/i);
+    const topSkills: string[] = skillLine
+      ? skillLine[2].split(/[,•|/]+/).map(s => s.trim()).filter(s => s.length > 1 && s.length < 30).slice(0, 5)
+      : [];
+
+    // Pre-detect executive tier so india-jobs can route to senior queries
+    const execHint = detectExecutiveTier(resumeText, detectedRole, yearsExperience);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8_000);
@@ -354,10 +365,12 @@ async function processAnalysis(
       body: JSON.stringify({
         role: roleHint,
         city: userCity === "India" ? "Bangalore" : userCity,
-        skills: [],
-        experience: "",
+        skills: topSkills,
+        experience: String(yearsExperience || ""),
         country: "IN",
-        mode: "grounding_context",   // signals this is a pre-LLM fetch
+        is_executive: execHint.isExecutive,
+        executive_tier: execHint.tier || null,
+        mode: "grounding_context",
       }),
       signal: controller.signal,
     }).finally(() => clearTimeout(timeout));
@@ -366,12 +379,14 @@ async function processAnalysis(
       const jobsData = await jobsResp.json();
       const listings = (jobsData.live_jobs || jobsData.jobs || []).slice(0, 6);
       if (listings.length > 0) {
-        liveJobsContext = `\n\nLIVE JOB LISTINGS (fetched from Naukri/Tavily right now — use these as the basis for card5_jobs.job_matches, do NOT invent new ones):\n${
+        liveJobsContext = `\n\nLIVE JOB LISTINGS (fetched live ${execHint.isExecutive ? "from executive search channels" : "from Naukri/LinkedIn"} just now — base card5_jobs.job_matches on these EXACT entries; do NOT invent new ones):\n${
           listings.map((j: any, i: number) =>
-            `${i + 1}. ${j.title || j.role} at ${j.company} | ${j.location} | ${j.salary_range || "salary not listed"} | ${j.url || j.search_url || ""}`
+            `${i + 1}. ${j.title || j.role} | Company: ${j.company || "Listed"} | ${j.location} | ${j.salary_range || "salary not listed"} | URL: ${j.url || j.search_url || ""}`
           ).join("\n")
-        }\n\nFor card5_jobs.job_matches: use exactly these companies and roles. If a field is missing, estimate it from market data. The search_url for each must be the real URL provided above.`;
-        console.log(`[model-b] Injected ${listings.length} live job listings as grounding context`);
+        }\n\nSTRICT RULES for card5_jobs.job_matches:\n- Use EXACTLY the role title and URL from the listings above\n- Set "verified_live": true for each entry that comes from this list\n- The "search_url" field MUST be the URL from the listing above (do NOT construct your own)\n- If a listing has a real company name (not "Listed"), use it; otherwise set company="${execHint.isExecutive ? "Executive Search" : "Naukri Search"}"`;
+        console.log(`[model-b] Injected ${listings.length} live job listings (exec=${execHint.isExecutive}) as grounding context`);
+      } else {
+        console.log("[model-b] india-jobs returned 0 listings; LLM will fabricate from market data");
       }
     }
   } catch (jobErr) {
