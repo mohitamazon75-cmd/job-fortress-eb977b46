@@ -173,8 +173,13 @@ Deno.serve(async (req) => {
     const { userId: _jwtUserId, blocked: jwtBlocked } = await validateJwtClaims(req, cors);
     if (jwtBlocked) return jwtBlocked;
 
-    const { role, industry, skills, city, risk_score, force_refresh } = await req.json();
+    const { role, industry, skills, city, risk_score, force_refresh, is_executive, executive_tier, experience } = await req.json();
     if (!role) return json({ error: "role required" }, 400);
+
+    // Detect executive intent from role string when caller didn't flag it
+    const roleLc = String(role).toLowerCase();
+    const detectedExec = is_executive === true || /\b(ceo|cto|cfo|coo|cmo|cpo|chro|cro|cdo|ciso|cio|founder|co[\s-]?founder|president|managing\s+director|managing\s+partner|chief\s+\w+\s+officer|evp|svp|executive\s+vice\s+president|senior\s+vice\s+president|vp\b)\b/.test(roleLc);
+    const execTier: string | null = executive_tier || (detectedExec ? "executive" : null);
 
     const sb = createAdminClient();
 
