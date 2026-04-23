@@ -383,13 +383,14 @@ async function processAnalysis(
   // channels and equity-tier negotiation. Without this, sitting CEOs receive
   // junior-tier output (e.g., "AI Strategy Lead, ₹90-140L on Naukri") which
   // is a 5/10 product experience for executive users.
-  const execDetect = detectExecutiveTier(resumeText, detectedRole, scan?.years_experience as any);
+  const execDetect = detectExecutiveTier(resumeText, detectedRole, yearsExperience);
   if (execDetect.isExecutive) {
     console.log(`[model-b] Executive Mode active: tier=${execDetect.tier} title="${execDetect.matchedTitle}" years=${execDetect.yearsHint}`);
   }
   const executiveBlock = buildExecutiveModeBlock(execDetect);
 
   const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry) + executiveBlock;
+  let cardData: Record<string, unknown> | null = null;
   let geminiRaw: unknown = null;
   let modelUsed = PRIMARY_MODEL;
 
