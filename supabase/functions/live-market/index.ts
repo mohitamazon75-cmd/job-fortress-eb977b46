@@ -190,6 +190,9 @@ Return ONLY valid JSON:
   "key_findings": [string] (3-5 key data points found),
   "top_hiring_companies": [string] (up to 5),
   "in_demand_skills": [string] (up to 5 most mentioned),
+  "sector_news": [
+    { "headline": string (max 14 words, factual, dated), "impact": "positive"|"negative"|"neutral", "why_it_matters": string (1 sentence, plain English, 18 words max), "source_domain": string (e.g. "economictimes.com"), "url": string }
+  ] (3-5 items — pull from the news search results, MUST be relevant to ${industry || primaryRole} sector and ${experienceBand || 'this seniority'}; skip generic tech news),
   "data_confidence": "high" | "medium" | "low"
 }
 Base ONLY on the provided data. No markdown.`,
