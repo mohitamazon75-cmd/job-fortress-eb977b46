@@ -102,14 +102,36 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
                   ⚡ {p.fomo_signal}
                 </div>
               )}
-              <div style={{ display: "flex", gap: 6 }}>
-                <a href={searchUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                  style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
-                >🔍 Search on Naukri</a>
-                <a href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(p.role)}&location=${encodeURIComponent(city + ", India")}&f_TPR=r604800&sortBy=DD`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                  style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
-                >💼 LinkedIn</a>
-              </div>
+              {isExec ? (
+                (() => {
+                  const urls = buildExecSearchUrls(p.role, city);
+                  return (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <a href={urls.linkedinExec} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                        style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px", borderRadius: 8, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                      >💼 LinkedIn Executive</a>
+                      <a href={urls.heidrick} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                        style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px", borderRadius: 8, background: "#1A2A4A", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                      >🎯 Heidrick</a>
+                      <a href={urls.egonZehnder} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                        style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px", borderRadius: 8, background: "#3B2D5A", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                      >🔷 Egon Zehnder</a>
+                      <a href={urls.spencerStuart} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                        style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px", borderRadius: 8, background: "#5A1A2A", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                      >🏛️ Spencer Stuart</a>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <a href={searchUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                    style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                  >🔍 Search on Naukri</a>
+                  <a href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(p.role)}&location=${encodeURIComponent(city + ", India")}&f_TPR=r604800&sortBy=DD`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                    style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                  >💼 LinkedIn</a>
+                </div>
+              )}
             </div>
           );
         })}
