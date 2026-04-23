@@ -2149,7 +2149,9 @@ export type Database = {
       skill_risk_matrix: {
         Row: {
           ai_augmentation_potential: number
+          ai_tool_native: boolean
           automation_risk: number
+          bpo_template_flag: boolean
           category: string
           created_at: string
           feedback_adjustment: number | null
@@ -2157,13 +2159,17 @@ export type Database = {
           human_moat: string | null
           id: string
           india_demand_trend: string
+          india_specific: boolean
           learning_curve: string | null
           replacement_tools: string[]
           skill_name: string
+          vernacular_moat: boolean
         }
         Insert: {
           ai_augmentation_potential?: number
+          ai_tool_native?: boolean
           automation_risk?: number
+          bpo_template_flag?: boolean
           category?: string
           created_at?: string
           feedback_adjustment?: number | null
@@ -2171,13 +2177,17 @@ export type Database = {
           human_moat?: string | null
           id?: string
           india_demand_trend?: string
+          india_specific?: boolean
           learning_curve?: string | null
           replacement_tools?: string[]
           skill_name: string
+          vernacular_moat?: boolean
         }
         Update: {
           ai_augmentation_potential?: number
+          ai_tool_native?: boolean
           automation_risk?: number
+          bpo_template_flag?: boolean
           category?: string
           created_at?: string
           feedback_adjustment?: number | null
@@ -2185,9 +2195,11 @@ export type Database = {
           human_moat?: string | null
           id?: string
           india_demand_trend?: string
+          india_specific?: boolean
           learning_curve?: string | null
           replacement_tools?: string[]
           skill_name?: string
+          vernacular_moat?: boolean
         }
         Relationships: []
       }
