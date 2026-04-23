@@ -618,7 +618,7 @@ export default function ResultsModelB() {
             }} />}
             {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} scanId={analysisId ?? undefined} />}
             {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
-            {currentCard === 6 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} />}
+            {currentCard === 6 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} scanId={analysisId ?? undefined} />}
             {currentCard === 7 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(6)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
 
             {/* ── Tools tab (index 8) ─────────────────────────────────
