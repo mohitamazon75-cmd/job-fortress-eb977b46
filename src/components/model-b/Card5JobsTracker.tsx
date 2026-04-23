@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
-import { CardShell, CardHead, CardBody, EmotionStrip, SectionLabel, CardNav, Badge, LivePill } from "./SharedUI";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { CardShell, CardHead, CardBody, CardNav, Badge, LivePill, SectionLabel } from "./SharedUI";
 import { supabase } from "@/integrations/supabase/client";
 import PromptModal from "./PromptModal";
+import { buildBoardLinks, formatLiveTimestamp, getMatchTone, normalizeCity } from "@/lib/jobsTab";
 
 const KANBAN_KEY = "jb_kanban";
 type KanbanState = { saved: string[]; applied: string[]; interview: string[]; offer: string[] };
@@ -9,52 +11,35 @@ const emptyKanban: KanbanState = { saved: [], applied: [], interview: [], offer:
 
 function useKanban() {
   const [state, setState] = useState<KanbanState>(() => {
-    try { return JSON.parse(localStorage.getItem(KANBAN_KEY) || "") || emptyKanban; } catch { return emptyKanban; }
+    try {
+      return JSON.parse(localStorage.getItem(KANBAN_KEY) || "") || emptyKanban;
+    } catch {
+      return emptyKanban;
+    }
   });
-  useEffect(() => { localStorage.setItem(KANBAN_KEY, JSON.stringify(state)); }, [state]);
-  const addItem = (col: keyof KanbanState, item: string) => setState(p => ({ ...p, [col]: [...p[col], item] }));
+
+  const addItem = (col: keyof KanbanState, item: string) => {
+    setState((prev) => {
+      const next = { ...prev, [col]: [...prev[col], item] };
+      localStorage.setItem(KANBAN_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
   return { state, addItem };
 }
 
-/** 
- * Clean an LLM-generated role string into searchable job keywords.
- * Strips company names, region qualifiers, and overly specific modifiers.
- */
-function cleanRoleForSearch(role: string, company?: string): string {
-  let clean = role;
-  // Remove company name if embedded in role
-  if (company) {
-    clean = clean.replace(new RegExp(company.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
-  }
-  // Remove region/geography qualifiers that break job searches
-  clean = clean
-    .replace(/\b(europe|asia|apac|emea|global|india|americas|north america|south asia|middle east|africa|latam)\b/gi, '')
-    .replace(/[^\w\s&]/g, ' ')  // strip special chars except &
-    .replace(/\s+/g, ' ')
-    .trim();
-  // If over-cleaned, fall back to original minus special chars
-  if (clean.split(/\s+/).length < 2) {
-    clean = role.replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
-  }
-  return clean;
-}
-
-/** Build a live job search URL for Naukri/LinkedIn */
-function buildJobSearchUrl(role: string, company: string, location: string, platform: "naukri" | "linkedin"): string {
-  const roleKeywords = cleanRoleForSearch(role, company);
-  const city = (location || "India").split(",")[0].trim();
-  if (platform === "naukri") {
-    const keywords = roleKeywords.toLowerCase().replace(/\s+/g, "-");
-    const citySlug = city.toLowerCase().replace(/\s+/g, "-");
-    return `https://www.naukri.com/${keywords}-jobs-in-${citySlug}`;
-  }
-  return `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(roleKeywords)}&location=${encodeURIComponent(city)}&f_TPR=r604800&sortBy=DD`;
-}
-
 export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId }: { cardData: any; onBack: () => void; onNext: () => void; analysisId?: string | null }) {
-  const d = cardData.card5_jobs;
+  const d = cardData?.card5_jobs ?? {};
   const [modal, setModal] = useState<{ title: string; promptText: string } | null>(null);
   const { state: kanban, addItem } = useKanban();
+
+  const role = String(cardData?.user?.current_title || cardData?.user?.title || "").trim();
+  const city = String(cardData?.user?.location || cardData?.user?.city || "India").trim();
+  const skills = useMemo(
+    () => (Array.isArray(cardData?.card3_shield?.skills) ? cardData.card3_shield.skills.map((s: any) => s?.name).filter(Boolean).slice(0, 5) : []),
+    [cardData],
+  );
 
   const logEvent = async (eventType: string, metadata?: Record<string, unknown>) => {
     try {
@@ -63,205 +48,175 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
     } catch {}
   };
 
-  const jobs = (d?.job_matches || []).slice(0, 5);
+  const liveJobsQuery = useQuery({
+    queryKey: ["apify-naukri-jobs", role, city, skills.join("|")],
+    enabled: Boolean(role),
+    staleTime: 1000 * 60 * 10,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("apify-naukri-jobs", {
+        body: {
+          role,
+          city,
+          skills,
+          experience: String(cardData?.user?.years_experience || ""),
+          is_executive: false,
+        },
+      });
+      if (error) throw error;
+      return data as any;
+    },
+  });
 
-  const matchColors: Record<string, { bg: string; color: string; border: string }> = {
-    green: { bg: "var(--mb-green-tint)", color: "var(--mb-green)", border: "rgba(26,107,60,0.25)" },
-    navy: { bg: "var(--mb-navy-tint)", color: "var(--mb-navy)", border: "var(--mb-navy-tint2)" },
-    amber: { bg: "var(--mb-amber-tint)", color: "var(--mb-amber)", border: "rgba(139,90,0,0.25)" },
-  };
+  const liveJobs = Array.isArray(liveJobsQuery.data?.jobs) ? liveJobsQuery.data.jobs : [];
+  const jobs = liveJobs.length > 0 ? liveJobs.slice(0, 6) : Array.isArray(d?.job_matches) ? d.job_matches.slice(0, 5) : [];
+  const searchLinks = buildBoardLinks(role || jobs[0]?.role || "jobs", city, liveJobsQuery.data?.search_urls);
 
-  const cols: { key: keyof KanbanState; label: string; color: string }[] = [
-    { key: "saved", label: "Saved", color: "#999" },
-    { key: "applied", label: "Applied", color: "var(--mb-navy)" },
-    { key: "interview", label: "Interview", color: "var(--mb-amber)" },
-    { key: "offer", label: "Offer", color: "var(--mb-green)" },
+  const cols: { key: keyof KanbanState; label: string }[] = [
+    { key: "saved", label: "Saved" },
+    { key: "applied", label: "Applied" },
+    { key: "interview", label: "Interview" },
+    { key: "offer", label: "Offer" },
   ];
 
   return (
     <CardShell>
-      <CardHead badges={<><Badge label="05 · Opportunity" variant="green" /><LivePill /></>} title={d?.headline || ""} sub={d?.subline || ""} />
+      <CardHead
+        badges={<><Badge label="05 · Opportunity" variant="green" /><LivePill /></>}
+        title={role ? `Live openings for ${role}` : d?.headline || "Live opportunities"}
+        sub={liveJobs.length > 0 ? `Direct Naukri feed for ${normalizeCity(city)}. Real listings only — no invented matches.` : d?.subline || "We are checking live openings against your role, skills, and city."}
+      />
       <CardBody>
-        {/* Urgency emotional triggers */}
-        {d?.fear_hook && (
-          <div style={{ background: "var(--mb-amber-tint)", border: "2px solid rgba(139,90,0,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-amber)", lineHeight: 1.7, margin: 0 }}>⏰ {d.fear_hook}</p>
+        <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.18)", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "var(--mb-green)", marginBottom: 4 }}>
+                {liveJobs.length > 0 ? `${liveJobs.length} grounded listings found` : liveJobsQuery.isLoading ? "Fetching live Naukri jobs…" : "No live listing cached yet"}
+              </div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", lineHeight: 1.6 }}>
+                {formatLiveTimestamp(liveJobsQuery.data?.generated_at)}
+              </div>
+            </div>
+            <button
+              onClick={() => liveJobsQuery.refetch()}
+              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, border: "1.5px solid rgba(26,107,60,0.28)", background: "white", color: "var(--mb-green)", padding: "10px 14px", cursor: "pointer", minHeight: 42 }}
+            >
+              Refresh live feed ↻
+            </button>
           </div>
-        )}
-        {d?.hope_bridge && (
-          <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6, margin: 0 }}>🎯 {d.hope_bridge}</p>
-          </div>
-        )}
+        </div>
 
-        {/* Stat grid — hidden when live counts unavailable (Day 3 pipeline will populate) */}
-        {(d?.active_count != null || d?.senior_count != null || d?.strong_match_count != null) && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 22 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
           {[
-            { val: d?.active_count, label: "Active openings", color: "var(--mb-green)" },
-            { val: d?.senior_count, label: "Senior roles", color: "var(--mb-navy)" },
-            { val: d?.strong_match_count, label: "Strong matches", color: "var(--mb-teal)" },
-          ].filter(s => s.val != null).map((s, i) => (
-            <div key={i} style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.03)" }}>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 28, fontWeight: 800, color: s.color, marginBottom: 6 }}>{s.val}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--mb-ink2)", fontFamily: "'DM Sans', sans-serif" }}>{s.label}</div>
+            { label: "Live listings", value: liveJobsQuery.data?.total_found ?? jobs.length },
+            { label: "Posted ≤ 7 days", value: liveJobsQuery.data?.stats?.recent_count ?? 0 },
+            { label: "Named companies", value: liveJobsQuery.data?.stats?.named_companies ?? 0 },
+          ].map((stat) => (
+            <div key={stat.label} style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 16 }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 28, fontWeight: 800, color: "var(--mb-navy)", marginBottom: 6 }}>{stat.value ?? 0}</div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--mb-ink2)" }}>{stat.label}</div>
             </div>
           ))}
         </div>
+
+        {liveJobsQuery.isError && (
+          <div style={{ background: "var(--mb-red-tint)", border: "1.5px solid rgba(174,40,40,0.18)", borderRadius: 14, padding: 16, marginBottom: 18, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-red)", fontWeight: 700 }}>
+            Live feed error. You can still use the direct board links below while I fall back to saved results.
+          </div>
         )}
 
-        {/* Job cards */}
         {jobs.map((job: any, i: number) => {
-          const mc = matchColors[job.match_color] || matchColors.navy;
-          // PRIORITY: real listing URL → real search URL from LLM → constructed fallback
-          // This ensures live-fetched Naukri/LinkedIn/Indeed URLs are actually used.
-          const isVerifiedLive = job.verified_live === true && (job.search_url || job.url);
-          const primaryUrl = job.url || job.search_url || buildJobSearchUrl(job.role, job.company, job.location, "naukri");
-          const isPrimaryNaukri = /naukri\./i.test(primaryUrl);
-          const isPrimaryLinkedIn = /linkedin\./i.test(primaryUrl);
-          // Always provide both Naukri AND LinkedIn search alternatives
-          const naukriUrl = isPrimaryNaukri ? primaryUrl : buildJobSearchUrl(job.role, job.company, job.location, "naukri");
-          const linkedinUrl = isPrimaryLinkedIn ? primaryUrl : buildJobSearchUrl(job.role, job.company, job.location, "linkedin");
-          const primaryLabel = isVerifiedLive
-            ? (isPrimaryLinkedIn ? "Apply on LinkedIn ↗" : isPrimaryNaukri ? "Apply on Naukri ↗" : "Apply now ↗")
-            : "Apply on Naukri ↗";
+          const live = Boolean(job.verified_live || job.url);
+          const primaryUrl = job.url || job.search_url || searchLinks.naukri;
+          const matchTone = getMatchTone(job.match_pct);
           return (
-            <div key={i} style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 16, padding: 20, marginBottom: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", transition: "box-shadow 0.2s" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.3, letterSpacing: "-0.01em" }}>{job.role}</span>
-                <span style={{ fontSize: 12, fontWeight: 800, padding: "4px 12px", borderRadius: 12, background: mc.bg, color: mc.color, border: `1.5px solid ${mc.border}`, fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}>{job.match_label}</span>
+            <div key={`${job.company || "company"}-${job.title || job.role || i}`} style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 16, padding: 20, marginBottom: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", marginBottom: 8, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.3 }}>{job.title || job.role}</div>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-ink2)", marginTop: 4 }}>{job.company}</div>
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 800, padding: "5px 10px", borderRadius: 999, background: matchTone.variant === "green" ? "var(--mb-green-tint)" : matchTone.variant === "navy" ? "var(--mb-navy-tint)" : "var(--mb-amber-tint)", color: matchTone.variant === "green" ? "var(--mb-green)" : matchTone.variant === "navy" ? "var(--mb-navy)" : "var(--mb-amber)", border: "1px solid var(--mb-rule)", fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  {job.match_pct ? `${job.match_pct}% · ${matchTone.label}` : job.match_label || "Live listing"}
+                </span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-ink)" }}>{job.company}</span>
-                {isVerifiedLive ? (
-                  <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, background: "var(--mb-green-tint)", color: "var(--mb-green)", border: "1px solid rgba(26,107,60,0.3)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em", textTransform: "uppercase" }}>● Verified Live</span>
-                ) : (
-                  <span title="AI-curated search query — opens hundreds of live listings on Naukri" style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "var(--mb-paper)", color: "var(--mb-ink2)", border: "1px solid var(--mb-rule)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em", textTransform: "uppercase" }}>Curated Search</span>
-                )}
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--mb-ink2)", background: "var(--mb-paper)", border: "1px solid var(--mb-rule)", borderRadius: 999, padding: "5px 10px" }}>{job.location || normalizeCity(city)}</span>
+                {(job.posted_label || job.experience) && <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--mb-ink2)", background: "var(--mb-paper)", border: "1px solid var(--mb-rule)", borderRadius: 999, padding: "5px 10px" }}>{job.posted_label || job.experience}</span>}
+                {live && <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, color: "var(--mb-green)", background: "var(--mb-green-tint)", border: "1px solid rgba(26,107,60,0.2)", borderRadius: 999, padding: "5px 10px" }}>Verified live</span>}
               </div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", marginBottom: 10, fontWeight: 500 }}>{job.location}</div>
-              {job.company_context && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", marginBottom: 10, lineHeight: 1.7, fontStyle: "italic", fontWeight: 500 }}>{job.company_context}</div>}
+
+              {job.why_fit && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.7, color: "var(--mb-ink2)", marginBottom: 10 }}>{job.why_fit}</div>}
+              {job.description_snippet && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.7, color: "var(--mb-ink3)", marginBottom: 12 }}>{job.description_snippet}</div>}
+
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
-                {(job.tags || []).map((t: string, j: number) => (
-                  <span key={j} style={{ fontSize: 12, padding: "5px 13px", borderRadius: 20, background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", color: "var(--mb-ink2)", fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{t}</span>
+                {(Array.isArray(job.tags) ? job.tags : []).slice(0, 5).map((tag: string) => (
+                  <span key={tag} style={{ fontSize: 12, padding: "5px 10px", borderRadius: 999, background: "var(--mb-paper)", border: "1px solid var(--mb-rule)", color: "var(--mb-ink2)", fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{tag}</span>
                 ))}
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 20, fontWeight: 800, color: "var(--mb-ink)" }}>{job.salary || "Market rate"}</span>
-                <a
-                  href={primaryUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mb-btn-primary"
-                  onClick={() => {
-                    logEvent("apply_clicked", { job_company: job.company, job_role: job.role, verified_live: isVerifiedLive });
-                  }}
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, padding: "10px 18px", borderRadius: 12, background: "var(--mb-navy)", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", minHeight: 48, boxShadow: "0 3px 12px rgba(27,47,85,0.25)", transition: "all 150ms", letterSpacing: "0.02em" }}
-                >{primaryLabel}</a>
-              </div>
 
-              {/* Secondary: cover-letter generator + cross-platform alternatives */}
-              <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 10 }}>
-                <button
-                  onClick={() => {
-                    logEvent("cover_letter_clicked", { job_company: job.company, job_role: job.role });
-                    setModal({
-                      title: `Cover Letter — ${job.role}${job.company && job.company !== "Naukri Search" && job.company !== "Executive Search" ? ` at ${job.company}` : ""}`,
-                      promptText: `Write a tailored cover letter for ${cardData.user?.name || "the candidate"} applying to ${job.role}${job.company && job.company !== "Naukri Search" && job.company !== "Executive Search" ? ` at ${job.company}` : ""} (${job.location}).\n\nEvidence to lead with:\n${job.apply_evidence || job.why_fit || "Use the strongest accomplishments from their resume."}\n\nRules:\n- Open with one extraordinary number from their evidence — NOT 'I am writing to apply'\n- Maximum 220 words\n- Every sentence must reference either their evidence OR the role specifically\n- Include a suggested email subject line at the top\n- Confident, direct tone — not apologetic`,
-                    });
-                  }}
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "var(--mb-teal-tint)", color: "var(--mb-teal)", border: "1.5px solid rgba(14,102,85,0.3)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
-                >
-                  ✍️ Cover letter
-                </button>
-                {!isPrimaryNaukri && (
-                  <a
-                    href={naukriUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => logEvent("job_link_clicked", { platform: "naukri", job_company: job.company, job_role: job.role })}
-                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
-                  >
-                    🔍 Naukri ↗
-                  </a>
-                )}
-                {!isPrimaryLinkedIn && (
-                  <a
-                    href={linkedinUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => logEvent("job_link_clicked", { platform: "linkedin", job_company: job.company, job_role: job.role })}
-                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
-                  >
-                    💼 LinkedIn ↗
-                  </a>
-                )}
-                <button
-                  onClick={() => { addItem("saved", `${job.company} · ${job.role}`); }}
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, padding: "7px 16px", borderRadius: 10, background: "var(--mb-paper)", color: "var(--mb-ink2)", border: "1.5px solid var(--mb-rule)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40 }}
-                >
-                  ⭐ Save
-                </button>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--mb-ink3)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
-                <span style={{ fontSize: 11 }}>🔍</span>
-                {isVerifiedLive ? "Live posting fetched today" : "Search live openings on Naukri and LinkedIn above"}
-                {job.match_pct && (
-                  <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--mb-ink3)", fontStyle: "italic" }}>
-                    {job.match_pct}% match · scanned live
-                  </span>
-                )}
-              </div>
-              {/* Urgency narrative */}
-              {job.urgency_narrative && (
-                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-amber)", marginTop: 8, padding: "8px 12px", background: "var(--mb-amber-tint)", borderRadius: 8, border: "1px solid rgba(139,90,0,0.15)", lineHeight: 1.6 }}>
-                  ⚡ {job.urgency_narrative}
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 20, fontWeight: 800, color: "var(--mb-ink)" }}>{job.salary || "Not disclosed"}</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <a href={primaryUrl} target="_blank" rel="noopener noreferrer" onClick={() => logEvent("job_link_clicked", { platform: "naukri", job_role: job.title || job.role, job_company: job.company })} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-navy)", color: "white", padding: "10px 14px", minHeight: 42, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Open live listing ↗</a>
+                  {job.company_jobs_url && <a href={job.company_jobs_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-paper)", color: "var(--mb-ink2)", border: "1.5px solid var(--mb-rule)", padding: "10px 14px", minHeight: 42, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Company jobs ↗</a>}
+                  <button onClick={() => addItem("saved", `${job.company} · ${job.title || job.role}`)} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-green-tint)", color: "var(--mb-green)", border: "1px solid rgba(26,107,60,0.2)", padding: "10px 14px", minHeight: 42, cursor: "pointer" }}>Save</button>
                 </div>
-              )}
+              </div>
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                <button
+                  onClick={() => setModal({
+                    title: `Resume rewrite — ${job.title || job.role}`,
+                    promptText: `Rewrite ${cardData?.user?.name || "the candidate"}'s resume bullets for the role ${(job.title || job.role)} at ${job.company}.\n\nUse these listing signals: ${job.why_fit || job.description_snippet || "Live Naukri listing"}.\n\nRules:\n- 6 bullets max\n- Start each bullet with a strong action verb\n- Mirror the job language exactly where true\n- No fake metrics`,
+                  })}
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-teal-tint)", color: "var(--mb-teal)", border: "1px solid rgba(14,102,85,0.2)", padding: "9px 12px", cursor: "pointer" }}
+                >
+                  Resume bullets
+                </button>
+                <button
+                  onClick={() => setModal({
+                    title: `Cover letter — ${job.title || job.role}`,
+                    promptText: `Write a tailored cover letter for ${cardData?.user?.name || "the candidate"} applying to ${job.title || job.role} at ${job.company} in ${job.location || normalizeCity(city)}.\n\nGrounding: ${job.why_fit || job.description_snippet || "Use the strongest truthful proof from the resume."}\n\nRules:\n- Under 220 words\n- No generic opener\n- Use one concrete proof point in the first 2 lines\n- Match India hiring tone`,
+                  })}
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-paper)", color: "var(--mb-ink2)", border: "1px solid var(--mb-rule)", padding: "9px 12px", cursor: "pointer" }}
+                >
+                  Cover letter
+                </button>
+              </div>
             </div>
           );
         })}
 
-        {/* Referral box */}
-        <div style={{ background: "var(--mb-teal-tint)", border: "1.5px solid rgba(14,102,85,0.25)", borderRadius: 16, padding: 20, marginBottom: 18 }}>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 800, color: "var(--mb-teal)", marginBottom: 8, letterSpacing: "-0.01em" }}>Referral finder — 3× your callback rate</div>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.75, fontWeight: 500 }}>
-            For each company above, search LinkedIn for 2nd-degree connections who work there. Referrals in India <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>triple</strong> interview callback rates.
+        {jobs.length === 0 && !liveJobsQuery.isLoading && (
+          <div style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 16, padding: 18, marginBottom: 18 }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8 }}>No live listings matched this exact brief yet</div>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.7, marginBottom: 12 }}>Open the direct board searches below and broaden the keyword by one adjacent title.</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <a href={searchLinks.naukri} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-navy)", color: "white", padding: "10px 14px", textDecoration: "none" }}>Search Naukri ↗</a>
+              <a href={searchLinks.linkedin} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-paper)", color: "var(--mb-ink2)", border: "1px solid var(--mb-rule)", padding: "10px 14px", textDecoration: "none" }}>Search LinkedIn ↗</a>
+            </div>
           </div>
-          <button
-            className="mb-btn-secondary"
-            onClick={() => setModal({
-              title: "Referral Outreach — 5 Companies",
-              promptText: `Write 5 personalised LinkedIn outreach messages for ${cardData.user?.name} to warm connections at: ${jobs.map((j: any) => `${j.company} (${j.location})`).join(", ")}\n\nFor each message:\n- Under 90 words — brevity gets replies\n- Do NOT ask for a referral in the first message\n- Ask for a 10-minute call about the team\n- Reference something specific about that company showing genuine research\n- Mention ONE credential from their profile relevant to that company\n- Confident, curious, direct tone — not desperate`,
-            })}
-            style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, background: "white", border: "1.5px solid rgba(14,102,85,0.3)", borderRadius: 12, padding: "10px 20px", marginTop: 12, color: "var(--mb-teal)", cursor: "pointer", minHeight: 48, transition: "all 150ms", letterSpacing: "0.02em" }}
-          >Generate referral outreach →</button>
-        </div>
+        )}
 
-        {/* Kanban */}
-        <SectionLabel label="Your pipeline — track applications here" />
+        <SectionLabel label="Your pipeline" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10, marginBottom: 18 }}>
           {cols.map((col) => (
             <div key={col.key} style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 12, minHeight: 80 }}>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--mb-ink2)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 20, height: 20, borderRadius: "50%", background: col.color, color: "white", fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{kanban[col.key].length}</span>
-                {col.label}
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--mb-ink2)", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                <span>{col.label}</span>
+                <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--mb-navy)", color: "white", fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{kanban[col.key].length}</span>
               </div>
               {kanban[col.key].map((item, j) => (
                 <div key={j} style={{ background: "white", borderRadius: 10, padding: "8px 10px", marginBottom: 6, fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink)", fontWeight: 700, border: "1.5px solid var(--mb-rule)" }}>{item}</div>
               ))}
-              <div
-                onClick={() => { const name = window.prompt("Enter company + role (e.g. Freshworks · Head of Demand Gen)"); if (name) addItem(col.key, name); }}
-                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink3)", cursor: "pointer", textAlign: "center", padding: 8, border: "1.5px dashed var(--mb-rule)", borderRadius: 10, fontWeight: 700 }}
-              >+</div>
+              <div onClick={() => { const name = window.prompt("Enter company + role"); if (name) addItem(col.key, name); }} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink3)", cursor: "pointer", textAlign: "center", padding: 8, border: "1.5px dashed var(--mb-rule)", borderRadius: 10, fontWeight: 700 }}>+</div>
             </div>
           ))}
         </div>
 
         <CardNav onBack={onBack} onNext={onNext} nextLabel="See blind spots →" />
       </CardBody>
-
       {modal && <PromptModal isOpen={true} onClose={() => setModal(null)} title={modal.title} promptText={modal.promptText} />}
     </CardShell>
   );
