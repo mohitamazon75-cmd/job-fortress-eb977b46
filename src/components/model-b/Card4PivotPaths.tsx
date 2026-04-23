@@ -40,7 +40,7 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
   return (
     <CardShell>
       <CardHead
-        badges={<><Badge label="04 · Action" variant="navy" /><Badge label="Matched to your resume" variant="navy" /></>}
+        badges={<><Badge label="04 · Action" variant="navy" />{isExec ? <Badge label="Executive Mode" variant="green" /> : <Badge label="Matched to your resume" variant="navy" />}</>}
         title={d.headline}
         sub={d.subline}
       />
