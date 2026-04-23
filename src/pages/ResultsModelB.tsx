@@ -609,7 +609,7 @@ export default function ResultsModelB() {
             {currentCard === 0 && <Card0Verdict cardData={cardData} onNext={() => handleTabChange(1)} />}
             {currentCard === 1 && <Card1RiskMirror cardData={cardData} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} />}
             {currentCard === 2 && <Card2MarketRadar cardData={cardData} onBack={() => handleTabChange(1)} onNext={() => handleTabChange(3)} />}
-            {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} onUpgradePlan={() => {
+            {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} overallScore={displayScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
               logEvent("modal_opened", { source: "upgrade_plan" });
               setActionModal({
                 title: "60-Day Skill Upgrade Plan",
