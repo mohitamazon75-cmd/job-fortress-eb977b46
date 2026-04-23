@@ -208,6 +208,11 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           </div>
         )}
 
+        {/* NEW: Sector news feed — dated headlines for user's industry */}
+        {liveMarket?.sector_news && liveMarket.sector_news.length > 0 && (
+          <SectorNewsFeed items={liveMarket.sector_news} industry={cardData.user?.industry} />
+        )}
+
                 {/* Feature 1: Live market signals from Tavily — lazy-loaded, 30-min cache */}
         {liveMarket && (
           <>
