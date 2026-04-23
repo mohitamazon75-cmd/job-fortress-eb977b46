@@ -995,20 +995,22 @@ card5_jobs: {
   senior_count: integer OR null, strong_match_count: integer OR null (both null by default; Day 3 pipeline will populate),
   job_matches: [
     {
-      role: string (descriptive search title — e.g. "Senior Marketing Manager roles in Hyderabad", NOT an invented company+role),
-      company: string (set to "Naukri Search" — do NOT invent company names),
-      salary: string (salary range from AmbitionBox data for this role+city, e.g. "₹18-28L" — if unknown, use "Market rate"),
+      role: string (descriptive search title — e.g. "Senior Marketing Manager roles in Hyderabad"; if a LIVE listing was provided above, use its EXACT title),
+      company: string (if listing has a real company name use it; otherwise "Naukri Search" or "Executive Search" — never invent),
+      salary: string (salary range from listing OR AmbitionBox data, e.g. "₹18-28L"; if unknown use "Market rate"),
       location: string (city name only),
       match_color: "green"|"navy"|"amber",
-      match_label: string (e.g. "~340 active listings"),
+      match_label: string (e.g. "Verified live · Naukri" if from listing, else "~340 active listings"),
+      match_pct: integer 0-100 (computed from skill overlap with this role),
       why_fit: string (1 SHORT sentence using their actual moat skill),
       tags: string[] (3 skill tags from the user's profile that match this search),
-      apply_evidence: string (1 sentence — why this search is curated for them),
-      company_context: string (set to "Live Naukri search curated for your profile"),
+      apply_evidence: string (1 sentence — why this search/role is curated for them),
+      company_context: string ("Verified live listing" if verified_live=true, else "Live Naukri search curated for your profile"),
       urgency_narrative: string (2 SHORT sentences — why act NOW),
-      search_url: string (MUST be a real Naukri URL: https://www.naukri.com/jobs-in-{city-lowercase}?k={role-keywords-plus-separated}&experience={years})
+      verified_live: boolean (true ONLY if this entry came from the LIVE JOB LISTINGS context above; false for AI-suggested searches),
+      search_url: string (if verified_live=true MUST be the EXACT URL from the listings above; otherwise a real Naukri search URL: https://www.naukri.com/jobs-in-{city-lowercase}?k={role-keywords-plus-separated}&experience={years})
     }
-  ] (exactly 5 — each must be a DIFFERENT role variation or city. NEVER invent specific company names or positions. These are curated SEARCH URLs that link to hundreds of real, current listings.)
+  ] (exactly 5 — prefer verified_live entries first; remaining slots fill with curated SEARCH URLs that link to hundreds of real, current listings.)
 }
 
 card6_blindspots: {
