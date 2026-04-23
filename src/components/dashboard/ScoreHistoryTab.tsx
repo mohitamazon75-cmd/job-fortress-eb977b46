@@ -258,7 +258,7 @@ export default function ScoreHistoryTab({ userId, locale = 'en' }: ScoreHistoryT
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground">{dateStr}</span>
                     <span className="text-sm font-semibold text-foreground">
-                      {i18n.score}: {record.determinism_index}
+                      {i18n.score}: {toCareerScore(record.determinism_index)}
                     </span>
                   </div>
                   {deltaText && (
