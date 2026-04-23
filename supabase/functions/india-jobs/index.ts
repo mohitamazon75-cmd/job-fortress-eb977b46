@@ -24,6 +24,7 @@ interface JobListing {
   description_snippet: string;
   posted_days_ago?: number;
   source: string;
+  verified_live?: boolean;
 }
 
 interface UpskillRole {
