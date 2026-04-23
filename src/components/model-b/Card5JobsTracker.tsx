@@ -32,6 +32,7 @@ function useKanban() {
 export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId }: { cardData: any; onBack: () => void; onNext: () => void; analysisId?: string | null }) {
   const d = cardData?.card5_jobs ?? {};
   const [modal, setModal] = useState<{ title: string; promptText: string } | null>(null);
+  const [forceRefresh, setForceRefresh] = useState(0);
   const { state: kanban, addItem } = useKanban();
 
   const role = String(cardData?.user?.current_title || cardData?.user?.title || "").trim();
@@ -40,6 +41,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
     () => (Array.isArray(cardData?.card3_shield?.skills) ? cardData.card3_shield.skills.map((s: any) => s?.name).filter(Boolean).slice(0, 5) : []),
     [cardData],
   );
+  const isExec = useMemo(() => detectExecutive(role), [role]);
 
   const logEvent = async (eventType: string, metadata?: Record<string, unknown>) => {
     try {
@@ -49,7 +51,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
   };
 
   const liveJobsQuery = useQuery({
-    queryKey: ["apify-naukri-jobs", role, city, skills.join("|")],
+    queryKey: ["apify-naukri-jobs", role, city, skills.join("|"), forceRefresh],
     enabled: Boolean(role),
     staleTime: 1000 * 60 * 10,
     queryFn: async () => {
@@ -59,7 +61,8 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
           city,
           skills,
           experience: String(cardData?.user?.years_experience || ""),
-          is_executive: false,
+          is_executive: isExec,
+          force_refresh: forceRefresh > 0,
         },
       });
       if (error) throw error;
@@ -68,8 +71,10 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
   });
 
   const liveJobs = Array.isArray(liveJobsQuery.data?.jobs) ? liveJobsQuery.data.jobs : [];
-  const jobs = liveJobs.length > 0 ? liveJobs.slice(0, 6) : Array.isArray(d?.job_matches) ? d.job_matches.slice(0, 5) : [];
+  const execRoute = Boolean(liveJobsQuery.data?.executive_route);
+  const jobs = liveJobs.length > 0 ? liveJobs.slice(0, 6) : !execRoute && Array.isArray(d?.job_matches) ? d.job_matches.slice(0, 5) : [];
   const searchLinks = buildBoardLinks(role || jobs[0]?.role || "jobs", city, liveJobsQuery.data?.search_urls);
+  const handleRefresh = () => { setForceRefresh((n) => n + 1); };
 
   const cols: { key: keyof KanbanState; label: string }[] = [
     { key: "saved", label: "Saved" },
