@@ -24,6 +24,7 @@ interface SalaryFitInput {
   metro_tier?: "tier1" | "tier2";
   years_experience?: string;
   country?: string;
+  user_skills?: string[];   // Optional: user's resume skills, used to personalise "fair" guidance
 }
 
 interface SalaryFitResult {
