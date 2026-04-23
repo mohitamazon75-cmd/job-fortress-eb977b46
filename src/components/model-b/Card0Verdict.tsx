@@ -6,7 +6,7 @@
  * one threat, one moat, one move. Built for screenshot virality.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, AlertTriangle, Shield, Zap, TrendingDown, Sparkles } from "lucide-react";
+import { ArrowRight, Shield, Zap, TrendingDown, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface Card0VerdictProps {
@@ -30,7 +30,6 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     let frame: number;
     const tick = (t: number) => {
       const p = Math.min(1, (t - start) / dur);
-      // ease-out cubic
       const eased = 1 - Math.pow(1 - p, 3);
       setAnimScore(Math.round(rawScore * eased));
       if (p < 1) frame = requestAnimationFrame(tick);
@@ -39,14 +38,29 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     return () => cancelAnimationFrame(frame);
   }, [rawScore]);
 
-  // Derive content from real LLM data
-  const topThreat = c1?.tasks_at_risk?.[0] || c1?.fear_hook?.split(".")?.[0] || "your top execution skills";
-  const topMoat = c3?.skills?.find((s: any) => s.level === "best-in-class" || s.level === "strong")?.name
+  // Auto-advance hint countdown — appears after 6s, gentle nudge not auto-skip
+  const [hintVisible, setHintVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setHintVisible(true), 6000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Sharper fear — pull SPECIFIC tools/timeframes from the data
+  const threatTask = c1?.tasks_at_risk?.[0];
+  const threatPct = c1?.ai_coverage_pct || c1?.exposure_pct;
+  const threatTool = c1?.ai_tools_replacing?.[0] || c1?.tools?.[0];
+  const topMoatSkill = c3?.skills?.find((s: any) => s.level === "best-in-class" || s.level === "strong");
+  const topMoat = topMoatSkill?.name
     || c1?.hope_bridge?.split(".")?.[0]?.replace(" is your shield", "")
-    || "your judgment and experience";
-  const topMove = c4?.pivots?.[0]?.role
-    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
-    : (c1?.confrontation?.split(".")?.[0] + "." || "Start with one concrete case study this week.");
+    || "your judgment and pattern-recognition";
+
+  // Build the visceral fear→hope couplet
+  const fearLine = threatTask && threatPct
+    ? `${cap(threatTask)} — ${threatPct}% of it${threatTool ? ` is already done by ${threatTool}` : " can be automated"} today.`
+    : threatTask
+    ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
+    : "Your top execution skills are being automated today — not in five years.";
+  const hopeLine = `But ${topMoat} is what AI cannot replicate — and that is your unfair edge.`;
 
   // Risk tier — drives the entire color story
   const tier = rawScore >= 70
@@ -57,10 +71,20 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     ? { label: "AT RISK", sub: "High displacement risk", color: "#b91c1c", glow: "rgba(185,28,28,0.18)", ring: "#dc2626", arc: "Threat" }
     : { label: "CRITICAL", sub: "Severe displacement risk", color: "#7f1d1d", glow: "rgba(127,29,29,0.22)", ring: "#991b1b", arc: "Crisis" };
 
+  // Confidence + freshness derived from data depth
+  const dataDepth = (c1 ? 1 : 0) + (c3 ? 1 : 0) + (c4 ? 1 : 0);
+  const confidenceLabel = dataDepth >= 3 ? "High" : dataDepth >= 2 ? "Medium" : "Building";
+  const confidenceColor = dataDepth >= 3 ? "#15803d" : dataDepth >= 2 ? "#b45309" : "#6b7280";
+
   // Stats below the score — pulls real intelligence
   const aiCoverage = c1?.ai_coverage_pct || c1?.exposure_pct || null;
   const moatCount = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong")?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
+
+  // Top move — keep solid navy CTA card
+  const topMove = c4?.pivots?.[0]?.role
+    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
+    : (c1?.confrontation?.split(".")?.[0] + "." || "Start with one concrete case study this week.");
 
   // Conic-gradient ring percentage
   const ringPct = Math.max(0, Math.min(100, rawScore));
@@ -149,6 +173,38 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
           zIndex: 0,
         }} />
 
+        {/* Subtle pulsing rings — cinematic intelligence-terminal motion */}
+        <motion.div
+          aria-hidden
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: [0, 0.5, 0], scale: [0.85, 1.25, 1.4] }}
+          transition={{ duration: 3.6, repeat: Infinity, ease: "easeOut", delay: 0.8 }}
+          style={{
+            position: "absolute",
+            width: 220,
+            height: 220,
+            borderRadius: "50%",
+            border: `1.5px solid ${tier.ring}`,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+        <motion.div
+          aria-hidden
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: [0, 0.35, 0], scale: [0.85, 1.4, 1.6] }}
+          transition={{ duration: 3.6, repeat: Infinity, ease: "easeOut", delay: 2.2 }}
+          style={{
+            position: "absolute",
+            width: 220,
+            height: 220,
+            borderRadius: "50%",
+            border: `1px solid ${tier.ring}`,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+
         {/* Conic ring */}
         <div style={{
           position: "relative",
@@ -232,6 +288,27 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
         }}>
           {tier.sub}
         </div>
+
+        {/* Confidence + freshness micro-line */}
+        <div style={{
+          marginTop: 10,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          fontSize: 10.5,
+          fontWeight: 700,
+          color: "var(--mb-muted, #6b7280)",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          zIndex: 1,
+        }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: confidenceColor }} />
+            Confidence: {confidenceLabel}
+          </span>
+          <span style={{ opacity: 0.4 }}>·</span>
+          <span>Refreshed today</span>
+        </div>
       </motion.div>
 
       {/* QUICK STATS — three pill-cards */}
@@ -268,33 +345,59 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
       </motion.div>
 
       {/* THREE-SENTENCE VERDICT */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
 
-        {/* Threat */}
-        <VerdictRow
-          delay={0.75}
-          icon={<AlertTriangle size={15} color="#dc2626" />}
-          accent="#dc2626"
-          accentBg="rgba(220,38,38,0.06)"
-          accentBorder="rgba(220,38,38,0.18)"
-          label="Biggest Threat"
-          body={
-            typeof topThreat === "string" && topThreat.length > 5
-              ? `${topThreat.charAt(0).toUpperCase() + topThreat.slice(1)} is being automated in your stack — today, not in five years.`
-              : "Your top execution skills are being automated today — not in five years."
-          }
-        />
+        {/* THE FEAR → HOPE COUPLET — single knockout block */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.78, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            position: "relative",
+            background: "white",
+            border: "1.5px solid var(--mb-rule, #e5e7eb)",
+            borderRadius: 16,
+            padding: "20px 22px",
+            overflow: "hidden",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
+          }}
+        >
+          {/* Vertical fear/hope spine */}
+          <div style={{
+            position: "absolute",
+            left: 0, top: 0, bottom: 0, width: 4,
+            background: "linear-gradient(180deg, #dc2626 0%, #dc2626 50%, #15803d 50%, #15803d 100%)",
+          }} />
 
-        {/* Moat */}
-        <VerdictRow
-          delay={0.85}
-          icon={<Shield size={15} color="#15803d" />}
-          accent="#15803d"
-          accentBg="rgba(21,128,61,0.06)"
-          accentBorder="rgba(21,128,61,0.18)"
-          label="Your Unfair Advantage"
-          body={`${topMoat} is what AI cannot replicate. That is your moat — and it compounds every year you stay sharp.`}
-        />
+          {/* Fear half */}
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
+            <div style={{ fontSize: 18, lineHeight: 1, marginTop: 2 }}>⚠️</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#dc2626", marginBottom: 4 }}>
+                The Threat
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
+                {fearLine}
+              </div>
+            </div>
+          </div>
+
+          {/* Soft separator */}
+          <div style={{ height: 1, background: "var(--mb-rule, #e5e7eb)", marginBottom: 14 }} />
+
+          {/* Hope half */}
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+            <div style={{ fontSize: 18, lineHeight: 1, marginTop: 2 }}>🛡️</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#15803d", marginBottom: 4 }}>
+                Your Edge
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
+                {hopeLine}
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Move — solid navy */}
         <motion.div
@@ -364,6 +467,39 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
         7 intelligence cards · Score decomposition · Live market data · 90-day plan
       </p>
 
+      {/* Auto-advance hint — gentle nudge after 6s, never auto-skips */}
+      {hintVisible && (
+        <motion.button
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={onNext}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            margin: "10px auto 0",
+            padding: "6px 14px",
+            background: "transparent",
+            border: "1px dashed var(--mb-rule, #d1d5db)",
+            borderRadius: 999,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--mb-muted, #6b7280)",
+            cursor: "pointer",
+            fontFamily: "'DM Sans', sans-serif",
+            letterSpacing: "0.04em",
+          }}
+        >
+          <motion.span
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 1.6, repeat: Infinity }}
+            style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--mb-muted, #9ca3af)" }}
+          />
+          Card 1 of 7 · Risk Mirror is next
+          <ArrowRight size={12} />
+        </motion.button>
+      )}
+
       {/* Share row */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -429,40 +565,8 @@ function StatPill({ icon, value, label, tone }: { icon: React.ReactNode; value: 
   );
 }
 
-function VerdictRow({ delay, icon, accent, accentBg, accentBorder, label, body }: {
-  delay: number; icon: React.ReactNode; accent: string; accentBg: string; accentBorder: string; label: string; body: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, ease: [0.16, 1, 0.3, 1] }}
-      style={{
-        background: accentBg,
-        border: `1.5px solid ${accentBorder}`,
-        borderRadius: 16,
-        padding: "16px 18px",
-        display: "flex",
-        gap: 14,
-        alignItems: "flex-start",
-      }}
-    >
-      <div style={{
-        width: 36, height: 36, borderRadius: 10,
-        background: "white",
-        border: `1.5px solid ${accentBorder}`,
-        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-      }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: accent, marginBottom: 5 }}>
-          {label}
-        </div>
-        <div style={{ fontSize: 15.5, fontWeight: 600, color: "var(--mb-ink, #111827)", lineHeight: 1.5, letterSpacing: "-0.003em" }}>
-          {body}
-        </div>
-      </div>
-    </motion.div>
-  );
+/* Capitalize first letter helper */
+function cap(s: string): string {
+  if (!s || typeof s !== "string") return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
