@@ -173,6 +173,38 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
           zIndex: 0,
         }} />
 
+        {/* Subtle pulsing rings — cinematic intelligence-terminal motion */}
+        <motion.div
+          aria-hidden
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: [0, 0.5, 0], scale: [0.85, 1.25, 1.4] }}
+          transition={{ duration: 3.6, repeat: Infinity, ease: "easeOut", delay: 0.8 }}
+          style={{
+            position: "absolute",
+            width: 220,
+            height: 220,
+            borderRadius: "50%",
+            border: `1.5px solid ${tier.ring}`,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+        <motion.div
+          aria-hidden
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: [0, 0.35, 0], scale: [0.85, 1.4, 1.6] }}
+          transition={{ duration: 3.6, repeat: Infinity, ease: "easeOut", delay: 2.2 }}
+          style={{
+            position: "absolute",
+            width: 220,
+            height: 220,
+            borderRadius: "50%",
+            border: `1px solid ${tier.ring}`,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+
         {/* Conic ring */}
         <div style={{
           position: "relative",
