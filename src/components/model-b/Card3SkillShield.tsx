@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { CardShell, CardHead, CardBody, Badge, EmotionStrip, SectionLabel, InfoBox, CardNav, Badge as BadgeComp } from "./SharedUI";
+
+// Skill Arbitrage Engine — already-built widget previously only on the dashboard.
+// Lazy-loaded so the Shield tab stays fast and only pays the cost when the user
+// actually expands the "Find your highest-ROI skill" section.
+const SkillArbitrageWidget = lazy(() => import("@/components/dashboard/SkillArbitrageWidget"));
 
 interface Props {
   cardData: any;
@@ -7,6 +12,7 @@ interface Props {
   onNext: () => void;
   onUpgradePlan?: () => void;
   overallScore?: number;
+  scanId?: string;
 }
 
 const skillBadgeMap: Record<string, { label: string; bg: string; color: string; border: string }> = {
@@ -16,8 +22,9 @@ const skillBadgeMap: Record<string, { label: string; bg: string; color: string; 
   "critical-gap": { label: "🚨 Critical gap", bg: "var(--mb-red-tint)", color: "var(--mb-red)", border: "rgba(174,40,40,0.25)" },
 };
 
-export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePlan, overallScore }: Props) {
+export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePlan, overallScore, scanId }: Props) {
   const c3 = cardData.card3_shield;
+  const [showArbitrage, setShowArbitrage] = useState(false);
   if (!c3) return null;
 
   const r = 30;
