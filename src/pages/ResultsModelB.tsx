@@ -437,7 +437,9 @@ export default function ResultsModelB() {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 800, color: "var(--mb-ink)", letterSpacing: "-0.01em" }}>JobBachao</div>
-          {cardData && currentCard !== 0 && (
+          {cardData && currentCard !== 0 && currentCard !== 3 && (
+            // Hidden on Shield tab (currentCard === 3) to avoid two competing scores
+            // (overall Career Safety in header vs Shield sub-score on the card).
             <div
               style={{ display: "flex", alignItems: "baseline", gap: 6 }}
               title="Your overall JobBachao Career Safety Score (0–100). Higher = safer. Different from the AI Exposure score on the Risk tab."
