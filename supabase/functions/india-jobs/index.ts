@@ -4,7 +4,12 @@ import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearch } from "../_shared/tavily-search.ts";
 import { enrichRolesWithAdzunaSalary } from "../_shared/adzuna-salary.ts";
 import { enrichRolesWithIndiaSalary } from "../_shared/ambitionbox-salary.ts";
+import { withTelemetry, logExternalApiCall } from "../_shared/external-api-telemetry.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// Request coalescing — in-flight identical requests share the same promise.
+// Prevents simultaneous scans for the same role/city from hitting paid APIs twice.
+const inflight = new Map<string, Promise<any>>();
 
 // ═══════════════════════════════════════════════════════════════
 // India Jobs Matcher v2 — Tavily-powered live job search
