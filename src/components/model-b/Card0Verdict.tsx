@@ -89,8 +89,9 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const pivotCount = c4?.pivots?.length || 0;
 
   // Top move — keep solid navy CTA card
+  // Schema: pivots[].match_pct (not skill_overlap_pct)
   const topMove = c4?.pivots?.[0]?.role
-    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
+    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].match_pct || c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
     : (c1?.confrontation?.split(".")?.[0] + "." || "Start with one concrete case study this week.");
 
   // Conic-gradient ring percentage
