@@ -190,6 +190,11 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
               {linkedinError && linkedinUrl && (
                 <p className="text-sm text-destructive font-medium mt-2 px-1">{linkedinError}</p>
               )}
+              <div className="mt-3 px-3 py-2 rounded-lg bg-muted/50 border border-border/60">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  ⚠️ <span className="font-semibold text-foreground">Heads up:</span> LinkedIn often blocks scraping, so extracted data may be partial or stale. For the most accurate score, <span className="font-semibold text-foreground">upload your resume instead</span>.
+                </p>
+              </div>
               <motion.button
                 whileHover={isValidLinkedinUrl(linkedinUrl) ? { scale: 1.01 } : {}}
                 whileTap={isValidLinkedinUrl(linkedinUrl) ? { scale: 0.99 } : {}}
