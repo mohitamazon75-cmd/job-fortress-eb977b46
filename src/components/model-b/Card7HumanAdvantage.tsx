@@ -115,7 +115,7 @@ function ScriptCard({ s, onCopy, onSave }: {
   );
 }
 
-export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, analysisId }: { cardData: any; onBack: () => void; copyFallback?: (text: string) => void; analysisId?: string | null }) {
+export default function Card7HumanAdvantage({ cardData, onBack, onNext, copyFallback, analysisId }: { cardData: any; onBack: () => void; onNext?: () => void; copyFallback?: (text: string) => void; analysisId?: string | null }) {
   const d = cardData?.card7_human || {};
   const advantages = useMemo(() => Array.isArray(d?.advantages) ? d.advantages : [], [d]);
   const scoreTags: string[] = Array.isArray(d?.score_tags) ? d.score_tags : [];
@@ -343,7 +343,7 @@ export default function Card7HumanAdvantage({ cardData, onBack, copyFallback, an
 
         <WhatsAppCaptureBlock score={cardData.jobbachao_score} />
 
-        <CardNav onBack={onBack} nextLabel="Journey complete ✓" />
+        <CardNav onBack={onBack} onNext={onNext} nextLabel="Open tools →" />
       </CardBody>
 
       <style>{`
