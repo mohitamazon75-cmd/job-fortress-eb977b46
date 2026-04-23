@@ -14,17 +14,21 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 // Call AI via Lovable AI gateway to generate a 1-sentence summary
+// NOTE: Career Position Score = 100 - determinism_index.
+// Higher determinism_index = HIGHER automation risk = WORSE for the user.
+// `careerScoreDelta` here is the change in Career Position (so positive = better).
 async function generateDeltaSummary(
-  currentDI: number,
-  previousDI: number,
-  scoreDelta: number
+  currentCareerScore: number,
+  previousCareerScore: number,
+  careerScoreDelta: number,
 ): Promise<string> {
   if (!LOVABLE_API_KEY) {
-    return `Your score ${scoreDelta > 0 ? 'improved' : 'declined'} by ${Math.abs(scoreDelta)} points since your last scan.`;
+    return `Your Career Position ${careerScoreDelta > 0 ? 'improved' : 'declined'} by ${Math.abs(careerScoreDelta)} points since your last scan.`;
   }
 
   try {
-    const prompt = `You are a career AI analyst. In one short sentence (max 15 words), describe the career impact of someone whose automation risk determinism index changed from ${previousDI} to ${currentDI} (delta: ${scoreDelta > 0 ? '+' : ''}${scoreDelta}). Be encouraging if delta is positive, cautionary if negative. Respond with ONLY the sentence, no quotes.`;
+    const direction = careerScoreDelta > 0 ? 'improved' : 'declined';
+    const prompt = `You are a career AI analyst. In one short sentence (max 15 words), describe the career impact of someone whose Career Position Score (higher = safer from AI displacement, lower = more at risk) ${direction} from ${previousCareerScore} to ${currentCareerScore} (delta: ${careerScoreDelta > 0 ? '+' : ''}${careerScoreDelta}). Be encouraging if delta is positive, cautionary if negative. Respond with ONLY the sentence, no quotes.`;
 
     const aiCtrl = new AbortController();
     const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
@@ -46,15 +50,15 @@ async function generateDeltaSummary(
 
     if (!res.ok) {
       console.warn(`[compute-delta] AI gateway failed ${res.status}`);
-      return `Your score ${scoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreDelta)} points since your last scan.`;
+      return `Your Career Position ${careerScoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(careerScoreDelta)} points since your last scan.`;
     }
 
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content || "";
-    return text.trim() || `Your score ${scoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreDelta)} points since your last scan.`;
+    return text.trim() || `Your Career Position ${careerScoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(careerScoreDelta)} points since your last scan.`;
   } catch (err) {
     console.warn("[compute-delta] AI generation failed:", err);
-    return `Your score ${scoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreDelta)} points since your last scan.`;
+    return `Your Career Position ${careerScoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(careerScoreDelta)} points since your last scan.`;
   }
 }
 
@@ -126,7 +130,12 @@ Deno.serve(async (req) => {
     const newer = records[0]; // Most recent
     const older = records[1]; // Second most recent
 
-    const scoreChange = (newer.determinism_index || 0) - (older.determinism_index || 0);
+    // Career Position Score = 100 - determinism_index (higher = safer).
+    // Surface the delta in Career Position terms so the UI/narrative
+    // matches the hero number users see ("91 out of 100").
+    const newerCareerScore = 100 - (newer.determinism_index || 0);
+    const olderCareerScore = 100 - (older.determinism_index || 0);
+    const scoreChange = newerCareerScore - olderCareerScore;
 
     // Placeholder arrays — require complex KG query (Phase C/D)
     const movedUp: string[] = [];
@@ -137,15 +146,15 @@ Deno.serve(async (req) => {
     // Generate summary_text
     let summaryText: string;
     if (scoreChange === 0) {
-      summaryText = "Score unchanged since last scan.";
+      summaryText = "Career Position unchanged since last scan.";
     } else if (Math.abs(scoreChange) <= 5) {
-      summaryText = `Your score ${scoreChange > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreChange)} points since your last scan.`;
+      summaryText = `Your Career Position ${scoreChange > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreChange)} points since your last scan.`;
     } else {
       // Call Gemini Flash for >5 point changes
       summaryText = await generateDeltaSummary(
-        newer.determinism_index || 0,
-        older.determinism_index || 0,
-        scoreChange
+        newerCareerScore,
+        olderCareerScore,
+        scoreChange,
       );
     }
 
