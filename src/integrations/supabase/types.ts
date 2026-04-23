@@ -1185,6 +1185,36 @@ export type Database = {
         }
         Relationships: []
       }
+      human_edge_cache: {
+        Row: {
+          bundle: Json
+          cache_key: string
+          created_at: string
+          expires_at: string
+          role_context: string | null
+          scan_id: string | null
+          source: string
+        }
+        Insert: {
+          bundle?: Json
+          cache_key: string
+          created_at?: string
+          expires_at?: string
+          role_context?: string | null
+          scan_id?: string | null
+          source?: string
+        }
+        Update: {
+          bundle?: Json
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          role_context?: string | null
+          scan_id?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       intel_watchlist: {
         Row: {
           added_at: string
