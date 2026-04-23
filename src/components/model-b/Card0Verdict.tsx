@@ -1,15 +1,13 @@
 /**
- * Card 0 — The Verdict
- * 
- * 30-second plain-language summary BEFORE the score.
- * Three sentences: your risk, your biggest threat, your #1 move.
- * Designed to be instantly shareable on WhatsApp.
- * 
- * Psychology: names the fear, names the moat, names one action.
- * This converts browsers to actors before they see a single number.
+ * Card 0 — The Verdict (Knockout Opener)
+ *
+ * First impression. Must hit like a punch.
+ * Cinematic dossier reveal: massive score, fear+hope blend,
+ * one threat, one moat, one move. Built for screenshot virality.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, AlertTriangle, Shield, Zap } from "lucide-react";
+import { ArrowRight, AlertTriangle, Shield, Zap, TrendingDown, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface Card0VerdictProps {
   cardData: any;
@@ -21,149 +19,310 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const c3 = cardData?.card3_shield;
   const c4 = cardData?.card4_pivot;
   const user = cardData?.user;
-  const score = cardData?.jobbachao_score ?? cardData?.risk_score ?? null;
+  const rawScore = cardData?.jobbachao_score ?? cardData?.risk_score ?? 0;
 
-  // Derive the three verdict sentences from existing LLM data
+  // Animated score counter — feels alive
+  const [animScore, setAnimScore] = useState(0);
+  useEffect(() => {
+    if (!rawScore) return;
+    const dur = 1400;
+    const start = performance.now();
+    let frame: number;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / dur);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - p, 3);
+      setAnimScore(Math.round(rawScore * eased));
+      if (p < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [rawScore]);
+
+  // Derive content from real LLM data
   const topThreat = c1?.tasks_at_risk?.[0] || c1?.fear_hook?.split(".")?.[0] || "your top execution skills";
   const topMoat = c3?.skills?.find((s: any) => s.level === "best-in-class" || s.level === "strong")?.name
-    || c1?.hope_bridge?.split(".")?.[0]?.replace(" is your shield", "") 
+    || c1?.hope_bridge?.split(".")?.[0]?.replace(" is your shield", "")
     || "your judgment and experience";
-  const topMove = c4?.pivots?.[0]?.role 
-    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer directly.`
-    : c1?.confrontation?.split(".")?.[0] + "." || "Start with one concrete case study this week.";
+  const topMove = c4?.pivots?.[0]?.role
+    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
+    : (c1?.confrontation?.split(".")?.[0] + "." || "Start with one concrete case study this week.");
 
-  // Risk level label
-  const riskLabel = score == null ? null 
-    : score >= 70 ? { text: "LOW RISK", color: "#16a34a", bg: "rgba(22,163,74,0.1)" }
-    : score >= 50 ? { text: "MODERATE RISK", color: "#d97706", bg: "rgba(217,119,6,0.1)" }
-    : score >= 35 ? { text: "HIGH RISK", color: "#dc2626", bg: "rgba(220,38,38,0.1)" }
-    : { text: "CRITICAL RISK", color: "#991b1b", bg: "rgba(153,27,27,0.15)" };
+  // Risk tier — drives the entire color story
+  const tier = rawScore >= 70
+    ? { label: "FORTIFIED", sub: "Low displacement risk", color: "#15803d", glow: "rgba(21,128,61,0.18)", ring: "#16a34a", arc: "Hope" }
+    : rawScore >= 50
+    ? { label: "EXPOSED", sub: "Moderate displacement risk", color: "#b45309", glow: "rgba(180,83,9,0.18)", ring: "#d97706", arc: "Warning" }
+    : rawScore >= 35
+    ? { label: "AT RISK", sub: "High displacement risk", color: "#b91c1c", glow: "rgba(185,28,28,0.18)", ring: "#dc2626", arc: "Threat" }
+    : { label: "CRITICAL", sub: "Severe displacement risk", color: "#7f1d1d", glow: "rgba(127,29,29,0.22)", ring: "#991b1b", arc: "Crisis" };
+
+  // Stats below the score — pulls real intelligence
+  const aiCoverage = c1?.ai_coverage_pct || c1?.exposure_pct || null;
+  const moatCount = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong")?.length || 0;
+  const pivotCount = c4?.pivots?.length || 0;
+
+  // Conic-gradient ring percentage
+  const ringPct = Math.max(0, Math.min(100, rawScore));
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
-      {/* Eyebrow */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-        <div style={{ height: 1, flex: 1, background: "var(--mb-rule, #e5e7eb)" }} />
-        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--mb-muted, #9ca3af)" }}>
-          The Verdict
+      {/* DOSSIER HEADER STRIP */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "8px 0",
+          borderTop: "1px solid var(--mb-ink, #111827)",
+          borderBottom: "1px solid var(--mb-rule, #e5e7eb)",
+          marginBottom: 22,
+          fontSize: 10,
+          fontWeight: 800,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          color: "var(--mb-muted, #6b7280)",
+        }}
+      >
+        <span>Career Intelligence Dossier</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", boxShadow: "0 0 8px #16a34a" }} />
+          Verified · {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
         </span>
-        <div style={{ height: 1, flex: 1, background: "var(--mb-rule, #e5e7eb)" }} />
-      </div>
+      </motion.div>
 
-      {/* Name + Risk badge */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: "var(--mb-ink, #111827)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-            {user?.name || "Your Career"}
-          </div>
-          <div style={{ fontSize: 13, color: "var(--mb-muted, #6b7280)", marginTop: 3 }}>
-            {user?.current_title}{user?.location ? ` · ${user.location}` : ""}
+      {/* NAME + ROLE — Newspaper masthead */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12 }}
+        style={{ textAlign: "center", marginBottom: 24 }}
+      >
+        <div style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: "clamp(32px, 5vw, 44px)",
+          fontWeight: 900,
+          color: "var(--mb-ink, #111827)",
+          letterSpacing: "-0.03em",
+          lineHeight: 1.05,
+          marginBottom: 8,
+        }}>
+          {user?.name || "Your Career"}
+        </div>
+        <div style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: "var(--mb-muted, #6b7280)",
+          letterSpacing: "0.04em",
+        }}>
+          {user?.current_title}{user?.location ? ` · ${user.location}` : ""}{user?.years_experience ? ` · ${user.years_experience}y experience` : ""}
+        </div>
+      </motion.div>
+
+      {/* THE SCORE — knockout centerpiece */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          marginBottom: 28,
+        }}
+      >
+        {/* Ambient glow */}
+        <div style={{
+          position: "absolute",
+          inset: -20,
+          background: `radial-gradient(circle at center, ${tier.glow} 0%, transparent 60%)`,
+          pointerEvents: "none",
+          zIndex: 0,
+        }} />
+
+        {/* Conic ring */}
+        <div style={{
+          position: "relative",
+          width: 220,
+          height: 220,
+          borderRadius: "50%",
+          background: `conic-gradient(${tier.ring} ${ringPct * 3.6}deg, rgba(0,0,0,0.06) ${ringPct * 3.6}deg)`,
+          padding: 8,
+          zIndex: 1,
+        }}>
+          <div style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: "50%",
+            background: "var(--mb-paper, #ffffff)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: `inset 0 2px 12px rgba(0,0,0,0.04), 0 8px 32px ${tier.glow}`,
+          }}>
+            <div style={{
+              fontSize: 9,
+              fontWeight: 800,
+              letterSpacing: "0.22em",
+              color: "var(--mb-muted, #9ca3af)",
+              textTransform: "uppercase",
+              marginBottom: 2,
+            }}>
+              Career Position
+            </div>
+            <div style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 84,
+              fontWeight: 900,
+              color: tier.color,
+              lineHeight: 1,
+              letterSpacing: "-0.04em",
+              fontVariantNumeric: "tabular-nums",
+            }}>
+              {animScore}
+            </div>
+            <div style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "var(--mb-muted, #6b7280)",
+              marginTop: 2,
+              letterSpacing: "0.05em",
+            }}>
+              out of 100
+            </div>
           </div>
         </div>
-        {riskLabel && (
-          <div style={{
-            background: riskLabel.bg,
-            color: riskLabel.color,
-            border: `1.5px solid ${riskLabel.color}30`,
-            borderRadius: 8,
-            padding: "5px 12px",
-            fontSize: 11,
+
+        {/* Tier badge */}
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          style={{
+            marginTop: 18,
+            padding: "8px 20px",
+            background: tier.color,
+            color: "white",
+            borderRadius: 999,
+            fontSize: 12,
             fontWeight: 900,
-            letterSpacing: "0.12em",
+            letterSpacing: "0.18em",
+            boxShadow: `0 6px 20px ${tier.glow}`,
+            zIndex: 1,
+          }}
+        >
+          {tier.label}
+        </motion.div>
+        <div style={{
+          marginTop: 6,
+          fontSize: 12,
+          fontWeight: 600,
+          color: "var(--mb-muted, #6b7280)",
+          zIndex: 1,
+        }}>
+          {tier.sub}
+        </div>
+      </motion.div>
+
+      {/* QUICK STATS — three pill-cards */}
+      {(aiCoverage !== null || moatCount > 0 || pivotCount > 0) && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 8,
+            marginBottom: 28,
+          }}
+        >
+          <StatPill icon={<TrendingDown size={14} />} value={aiCoverage !== null ? `${aiCoverage}%` : "—"} label="AI exposure" tone="threat" />
+          <StatPill icon={<Shield size={14} />} value={moatCount > 0 ? String(moatCount) : "—"} label="Moat skills" tone="moat" />
+          <StatPill icon={<Sparkles size={14} />} value={pivotCount > 0 ? String(pivotCount) : "—"} label="Safe pivots" tone="hope" />
+        </motion.div>
+      )}
+
+      {/* DIVIDER */}
+      <motion.div
+        initial={{ opacity: 0, scaleX: 0 }}
+        animate={{ opacity: 1, scaleX: 1 }}
+        transition={{ delay: 0.7, duration: 0.4 }}
+        style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}
+      >
+        <div style={{ height: 1, flex: 1, background: "var(--mb-rule, #e5e7eb)" }} />
+        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.22em", color: "var(--mb-muted, #9ca3af)" }}>
+          THE 30-SECOND VERDICT
+        </span>
+        <div style={{ height: 1, flex: 1, background: "var(--mb-rule, #e5e7eb)" }} />
+      </motion.div>
+
+      {/* THREE-SENTENCE VERDICT */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+
+        {/* Threat */}
+        <VerdictRow
+          delay={0.75}
+          icon={<AlertTriangle size={15} color="#dc2626" />}
+          accent="#dc2626"
+          accentBg="rgba(220,38,38,0.06)"
+          accentBorder="rgba(220,38,38,0.18)"
+          label="Biggest Threat"
+          body={
+            typeof topThreat === "string" && topThreat.length > 5
+              ? `${topThreat.charAt(0).toUpperCase() + topThreat.slice(1)} is being automated in your stack — today, not in five years.`
+              : "Your top execution skills are being automated today — not in five years."
+          }
+        />
+
+        {/* Moat */}
+        <VerdictRow
+          delay={0.85}
+          icon={<Shield size={15} color="#15803d" />}
+          accent="#15803d"
+          accentBg="rgba(21,128,61,0.06)"
+          accentBorder="rgba(21,128,61,0.18)"
+          label="Your Unfair Advantage"
+          body={`${topMoat} is what AI cannot replicate. That is your moat — and it compounds every year you stay sharp.`}
+        />
+
+        {/* Move — solid navy */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.95, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            background: "linear-gradient(135deg, var(--mb-navy, #1e3a5f) 0%, #0f1f3a 100%)",
+            borderRadius: 16,
+            padding: "18px 20px",
+            display: "flex",
+            gap: 14,
+            alignItems: "flex-start",
+            boxShadow: "0 12px 30px rgba(15,31,58,0.25)",
+          }}
+        >
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: "rgba(255,255,255,0.12)",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
-            {riskLabel.text}
-          </div>
-        )}
-      </div>
-
-      {/* The 3-sentence verdict */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
-
-        {/* Sentence 1 — The threat */}
-        <motion.div
-          initial={{ opacity: 0, x: -12 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.15 }}
-          style={{
-            background: "rgba(220,38,38,0.05)",
-            border: "1.5px solid rgba(220,38,38,0.15)",
-            borderRadius: 14,
-            padding: "16px 18px",
-            display: "flex",
-            gap: 14,
-            alignItems: "flex-start",
-          }}
-        >
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(220,38,38,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <AlertTriangle size={16} color="#dc2626" />
-          </div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#dc2626", marginBottom: 4 }}>
-              Biggest Threat
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--mb-ink, #111827)", lineHeight: 1.5 }}>
-              {typeof topThreat === "string" && topThreat.length > 5
-                ? `${topThreat.charAt(0).toUpperCase() + topThreat.slice(1)} is already being automated in your stack today.`
-                : `Your top execution skills are already being automated.`}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Sentence 2 — The moat */}
-        <motion.div
-          initial={{ opacity: 0, x: -12 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.25 }}
-          style={{
-            background: "rgba(22,163,74,0.05)",
-            border: "1.5px solid rgba(22,163,74,0.15)",
-            borderRadius: 14,
-            padding: "16px 18px",
-            display: "flex",
-            gap: 14,
-            alignItems: "flex-start",
-          }}
-        >
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(22,163,74,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Shield size={16} color="#16a34a" />
-          </div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#16a34a", marginBottom: 4 }}>
-              Your Unfair Advantage
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--mb-ink, #111827)", lineHeight: 1.5 }}>
-              {topMoat} is what AI cannot replicate. That is your moat — and it compounds every year you stay in the game.
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Sentence 3 — The move */}
-        <motion.div
-          initial={{ opacity: 0, x: -12 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.35 }}
-          style={{
-            background: "var(--mb-navy, #1e3a5f)",
-            borderRadius: 14,
-            padding: "16px 18px",
-            display: "flex",
-            gap: 14,
-            alignItems: "flex-start",
-          }}
-        >
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <Zap size={16} color="white" />
           </div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>
-              Your #1 Move
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(255,255,255,0.65)", marginBottom: 5 }}>
+              YOUR #1 MOVE
             </div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "white", lineHeight: 1.5 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "white", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
               {topMove}
             </div>
           </div>
@@ -172,19 +331,19 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
 
       {/* CTA */}
       <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.45 }}
-        whileHover={{ scale: 1.02 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.05 }}
+        whileHover={{ scale: 1.015, y: -1 }}
         whileTap={{ scale: 0.98 }}
         onClick={onNext}
         style={{
           width: "100%",
-          padding: "16px 24px",
-          background: "var(--mb-navy, #1e3a5f)",
+          padding: "18px 24px",
+          background: "var(--mb-ink, #111827)",
           color: "white",
           border: "none",
-          borderRadius: 14,
+          borderRadius: 16,
           fontSize: 15,
           fontWeight: 800,
           cursor: "pointer",
@@ -193,18 +352,25 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
           justifyContent: "center",
           gap: 10,
           fontFamily: "'DM Sans', sans-serif",
+          letterSpacing: "0.01em",
+          boxShadow: "0 10px 30px rgba(17,24,39,0.25)",
         }}
       >
-        See Your Full Score & Analysis
+        See the Full Intelligence Report
         <ArrowRight size={18} />
       </motion.button>
 
-      <p style={{ fontSize: 11, color: "var(--mb-muted, #9ca3af)", textAlign: "center", marginTop: 12 }}>
+      <p style={{ fontSize: 11, color: "var(--mb-muted, #9ca3af)", textAlign: "center", marginTop: 12, letterSpacing: "0.04em" }}>
         7 intelligence cards · Score decomposition · Live market data · 90-day plan
       </p>
 
-      {/* Share at Card 0 — maximum reach since 100% of users see this */}
-      <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+      {/* Share row */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.15 }}
+        style={{ marginTop: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}
+      >
         <button
           onClick={() => {
             const score = cardData?.jobbachao_score ?? cardData?.risk_score ?? "—";
@@ -213,7 +379,7 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
             const text = `My Career Position Score: ${score}/100 as a ${role}. My biggest AI threat: ${threat}. Get yours free 👇 https://jobbachao.com`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
           }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 20, background: "#25D366", color: "white", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 999, background: "#25D366", color: "white", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           Share my score
@@ -226,11 +392,76 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
             const text = `Just got my AI Career Risk Score: ${score}/100 as a ${role}. My moat skill: ${moat}. Free scan at jobbachao.com — takes 4 min. #CareerDevelopment #AI #FutureOfWork`;
             window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://jobbachao.com")}&summary=${encodeURIComponent(text)}`, '_blank');
           }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 20, background: "#0A66C2", color: "white", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 999, background: "#0A66C2", color: "white", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'DM Sans',sans-serif" }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
           Share on LinkedIn
         </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ─────────── Sub-components ─────────── */
+
+function StatPill({ icon, value, label, tone }: { icon: React.ReactNode; value: string; label: string; tone: "threat" | "moat" | "hope" }) {
+  const colors = {
+    threat: { fg: "#b91c1c", bg: "rgba(185,28,28,0.06)", border: "rgba(185,28,28,0.16)" },
+    moat: { fg: "#15803d", bg: "rgba(21,128,61,0.06)", border: "rgba(21,128,61,0.16)" },
+    hope: { fg: "#1e3a5f", bg: "rgba(30,58,95,0.06)", border: "rgba(30,58,95,0.16)" },
+  }[tone];
+  return (
+    <div style={{
+      background: colors.bg,
+      border: `1px solid ${colors.border}`,
+      borderRadius: 12,
+      padding: "10px 8px",
+      textAlign: "center",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, color: colors.fg, marginBottom: 2 }}>
+        {icon}
+        <span style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{value}</span>
+      </div>
+      <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--mb-muted, #6b7280)" }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function VerdictRow({ delay, icon, accent, accentBg, accentBorder, label, body }: {
+  delay: number; icon: React.ReactNode; accent: string; accentBg: string; accentBorder: string; label: string; body: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        background: accentBg,
+        border: `1.5px solid ${accentBorder}`,
+        borderRadius: 16,
+        padding: "16px 18px",
+        display: "flex",
+        gap: 14,
+        alignItems: "flex-start",
+      }}
+    >
+      <div style={{
+        width: 36, height: 36, borderRadius: 10,
+        background: "white",
+        border: `1.5px solid ${accentBorder}`,
+        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      }}>
+        {icon}
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: accent, marginBottom: 5 }}>
+          {label}
+        </div>
+        <div style={{ fontSize: 15.5, fontWeight: 600, color: "var(--mb-ink, #111827)", lineHeight: 1.5, letterSpacing: "-0.003em" }}>
+          {body}
+        </div>
       </div>
     </motion.div>
   );
