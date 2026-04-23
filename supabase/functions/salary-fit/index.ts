@@ -259,7 +259,11 @@ Rules:
 function round1(n: number) { return Math.round(n * 10) / 10; }
 
 // ── Verdict logic — diplomatic + actionable ─────────────────────────────────
-function computeVerdict(userCtc: number, market: any): SalaryFitResult {
+function computeVerdict(
+  userCtc: number,
+  market: any,
+  ctx: { role: string; industry: string; expBand: string; userSkills: string[] },
+): SalaryFitResult {
   const { min, median, max } = market.market_range_lpa;
   const deltaPct = Math.round(((userCtc - median) / median) * 100);
   const percentile = estimatePercentile(userCtc, min, median, max);
@@ -269,6 +273,7 @@ function computeVerdict(userCtc: number, market: any): SalaryFitResult {
   const rationale: string[] = [...(market.evidence || [])];
   const nextSteps: string[] = [];
 
+  // Branches are mutually exclusive — order matters.
   if (userCtc > max * 1.5) {
     // Way above market — could be founder, ESOP-loaded, or input error. Stay neutral.
     verdict = "outlier_high";
@@ -278,13 +283,13 @@ function computeVerdict(userCtc: number, market: any): SalaryFitResult {
     nextSteps.push("If this is base only, you're in the top 1% — focus on retention, not negotiation.");
   } else if (deltaPct <= -25) {
     verdict = "underpaid";
-    const gap = Math.round(median - userCtc);
+    const gap = Math.round((median - userCtc) * 10) / 10;
     headline = `You're roughly ${Math.abs(deltaPct)}% below the market median for this role.`;
     rationale.push(`Median for similar profiles: ₹${median}L · You're at ₹${userCtc}L (gap of ~₹${gap}L).`);
     nextSteps.push(`Anchor your next conversation at ₹${Math.round(median)}–${Math.round(max)}L based on the upper band.`);
     nextSteps.push("Document 2-3 outcomes from the last 12 months with specific numbers before the conversation.");
     nextSteps.push("If internal raise is blocked, the gap is large enough that a market move likely closes it.");
-  } else if (deltaPct >= 25 && verdict !== "outlier_high") {
+  } else if (deltaPct >= 25) {
     verdict = "overpaid";
     headline = `You're around ${deltaPct}% above the market median — strong position.`;
     rationale.push(`Median for similar profiles: ₹${median}L · You're at ₹${userCtc}L.`);
@@ -293,9 +298,23 @@ function computeVerdict(userCtc: number, market: any): SalaryFitResult {
     nextSteps.push("Use the premium to invest in skills that compound (people management, AI fluency, P&L exposure).");
   } else {
     verdict = "fair";
-    headline = `You're within the fair band for this role (${deltaPct >= 0 ? "+" : ""}${deltaPct}% vs median).`;
+    const sign = deltaPct >= 0 ? "+" : "";
+    headline = `You're within the fair band for this role (${sign}${deltaPct}% vs median).`;
     rationale.push(`Median: ₹${median}L · Range: ₹${min}–${max}L · You're at ₹${userCtc}L.`);
-    nextSteps.push(`To push toward the upper band (₹${max}L), close the gap on 1-2 high-leverage skills employers are paying premiums for right now.`);
+
+    // Skill-aware action: if we know what the market wants, tell them what they're missing.
+    const inDemand = (market.in_demand_skills || []) as string[];
+    if (inDemand.length > 0 && ctx.userSkills.length > 0) {
+      const userSet = new Set(ctx.userSkills.map((s) => s.toLowerCase()));
+      const missing = inDemand.filter((s) => !userSet.has(s.toLowerCase())).slice(0, 2);
+      if (missing.length > 0) {
+        nextSteps.push(`To push toward the upper band (₹${max}L), close the gap on: ${missing.join(", ")}.`);
+      } else {
+        nextSteps.push(`Your skill mix already matches what employers want — focus on visible outcomes for upper-band negotiations.`);
+      }
+    } else {
+      nextSteps.push(`To push toward the upper band (₹${max}L), close the gap on 1-2 high-leverage skills employers are paying premiums for right now.`);
+    }
     nextSteps.push("Reassess in 6 months — your role's market range is shifting fast in the AI-augmentation cycle.");
   }
 
