@@ -24,6 +24,7 @@ interface SalaryFitInput {
   metro_tier?: "tier1" | "tier2";
   years_experience?: string;
   country?: string;
+  user_skills?: string[];   // Optional: user's resume skills, used to personalise "fair" guidance
 }
 
 interface SalaryFitResult {
@@ -75,6 +76,9 @@ Deno.serve(async (req) => {
     const metroTier = body.metro_tier === "tier2" ? "tier2" : "tier1";
     const expBand = (body.years_experience || "").trim();
     const country = (body.country || "IN").toUpperCase();
+    const userSkills = Array.isArray(body.user_skills)
+      ? body.user_skills.filter((s) => typeof s === "string" && s.trim().length > 0).slice(0, 30)
+      : [];
 
     // ── Input validation & abuse guard ─────────────────────────────────────
     if (!Number.isFinite(userCtc)) {
@@ -105,12 +109,17 @@ Deno.serve(async (req) => {
       }, corsHeaders);
     }
     if (!role && !industry) {
-      return json({ status: "input_invalid", headline: "We need your role or industry to benchmark." }, corsHeaders);
+      return json({
+        status: "input_invalid",
+        headline: "We need your role or industry to benchmark — try uploading your resume first.",
+      }, corsHeaders);
     }
 
     const supabase = createAdminClient();
     // Cache key intentionally excludes user CTC — we cache the market range, then compute verdict per-user.
-    const marketKey = `sf:${role}_${industry}_${city}_${metroTier}_${expBand}_${country}`.toLowerCase().replace(/\s+/g, "_");
+    // Use explicit separators to avoid empty-field collisions.
+    const norm = (s: string) => (s || "_").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
+    const marketKey = `sf|${norm(role)}|${norm(industry)}|${norm(city)}|${metroTier}|${norm(expBand)}|${country}`;
     let market = await getCache(supabase, marketKey);
 
     if (!market) {
@@ -128,7 +137,7 @@ Deno.serve(async (req) => {
       }, corsHeaders);
     }
 
-    const result = computeVerdict(userCtc, market);
+    const result = computeVerdict(userCtc, market, { role, industry, expBand, userSkills });
     return json(result, corsHeaders);
   } catch (e) {
     console.error("[salary-fit] error", e);
@@ -196,14 +205,16 @@ Output JSON exactly:
 {
   "market_range_lpa": { "min": number, "median": number, "max": number },
   "data_confidence": "high" | "medium" | "low",
-  "evidence": [string]   // 2-3 short bullets, each citing a source domain
+  "evidence": [string],         // 2-3 short bullets, each citing a source domain
+  "in_demand_skills": [string]  // up to 4 skills employers in this role are paying a premium for, from the data
 }
 
 Rules:
 - min/median/max in LPA (lakhs per annum), e.g. 18 not 1800000
 - "high" only if Adzuna AND Tavily agree within 25%
 - "medium" if one source is solid, other is partial
-- "low" if data is sparse or city/seniority unclear`;
+- "low" if data is sparse or city/seniority unclear
+- in_demand_skills: ONLY skills explicitly mentioned in the data; empty array if none found.`;
 
   try {
     const ctrl = new AbortController();
@@ -228,16 +239,21 @@ Rules:
     const r = parsed.market_range_lpa;
     if (!r || !Number.isFinite(r.min) || !Number.isFinite(r.median) || !Number.isFinite(r.max)) return null;
     if (r.min <= 0 || r.max < r.min) return null;
+    // Sanity: median should sit between min and max. If not, clamp.
+    const safeMedian = Math.min(Math.max(r.median, r.min), r.max);
 
     const citations = (tavily?.results || []).slice(0, 4).map((x: any) => ({
-      title: (x.title || "").slice(0, 120),
+      title: (x.title || "").slice(0, 90),
       url: x.url || "",
     })).filter((c: any) => c.url);
 
     return {
-      market_range_lpa: { min: round1(r.min), median: round1(r.median), max: round1(r.max) },
+      market_range_lpa: { min: round1(r.min), median: round1(safeMedian), max: round1(r.max) },
       data_confidence: parsed.data_confidence || "medium",
       evidence: Array.isArray(parsed.evidence) ? parsed.evidence.slice(0, 3) : [],
+      in_demand_skills: Array.isArray(parsed.in_demand_skills)
+        ? parsed.in_demand_skills.filter((s: any) => typeof s === "string").slice(0, 4)
+        : [],
       citations,
       sample_count: adzuna?.sample_count || (tavily?.results?.length ?? 0),
     };
@@ -250,7 +266,11 @@ Rules:
 function round1(n: number) { return Math.round(n * 10) / 10; }
 
 // ── Verdict logic — diplomatic + actionable ─────────────────────────────────
-function computeVerdict(userCtc: number, market: any): SalaryFitResult {
+function computeVerdict(
+  userCtc: number,
+  market: any,
+  ctx: { role: string; industry: string; expBand: string; userSkills: string[] },
+): SalaryFitResult {
   const { min, median, max } = market.market_range_lpa;
   const deltaPct = Math.round(((userCtc - median) / median) * 100);
   const percentile = estimatePercentile(userCtc, min, median, max);
@@ -260,6 +280,7 @@ function computeVerdict(userCtc: number, market: any): SalaryFitResult {
   const rationale: string[] = [...(market.evidence || [])];
   const nextSteps: string[] = [];
 
+  // Branches are mutually exclusive — order matters.
   if (userCtc > max * 1.5) {
     // Way above market — could be founder, ESOP-loaded, or input error. Stay neutral.
     verdict = "outlier_high";
@@ -269,13 +290,13 @@ function computeVerdict(userCtc: number, market: any): SalaryFitResult {
     nextSteps.push("If this is base only, you're in the top 1% — focus on retention, not negotiation.");
   } else if (deltaPct <= -25) {
     verdict = "underpaid";
-    const gap = Math.round(median - userCtc);
+    const gap = Math.round((median - userCtc) * 10) / 10;
     headline = `You're roughly ${Math.abs(deltaPct)}% below the market median for this role.`;
     rationale.push(`Median for similar profiles: ₹${median}L · You're at ₹${userCtc}L (gap of ~₹${gap}L).`);
     nextSteps.push(`Anchor your next conversation at ₹${Math.round(median)}–${Math.round(max)}L based on the upper band.`);
     nextSteps.push("Document 2-3 outcomes from the last 12 months with specific numbers before the conversation.");
     nextSteps.push("If internal raise is blocked, the gap is large enough that a market move likely closes it.");
-  } else if (deltaPct >= 25 && verdict !== "outlier_high") {
+  } else if (deltaPct >= 25) {
     verdict = "overpaid";
     headline = `You're around ${deltaPct}% above the market median — strong position.`;
     rationale.push(`Median for similar profiles: ₹${median}L · You're at ₹${userCtc}L.`);
@@ -284,9 +305,23 @@ function computeVerdict(userCtc: number, market: any): SalaryFitResult {
     nextSteps.push("Use the premium to invest in skills that compound (people management, AI fluency, P&L exposure).");
   } else {
     verdict = "fair";
-    headline = `You're within the fair band for this role (${deltaPct >= 0 ? "+" : ""}${deltaPct}% vs median).`;
+    const sign = deltaPct >= 0 ? "+" : "";
+    headline = `You're within the fair band for this role (${sign}${deltaPct}% vs median).`;
     rationale.push(`Median: ₹${median}L · Range: ₹${min}–${max}L · You're at ₹${userCtc}L.`);
-    nextSteps.push(`To push toward the upper band (₹${max}L), close the gap on 1-2 high-leverage skills employers are paying premiums for right now.`);
+
+    // Skill-aware action: if we know what the market wants, tell them what they're missing.
+    const inDemand = (market.in_demand_skills || []) as string[];
+    if (inDemand.length > 0 && ctx.userSkills.length > 0) {
+      const userSet = new Set(ctx.userSkills.map((s) => s.toLowerCase()));
+      const missing = inDemand.filter((s) => !userSet.has(s.toLowerCase())).slice(0, 2);
+      if (missing.length > 0) {
+        nextSteps.push(`To push toward the upper band (₹${max}L), close the gap on: ${missing.join(", ")}.`);
+      } else {
+        nextSteps.push(`Your skill mix already matches what employers want — focus on visible outcomes for upper-band negotiations.`);
+      }
+    } else {
+      nextSteps.push(`To push toward the upper band (₹${max}L), close the gap on 1-2 high-leverage skills employers are paying premiums for right now.`);
+    }
     nextSteps.push("Reassess in 6 months — your role's market range is shifting fast in the AI-augmentation cycle.");
   }
 

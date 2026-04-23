@@ -101,9 +101,10 @@ Deno.serve(async (req) => {
           days: 14,
           topic: "news",
         },
-        // SECTOR NEWS — dated headlines for the user's industry & seniority
+        // SECTOR NEWS — dated headlines for the user's industry
+        // Phrased as a news query rather than seniority-loaded so we don't bias toward exec-only stories.
         {
-          query: `${industry || primaryRole} industry ${locale.label} layoffs hiring funding ${experienceBand} leaders 2026`,
+          query: `${industry || primaryRole} ${locale.label} layoffs OR hiring OR funding OR "AI adoption" recent news`,
           maxResults: 6,
           days: 21,
           topic: "news",
