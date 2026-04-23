@@ -50,15 +50,15 @@ async function generateDeltaSummary(
 
     if (!res.ok) {
       console.warn(`[compute-delta] AI gateway failed ${res.status}`);
-      return `Your score ${scoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreDelta)} points since your last scan.`;
+      return `Your Career Position ${careerScoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(careerScoreDelta)} points since your last scan.`;
     }
 
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content || "";
-    return text.trim() || `Your score ${scoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreDelta)} points since your last scan.`;
+    return text.trim() || `Your Career Position ${careerScoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(careerScoreDelta)} points since your last scan.`;
   } catch (err) {
     console.warn("[compute-delta] AI generation failed:", err);
-    return `Your score ${scoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreDelta)} points since your last scan.`;
+    return `Your Career Position ${careerScoreDelta > 0 ? 'improved' : 'dipped'} by ${Math.abs(careerScoreDelta)} points since your last scan.`;
   }
 }
 
