@@ -61,6 +61,25 @@ export interface ExecutiveImpactSignals {
   moat_evidence: string | null;
 }
 
+/**
+ * IC managerial-leverage signals — "boss saves" / replacement-cost-to-employer.
+ * For non-execs (PROFESSIONAL/MANAGER/ENTRY), these capture the soft moat:
+ * "would my manager actually replace me with a vendor / AI / fresher?"
+ * All optional — pipeline populates when Agent 1 detects evidence; null = unknown.
+ */
+export interface IcLeverageSignals {
+  /** Direct ownership of revenue-critical client/account relationships */
+  owns_key_relationships: boolean;
+  /** Cross-team dependency: peers/other functions block on this person */
+  cross_team_dependence: boolean;
+  /** Hard-to-hire-replacement (specialised tooling, niche domain, tribal knowledge) */
+  niche_replacement_difficulty: boolean;
+  /** Has displaced or replaced an external vendor/agency in last 24mo */
+  vendor_displacement_history: boolean;
+  /** Years in current org/function (institutional context) */
+  tenure_in_function_years: number | null;
+}
+
 export interface ProfileInput {
   experience_years: number | null;
   execution_skills: string[];
@@ -71,6 +90,8 @@ export interface ProfileInput {
   estimated_monthly_salary_inr: number | null;
   seniority_tier?: 'EXECUTIVE' | 'SENIOR_LEADER' | 'MANAGER' | 'PROFESSIONAL' | 'ENTRY' | null;
   executive_impact?: ExecutiveImpactSignals | null;
+  /** IC-level managerial leverage signals (non-exec moat) */
+  ic_leverage?: IcLeverageSignals | null;
 }
 
 // ── Output Types ──
@@ -95,6 +116,19 @@ export interface SurvivabilityResult {
   breakdown: SurvivabilityBreakdown;
   primary_vulnerability: string;
   peer_percentile_estimate: string;
+  /** Source of the percentile claim — 'cohort_db' (real) or 'estimated' (sigmoid). */
+  peer_percentile_source?: 'cohort_db' | 'estimated';
+}
+
+/** Real peer benchmark fetched from cohort_percentiles for the user's role+metro. */
+export interface CohortBenchmark {
+  role_detected: string;
+  metro_tier: string | null;
+  sample_size: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  p90: number;
 }
 
 export interface ReplacingTool {
