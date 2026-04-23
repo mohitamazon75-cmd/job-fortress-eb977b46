@@ -38,9 +38,52 @@ import {
   runQualityEditor,
   normalizeFounderImmediateStep,
 } from "../_shared/scan-report-builder.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import type { CompanyHealthResult } from "../_shared/company-health.ts";
 import type { SkillDemandResult } from "../_shared/skill-demand-validator.ts";
-import type { JobSkillMapRow } from "../_shared/det-types.ts";
+import type { JobSkillMapRow, CohortBenchmark } from "../_shared/det-types.ts";
+
+// ── Cohort percentile lookup (real peer benchmarking) ────────────────────────
+// Replaces the sigmoid hallucination in det-lifecycle.ts when DB has data for the role.
+async function fetchCohortBenchmark(
+  supabaseUrl: string,
+  serviceKey: string,
+  role: string,
+  metroTier: string | null,
+): Promise<CohortBenchmark | null> {
+  if (!role) return null;
+  try {
+    const supa = createClient(supabaseUrl, serviceKey);
+    const roleKey = role.toLowerCase().replace(/[\s-]+/g, "_").split(/[_\s]/)[0];
+    if (!roleKey) return null;
+    // Try exact role + metro first, then role-only fallback
+    let query = supa
+      .from("cohort_percentiles")
+      .select("role_detected, metro_tier, sample_size, p25, p50, p75, p90")
+      .ilike("role_detected", `%${roleKey}%`)
+      .gte("sample_size", 100)
+      .order("sample_size", { ascending: false })
+      .limit(5);
+    const { data, error } = await query;
+    if (error || !data?.length) return null;
+    // Prefer metro match, else largest sample
+    const metroMatch = metroTier ? data.find((r) => r.metro_tier === metroTier) : null;
+    const chosen = metroMatch ?? data[0];
+    if (chosen.p25 == null || chosen.p50 == null || chosen.p75 == null || chosen.p90 == null) return null;
+    return {
+      role_detected: chosen.role_detected,
+      metro_tier: chosen.metro_tier,
+      sample_size: chosen.sample_size ?? 0,
+      p25: chosen.p25,
+      p50: chosen.p50,
+      p75: chosen.p75,
+      p90: chosen.p90,
+    };
+  } catch (e) {
+    console.warn("[Pipeline] cohort_percentiles lookup failed (non-fatal):", e);
+    return null;
+  }
+}
 
 // ── Input contract ────────────────────────────────────────────────────────────
 
@@ -169,6 +212,18 @@ Return null if unclear. No explanation, no markdown.`;
   }
 
   // ── Step 6b: Deterministic scoring ───────────────────────────────────────
+  // Look up real peer benchmark from cohort_percentiles before scoring,
+  // so survivability percentile claims are grounded in DB data, not a sigmoid.
+  const cohortBenchmark = await fetchCohortBenchmark(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    detectedRole || resolvedRoleHint || "",
+    (scan as any).metro_tier || null,
+  );
+  if (cohortBenchmark) {
+    console.log(`[Pipeline] Cohort benchmark loaded: ${cohortBenchmark.role_detected} (n=${cohortBenchmark.sample_size}, p50=${cohortBenchmark.p50})`);
+  }
+
   let det: DeterministicResult;
   try {
     det = computeAll(
@@ -178,6 +233,7 @@ Return null if unclear. No explanation, no markdown.`;
       (agent1 as any)?.industry || resolvedIndustry,
       scanCountry, companyHealthResult?.score ?? null,
       detectedSubSector, profile_completeness_pct, profile_gaps,
+      cohortBenchmark,
     );
     console.log(`[Pipeline] DI=${det.determinism_index}, SS=${det.survivability.score}`);
   } catch (e) {
