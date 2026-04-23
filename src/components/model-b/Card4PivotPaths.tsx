@@ -178,7 +178,7 @@ Would you have 15 min for a quick call? I'd love to learn:
 ${senderLine}`;
 }
 
-export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData: any; onBack: () => void; onNext: () => void }) {
+export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { cardData: any; onBack: () => void; onNext: () => void; scanId?: string }) {
   const d = cardData?.card4_pivot ?? {};
   const pivots: any[] = Array.isArray(d.pivots) ? d.pivots : [];
   const [selectedPivot, setSelectedPivot] = useState(0);
@@ -201,6 +201,18 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
   const selectedRole = String(selected?.role ?? "the target role");
   const selectedCity = (String(selected?.location ?? currentCity).split(",")[0] || currentCity).trim();
   const channels = isExec ? buildExecChannels(selectedRole, selectedCity) : buildProChannels(selectedRole, selectedCity);
+
+  // Salary math — deterministic, derived from already-shown bands
+  const currentLakhs = parseInrBandToLakhs(d.current_band);
+  const year1Lakhs = parseInrBandToLakhs(selected?.salary_range || selected?.salary || d.pivot_year1);
+  const year3Lakhs = parseInrBandToLakhs(d.director_band);
+  const year1Delta = currentLakhs != null && year1Lakhs != null ? year1Lakhs - currentLakhs : null;
+  const stayCost3yr = currentLakhs != null && year3Lakhs != null
+    ? Math.max(0, (year3Lakhs - currentLakhs) * 3 - (year1Delta ?? 0)) // opportunity cost of NOT pivoting over 3 years
+    : null;
+
+  // Real cohort intelligence (already cached for this scan)
+  const { data: cohort } = useCohortIntel(scanId);
 
   const outreach = buildOutreachTemplate({
     name: userName,
