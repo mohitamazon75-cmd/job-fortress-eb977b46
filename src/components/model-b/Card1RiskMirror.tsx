@@ -1,5 +1,6 @@
 // useState and useEffect removed — scan count is now a prop from ResultsModelB
 import { CardShell, CardHead, CardBody, Badge, LivePill, EmotionStrip, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
+import BossPerceptionSimulator from "./BossPerceptionSimulator";
 
 interface Props {
   cardData: any;
@@ -98,6 +99,15 @@ export default function Card1RiskMirror({ cardData, onNext, monthlyScanCount }: 
             )}
           </div>
         </div>
+
+        {/* Boss Perception Simulator — psychological deep-cut, hyper-personalised */}
+        <BossPerceptionSimulator
+          role={u.role || c1.role || "your role"}
+          years={u.years || u.experience}
+          riskScore={c1.risk_score || 0}
+          tasksAtRisk={c1.tasks_at_risk}
+          industry={u.industry}
+        />
 
         {/* Cost of Inaction */}
         {cost && (
