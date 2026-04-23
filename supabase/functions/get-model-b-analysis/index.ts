@@ -377,9 +377,19 @@ async function processAnalysis(
     console.warn("[model-b] Live jobs pre-fetch failed (non-fatal, using LLM fallback):", jobErr);
   }
 
-  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry);
+  // ── Executive Mode detection (CEO/Founder/CXO/VP+15yrs) ─────────────────
+  // When detected, an override block is appended to the user prompt forcing
+  // the model to use ₹Cr salary bands, board/PE/VC pivots, executive-search
+  // channels and equity-tier negotiation. Without this, sitting CEOs receive
+  // junior-tier output (e.g., "AI Strategy Lead, ₹90-140L on Naukri") which
+  // is a 5/10 product experience for executive users.
+  const execDetect = detectExecutiveTier(resumeText, detectedRole, scan?.years_experience as any);
+  if (execDetect.isExecutive) {
+    console.log(`[model-b] Executive Mode active: tier=${execDetect.tier} title="${execDetect.matchedTitle}" years=${execDetect.yearsHint}`);
+  }
+  const executiveBlock = buildExecutiveModeBlock(execDetect);
 
-  let cardData: Record<string, unknown> | null = null;
+  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry) + executiveBlock;
   let geminiRaw: unknown = null;
   let modelUsed = PRIMARY_MODEL;
 
