@@ -6,7 +6,7 @@
  */
 
 import { CALIBRATION, normalize, matchSkillToKG, buildKGSkillIndex } from "./det-utils.ts";
-import { isEssentialRole } from "./det-industry.ts";
+import { getIndustryAutomationFloor, isEssentialRole } from "./det-industry.ts";
 import { calculateDeterminismIndex, calculateMoatScore, calculateUrgencyScore, calculateScoreVariability } from "./det-scoring.ts";
 import { calculateObsolescenceTimeline, calculateSalaryBleed, calculateSurvivability } from "./det-lifecycle.ts";
 import type {
@@ -195,6 +195,8 @@ export function computeAll(
   profileGaps?: string[]
 ): DeterministicResult {
   const jobBaseline = jobData?.disruption_baseline || 60;
+  const industryFloor = getIndustryAutomationFloor(industry || jobData?.category || null, subSector);
+  const structuralFloor = Math.max(jobBaseline, industryFloor);
   const kgIndex = buildKGSkillIndex(skillRiskData);
 
   // 1. Determinism Index
@@ -221,12 +223,16 @@ export function computeAll(
     }
   }
 
-  // KG Baseline Floor Enforcement
+  // Structural floor enforcement
+  // Use the stronger of role baseline and industry/sub-sector floor so high-risk
+  // categories like performance marketing cannot score artificially "safe"
+  // just because the matched job family baseline is too generic.
   const isExecOrSeniorForFloor = profile.seniority_tier === 'EXECUTIVE' || profile.seniority_tier === 'SENIOR_LEADER';
-  const kgFloorTolerance = isExecOrSeniorForFloor ? 15 : 5;
-  const kgMinDI = Math.max(CALIBRATION.DI_CLAMP_MIN, jobBaseline - kgFloorTolerance);
+  const isManagerForFloor = profile.seniority_tier === 'MANAGER';
+  const kgFloorTolerance = isExecOrSeniorForFloor ? 15 : isManagerForFloor ? 10 : 5;
+  const kgMinDI = Math.max(CALIBRATION.DI_CLAMP_MIN, structuralFloor - kgFloorTolerance);
   if (determinismIndex < kgMinDI) {
-    console.log(`[DeterministicEngine] KG floor enforcement: DI=${determinismIndex} < floor=${kgMinDI} (baseline=${jobBaseline}, tolerance=${kgFloorTolerance}). Snapping up.`);
+    console.log(`[DeterministicEngine] Structural floor enforcement: DI=${determinismIndex} < floor=${kgMinDI} (jobBaseline=${jobBaseline}, industryFloor=${industryFloor}, tolerance=${kgFloorTolerance}). Snapping up.`);
     determinismIndex = kgMinDI;
   }
 
@@ -349,9 +355,9 @@ export function computeAll(
   };
 
   // Score Variability
-  // Score Variability — pass jobBaseline as industryFloor so asymmetric CI
-  // respects the structural floor (STAT-2 fix in det-scoring.ts)
-  const score_variability = calculateScoreVariability(determinismIndex, diResult.matchedCount, monthlySalary, marketSignal, jobBaseline);
+  // Score Variability — pass the stronger structural floor so asymmetric CI
+  // respects both job-family baselines and high-risk industry/sub-sector anchors.
+  const score_variability = calculateScoreVariability(determinismIndex, diResult.matchedCount, monthlySalary, marketSignal, structuralFloor);
 
   // Moat & Urgency
   const moat_score = calculateMoatScore(profile, skillRiskData, diResult.matchedCount);
