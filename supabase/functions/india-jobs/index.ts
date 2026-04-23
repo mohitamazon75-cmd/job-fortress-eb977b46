@@ -247,15 +247,15 @@ Deno.serve(async (req) => {
       // Exec queries focus on senior outcomes; IC queries focus on apply-now postings.
       // Quotes around role keep multi-word titles intact in Tavily.
       const searchQuery = detectedExec
-        ? `"${role}" OR "Chief" OR "Head of" OR "VP" hiring "${cityStr}" India 2025 2026 ${expStr} -salary -review -"salary insights"`
+        ? `("${role}" OR "Chief Operating" OR "Chief Executive" OR "Head of") hiring India ${cityStr} 2025 2026 -salary -review -"salary insights"`
         : `"${role}" jobs apply now hiring "${cityStr}" ${skillStr} ${expStr} -salary -review -"salary insights"`;
 
       console.log(`[india-jobs] Tavily search (exec=${detectedExec}): "${searchQuery}"`);
 
       const tavilyResult = await tavilySearch({
         query: searchQuery,
-        searchDepth: detectedExec ? "advanced" : "basic",
-        maxResults: 15,
+        searchDepth: "advanced",
+        maxResults: detectedExec ? 25 : 15,
         includeDomains: detectedExec ? execDomains : icDomains,
         excludeDomains: [
           "glassdoor.co.in", "glassdoor.com", "ambitionbox.com",
