@@ -130,7 +130,12 @@ Deno.serve(async (req) => {
     const newer = records[0]; // Most recent
     const older = records[1]; // Second most recent
 
-    const scoreChange = (newer.determinism_index || 0) - (older.determinism_index || 0);
+    // Career Position Score = 100 - determinism_index (higher = safer).
+    // Surface the delta in Career Position terms so the UI/narrative
+    // matches the hero number users see ("91 out of 100").
+    const newerCareerScore = 100 - (newer.determinism_index || 0);
+    const olderCareerScore = 100 - (older.determinism_index || 0);
+    const scoreChange = newerCareerScore - olderCareerScore;
 
     // Placeholder arrays — require complex KG query (Phase C/D)
     const movedUp: string[] = [];
@@ -141,15 +146,15 @@ Deno.serve(async (req) => {
     // Generate summary_text
     let summaryText: string;
     if (scoreChange === 0) {
-      summaryText = "Score unchanged since last scan.";
+      summaryText = "Career Position unchanged since last scan.";
     } else if (Math.abs(scoreChange) <= 5) {
-      summaryText = `Your score ${scoreChange > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreChange)} points since your last scan.`;
+      summaryText = `Your Career Position ${scoreChange > 0 ? 'improved' : 'dipped'} by ${Math.abs(scoreChange)} points since your last scan.`;
     } else {
       // Call Gemini Flash for >5 point changes
       summaryText = await generateDeltaSummary(
-        newer.determinism_index || 0,
-        older.determinism_index || 0,
-        scoreChange
+        newerCareerScore,
+        olderCareerScore,
+        scoreChange,
       );
     }
 
