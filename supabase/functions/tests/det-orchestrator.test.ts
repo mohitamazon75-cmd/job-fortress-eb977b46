@@ -12,9 +12,9 @@
  * that we know should produce bounded outputs, not random inputs.
  */
 
-import { assertEquals, assertExists, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { computeAll } from "./_shared/det-orchestrator.ts";
-import type { ProfileInput, SkillRiskRow, JobTaxonomyRow } from "./_shared/det-types.ts";
+import { assertEquals, assertExists, assert, assertGreaterOrEqual, assertLessOrEqual } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { computeAll } from "../_shared/det-orchestrator.ts";
+import type { ProfileInput, SkillRiskRow, JobTaxonomyRow, CohortBenchmark } from "../_shared/det-types.ts";
 
 // ── Shared test fixtures ──────────────────────────────────────────────────────
 
