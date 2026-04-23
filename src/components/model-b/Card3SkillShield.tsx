@@ -171,6 +171,73 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
           </>
         )}
 
+        {/* ── Skill Arbitrage Engine ───────────────────────────────────────────
+            World-class WTF moment: surfaces the single highest-ROI skill for
+            this user (salary uplift, time-to-competency, 90-day learning plan,
+            anti-skills). Backed by skill-arbitrage edge fn + live Tavily market
+            data. Lazy: nothing loads until the user opts in. */}
+        {(() => {
+          const c1 = cardData.card1_risk;
+          const allSkills = (c3.skills || []).map((s: any) => s.name);
+          const moatSkills = (c3.skills || [])
+            .filter((s: any) => s.level === "best-in-class" || s.level === "strong")
+            .map((s: any) => s.name);
+          const deadSkills = (c3.skills || [])
+            .filter((s: any) => s.level === "critical-gap")
+            .map((s: any) => s.name);
+          const syntheticReport: any = {
+            role: cardData.user?.current_title || "Professional",
+            industry: cardData.user?.industry || "Technology",
+            determinism_index: cardData.risk_score || 55,
+            moat_score: c3.shield_score || 50,
+            all_skills: allSkills,
+            moat_skills: moatSkills,
+            execution_skills_dead: deadSkills,
+            seniority_tier: "PROFESSIONAL",
+            metro_tier: cardData.user?.metro_tier || "tier1",
+            current_role: cardData.user?.current_title || "Professional",
+            country: "IN",
+            survivability: { score: 100 - (cardData.risk_score || 55), breakdown: {}, primary_vulnerability: "", peer_percentile_estimate: "" },
+            months_remaining: 24,
+            doom_clock_months: 24,
+            free_advice_1: "",
+            free_advice_2: "",
+          };
+
+          if (!showArbitrage) {
+            return (
+              <div style={{ marginTop: 8, marginBottom: 18, padding: "20px 22px", background: "linear-gradient(135deg, var(--mb-navy-tint) 0%, var(--mb-amber-tint) 140%)", border: "2px solid var(--mb-navy-tint2)", borderRadius: 14 }}>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-navy)", textTransform: "uppercase" as const, letterSpacing: "0.12em", marginBottom: 8 }}>
+                  ✨ NEW · Skill Arbitrage Engine
+                </div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 19, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.3, marginBottom: 8 }}>
+                  Find the one skill that actually pays off
+                </div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.65, marginBottom: 14 }}>
+                  Cross-references your exact profile with live India 2025–26 demand, salary uplift data, and time-to-competency to surface the <strong>single</strong> highest-ROI skill for you — plus a 90-day plan and the skills NOT to waste time on.
+                </div>
+                <button
+                  onClick={() => setShowArbitrage(true)}
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "none", borderRadius: 12, padding: "12px 22px", cursor: "pointer", minHeight: 44 }}
+                >
+                  Run my skill arbitrage analysis →
+                </button>
+              </div>
+            );
+          }
+          return (
+            <div style={{ marginTop: 8, marginBottom: 18 }}>
+              <Suspense fallback={
+                <div style={{ padding: 32, textAlign: "center" as const, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)" }}>
+                  Loading arbitrage engine…
+                </div>
+              }>
+                <SkillArbitrageWidget report={syntheticReport} scanId={scanId} />
+              </Suspense>
+            </div>
+          );
+        })()}
+
         <CardNav onBack={onBack} onNext={onNext} />
       </CardBody>
     </CardShell>
