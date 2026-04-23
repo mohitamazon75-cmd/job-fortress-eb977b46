@@ -1,0 +1,1 @@
+DELETE FROM model_b_results; DELETE FROM enrichment_cache WHERE cache_key LIKE 'india-jobs%' OR cache_key LIKE 'bfj:%';
