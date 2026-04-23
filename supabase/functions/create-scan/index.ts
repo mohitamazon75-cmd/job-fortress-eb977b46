@@ -101,6 +101,30 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // ── Race-condition guard: collapse rapid duplicate clicks ──
+    // If the same user submitted an identical scan in the last 10 seconds,
+    // return that scan instead of creating a duplicate. Protects against
+    // double-click, retry storms, and accidental React strict-mode duplicates.
+    if (userId && typeof userId === "string" && hasResume) {
+      const tenSecAgo = new Date(Date.now() - 10_000).toISOString();
+      const { data: recent } = await supabase
+        .from("scans")
+        .select("id, access_token")
+        .eq("user_id", userId)
+        .eq("resume_file_path", resumeFilePath as string)
+        .gte("created_at", tenSecAgo)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (recent?.id) {
+        console.log(`[create-scan] Dedupe: returning existing scan ${recent.id} for user ${userId} (within 10s window)`);
+        return new Response(
+          JSON.stringify({ id: recent.id, accessToken: recent.access_token, triggered: false, deduped: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const insertPayload: Record<string, unknown> = {
       linkedin_url: linkedinUrl || null,
       resume_file_path: resumeFilePath || null,

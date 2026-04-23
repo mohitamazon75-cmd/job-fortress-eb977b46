@@ -1,6 +1,11 @@
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { detectExecutiveTier, buildExecutiveModeBlock } from "../_shared/executive-mode.ts";
+import { CircuitBreaker } from "../_shared/circuit-breaker.ts";
+
+// Module-level breaker — shared across invocations on the same isolate.
+// 3 consecutive india-jobs failures → 60s cooldown using LLM fallback.
+const indiaJobsBreaker = new CircuitBreaker("india-jobs", { threshold: 3, cooldownMs: 60_000 });
 
 
 
@@ -333,7 +338,9 @@ async function processAnalysis(
   // hallucinating plausible-sounding but unverifiable job matches.
   // Timeout: 8s — if india-jobs is slow, we fall back to LLM generation.
   let liveJobsContext = "";
-  try {
+  if (!indiaJobsBreaker.canAttempt()) {
+    console.log("[model-b] india-jobs circuit OPEN — skipping live fetch, using LLM fallback");
+  } else try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -344,13 +351,11 @@ async function processAnalysis(
       ? detectedRole
       : (roleLine?.trim().slice(0, 80) || "Professional");
 
-    // Extract top skills from resume for live search relevance (cheap regex pull)
     const skillLine = resumeText.match(/\b(skills?|expertise|technologies)[:\-\s]([^\n]{20,300})/i);
     const topSkills: string[] = skillLine
       ? skillLine[2].split(/[,•|/]+/).map(s => s.trim()).filter(s => s.length > 1 && s.length < 30).slice(0, 5)
       : [];
 
-    // Pre-detect executive tier so india-jobs can route to senior queries
     const execHint = detectExecutiveTier(resumeText, detectedRole, yearsExperience);
 
     const controller = new AbortController();
@@ -388,10 +393,15 @@ async function processAnalysis(
       } else {
         console.log("[model-b] india-jobs returned 0 listings; LLM will fabricate from market data");
       }
+      indiaJobsBreaker.recordSuccess();
+    } else {
+      console.warn(`[model-b] india-jobs returned ${jobsResp.status} — recording failure`);
+      indiaJobsBreaker.recordFailure();
     }
   } catch (jobErr) {
     // Non-fatal — LLM generates job matches as fallback
     console.warn("[model-b] Live jobs pre-fetch failed (non-fatal, using LLM fallback):", jobErr);
+    indiaJobsBreaker.recordFailure();
   }
 
   // ── Executive Mode detection (CEO/Founder/CXO/VP+15yrs) ─────────────────

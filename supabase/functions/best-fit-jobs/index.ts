@@ -182,12 +182,12 @@ Deno.serve(async (req) => {
 
 ADDRESSATION: Address the user as "you" throughout. NEVER use "this professional". For every numerical claim, cite the source.
 
-RULES:
+ABSOLUTE RULES (zero hallucination):
 - Only include jobs that are REAL postings (not articles, not guides, not "top jobs" listicles)
 - Extract the actual company name and job title from the listing
 - Calculate a skill_match_pct based on how many of the person's skills match the job requirements
 - Determine if the role is AI-safe (human judgment, creativity, leadership roles score higher)
-- Extract salary info only if explicitly stated in the snippet. If not stated, return null for salary fields — do not estimate.
+- SALARY: Return null UNLESS the snippet contains an explicit ₹/INR/LPA/lakh/crore figure. NEVER estimate, infer, guess, or fabricate ranges. NEVER use phrases like "estimated", "typical", "market rate", "around". If unsure → null.
 - Include the EXACT original URL so the user can apply
 - Flag remote/hybrid/onsite if mentioned
 - Be honest — if a listing is a stretch, say so
@@ -247,7 +247,7 @@ Select the top 8 most relevant, REAL job postings. Rank by fit to this person's 
                       url: { type: "string", description: "Direct apply URL" },
                       skill_match_pct: { type: "number", description: "0-100 how well user's skills match" },
                       ai_safety_score: { type: "number", description: "0-100 how AI-safe this role is" },
-                      salary_range: { type: "string", description: "Salary range from verified job posting data, or null if not stated" },
+                      salary_range: { type: ["string", "null"], description: "Exact salary text from listing (e.g. '₹15-25 LPA'). MUST be null if no explicit ₹/INR/LPA/lakh figure appears in the snippet — never estimate." },
                       location: { type: "string", description: "Location or Remote/Hybrid/Onsite" },
                       why_good_fit: { type: "string", description: "1-2 sentences on why this person should apply" },
                       skills_matched: { type: "array", items: { type: "string" }, description: "User skills that match this job" },
@@ -332,8 +332,23 @@ Select the top 8 most relevant, REAL job postings. Rank by fit to this person's 
 
     console.log(`[BestFitJobs] Ranked ${result.jobs.length} real job listings`);
 
+    // ── Server-side salary sanitization (defense against LLM hallucination) ──
+    // If the LLM returned a salary string but the source snippet has no ₹/LPA/lakh
+    // anchor, force it to null. This guarantees zero fabricated salary data
+    // regardless of prompt drift.
+    const SALARY_ANCHOR = /(₹|INR|Rs\.?|LPA|lakh|crore|cr\b|\d+\s*L\b)/i;
+    const sanitizedJobs = result.jobs.slice(0, 8).map((j: any) => {
+      if (j.salary_range && typeof j.salary_range === "string") {
+        const sourceSnippet = rawListings.find((l) => l.url === j.url)?.snippet || "";
+        if (!SALARY_ANCHOR.test(j.salary_range) || !SALARY_ANCHOR.test(sourceSnippet)) {
+          j.salary_range = null;
+        }
+      }
+      return j;
+    });
+
     const responseData = {
-      jobs: result.jobs.slice(0, 8),
+      jobs: sanitizedJobs,
       market_insight: result.market_insight || "",
       total_found: rawListings.length,
       sources: rawListings.slice(0, 6).map((l) => ({ title: l.title, url: l.url })),
