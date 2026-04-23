@@ -309,3 +309,134 @@ Deno.test("Invariant — months_remaining is always positive when present", () =
     assert(result.months_remaining > 0, `months_remaining must be positive, got ${result.months_remaining}`);
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// India-specific regression scenarios (Gaps 1, 5, 6, 7, 9, 11)
+// Encodes the engine fixes shipped 2026-04-23: AI-native discount,
+// vernacular moat, BPO penalty, IC managerial-leverage, cohort_percentiles.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function _highRiskSkill(name: string, risk = 85, opts: Partial<SkillRiskRow> = {}): SkillRiskRow {
+  return {
+    skill_name: name, automation_risk: risk, ai_augmentation_potential: 70,
+    human_moat: null, replacement_tools: [], india_demand_trend: "declining",
+    category: "execution", ...opts,
+  };
+}
+function _moatSkill(name: string, risk = 18, opts: Partial<SkillRiskRow> = {}): SkillRiskRow {
+  return {
+    skill_name: name, automation_risk: risk, ai_augmentation_potential: 35,
+    human_moat: "judgment", replacement_tools: [], india_demand_trend: "growing",
+    category: "strategic", ...opts,
+  };
+}
+
+// ─── Scenario 5 — AI-native tool fluency lowers DI (Gap 6) ────────────────────
+Deno.test("Scenario 5 — AI-native tool fluency lowers DI", () => {
+  const profile: ProfileInput = {
+    experience_years: 6, seniority_tier: "PROFESSIONAL",
+    execution_skills: ["seo_optimization", "content_writing"],
+    strategic_skills: [],
+    all_skills: ["seo_optimization", "content_writing", "google_ads"],
+    geo_advantage: null, adaptability_signals: 2, estimated_monthly_salary_inr: 70000,
+  };
+  const profileAi: ProfileInput = {
+    ...profile,
+    all_skills: [...profile.all_skills, "surfer_seo", "jasper_ai", "chatgpt_workflows"],
+  };
+  const baseSkills = [
+    _highRiskSkill("seo_optimization", 60),
+    _highRiskSkill("content_writing", 70),
+    _highRiskSkill("google_ads", 55),
+  ];
+  const aiSkills = [
+    ...baseSkills,
+    _highRiskSkill("surfer_seo", 35, { ai_tool_native: true }),
+    _highRiskSkill("jasper_ai", 40, { ai_tool_native: true }),
+    _highRiskSkill("chatgpt_workflows", 30, { ai_tool_native: true }),
+  ];
+  const without = computeAll(profile, baseSkills, [], null, null, false);
+  const withAi = computeAll(profileAi, aiSkills, [], null, null, false);
+  assertLessOrEqual(withAi.determinism_index, without.determinism_index - 2,
+    `AI-native fluency must materially reduce DI (without=${without.determinism_index}, with=${withAi.determinism_index})`);
+});
+
+// ─── Scenario 6 — BPO template-flagged skills raise DI (Gap 11) ───────────────
+Deno.test("Scenario 6 — BPO template-flagged skills raise DI", () => {
+  const profile: ProfileInput = {
+    experience_years: 4, seniority_tier: "PROFESSIONAL",
+    execution_skills: ["sql", "manual_qa"], strategic_skills: [],
+    all_skills: ["sql", "manual_qa", "ticket_triage", "regression_testing"],
+    geo_advantage: null, adaptability_signals: 1, estimated_monthly_salary_inr: 55000,
+  };
+  const cleanSkills = [
+    _highRiskSkill("sql", 50), _highRiskSkill("manual_qa", 70),
+    _highRiskSkill("ticket_triage", 75), _highRiskSkill("regression_testing", 65),
+  ];
+  const bpoSkills = [
+    _highRiskSkill("sql", 50),
+    _highRiskSkill("manual_qa", 70, { bpo_template_flag: true }),
+    _highRiskSkill("ticket_triage", 75, { bpo_template_flag: true }),
+    _highRiskSkill("regression_testing", 65, { bpo_template_flag: true }),
+  ];
+  const a = computeAll(profile, cleanSkills, [], null, null, false);
+  const b = computeAll(profile, bpoSkills, [], null, null, false);
+  assertGreaterOrEqual(b.determinism_index, a.determinism_index + 2,
+    `BPO template flag must raise DI (clean=${a.determinism_index}, bpo=${b.determinism_index})`);
+});
+
+// ─── Scenario 7 — Real cohort benchmark replaces sigmoid (Gap 4) ──────────────
+Deno.test("Scenario 7 — cohort_percentiles benchmark sets percentile_source='cohort_db'", () => {
+  const profile: ProfileInput = {
+    experience_years: 7, seniority_tier: "PROFESSIONAL",
+    execution_skills: ["seo", "content"], strategic_skills: ["brand_strategy"],
+    all_skills: ["seo", "content", "brand_strategy"],
+    geo_advantage: null, adaptability_signals: 2, estimated_monthly_salary_inr: 80000,
+  };
+  const cohort: CohortBenchmark = {
+    role_detected: "digital_marketer", metro_tier: "tier1",
+    sample_size: 850, p25: 52, p50: 64, p75: 74, p90: 82,
+  };
+  const r = computeAll(profile, [_moatSkill("brand_strategy", 25)],
+    [], null, null, false, null, "tier1", null, "marketing", "IN", null, null, undefined, undefined, cohort);
+  assertEquals(r.survivability.peer_percentile_source, "cohort_db",
+    "When cohort benchmark passed, percentile must be cohort_db sourced");
+});
+
+// ─── Scenario 8 — IC managerial-leverage raises moat for non-execs (Gap 7) ────
+Deno.test("Scenario 8 — IC leverage signals raise moat for non-execs", () => {
+  const base: ProfileInput = {
+    experience_years: 6, seniority_tier: "PROFESSIONAL",
+    execution_skills: ["python"], strategic_skills: ["system_design"],
+    all_skills: ["python", "system_design"],
+    geo_advantage: null, adaptability_signals: 2, estimated_monthly_salary_inr: 90000,
+  };
+  const withLeverage: ProfileInput = {
+    ...base,
+    ic_leverage: {
+      owns_key_relationships: true, cross_team_dependence: true,
+      niche_replacement_difficulty: true, vendor_displacement_history: false,
+      tenure_in_function_years: 6,
+    },
+  };
+  const skills = [_moatSkill("system_design", 18), _highRiskSkill("python", 50)];
+  const a = computeAll(base, skills, [], null, null, false);
+  const b = computeAll(withLeverage, skills, [], null, null, false);
+  assertGreaterOrEqual(b.moat_score, a.moat_score + 3,
+    `IC leverage must raise moat score (without=${a.moat_score}, with=${b.moat_score})`);
+});
+
+// ─── Scenario 9 — Tier-2 metro penalty raises DI vs tier-1 (Gap 9) ────────────
+Deno.test("Scenario 9 — Tier-2 metro raises DI by ~3 vs tier-1 baseline", () => {
+  const profile: ProfileInput = {
+    experience_years: 5, seniority_tier: "PROFESSIONAL",
+    execution_skills: ["seo", "content_writing"], strategic_skills: [],
+    all_skills: ["seo", "content_writing"],
+    geo_advantage: null, adaptability_signals: 2, estimated_monthly_salary_inr: 60000,
+  };
+  const skills = [_highRiskSkill("seo", 60), _highRiskSkill("content_writing", 70)];
+  const tier1 = computeAll(profile, skills, [], null, null, false, null, "tier1");
+  const tier2 = computeAll(profile, skills, [], null, null, false, null, "tier2");
+  assertGreaterOrEqual(tier2.determinism_index, tier1.determinism_index,
+    `Tier-2 should not score lower DI than tier-1 (tier1=${tier1.determinism_index}, tier2=${tier2.determinism_index})`);
+});
