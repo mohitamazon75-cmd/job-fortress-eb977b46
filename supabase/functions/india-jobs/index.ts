@@ -302,6 +302,7 @@ Deno.serve(async (req) => {
               description_snippet: (j.description || "").slice(0, 200),
               posted_days_ago: j.created ? Math.round((Date.now() - new Date(j.created).getTime()) / 86400000) : 0,
               source: "adzuna",
+              verified_live: true,
             }));
             source = "adzuna";
             console.log(`[india-jobs] Adzuna returned ${jobs.length} jobs`);
