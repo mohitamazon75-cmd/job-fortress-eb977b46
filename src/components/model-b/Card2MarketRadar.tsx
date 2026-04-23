@@ -86,7 +86,7 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         sub={c2.subline || ""}
       />
       <CardBody>
-        {/* NEW: Personalised salary fit — top-priority widget */}
+        {/* HERO: Personalised salary fit — top of card, the answer to "am I paid right?" */}
         <SalaryFitWidget
           role={cardData.user?.current_title || ""}
           industry={cardData.user?.industry || ""}
@@ -94,9 +94,10 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           metroTier={cardData.user?.metro_tier || "tier1"}
           yearsExperience={cardData.user?.years_experience || ""}
           country={cardData.user?.country || "IN"}
+          userSkills={(cardData.card3_shield?.skills || []).map((s: any) => s?.name).filter(Boolean)}
         />
 
-        {/* 3-part emotional structure */}
+        {/* 3-part emotional structure — context for the personalised number above */}
         {c2.fear_hook && (
           <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.7, margin: 0, whiteSpace: "pre-line" }}>🚨 {c2.fear_hook}</p>
@@ -113,30 +114,40 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           </div>
         )}
 
-        <SectionLabel label="WHAT THEY'RE ACTUALLY PAYING · Your role tier" />
+        {/* Static role-tier salary bands — kept as broader context AFTER the personalised view.
+            Renders only when the SalaryFitWidget is unlikely to dominate (tier-3 sanity context). */}
+        {(c2.salary_bands || []).length > 0 && (
+          <>
+            <SectionLabel label="ROLE-TIER REFERENCE · how the band moves with seniority" />
+            {(c2.salary_bands || []).map((band: any, i: number) => (
+              <div key={i} style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
+                  <span style={{ color: "var(--mb-ink)" }}>{band.role}</span>
+                  <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: 800, color: variantColor(band.color) }}>{band.range}</span>
+                </div>
+                <div style={{ height: 6, background: "var(--mb-rule)", borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{ height: 6, borderRadius: 3, width: `${band.bar_pct}%`, background: variantColor(band.color), transition: "width 0.6s ease" }} />
+                </div>
+              </div>
+            ))}
+          </>
+        )}
 
-        {(c2.salary_bands || []).map((band: any, i: number) => (
-          <div key={i} style={{ marginBottom: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
-              <span style={{ color: "var(--mb-ink)" }}>{band.role}</span>
-              <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: 800, color: variantColor(band.color) }}>{band.range}</span>
-            </div>
-            <div style={{ height: 6, background: "var(--mb-rule)", borderRadius: 3, overflow: "hidden" }}>
-              <div style={{ height: 6, borderRadius: 3, width: `${band.bar_pct}%`, background: variantColor(band.color), transition: "width 0.6s ease" }} />
-            </div>
+        {c2.key_insight && (
+          <div style={{ marginTop: 18 }}>
+            <InfoBox variant="green" title="Your numbers vs. the market" body={c2.key_insight} />
           </div>
-        ))}
+        )}
 
-        <div style={{ marginTop: 18 }}>
-          <InfoBox variant="green" title="Your numbers vs. the market" body={c2.key_insight || ""} />
-        </div>
-
-        {/* Quote box */}
-        <div style={{ borderLeft: "3px solid var(--mb-navy)", borderRadius: "0 10px 10px 0", padding: "14px 18px", background: "var(--mb-navy-tint)", marginBottom: 16 }}>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink)", lineHeight: 1.75, fontStyle: "italic", marginBottom: 6, fontWeight: 500 }}>{c2.market_quote}</div>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", fontWeight: 700 }}>{c2.market_quote_source}</div>
-        </div>
-
+        {/* Quote box — only when present, no broken empty state */}
+        {c2.market_quote && (
+          <div style={{ borderLeft: "3px solid var(--mb-navy)", borderRadius: "0 10px 10px 0", padding: "14px 18px", background: "var(--mb-navy-tint)", marginBottom: 16 }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink)", lineHeight: 1.75, fontStyle: "italic", marginBottom: 6, fontWeight: 500 }}>{c2.market_quote}</div>
+            {c2.market_quote_source && (
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", fontWeight: 700 }}>{c2.market_quote_source}</div>
+            )}
+          </div>
+        )}
         {/* ── Live skill threat intel — which AI tools are replacing which skills ──
             Injected from scan_skill_threats (from scan's skill_threat_intel field).
             Shows the current AI tools actively displacing skills in their role. */}
