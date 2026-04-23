@@ -41,7 +41,13 @@ Deno.serve(async (req) => {
     const { userId: _jwtUserId, blocked: jwtBlocked } = await validateJwtClaims(req, corsHeaders);
     if (jwtBlocked) return jwtBlocked;
 
-    const { role, industry, metroTier, scanId, country } = await req.json();
+    // Accept both `metroTier` and legacy `metro` from older frontend callers.
+    const reqBody = await req.json();
+    const role = reqBody.role;
+    const industry = reqBody.industry;
+    const metroTier = reqBody.metroTier || reqBody.metro;
+    const experienceBand = (reqBody.experienceBand || reqBody.years_experience || "").toString().trim();
+    const country = reqBody.country;
     const locale = getLocale(country);
 
     if (!role && !industry) {
