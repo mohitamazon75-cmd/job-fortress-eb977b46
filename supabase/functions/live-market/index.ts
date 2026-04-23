@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     const supabase = createAdminClient();
 
     // DB-backed cache check
-    const cacheKey = `lm:${(role || '')}_${(industry || '')}_${(metroTier || '')}_${locale.code}`.toLowerCase().replace(/\s+/g, '_');
+    const cacheKey = `lm:${(role || '')}_${(industry || '')}_${(metroTier || '')}_${experienceBand}_${locale.code}_v2`.toLowerCase().replace(/\s+/g, '_');
     const cached = await getDbCache(supabase, cacheKey);
     if (cached) {
       return new Response(JSON.stringify({ ...cached, cached: true }), {
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       // SOURCE 1: Tavily (PRIMARY)
       tavilySearchParallel([
         {
-          query: `"${primaryRole}" ${locale.salarySearchTerms} 2025 2026 ${tier}`,
+          query: `"${primaryRole}" ${locale.salarySearchTerms} ${experienceBand} years 2025 2026 ${tier}`,
           maxResults: 5,
           days: 30,
           topic: "general",
@@ -99,6 +99,13 @@ Deno.serve(async (req) => {
           query: `"${primaryRole}" hiring jobs demand ${locale.label} AI automation impact ${industry || ''}`,
           maxResults: 5,
           days: 14,
+          topic: "news",
+        },
+        // SECTOR NEWS — dated headlines for the user's industry & seniority
+        {
+          query: `${industry || primaryRole} industry ${locale.label} layoffs hiring funding ${experienceBand} leaders 2026`,
+          maxResults: 6,
+          days: 21,
           topic: "news",
         },
       ]),
