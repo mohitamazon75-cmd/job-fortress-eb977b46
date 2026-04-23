@@ -1,5 +1,6 @@
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { detectExecutiveTier, buildExecutiveModeBlock } from "../_shared/executive-mode.ts";
 
 
 
