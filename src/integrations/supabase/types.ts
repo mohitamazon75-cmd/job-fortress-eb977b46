@@ -1081,6 +1081,45 @@ export type Database = {
         }
         Relationships: []
       }
+      external_api_log: {
+        Row: {
+          cache_key: string | null
+          created_at: string
+          endpoint: string | null
+          estimated_cost_usd: number | null
+          function_name: string | null
+          id: string
+          latency_ms: number | null
+          metadata: Json | null
+          provider: string
+          status: string
+        }
+        Insert: {
+          cache_key?: string | null
+          created_at?: string
+          endpoint?: string | null
+          estimated_cost_usd?: number | null
+          function_name?: string | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          provider: string
+          status?: string
+        }
+        Update: {
+          cache_key?: string | null
+          created_at?: string
+          endpoint?: string | null
+          estimated_cost_usd?: number | null
+          function_name?: string | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          provider?: string
+          status?: string
+        }
+        Relationships: []
+      }
       fate_cards: {
         Row: {
           assessment_id: string
