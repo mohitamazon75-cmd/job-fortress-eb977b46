@@ -208,8 +208,13 @@ Deno.serve(async (req) => {
 
     const sb = createAdminClient();
 
-    // Cache key includes exec flag + skill fingerprint so executive scans don't reuse junior results
-    const skillFingerprint = (skills || []).slice(0, 3).map(s => String(s).toLowerCase()).sort().join("-").slice(0, 40);
+    // Cache key includes exec flag + skill fingerprint so executive scans don't reuse junior results.
+    // Hardened: when skills is undefined/empty, fingerprint is "none" to avoid collisions
+    // between callers that omit skills vs callers with an empty array.
+    const skillsArr: string[] = Array.isArray(skills) ? skills.filter(Boolean) : [];
+    const skillFingerprint = skillsArr.length === 0
+      ? "none"
+      : skillsArr.slice(0, 3).map((s: any) => String(s).toLowerCase().trim()).sort().join("-").slice(0, 40);
     const cacheKey = `india-jobs-v2:${role.toLowerCase()}:${(city || "india").toLowerCase()}:${execTier || "ic"}:${skillFingerprint}`;
 
     if (!force_refresh) {
@@ -220,20 +225,34 @@ Deno.serve(async (req) => {
         .single();
 
       if (cached) {
-        const cacheAge = (Date.now() - new Date(cached.cached_at).getTime()) / (1000 * 60 * 60);
-        if (cacheAge < CACHE_TTL_HOURS) {
+        const cachedAt = new Date(cached.cached_at).getTime();
+        const cacheAgeMs = Date.now() - cachedAt;
+        const cacheAgeHours = cacheAgeMs / (1000 * 60 * 60);
+        if (cacheAgeHours < CACHE_TTL_HOURS) {
           console.log(`[india-jobs] Cache hit for ${cacheKey}`);
-          return json({ ...(cached.data as any), cached: true });
+          return json({
+            ...(cached.data as any),
+            cached: true,
+            data_age_minutes: Math.round(cacheAgeMs / 60000),
+          });
         }
       }
     } else {
       console.log(`[india-jobs] Force refresh requested, skipping cache`);
     }
 
-    // ── Build deterministic results ──
-    const matchedKey = matchRole(role);
-    const upskillRoles = SAFER_ROLE_MAP[matchedKey] || SAFER_ROLE_MAP.default;
-    const searchUrls = buildJobSearchUrls(role, skills || [], city || "India");
+    // Request coalescing — if an identical request is already in-flight, wait for it.
+    if (inflight.has(cacheKey)) {
+      console.log(`[india-jobs] Coalescing duplicate inflight request for ${cacheKey}`);
+      const sharedResult = await inflight.get(cacheKey)!;
+      return json({ ...sharedResult, coalesced: true });
+    }
+
+    const workPromise = (async () => {
+      // ── Build deterministic results ──
+      const matchedKey = matchRole(role);
+      const upskillRoles = SAFER_ROLE_MAP[matchedKey] || SAFER_ROLE_MAP.default;
+      const searchUrls = buildJobSearchUrls(role, skills || [], city || "India");
 
     // ── Search for LIVE jobs via Tavily ──
     let jobs: JobListing[] = [];
