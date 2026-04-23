@@ -82,8 +82,9 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const confidenceLabel = dataDepth >= 3 ? "High" : dataDepth >= 2 ? "Medium" : "Building";
   const confidenceColor = dataDepth >= 3 ? "#15803d" : dataDepth >= 2 ? "#b45309" : "#6b7280";
 
-  // Stats below the score — pulls real intelligence
-  const aiCoverage = c1?.ai_coverage_pct || c1?.exposure_pct || null;
+  // Stats below the score — pulls real intelligence (with safe derivations)
+  const aiCoverage = c1?.ai_coverage_pct || c1?.exposure_pct
+    || (typeof c1?.risk_score === "number" ? c1.risk_score : null);
   const moatCount = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong")?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
 
