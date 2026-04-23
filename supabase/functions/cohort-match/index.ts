@@ -178,6 +178,7 @@ Deno.serve(async (req: Request) => {
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const isServiceRole = SERVICE_ROLE_KEY && jwt === SERVICE_ROLE_KEY;
 
+    let authedUserId: string | null = null;
     if (!isServiceRole) {
       // Verify JWT and get user
       const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
@@ -186,6 +187,7 @@ Deno.serve(async (req: Request) => {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      authedUserId = user.id;
     }
 
     const body = await req.json();
@@ -271,19 +273,23 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const effectiveUserId = authedUserId ?? scan.user_id;
+
     // Find the user's previous scan for delta computation
-    const { data: prevScanVec } = await supabase
-      .from("scan_vectors")
-      .select("scan_id, stability_score, doom_months")
-      .eq("user_id", user.id)
-      .neq("scan_id", scan_id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    const { data: prevScanVec } = effectiveUserId
+      ? await supabase
+          .from("scan_vectors")
+          .select("scan_id, stability_score, doom_months")
+          .eq("user_id", effectiveUserId)
+          .neq("scan_id", scan_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null as any };
 
     const upsertPayload: Record<string, any> = {
       scan_id,
-      user_id: user.id,
+      user_id: effectiveUserId,
       embedding: embeddingStr,
       role_family: report.role_family ?? null,
       industry: report.industry ?? null,
