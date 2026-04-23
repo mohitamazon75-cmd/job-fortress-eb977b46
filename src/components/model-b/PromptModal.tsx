@@ -131,9 +131,35 @@ export default function PromptModal({ isOpen, onClose, title, promptText }: Prom
         }
       }
 
-      // Guard: if stream completed but no content was extracted
+      // Guard: if stream completed but no content was extracted, fall back to
+      // a single non-streaming request before surfacing an error to the user.
+      // OpenRouter occasionally returns a 200 stream that contains only the
+      // ": OPENROUTER PROCESSING" keepalive and no data: events.
       if (!accumulated.trim()) {
-        setError("AI returned an empty response. Please try again.");
+        try {
+          const fbResp = await fetch(STREAM_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ prompt: promptText, title, stream: false }),
+          });
+          if (fbResp.ok) {
+            const data = await fbResp.json();
+            const fbContent = (data?.content as string | undefined)?.trim() || "";
+            if (fbContent) {
+              setContent(fbContent);
+            } else {
+              setError("AI returned an empty response. Please try again.");
+            }
+          } else {
+            const errData = await fbResp.json().catch(() => ({ error: "" }));
+            setError(errData.error || "AI returned an empty response. Please try again.");
+          }
+        } catch {
+          setError("AI returned an empty response. Please try again.");
+        }
       }
     } catch (e: any) {
       if (e.name !== "AbortError") {

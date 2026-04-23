@@ -14,7 +14,7 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    const { prompt, title } = await req.json();
+    const { prompt, title, stream: clientWantsStream = true } = await req.json();
 
     if (!prompt || typeof prompt !== "string") {
       return new Response(
@@ -42,27 +42,63 @@ RULES:
 - Use markdown formatting for readability (headers, bold, bullet points).
 - Keep it actionable and ready to use — the user should be able to copy and paste directly.`;
 
-      const aiCtrl = new AbortController();
-      const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
-    const response = await fetch(AI_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
-        ],
-        stream: true,
-        max_tokens: 4000,
-        temperature: 0.4,
-      }),
-        signal: aiCtrl.signal,
-    });
-      clearTimeout(aiT);
+    const callAi = async (useStream: boolean) => {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 45_000);
+      try {
+        return await fetch(AI_URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: MODEL,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: prompt },
+            ],
+            stream: useStream,
+            max_tokens: 4000,
+            temperature: 0.4,
+          }),
+          signal: ctrl.signal,
+        });
+      } finally {
+        clearTimeout(t);
+      }
+    };
+
+    // Non-streaming branch — used as a reliable fallback by the client
+    // when the streamed response comes back empty (intermittent OpenRouter issue).
+    if (!clientWantsStream) {
+      const response = await callAi(false);
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limited — please try again in a moment." }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const errText = await response.text();
+        console.error(`[generate-action] AI error ${response.status}:`, errText.slice(0, 200));
+        return new Response(JSON.stringify({ error: "AI temporarily unavailable. Please try again." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const json = await response.json();
+      const content = json?.choices?.[0]?.message?.content || "";
+      if (!content.trim()) {
+        return new Response(JSON.stringify({ error: "AI returned an empty response" }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify({ content }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Streaming branch (default)
+    const response = await callAi(true);
 
     if (!response.ok) {
       if (response.status === 429) {
