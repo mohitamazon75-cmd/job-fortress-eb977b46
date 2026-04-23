@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ChevronLeft, ChevronRight, Shield, Rocket, FileText, Briefcase, DollarSign, Brain, Search, Clock, Network, Shuffle, Target, Calendar, Users, Swords, Skull, Flame, Trophy, TrendingUp, Radar, type LucideIcon } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Shield, Rocket, FileText, Briefcase, DollarSign, Brain, Search, Clock, Network, Shuffle, Target, Calendar, Users, Skull, Flame, Trophy, TrendingUp, Radar, type LucideIcon } from 'lucide-react';
 import { type ScanReport, normalizeTools } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
 import { inferSeniorityTier, isExecutiveTier } from '@/lib/seniority-utils';
@@ -227,8 +227,8 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
     { id: 'pivot', title: 'Safer Career Pivots', subtitle: '3 adjacent moves + 1 bold stretch · skill gaps · timelines', Icon: Shuffle, iconColor: 'text-primary' },
     // 5. Strategy — individual skill repositioning (KG-grounded before→after)
     { id: 'repositioning', title: isExec ? 'Strategic Repositioning' : 'Skill Repositioning', subtitle: 'KG-grounded before→after for every skill', Icon: Target, iconColor: 'text-primary' },
-    // 6. Engagement — debate makes the stakes visceral before practical logistics
-    { id: 'debate', title: 'AI Debate: Your Future', subtitle: '3 AI agents argue your career fate using live market evidence', Icon: Swords, iconColor: 'text-destructive' },
+    // 6. Engagement — debate card hidden to save tokens & focus user attention on Resume Weaponizer.
+    // { id: 'debate', title: 'AI Debate: Your Future', subtitle: '3 AI agents argue your career fate using live market evidence', Icon: Swords, iconColor: 'text-destructive' },
     // 7. Practical — notice period logistics (post-debate action planning)
     { id: 'notice-period', title: 'Notice Period Optimizer', subtitle: 'Buyout calculator · email templates · pro tips', Icon: Calendar, iconColor: 'text-muted-foreground' },
     // 8. Engagement closer — LinkedIn roast (only if source is linkedin)

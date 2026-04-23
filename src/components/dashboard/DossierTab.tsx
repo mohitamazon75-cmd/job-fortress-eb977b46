@@ -5,7 +5,8 @@ import type { DashboardSharedProps } from '@/components/dashboard/DashboardTypes
 
 const CheatSheet = lazy(() => import('@/components/dashboard/CheatSheet'));
 const CareerResilienceEngine = lazy(() => import('@/components/dashboard/CareerResilienceEngine'));
-const CareerGenomeDebate = lazy(() => import('@/components/dashboard/CareerGenomeDebate'));
+// Career Genome hidden — to re-enable, uncomment this import and the JSX block below.
+// const CareerGenomeDebate = lazy(() => import('@/components/dashboard/CareerGenomeDebate'));
 
 export default function DossierTab({ props }: { props: DashboardSharedProps }) {
   const {
@@ -22,8 +23,8 @@ export default function DossierTab({ props }: { props: DashboardSharedProps }) {
         transition={{ duration: 0.3 }}
         className="space-y-10"
       >
-        {/* Career Genome Sequencer — Adversarial AI Debate */}
-        <CareerGenomeDebate report={report} scanId={scanId} />
+        {/* Career Genome Sequencer — hidden to save tokens & focus on Resume Weaponizer */}
+        {/* <CareerGenomeDebate report={report} scanId={scanId} /> */}
 
         {/* Career Resilience Engine — Calm Tech command center */}
         <CareerResilienceEngine report={report} country={country} />
