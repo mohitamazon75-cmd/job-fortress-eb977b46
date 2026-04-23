@@ -5,22 +5,44 @@ import { CardShell, CardHead, CardBody, EmotionStrip, SectionLabel, InfoBox, Car
 // for executive search firms (Heidrick, Egon Zehnder, etc.). Triggers on:
 //  - current_title contains CEO / Founder / MD / Partner / President / CXO / EVP / SVP
 //  - any pivot salary uses "Cr" notation (the LLM's executive-mode output marker)
+//  - years_experience >= 18 with leadership keywords (head/director/vp/chief/lead)
 function isExecutiveCardData(cardData: any): boolean {
-  const title = String(cardData?.user?.current_title || "").toLowerCase();
-  if (/\b(ceo|founder|co[\s-]?founder|managing\s+director|managing\s+partner|president|owner|chief\s+\w+\s+officer|cto|cfo|coo|cmo|cpo|chro|cro|cdo|ciso|cio|evp|svp|executive\s+vice\s+president|senior\s+vice\s+president)\b/.test(title)) {
+  if (!cardData || typeof cardData !== "object") return false;
+
+  const title = String(cardData?.user?.current_title ?? cardData?.user?.title ?? "").toLowerCase();
+  const execTitleRe = /\b(ceo|founder|co[\s-]?founder|managing\s+director|managing\s+partner|president|owner|chief\s+\w+\s+officer|cto|cfo|coo|cmo|cpo|chro|cro|cdo|ciso|cio|evp|svp|executive\s+vice\s+president|senior\s+vice\s+president)\b/;
+  if (title && execTitleRe.test(title)) return true;
+
+  // Years-of-experience + senior keyword fallback (handles "Head of X · 22 yrs")
+  const years = Number(cardData?.user?.years_experience ?? cardData?.user?.years ?? 0);
+  if (Number.isFinite(years) && years >= 18 && /\b(head|director|vp|vice\s+president|chief|lead|principal)\b/.test(title)) {
     return true;
   }
+
   const d = cardData?.card4_pivot;
-  if (!d) return false;
-  const blob = JSON.stringify([d.current_band, d.pivot_year1, d.director_band, ...(d.pivots || []).map((p: any) => p.salary || p.salary_range)]);
-  return /₹\s*\d+(\.\d+)?\s*Cr/i.test(blob);
+  if (!d || typeof d !== "object") return false;
+
+  // Detect "Cr" salary notation anywhere in band/pivot strings
+  try {
+    const parts: string[] = [
+      String(d.current_band ?? ""),
+      String(d.pivot_year1 ?? ""),
+      String(d.director_band ?? ""),
+      ...(Array.isArray(d.pivots) ? d.pivots.map((p: any) => String(p?.salary ?? p?.salary_range ?? "")) : []),
+    ];
+    return /₹\s*\d+(\.\d+)?\s*Cr/i.test(parts.join(" "));
+  } catch {
+    return false;
+  }
 }
 
 // Executive search URL builders. These are the channels actual CXOs use —
 // not Naukri or generic LinkedIn job search.
 function buildExecSearchUrls(role: string, city: string) {
-  const q = encodeURIComponent(role);
-  const cityQ = encodeURIComponent(city);
+  const safeRole = (role && role.trim()) || "Executive";
+  const safeCity = (city && city.trim()) || "India";
+  const q = encodeURIComponent(safeRole);
+  const cityQ = encodeURIComponent(safeCity);
   return {
     linkedinExec: `https://www.linkedin.com/jobs/search/?keywords=${q}&location=${cityQ}&f_E=6%2C7&sortBy=DD`, // 6=Director, 7=Executive
     heidrick: `https://www.heidrick.com/en/search?keywords=${q}`,
