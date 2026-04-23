@@ -437,12 +437,12 @@ export default function ResultsModelB() {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 800, color: "var(--mb-ink)", letterSpacing: "-0.01em" }}>JobBachao</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {cardData && (
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 18, fontWeight: 700, color: "var(--mb-navy)" }}>{displayScore}</span>
-            )}
-            <button onClick={() => navigate(`/results/choose?id=${analysisId}`)} className="mb-btn-secondary" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 600, color: "var(--mb-ink3)", background: "none", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "8px 16px", cursor: "pointer", transition: "all 150ms", minHeight: 40 }}>← Switch model</button>
-          </div>
+          {cardData && currentCard !== 0 && (
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 22, fontWeight: 800, color: "var(--mb-navy)", letterSpacing: "-0.02em" }}>{displayScore}</span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: "var(--mb-muted)", letterSpacing: "0.1em" }}>/100</span>
+            </div>
+          )}
         </div>
 
         {/* Streak bar */}
