@@ -86,6 +86,16 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         sub={c2.subline || ""}
       />
       <CardBody>
+        {/* NEW: Personalised salary fit — top-priority widget */}
+        <SalaryFitWidget
+          role={cardData.user?.current_title || ""}
+          industry={cardData.user?.industry || ""}
+          city={cardData.user?.location || ""}
+          metroTier={cardData.user?.metro_tier || "tier1"}
+          yearsExperience={cardData.user?.years_experience || ""}
+          country={cardData.user?.country || "IN"}
+        />
+
         {/* 3-part emotional structure */}
         {c2.fear_hook && (
           <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
