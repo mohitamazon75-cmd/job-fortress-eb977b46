@@ -1,19 +1,25 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, AlertTriangle, Zap, Loader2, Copy, Check, ChevronDown, FileText, Lock, Target, Cpu } from 'lucide-react';
+import { ArrowRight, AlertTriangle, Zap, Loader2, Copy, Check, ChevronDown, FileText, Lock, Target, Cpu, Linkedin, Download, FileSearch } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
 import ProUpgradeModal from '@/components/ProUpgradeModal';
 
 interface ResumeData {
+  linkedin_headline?: string;
   professional_summary?: string;
   key_skills_section?: {
     headline_skills?: string[];
+    strategic_keywords?: string[];
     skills_to_remove?: string[];
   };
   experience_bullets?: Array<{
+    context?: string;
+    original_framing?: string;
     weaponized_bullet: string;
+    annotation?: string;
     why_better: string;
+    has_metric?: boolean;
   }>;
   ats_optimization?: {
     score_estimate_before?: number;
@@ -21,7 +27,14 @@ interface ResumeData {
     critical_keywords_added?: string[];
     format_tips?: string[];
   };
+  positioning_strategy?: string;
   cover_letter_hook?: string;
+  jd_match_analysis?: {
+    match_pct?: number;
+    matched_keywords?: string[];
+    missing_keywords?: string[];
+    verdict?: string;
+  };
 }
 
 export default function ResumeWeaponizerCard({ report, scanId }: { report: ScanReport; scanId?: string }) {
@@ -32,6 +45,8 @@ export default function ResumeWeaponizerCard({ report, scanId }: { report: ScanR
   const [showProModal, setShowProModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [targetRole, setTargetRole] = useState('');
+  const [jdText, setJdText] = useState('');
+  const [showJdInput, setShowJdInput] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>('summary');
 
   const role = report.role || 'Professional';
