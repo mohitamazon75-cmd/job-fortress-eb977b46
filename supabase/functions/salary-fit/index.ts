@@ -76,6 +76,9 @@ Deno.serve(async (req) => {
     const metroTier = body.metro_tier === "tier2" ? "tier2" : "tier1";
     const expBand = (body.years_experience || "").trim();
     const country = (body.country || "IN").toUpperCase();
+    const userSkills = Array.isArray(body.user_skills)
+      ? body.user_skills.filter((s) => typeof s === "string" && s.trim().length > 0).slice(0, 30)
+      : [];
 
     // ── Input validation & abuse guard ─────────────────────────────────────
     if (!Number.isFinite(userCtc)) {
@@ -106,12 +109,17 @@ Deno.serve(async (req) => {
       }, corsHeaders);
     }
     if (!role && !industry) {
-      return json({ status: "input_invalid", headline: "We need your role or industry to benchmark." }, corsHeaders);
+      return json({
+        status: "input_invalid",
+        headline: "We need your role or industry to benchmark — try uploading your resume first.",
+      }, corsHeaders);
     }
 
     const supabase = createAdminClient();
     // Cache key intentionally excludes user CTC — we cache the market range, then compute verdict per-user.
-    const marketKey = `sf:${role}_${industry}_${city}_${metroTier}_${expBand}_${country}`.toLowerCase().replace(/\s+/g, "_");
+    // Use explicit separators to avoid empty-field collisions.
+    const norm = (s: string) => (s || "_").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
+    const marketKey = `sf|${norm(role)}|${norm(industry)}|${norm(city)}|${metroTier}|${norm(expBand)}|${country}`;
     let market = await getCache(supabase, marketKey);
 
     if (!market) {
@@ -129,7 +137,7 @@ Deno.serve(async (req) => {
       }, corsHeaders);
     }
 
-    const result = computeVerdict(userCtc, market);
+    const result = computeVerdict(userCtc, market, { role, industry, expBand, userSkills });
     return json(result, corsHeaders);
   } catch (e) {
     console.error("[salary-fit] error", e);
