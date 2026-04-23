@@ -616,7 +616,7 @@ export default function ResultsModelB() {
                 promptText: `Create a 60-day skill upgrade plan for ${cardData.user?.name} based on their resume.\n\nCurrent skills: ${(cardData.card3_shield?.skills || []).map((s: any) => s.name).join(", ")}\nSkill gaps: ${(cardData.card3_shield?.skills || []).filter((s: any) => s.level === "buildable" || s.level === "critical-gap").map((s: any) => s.name).join(", ")}\n\nFor each week:\n- Specific learning resources (free, India-accessible)\n- Practice exercises with measurable outcomes\n- Portfolio project milestones\n- Time estimates (assume 1hr/day on weekdays)`
               });
             }} />}
-            {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} />}
+            {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} scanId={analysisId ?? undefined} />}
             {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
             {currentCard === 6 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} />}
             {currentCard === 7 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(6)} copyFallback={handleCopyFallback} analysisId={analysisId} />}

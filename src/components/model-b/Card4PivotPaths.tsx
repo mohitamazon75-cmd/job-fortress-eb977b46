@@ -1,6 +1,30 @@
 import { useState, useMemo } from "react";
 import { CardShell, CardHead, CardBody, SectionLabel, CardNav, Badge, variantColor } from "./SharedUI";
 import { toast } from "sonner";
+import { useCohortIntel } from "@/hooks/useCohortIntel";
+
+// ─────────────────────────────────────────────────────────────────────
+// Salary band parser. Extracts an INR lakh figure from strings like
+// "₹45–60L", "₹1.2 Cr", "60 LPA". Returns the midpoint in lakhs, or null.
+// Deterministic — no LLM, no fabrication. If we can't parse it, we hide
+// the math card rather than guess.
+// ─────────────────────────────────────────────────────────────────────
+function parseInrBandToLakhs(s: any): number | null {
+  if (!s || typeof s !== "string") return null;
+  const cleaned = s.replace(/[,\s]/g, "").toLowerCase();
+  const isCr = /cr|crore/.test(cleaned);
+  const nums = cleaned.match(/(\d+(?:\.\d+)?)/g);
+  if (!nums || nums.length === 0) return null;
+  const vals = nums.slice(0, 2).map(Number).filter((n) => Number.isFinite(n) && n > 0);
+  if (vals.length === 0) return null;
+  const mid = vals.length === 2 ? (vals[0] + vals[1]) / 2 : vals[0];
+  return isCr ? mid * 100 : mid; // Cr → lakhs
+}
+
+function formatLakhs(lakhs: number): string {
+  if (lakhs >= 100) return `₹${(lakhs / 100).toFixed(1)} Cr`;
+  return `₹${Math.round(lakhs)}L`;
+}
 
 // ────────────────────────────────────────────────────────────────────────
 // Pivot tab — redesigned for "wow / WTF how does it know" emotional impact.
@@ -154,7 +178,7 @@ Would you have 15 min for a quick call? I'd love to learn:
 ${senderLine}`;
 }
 
-export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData: any; onBack: () => void; onNext: () => void }) {
+export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { cardData: any; onBack: () => void; onNext: () => void; scanId?: string }) {
   const d = cardData?.card4_pivot ?? {};
   const pivots: any[] = Array.isArray(d.pivots) ? d.pivots : [];
   const [selectedPivot, setSelectedPivot] = useState(0);
@@ -177,6 +201,18 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
   const selectedRole = String(selected?.role ?? "the target role");
   const selectedCity = (String(selected?.location ?? currentCity).split(",")[0] || currentCity).trim();
   const channels = isExec ? buildExecChannels(selectedRole, selectedCity) : buildProChannels(selectedRole, selectedCity);
+
+  // Salary math — deterministic, derived from already-shown bands
+  const currentLakhs = parseInrBandToLakhs(d.current_band);
+  const year1Lakhs = parseInrBandToLakhs(selected?.salary_range || selected?.salary || d.pivot_year1);
+  const year3Lakhs = parseInrBandToLakhs(d.director_band);
+  const year1Delta = currentLakhs != null && year1Lakhs != null ? year1Lakhs - currentLakhs : null;
+  const stayCost3yr = currentLakhs != null && year3Lakhs != null
+    ? Math.max(0, (year3Lakhs - currentLakhs) * 3 - (year1Delta ?? 0)) // opportunity cost of NOT pivoting over 3 years
+    : null;
+
+  // Real cohort intelligence (already cached for this scan)
+  const { data: cohort } = useCohortIntel(scanId);
 
   const outreach = buildOutreachTemplate({
     name: userName,
@@ -327,6 +363,73 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
                   {pivotExplanation?.body ? ` ${pivotExplanation.body}` : ""}
                 </p>
               </div>
+
+              {/* Peer Cohort Mirror — real signal from cohort_cache */}
+              {cohort && cohort.cohort_size >= 5 && (
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--mb-rule)", background: "var(--mb-paper)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-ink3)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                      People like you
+                    </div>
+                    <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 8px", borderRadius: 10, background: `${accent}1A`, color: accent, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                      n={cohort.cohort_size}
+                    </span>
+                  </div>
+                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: "var(--mb-ink)", lineHeight: 1.55, fontWeight: 600, margin: "0 0 10px", fontStyle: "italic" }}>
+                    "{cohort.insight_text}"
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
+                    {cohort.pct_improved != null && (
+                      <div style={{ background: "white", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "8px 10px", textAlign: "center" }}>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 800, color: "var(--mb-green)" }}>{Math.round(cohort.pct_improved)}%</div>
+                        <div style={{ fontSize: 10, color: "var(--mb-ink2)", fontWeight: 700, marginTop: 2 }}>improved score</div>
+                      </div>
+                    )}
+                    {cohort.median_doom_months != null && (
+                      <div style={{ background: "white", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "8px 10px", textAlign: "center" }}>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 800, color: "var(--mb-amber)" }}>{Math.round(cohort.median_doom_months)}mo</div>
+                        <div style={{ fontSize: 10, color: "var(--mb-ink2)", fontWeight: 700, marginTop: 2 }}>median runway</div>
+                      </div>
+                    )}
+                    {cohort.top_skill_gain && (
+                      <div style={{ background: "white", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "8px 10px", textAlign: "center" }}>
+                        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, color: accent, lineHeight: 1.2 }}>{cohort.top_skill_gain}</div>
+                        <div style={{ fontSize: 10, color: "var(--mb-ink2)", fontWeight: 700, marginTop: 2 }}>top skill gained</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Salary Math — concrete rupees, not bands */}
+              {currentLakhs != null && year1Lakhs != null && (
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--mb-rule)", background: `${accent}06` }}>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: accent, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+                    💸 The math, in your rupees
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                    <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, color: "var(--mb-ink3)", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>Today</div>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 18, fontWeight: 800, color: "var(--mb-ink2)", marginTop: 4 }}>{formatLakhs(currentLakhs)}</div>
+                      <div style={{ fontSize: 11, color: "var(--mb-ink3)", marginTop: 2 }}>{currentRole}</div>
+                    </div>
+                    <div style={{ background: "white", border: `1.5px solid ${accent}`, borderRadius: 10, padding: "10px 12px", boxShadow: `0 2px 8px ${accent}22` }}>
+                      <div style={{ fontSize: 10, color: accent, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>Year 1 if you land this</div>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 18, fontWeight: 800, color: accent, marginTop: 4 }}>{formatLakhs(year1Lakhs)}</div>
+                      <div style={{ fontSize: 11, color: "var(--mb-ink2)", marginTop: 2 }}>
+                        {year1Delta != null && year1Delta > 0 ? `+${formatLakhs(year1Delta)} delta` : year1Delta != null && year1Delta < 0 ? `${formatLakhs(year1Delta)} (long-term play)` : "Lateral move"}
+                      </div>
+                    </div>
+                  </div>
+                  {stayCost3yr != null && stayCost3yr > 5 && (
+                    <div style={{ background: "var(--mb-amber-tint)", border: "1.5px solid rgba(139,90,0,0.25)", borderRadius: 10, padding: "10px 14px" }}>
+                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-amber)", lineHeight: 1.55 }}>
+                        ⚠️ Opportunity cost of staying put 3 years: <strong style={{ fontFamily: "'DM Mono', monospace" }}>~{formatLakhs(stayCost3yr)}</strong> in foregone earnings.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* This week — first move */}
               <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--mb-rule)", background: `${accent}08` }}>
