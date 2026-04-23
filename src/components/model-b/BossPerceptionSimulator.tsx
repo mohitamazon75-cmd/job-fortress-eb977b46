@@ -190,6 +190,7 @@ export default function BossPerceptionSimulator({ role, years, riskScore, tasksA
   const [step, setStep] = useState<"intro" | "q" | "result">("intro");
   const [answers, setAnswers] = useState<number[]>([]);
   const [qIdx, setQIdx] = useState(0);
+  const { track } = useTrack();
 
   const handleAnswer = (weight: number) => {
     const next = [...answers, weight];
@@ -198,6 +199,9 @@ export default function BossPerceptionSimulator({ role, years, riskScore, tasksA
       setQIdx(qIdx + 1);
     } else {
       setStep("result");
+      // Fire-and-forget — captures verdict tier for engagement analytics
+      const finalTier = scoreToTier(next.reduce((a, b) => a + b, 0), riskScore);
+      track("boss_simulator_completed", { tier: finalTier, role, risk_score: riskScore });
     }
   };
 
@@ -205,6 +209,12 @@ export default function BossPerceptionSimulator({ role, years, riskScore, tasksA
     setStep("intro");
     setAnswers([]);
     setQIdx(0);
+    track("boss_simulator_rerun");
+  };
+
+  const startSim = () => {
+    setStep("q");
+    track("boss_simulator_started", { role, risk_score: riskScore });
   };
 
   const totalWeight = answers.reduce((a, b) => a + b, 0);
