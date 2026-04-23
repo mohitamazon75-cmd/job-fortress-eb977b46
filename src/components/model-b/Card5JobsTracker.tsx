@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CardShell, CardHead, CardBody, CardNav, Badge, LivePill, SectionLabel } from "./SharedUI";
 import { supabase } from "@/integrations/supabase/client";
 import PromptModal from "./PromptModal";
-import { buildBoardLinks, formatLiveTimestamp, getMatchTone, normalizeCity } from "@/lib/jobsTab";
+import { buildBoardLinks, formatLiveTimestamp, getMatchTone, normalizeCity, detectExecutive, EXECUTIVE_SEARCH_FIRMS } from "@/lib/jobsTab";
 
 const KANBAN_KEY = "jb_kanban";
 type KanbanState = { saved: string[]; applied: string[]; interview: string[]; offer: string[] };
@@ -32,6 +32,7 @@ function useKanban() {
 export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId }: { cardData: any; onBack: () => void; onNext: () => void; analysisId?: string | null }) {
   const d = cardData?.card5_jobs ?? {};
   const [modal, setModal] = useState<{ title: string; promptText: string } | null>(null);
+  const [forceRefresh, setForceRefresh] = useState(0);
   const { state: kanban, addItem } = useKanban();
 
   const role = String(cardData?.user?.current_title || cardData?.user?.title || "").trim();
@@ -40,6 +41,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
     () => (Array.isArray(cardData?.card3_shield?.skills) ? cardData.card3_shield.skills.map((s: any) => s?.name).filter(Boolean).slice(0, 5) : []),
     [cardData],
   );
+  const isExec = useMemo(() => detectExecutive(role), [role]);
 
   const logEvent = async (eventType: string, metadata?: Record<string, unknown>) => {
     try {
@@ -49,7 +51,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
   };
 
   const liveJobsQuery = useQuery({
-    queryKey: ["apify-naukri-jobs", role, city, skills.join("|")],
+    queryKey: ["apify-naukri-jobs", role, city, skills.join("|"), forceRefresh],
     enabled: Boolean(role),
     staleTime: 1000 * 60 * 10,
     queryFn: async () => {
@@ -59,7 +61,8 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
           city,
           skills,
           experience: String(cardData?.user?.years_experience || ""),
-          is_executive: false,
+          is_executive: isExec,
+          force_refresh: forceRefresh > 0,
         },
       });
       if (error) throw error;
@@ -68,8 +71,10 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
   });
 
   const liveJobs = Array.isArray(liveJobsQuery.data?.jobs) ? liveJobsQuery.data.jobs : [];
-  const jobs = liveJobs.length > 0 ? liveJobs.slice(0, 6) : Array.isArray(d?.job_matches) ? d.job_matches.slice(0, 5) : [];
+  const execRoute = Boolean(liveJobsQuery.data?.executive_route);
+  const jobs = liveJobs.length > 0 ? liveJobs.slice(0, 6) : !execRoute && Array.isArray(d?.job_matches) ? d.job_matches.slice(0, 5) : [];
   const searchLinks = buildBoardLinks(role || jobs[0]?.role || "jobs", city, liveJobsQuery.data?.search_urls);
+  const handleRefresh = () => { setForceRefresh((n) => n + 1); };
 
   const cols: { key: keyof KanbanState; label: string }[] = [
     { key: "saved", label: "Saved" },
@@ -82,41 +87,73 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
     <CardShell>
       <CardHead
         badges={<><Badge label="05 · Opportunity" variant="green" /><LivePill /></>}
-        title={role ? `Live openings for ${role}` : d?.headline || "Live opportunities"}
-        sub={liveJobs.length > 0 ? `Direct Naukri feed for ${normalizeCity(city)}. Real listings only — no invented matches.` : d?.subline || "We are checking live openings against your role, skills, and city."}
+        title={execRoute ? `${role} mandates rarely surface on Naukri` : role ? `Live openings for ${role}` : d?.headline || "Live opportunities"}
+        sub={execRoute
+          ? "Confidential C-suite searches run through retained search firms — public job boards are the wrong instrument. Use the routed firm list below."
+          : liveJobs.length > 0
+            ? `Direct Naukri feed for ${normalizeCity(city)} · ${liveJobsQuery.data?.total_scraped || 0} scraped, ${liveJobs.length} pass relevance gate.`
+            : d?.subline || "We are checking live openings against your role, skills, and city."}
       />
       <CardBody>
         <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.18)", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
             <div>
               <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "var(--mb-green)", marginBottom: 4 }}>
-                {liveJobs.length > 0 ? `${liveJobs.length} grounded listings found` : liveJobsQuery.isLoading ? "Fetching live Naukri jobs…" : "No live listing cached yet"}
+                {execRoute
+                  ? "Routing to executive search firms"
+                  : liveJobsQuery.isLoading
+                    ? "Fetching live Naukri jobs…"
+                    : liveJobs.length > 0
+                      ? `${liveJobs.length} relevant listings · ${liveJobsQuery.data?.total_scraped || 0} scanned`
+                      : "No relevant live listings — broaden your search"}
               </div>
               <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", lineHeight: 1.6 }}>
-                {formatLiveTimestamp(liveJobsQuery.data?.generated_at)}
+                {liveJobsQuery.data?.cached ? `Cached ${liveJobsQuery.data?.data_age_minutes || 0} min ago — refresh for live data` : formatLiveTimestamp(liveJobsQuery.data?.generated_at)}
               </div>
             </div>
-            <button
-              onClick={() => liveJobsQuery.refetch()}
-              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, border: "1.5px solid rgba(26,107,60,0.28)", background: "white", color: "var(--mb-green)", padding: "10px 14px", cursor: "pointer", minHeight: 42 }}
-            >
-              Refresh live feed ↻
-            </button>
+            {!execRoute && (
+              <button
+                onClick={handleRefresh}
+                disabled={liveJobsQuery.isFetching}
+                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, border: "1.5px solid rgba(26,107,60,0.28)", background: "white", color: "var(--mb-green)", padding: "10px 14px", cursor: liveJobsQuery.isFetching ? "wait" : "pointer", minHeight: 42, opacity: liveJobsQuery.isFetching ? 0.6 : 1 }}
+              >
+                {liveJobsQuery.isFetching ? "Refreshing…" : "Force refresh ↻"}
+              </button>
+            )}
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
-          {[
-            { label: "Live listings", value: liveJobsQuery.data?.total_found ?? jobs.length },
-            { label: "Posted ≤ 7 days", value: liveJobsQuery.data?.stats?.recent_count ?? 0 },
-            { label: "Named companies", value: liveJobsQuery.data?.stats?.named_companies ?? 0 },
-          ].map((stat) => (
-            <div key={stat.label} style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 16 }}>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 28, fontWeight: 800, color: "var(--mb-navy)", marginBottom: 6 }}>{stat.value ?? 0}</div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--mb-ink2)" }}>{stat.label}</div>
+        {!execRoute && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
+            {[
+              { label: "Relevant listings", value: liveJobsQuery.data?.total_found ?? jobs.length },
+              { label: "Posted ≤ 7 days", value: liveJobsQuery.data?.stats?.recent_count ?? 0 },
+              { label: "Salary disclosed", value: liveJobsQuery.data?.stats?.salary_disclosed_count ?? 0 },
+            ].map((stat) => (
+              <div key={stat.label} style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 28, fontWeight: 800, color: "var(--mb-navy)", marginBottom: 6 }}>{stat.value ?? 0}</div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--mb-ink2)" }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {execRoute && (
+          <div style={{ marginBottom: 22 }}>
+            <SectionLabel label="Routed search firms · India" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+              {EXECUTIVE_SEARCH_FIRMS.map((firm) => (
+                <a key={firm.name} href={firm.url} target="_blank" rel="noopener noreferrer" onClick={() => logEvent("exec_firm_clicked", { firm: firm.name })} style={{ display: "block", background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 14, textDecoration: "none" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)" }}>{firm.name}</div>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-green)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Open ↗</span>
+                  </div>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12.5, color: "var(--mb-ink2)", lineHeight: 1.6, marginTop: 6 }}>{firm.focus}</div>
+                </a>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
 
         {liveJobsQuery.isError && (
           <div style={{ background: "var(--mb-red-tint)", border: "1.5px solid rgba(174,40,40,0.18)", borderRadius: 14, padding: 16, marginBottom: 18, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-red)", fontWeight: 700 }}>

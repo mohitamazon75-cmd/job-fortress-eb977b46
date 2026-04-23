@@ -5,7 +5,22 @@ import { guardRequest } from "../_shared/abuse-guard.ts";
 
 const APIFY_ACTOR_ID = "alpcnRV9YI9lYVPWk";
 const CACHE_TTL_HOURS = 6;
-const RUN_LIMIT = 50;
+const RUN_LIMIT = 50; // actor minimum
+
+// Executive titles where Naukri keyword search returns junk.
+const EXECUTIVE_HINTS = [
+  "founder", "co-founder", "ceo", "cfo", "coo", "cto", "cmo", "chro",
+  "chief executive", "chief financial", "chief operating", "chief technology",
+  "chief marketing", "chief people", "chief revenue", "managing director",
+  "president", "general partner", "venture partner", "country head",
+];
+
+const STOP_TOKENS = new Set([
+  "and", "the", "for", "with", "of", "in", "at", "on", "to", "a", "an",
+  "&", "lead", "sr", "jr", "senior", "junior", "principal", "head",
+  "manager", "executive", "specialist", "associate", "consultant", "engineer",
+  "developer", "analyst", "officer",
+]);
 
 const RequestSchema = z.object({
   role: z.string().min(2).max(120),
@@ -13,6 +28,7 @@ const RequestSchema = z.object({
   skills: z.array(z.string().min(1).max(40)).optional().default([]),
   experience: z.string().max(30).optional().default(""),
   is_executive: z.boolean().optional().default(false),
+  force_refresh: z.boolean().optional().default(false),
 });
 
 type ApifyJob = {
@@ -23,7 +39,10 @@ type ApifyJob = {
   tagsAndSkills?: string;
   experience?: string;
   experienceText?: string;
+  minimumExperience?: string | number;
+  maximumExperience?: string | number;
   salary?: string;
+  salaryDetail?: { hideSalary?: boolean; minimumSalary?: number; maximumSalary?: number; label?: string };
   location?: string;
   footerPlaceholderLabel?: string;
   createdDate?: string;
@@ -38,17 +57,37 @@ function normalizeCity(city: string) {
   return city.replace(/\(.*?\)/g, "").split(/,|\//)[0]?.trim() || "India";
 }
 
-function buildKeyword(role: string, city: string, skills: string[], isExecutive: boolean) {
-  const skillTail = isExecutive ? "" : ` ${skills.slice(0, 2).join(" ")}`;
-  return `${role} ${normalizeCity(city)}${skillTail}`.trim();
+function slugify(text: string) {
+  return text
+    .replace(/[^\w\s]/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-") || "jobs";
+}
+
+function isExecutiveTitle(role: string) {
+  const lower = role.toLowerCase();
+  return EXECUTIVE_HINTS.some((hint) => lower.includes(hint));
+}
+
+// "Senior Product Manager" => ["product","manager"] but stop tokens removed.
+// Keep the ANCHOR tokens — these MUST appear in the listing or it's dropped.
+function getAnchorTokens(role: string): string[] {
+  const tokens = normalizeText(role).split(" ").filter(Boolean);
+  // Anchors are the non-stop, length>2 tokens. If none survive, fall back to longest word.
+  const filtered = tokens.filter((t) => t.length > 2 && !STOP_TOKENS.has(t));
+  if (filtered.length > 0) return filtered;
+  return tokens.length ? [tokens.sort((a, b) => b.length - a.length)[0]] : [];
 }
 
 function buildSearchUrls(role: string, city: string) {
-  const roleSlug = role.replace(/[^\w\s]/g, " ").trim().toLowerCase().replace(/\s+/g, "-") || "jobs";
-  const citySlug = normalizeCity(city).toLowerCase().replace(/\s+/g, "-") || "india";
+  const roleSlug = slugify(role);
+  const citySlug = slugify(normalizeCity(city));
+  const naukriBoard = `https://www.naukri.com/${roleSlug}-jobs-in-${citySlug}`;
   return {
-    naukri: `https://www.naukri.com/${roleSlug}-jobs-in-${citySlug}`,
+    naukri: naukriBoard,
     linkedin: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(normalizeCity(city))}&f_TPR=r604800&sortBy=DD`,
+    naukri_search_url: naukriBoard,
   };
 }
 
@@ -59,29 +98,69 @@ function stripHtml(text?: string) {
 function parseDays(label?: string) {
   const lower = (label || "").toLowerCase();
   if (!lower) return null;
-  if (lower.includes("today") || lower.includes("hour")) return 0;
+  if (lower.includes("just now") || lower.includes("today") || lower.includes("hour") || lower.includes("few hours")) return 0;
   const match = lower.match(/(\d+)/);
   return match ? Number(match[1]) : null;
 }
 
-function scoreJob(job: ApifyJob, role: string, city: string, skills: string[]) {
-  const haystack = normalizeText([job.title, job.jobDescription, job.tagsAndSkills, job.companyName].filter(Boolean).join(" "));
-  const roleTokens = normalizeText(role).split(" ").filter((token) => token.length > 2 && !["and", "the", "for", "with"].includes(token));
-  const roleHits = roleTokens.filter((token) => haystack.includes(token)).length;
-  const skillHits = skills.slice(0, 4).filter((skill) => haystack.includes(normalizeText(skill))).length;
-  const cityHit = normalizeText(job.location || "").includes(normalizeText(normalizeCity(city))) ? 2 : /remote|india/.test(normalizeText(job.location || "")) ? 1 : 0;
-  const recency = (() => {
-    const days = parseDays(job.footerPlaceholderLabel);
-    if (days == null) return 0;
-    if (days <= 1) return 2;
-    if (days <= 7) return 1;
-    return 0;
-  })();
-  return roleHits * 5 + skillHits * 2 + cityHit + recency;
+function isSalaryDisclosed(job: ApifyJob): boolean {
+  if (job.salaryDetail?.hideSalary === false) return true;
+  const salary = (job.salary || "").toLowerCase();
+  if (!salary || salary.includes("not disclosed") || salary.includes("not specified")) return false;
+  return /\d/.test(salary);
 }
 
-function toMatchPct(score: number) {
-  return Math.max(58, Math.min(95, 60 + score * 4));
+// Deterministic relevance scoring against the USER's role + skills.
+// Returns { score, anchorMatched, skillOverlap, sharedSkills }
+function scoreJobAgainstUser(job: ApifyJob, role: string, skills: string[]) {
+  const haystackParts = [job.title, job.tagsAndSkills, stripHtml(job.jobDescription)].filter(Boolean).join(" ");
+  const haystack = normalizeText(haystackParts);
+  const titleHaystack = normalizeText(job.title || "");
+
+  const anchors = getAnchorTokens(role);
+  // ANCHOR rule: at least one anchor token MUST appear in the job TITLE (strict) — otherwise it's noise.
+  const anchorInTitle = anchors.some((a) => titleHaystack.includes(a));
+  const anchorInBody = anchors.filter((a) => haystack.includes(a)).length;
+
+  // User skills overlap (computed against listing tags + body, not against itself).
+  const userSkillsNorm = skills.map((s) => normalizeText(s)).filter((s) => s.length > 1);
+  const sharedSkills = userSkillsNorm.filter((s) => haystack.includes(s));
+  const skillOverlapPct = userSkillsNorm.length ? sharedSkills.length / userSkillsNorm.length : 0;
+
+  // Recency
+  const days = parseDays(job.footerPlaceholderLabel);
+  const recencyScore = days == null ? 0 : days <= 1 ? 3 : days <= 7 ? 2 : days <= 30 ? 1 : 0;
+
+  // Composite
+  const score =
+    (anchorInTitle ? 10 : 0) +
+    anchorInBody * 2 +
+    sharedSkills.length * 4 +
+    recencyScore;
+
+  return {
+    score,
+    anchorInTitle,
+    anchorInBody,
+    sharedSkills, // returned in the listing's own casing
+    skillOverlapPct,
+  };
+}
+
+function toMatchPct(opts: { anchorInTitle: boolean; sharedSkillsCount: number; userSkillsCount: number; recencyDays: number | null }) {
+  if (!opts.anchorInTitle) return 0;
+  let pct = 65; // anchor in title floor
+  if (opts.userSkillsCount > 0) {
+    const overlap = Math.min(1, opts.sharedSkillsCount / opts.userSkillsCount);
+    pct += Math.round(overlap * 25); // up to +25 from skills
+  } else {
+    pct += 10; // no user skills => modest bump
+  }
+  if (opts.recencyDays != null) {
+    if (opts.recencyDays <= 1) pct += 4;
+    else if (opts.recencyDays <= 7) pct += 2;
+  }
+  return Math.max(60, Math.min(96, pct));
 }
 
 function toMatchLabel(matchPct: number) {
@@ -90,45 +169,90 @@ function toMatchLabel(matchPct: number) {
   return "Stretch";
 }
 
+function buildWhyFit(opts: {
+  sharedSkills: string[];
+  userSkillsCount: number;
+  experience: string | null;
+  postedLabel: string | null;
+  anchorTokens: string[];
+  anchorInTitle: boolean;
+}) {
+  const parts: string[] = [];
+  if (opts.anchorInTitle) {
+    parts.push(`Title matches your role (${opts.anchorTokens.slice(0, 2).join(" / ")})`);
+  }
+  if (opts.sharedSkills.length > 0) {
+    parts.push(`${opts.sharedSkills.length}/${opts.userSkillsCount || opts.sharedSkills.length} of your skills present: ${opts.sharedSkills.slice(0, 3).join(", ")}`);
+  } else if (opts.userSkillsCount > 0) {
+    parts.push("None of your declared skills appear in this listing — verify before applying");
+  }
+  if (opts.experience) parts.push(`Experience band: ${opts.experience}`);
+  if (opts.postedLabel) parts.push(`Posted ${opts.postedLabel.toLowerCase()}`);
+  return parts.join(" · ");
+}
+
 function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: string[]) {
-  return items
+  const anchors = getAnchorTokens(role);
+  const userSkillsCount = skills.filter((s) => s && s.trim().length > 1).length;
+
+  const scored = items
     .filter((item) => item.jdURL && item.title)
     .map((item) => {
-      const score = scoreJob(item, role, city, skills);
-      const matchPct = toMatchPct(score);
+      const s = scoreJobAgainstUser(item, role, skills);
+      const days = parseDays(item.footerPlaceholderLabel);
+      const matchPct = toMatchPct({
+        anchorInTitle: s.anchorInTitle,
+        sharedSkillsCount: s.sharedSkills.length,
+        userSkillsCount,
+        recencyDays: days,
+      });
+
       const tags = (item.tagsAndSkills || "")
         .split(",")
-        .map((tag) => tag.trim())
+        .map((t) => t.trim())
         .filter(Boolean)
-        .slice(0, 5);
-      const whyFit = [
-        tags.length ? `Skill overlap: ${tags.slice(0, 3).join(", ")}` : null,
-        item.experienceText || item.experience ? `Experience band: ${item.experienceText || item.experience}` : null,
-        item.footerPlaceholderLabel ? `Freshness: ${item.footerPlaceholderLabel}` : null,
-      ].filter(Boolean).join(" · ");
+        .slice(0, 6);
+
+      const expBand = item.experienceText || item.experience || null;
+      const postedLabel = item.footerPlaceholderLabel || null;
+      const whyFit = buildWhyFit({
+        sharedSkills: s.sharedSkills,
+        userSkillsCount,
+        experience: expBand,
+        postedLabel,
+        anchorTokens: anchors,
+        anchorInTitle: s.anchorInTitle,
+      });
 
       return {
         title: item.title,
         company: item.companyName || "Hiring company",
-        location: item.location || city || "India",
+        location: item.location || normalizeCity(city) || "India",
         salary: item.salary || "Not disclosed",
+        salary_disclosed: isSalaryDisclosed(item),
         url: item.jdURL,
         company_jobs_url: item.companyJobsUrl || null,
         description_snippet: stripHtml(item.jobDescription).slice(0, 220),
-        posted_label: item.footerPlaceholderLabel || null,
-        experience: item.experienceText || item.experience || null,
+        posted_label: postedLabel,
+        posted_days: days,
+        experience: expBand,
         tags,
+        shared_skills: s.sharedSkills,
         verified_live: true,
         source: "apify_naukri",
+        anchor_in_title: s.anchorInTitle,
         match_pct: matchPct,
         match_label: toMatchLabel(matchPct),
-        why_fit: whyFit || "Live Naukri listing matched against your current role and skills.",
-        raw_score: score,
+        why_fit: whyFit,
+        raw_score: s.score,
       };
     })
+    // Hard relevance gate: anchor MUST appear in title OR user skill overlap >= 25%
+    .filter((j) => j.anchor_in_title || (userSkillsCount > 0 && j.shared_skills.length / userSkillsCount >= 0.25))
     .sort((a, b) => b.raw_score - a.raw_score)
-    .slice(0, 8)
-    .map(({ raw_score, ...job }) => job);
+    .slice(0, 10);
+
+  return scored.map(({ raw_score, anchor_in_title, ...job }) => job);
 }
 
 Deno.serve(async (req) => {
@@ -145,33 +269,52 @@ Deno.serve(async (req) => {
       return json({ error: parsed.error.flatten().fieldErrors }, 400);
     }
 
-    const { role, city, skills, is_executive } = parsed.data;
+    const { role, city, skills, force_refresh } = parsed.data;
+    const isExecutive = parsed.data.is_executive || isExecutiveTitle(role);
     const searchUrls = buildSearchUrls(role, city);
-    const cacheKey = `apify-naukri-jobs:v1:${normalizeText(role)}:${normalizeText(city)}:${skills.slice(0, 3).map(normalizeText).join("-")}:${is_executive ? "exec" : "core"}`;
+    const cacheKey = `apify-naukri-jobs:v3:${normalizeText(role)}:${normalizeText(city)}:${skills.slice(0, 5).map(normalizeText).sort().join("-")}:${isExecutive ? "exec" : "core"}`;
     const sb = createAdminClient();
 
-    const { data: cached } = await sb.from("enrichment_cache").select("data, cached_at").eq("cache_key", cacheKey).maybeSingle();
-    if (cached?.data && cached.cached_at) {
-      const ageHours = (Date.now() - new Date(cached.cached_at).getTime()) / 36e5;
-      if (ageHours < CACHE_TTL_HOURS) {
-        return json({ ...(cached.data as Record<string, unknown>), cached: true, data_age_minutes: Math.round(ageHours * 60) });
+    // Executive route: don't waste Apify credits — board search returns junk for C-suite roles.
+    if (isExecutive) {
+      return json({
+        jobs: [],
+        total_found: 0,
+        executive_route: true,
+        search_query: role,
+        source: "apify_naukri",
+        cached: false,
+        data_age_minutes: 0,
+        generated_at: new Date().toISOString(),
+        search_urls: searchUrls,
+        message: "Naukri public listings rarely surface confidential C-suite mandates. Use the search-firm routing below.",
+        stats: { recent_count: 0, salary_disclosed_count: 0, total_returned: 0 },
+      });
+    }
+
+    if (!force_refresh) {
+      const { data: cached } = await sb.from("enrichment_cache").select("data, cached_at").eq("cache_key", cacheKey).maybeSingle();
+      if (cached?.data && cached.cached_at) {
+        const ageHours = (Date.now() - new Date(cached.cached_at).getTime()) / 36e5;
+        if (ageHours < CACHE_TTL_HOURS) {
+          return json({ ...(cached.data as Record<string, unknown>), cached: true, data_age_minutes: Math.round(ageHours * 60) });
+        }
       }
     }
 
     const apiToken = Deno.env.get("APIFY_API_TOKEN");
     if (!apiToken) return json({ error: "APIFY_API_TOKEN is not configured" }, 500);
 
+    // Use searchUrl mode for precision: /<role>-jobs-in-<city>
     const apifyUrl = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?token=${apiToken}`;
-    const keyword = buildKeyword(role, city, skills, is_executive);
     const apifyResp = await fetch(apifyUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        keyword,
+        searchUrl: searchUrls.naukri_search_url,
         maxJobs: RUN_LIMIT,
-        freshness: "all",
-        sortBy: "relevance",
-        experience: "all",
+        freshness: "30",
+        sortBy: "date",
         fetchDetails: false,
       }),
     });
@@ -183,21 +326,24 @@ Deno.serve(async (req) => {
 
     const items = (await apifyResp.json()) as ApifyJob[];
     const jobs = normalizeJobs(Array.isArray(items) ? items : [], role, city, skills);
+    const recentCount = jobs.filter((j) => j.posted_days != null && j.posted_days <= 7).length;
+    const salaryDisclosedCount = jobs.filter((j) => j.salary_disclosed).length;
+
     const result = {
       jobs,
       total_found: jobs.length,
-      search_query: keyword,
+      total_scraped: Array.isArray(items) ? items.length : 0,
+      executive_route: false,
+      search_query: role,
       source: "apify_naukri",
       cached: false,
       data_age_minutes: 0,
       generated_at: new Date().toISOString(),
       search_urls: searchUrls,
       stats: {
-        recent_count: jobs.filter((job) => {
-          const days = parseDays(job.posted_label || undefined);
-          return days != null && days <= 7;
-        }).length,
-        named_companies: new Set(jobs.map((job) => job.company).filter(Boolean)).size,
+        recent_count: recentCount,
+        salary_disclosed_count: salaryDisclosedCount,
+        total_returned: jobs.length,
       },
     };
 
