@@ -633,7 +633,7 @@ Deno.serve(async (req) => {
               primary_ai_threat_vector: cachedReport.primary_ai_threat_vector,
               moat_indicators: cachedReport.moat_indicators,
             };
-            console.log(`[Agent1:Cache] HIT — reusing skills from previous scan (confidence=${cachedConfidence}, skills=${cachedSkillCount}, role="${cachedRole}")`);
+            console.log(`[Agent1:Cache] HIT — reusing skills from previous scan (confidence=${cachedConfidence}, skills=${cachedSkillCount}, role="${cachedRole}", subSector="${cachedReport.industry_sub_sector || 'none'}")`);
           } else if (cachedReport) {
             console.warn(`[Agent1:Cache] SKIP — cached report failed quality gates (confidence=${cachedConfidence}, skills=${cachedSkillCount}, role="${cachedRole}")`);
           }
@@ -687,11 +687,15 @@ Deno.serve(async (req) => {
         const executionFallback = fallbackSkills.slice(0, 3);
         const strategicFallback = fallbackSkills.slice(3, 5);
 
+        const inferredSubSector = typeof (scan.enrichment_cache as any)?.inferredSubSector === "string"
+          ? (scan.enrichment_cache as any).inferredSubSector
+          : null;
+
         agent1 = {
           current_role: fallbackRole,
           current_company: linkedinCompany || null,
           industry: resolvedIndustry,
-          industry_sub_sector: null,
+          industry_sub_sector: inferredSubSector,
           experience_years: normalizedExperienceYears ?? 5,
           seniority_tier: normalizedExperienceYears !== null
             ? normalizedExperienceYears >= 15
