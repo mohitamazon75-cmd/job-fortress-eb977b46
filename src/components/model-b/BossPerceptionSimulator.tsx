@@ -186,7 +186,8 @@ function buildPersonalisedVerdict(
   };
 }
 
-export default function BossPerceptionSimulator({ role, years, riskScore, tasksAtRisk }: Props) {
+// `industry` is accepted for future industry-aware verdicts but not used yet.
+export default function BossPerceptionSimulator({ role, years, riskScore, tasksAtRisk, industry: _industry }: Props) {
   const [step, setStep] = useState<"intro" | "q" | "result">("intro");
   const [answers, setAnswers] = useState<number[]>([]);
   const [qIdx, setQIdx] = useState(0);
