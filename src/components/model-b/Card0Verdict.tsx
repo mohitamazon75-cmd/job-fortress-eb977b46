@@ -45,18 +45,24 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     return () => clearTimeout(t);
   }, []);
 
-  // Sharper fear — pull SPECIFIC tools/timeframes from the data
+  // Sharper fear — pull SPECIFIC threat data from card1_risk schema
+  // Schema fields: tasks_at_risk[], ai_tools_replacing (root-level on legacy scans), risk_score
   const threatTask = c1?.tasks_at_risk?.[0];
-  const threatPct = c1?.ai_coverage_pct || c1?.exposure_pct;
-  const threatTool = c1?.ai_tools_replacing?.[0] || c1?.tools?.[0];
+  // Derive coverage % from risk_score when explicit field absent (LLM schema doesn't expose ai_coverage_pct)
+  const threatPct = c1?.ai_coverage_pct || c1?.exposure_pct
+    || (typeof c1?.risk_score === "number" ? Math.min(95, Math.max(40, c1.risk_score + 10)) : null);
+  const threatTool = c1?.ai_tools_replacing?.[0]
+    || cardData?.ai_tools_replacing?.[0]?.tool_name
+    || cardData?.ai_tools_replacing?.[0];
   const topMoatSkill = c3?.skills?.find((s: any) => s.level === "best-in-class" || s.level === "strong");
   const topMoat = topMoatSkill?.name
-    || c1?.hope_bridge?.split(".")?.[0]?.replace(" is your shield", "")
+    || c1?.hope_bridge?.split(".")?.[0]?.replace(" is your shield", "")?.replace(/^[^a-zA-Z]+/, "")
     || "your judgment and pattern-recognition";
 
   // Build the visceral fear→hope couplet
+  const threatToolStr = typeof threatTool === "string" ? threatTool : null;
   const fearLine = threatTask && threatPct
-    ? `${cap(threatTask)} — ${threatPct}% of it${threatTool ? ` is already done by ${threatTool}` : " can be automated"} today.`
+    ? `${cap(threatTask)} — ${threatPct}% of it${threatToolStr ? ` is already done by ${threatToolStr}` : " can be automated"} today.`
     : threatTask
     ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
     : "Your top execution skills are being automated today — not in five years.";
@@ -76,14 +82,16 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const confidenceLabel = dataDepth >= 3 ? "High" : dataDepth >= 2 ? "Medium" : "Building";
   const confidenceColor = dataDepth >= 3 ? "#15803d" : dataDepth >= 2 ? "#b45309" : "#6b7280";
 
-  // Stats below the score — pulls real intelligence
-  const aiCoverage = c1?.ai_coverage_pct || c1?.exposure_pct || null;
+  // Stats below the score — pulls real intelligence (with safe derivations)
+  const aiCoverage = c1?.ai_coverage_pct || c1?.exposure_pct
+    || (typeof c1?.risk_score === "number" ? c1.risk_score : null);
   const moatCount = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong")?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
 
   // Top move — keep solid navy CTA card
+  // Schema: pivots[].match_pct (not skill_overlap_pct)
   const topMove = c4?.pivots?.[0]?.role
-    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
+    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].match_pct || c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
     : (c1?.confrontation?.split(".")?.[0] + "." || "Start with one concrete case study this week.");
 
   // Conic-gradient ring percentage
