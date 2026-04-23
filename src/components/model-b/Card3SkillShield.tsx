@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from "react";
-import { CardShell, CardHead, CardBody, Badge, EmotionStrip, SectionLabel, InfoBox, CardNav, Badge as BadgeComp } from "./SharedUI";
+import { CardShell, CardHead, CardBody, Badge, SectionLabel, CardNav } from "./SharedUI";
 
 // Skill Arbitrage Engine — already-built widget previously only on the dashboard.
 // Lazy-loaded so the Shield tab stays fast and only pays the cost when the user
@@ -14,13 +14,6 @@ interface Props {
   overallScore?: number;
   scanId?: string;
 }
-
-const skillBadgeMap: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  "best-in-class": { label: "🏆 Best-in-class", bg: "var(--mb-green-tint)", color: "var(--mb-green)", border: "rgba(26,107,60,0.25)" },
-  strong: { label: "💪 Strong shield", bg: "var(--mb-green-tint)", color: "var(--mb-green)", border: "rgba(26,107,60,0.25)" },
-  buildable: { label: "🔨 Build in 30–45 days", bg: "var(--mb-amber-tint)", color: "var(--mb-amber)", border: "rgba(139,90,0,0.25)" },
-  "critical-gap": { label: "🚨 Critical gap", bg: "var(--mb-red-tint)", color: "var(--mb-red)", border: "rgba(174,40,40,0.25)" },
-};
 
 export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePlan, overallScore, scanId }: Props) {
   const c3 = cardData.card3_shield;
