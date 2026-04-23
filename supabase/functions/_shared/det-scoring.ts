@@ -166,6 +166,9 @@ export function calculateDeterminismIndex(
   const matchedRisks: { risk: number; weight: number }[] = [];
   const skillAdjustments: SkillAdjustment[] = [];
   const matchedKGNames = new Set<string>();
+  let aiNativeCount = 0;
+  let vernacularMoatCount = 0;
+  let bpoTemplateCount = 0;
 
   for (const userSkill of uniqueSkills) {
     const matched = matchSkillToKG(userSkill, skillRiskData, kgIndex);
@@ -174,6 +177,11 @@ export function calculateDeterminismIndex(
       if (matchedKGNames.has(normMatchedName)) continue;
       matchedKGNames.add(normMatchedName);
       if (filterCommodity && COMMODITY_SKILL_RE.test(matched.skill_name.replace(/[\s\-]+/g, '_'))) continue;
+
+      // Track India-specific signals
+      if (matched.ai_tool_native) aiNativeCount++;
+      if (matched.vernacular_moat) vernacularMoatCount++;
+      if (matched.bpo_template_flag) bpoTemplateCount++;
 
       const mapEntry = jobSkillMap.find((m) => normalize(m.skill_name) === normMatchedName);
       const weight = mapEntry?.importance || 5;
@@ -288,6 +296,18 @@ export function calculateDeterminismIndex(
     experienceReduction = Math.round(Math.min(rawReduction, cap) * 10) / 10;
     index = Math.round(index - experienceReduction);
   }
+
+  // ── INDIA-SPECIFIC SIGNAL APPLICATION ──
+  // AI-native tools LOWER risk: -3 DI per AI-native skill (capped at -10)
+  // Rationale: Marketer using Surfer + Jasper + ChatGPT is materially safer than one without
+  const aiNativeDiscount = Math.min(10, aiNativeCount * 3);
+  // Vernacular moat: -2 DI per signal (capped at -8) — Hindi/regional fluency is AI-resistant
+  const vernacularDiscount = Math.min(8, vernacularMoatCount * 2);
+  // BPO template work: +3 DI per signal (capped at +12) — IT-services tactical roles
+  const bpoPenalty = Math.min(12, bpoTemplateCount * 3);
+  // Tier-2/3 risk amplifier: +3 DI for tier2 (SMB clients adopt AI tools faster, less process inertia)
+  const tierPenalty = (metroTier === 'tier2' || metroTier === 'tier3') ? 3 : 0;
+  index = Math.round(index - aiNativeDiscount - vernacularDiscount + bpoPenalty + tierPenalty);
 
   const preClampScore = index;
   const finalIndex = Math.min(CALIBRATION.DI_CLAMP_MAX, Math.max(CALIBRATION.DI_CLAMP_MIN, index));
