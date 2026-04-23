@@ -5,22 +5,44 @@ import { CardShell, CardHead, CardBody, EmotionStrip, SectionLabel, InfoBox, Car
 // for executive search firms (Heidrick, Egon Zehnder, etc.). Triggers on:
 //  - current_title contains CEO / Founder / MD / Partner / President / CXO / EVP / SVP
 //  - any pivot salary uses "Cr" notation (the LLM's executive-mode output marker)
+//  - years_experience >= 18 with leadership keywords (head/director/vp/chief/lead)
 function isExecutiveCardData(cardData: any): boolean {
-  const title = String(cardData?.user?.current_title || "").toLowerCase();
-  if (/\b(ceo|founder|co[\s-]?founder|managing\s+director|managing\s+partner|president|owner|chief\s+\w+\s+officer|cto|cfo|coo|cmo|cpo|chro|cro|cdo|ciso|cio|evp|svp|executive\s+vice\s+president|senior\s+vice\s+president)\b/.test(title)) {
+  if (!cardData || typeof cardData !== "object") return false;
+
+  const title = String(cardData?.user?.current_title ?? cardData?.user?.title ?? "").toLowerCase();
+  const execTitleRe = /\b(ceo|founder|co[\s-]?founder|managing\s+director|managing\s+partner|president|owner|chief\s+\w+\s+officer|cto|cfo|coo|cmo|cpo|chro|cro|cdo|ciso|cio|evp|svp|executive\s+vice\s+president|senior\s+vice\s+president)\b/;
+  if (title && execTitleRe.test(title)) return true;
+
+  // Years-of-experience + senior keyword fallback (handles "Head of X · 22 yrs")
+  const years = Number(cardData?.user?.years_experience ?? cardData?.user?.years ?? 0);
+  if (Number.isFinite(years) && years >= 18 && /\b(head|director|vp|vice\s+president|chief|lead|principal)\b/.test(title)) {
     return true;
   }
+
   const d = cardData?.card4_pivot;
-  if (!d) return false;
-  const blob = JSON.stringify([d.current_band, d.pivot_year1, d.director_band, ...(d.pivots || []).map((p: any) => p.salary || p.salary_range)]);
-  return /₹\s*\d+(\.\d+)?\s*Cr/i.test(blob);
+  if (!d || typeof d !== "object") return false;
+
+  // Detect "Cr" salary notation anywhere in band/pivot strings
+  try {
+    const parts: string[] = [
+      String(d.current_band ?? ""),
+      String(d.pivot_year1 ?? ""),
+      String(d.director_band ?? ""),
+      ...(Array.isArray(d.pivots) ? d.pivots.map((p: any) => String(p?.salary ?? p?.salary_range ?? "")) : []),
+    ];
+    return /₹\s*\d+(\.\d+)?\s*Cr/i.test(parts.join(" "));
+  } catch {
+    return false;
+  }
 }
 
 // Executive search URL builders. These are the channels actual CXOs use —
 // not Naukri or generic LinkedIn job search.
 function buildExecSearchUrls(role: string, city: string) {
-  const q = encodeURIComponent(role);
-  const cityQ = encodeURIComponent(city);
+  const safeRole = (role && role.trim()) || "Executive";
+  const safeCity = (city && city.trim()) || "India";
+  const q = encodeURIComponent(safeRole);
+  const cityQ = encodeURIComponent(safeCity);
   return {
     linkedinExec: `https://www.linkedin.com/jobs/search/?keywords=${q}&location=${cityQ}&f_E=6%2C7&sortBy=DD`, // 6=Director, 7=Executive
     heidrick: `https://www.heidrick.com/en/search?keywords=${q}`,
@@ -31,9 +53,12 @@ function buildExecSearchUrls(role: string, city: string) {
 }
 
 export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData: any; onBack: () => void; onNext: () => void }) {
-  const d = cardData.card4_pivot;
+  const d = cardData?.card4_pivot ?? {};
+  const pivots: any[] = Array.isArray(d.pivots) ? d.pivots : [];
   const [selectedPivot, setSelectedPivot] = useState(0);
   const isExec = useMemo(() => isExecutiveCardData(cardData), [cardData]);
+  // Clamp selection if pivots shrink between renders
+  const safeSelected = pivots.length > 0 ? Math.min(selectedPivot, pivots.length - 1) : 0;
 
   const pivotBg = (c: string) => c === "green" ? "var(--mb-green-tint)" : c === "teal" ? "var(--mb-teal-tint)" : "var(--mb-navy-tint)";
 
@@ -80,31 +105,42 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
         </div>
 
         {/* Pivot cards */}
-        {(d.pivots || []).map((p: any, i: number) => {
-          const sel = selectedPivot === i;
-          const bc = sel ? variantColor(p.color) : "var(--mb-rule)";
-          const bg = sel ? pivotBg(p.color) : "var(--mb-paper)";
-          const city = (p.location || "India").split(",")[0].trim();
-          const naukriSlug = p.role.replace(/[^\w\s]/g, "").trim().toLowerCase().replace(/\s+/g, "-");
-          const citySlug = city.toLowerCase().replace(/\s+/g, "-");
-          const searchUrl = p.search_url || `https://www.naukri.com/${naukriSlug}-jobs-in-${citySlug}`;
+        {pivots.length === 0 && (
+          <div style={{ padding: "16px 18px", border: "1.5px dashed var(--mb-rule)", borderRadius: 14, marginBottom: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", textAlign: "center" }}>
+            Pivot suggestions are being prepared. Refresh in a moment.
+          </div>
+        )}
+        {pivots.map((p: any, i: number) => {
+          const sel = safeSelected === i;
+          const role = String(p?.role ?? "Role");
+          const location = String(p?.location ?? "India");
+          const color = p?.color ?? "navy";
+          const bc = sel ? variantColor(color) : "var(--mb-rule)";
+          const bg = sel ? pivotBg(color) : "var(--mb-paper)";
+          const city = (location.split(",")[0] || "India").trim() || "India";
+          const naukriSlug = role.replace(/[^\w\s]/g, "").trim().toLowerCase().replace(/\s+/g, "-") || "jobs";
+          const citySlug = city.toLowerCase().replace(/\s+/g, "-") || "india";
+          const searchUrl = p?.search_url || `https://www.naukri.com/${naukriSlug}-jobs-in-${citySlug}`;
+          const matchPctRaw = Number(p?.match_pct);
+          const matchPct = Number.isFinite(matchPctRaw) ? Math.max(0, Math.min(100, matchPctRaw)) : 0;
+          const salaryDisplay = p?.salary_range || p?.salary || "—";
           return (
             <div key={i} onClick={() => setSelectedPivot(i)} style={{ background: bg, border: `2px solid ${bc}`, borderRadius: 14, padding: "16px 18px", marginBottom: 10, cursor: "pointer", transition: "border-color 150ms" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 5 }}>
-                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)" }}>{p.role}</span>
-                <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 12, whiteSpace: "nowrap", background: pivotBg(p.color), color: variantColor(p.color), fontFamily: "'DM Sans', sans-serif" }}>{p.match_label || "Fastest route"}</span>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 800, color: "var(--mb-ink)" }}>{role}</span>
+                <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 12, whiteSpace: "nowrap", background: pivotBg(color), color: variantColor(color), fontFamily: "'DM Sans', sans-serif" }}>{p?.match_label || "Fastest route"}</span>
               </div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600, marginBottom: 6 }}>{p.salary_range || p.salary} · {p.location}</div>
-              <div style={{ height: 4, borderRadius: 2, background: variantColor(p.color), width: `${p.match_pct}%`, marginBottom: 8, transition: "width 0.6s ease" }} />
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", fontWeight: 600, marginBottom: 6 }}>{salaryDisplay} · {location}</div>
+              <div style={{ height: 4, borderRadius: 2, background: variantColor(color), width: `${matchPct}%`, marginBottom: 8, transition: "width 0.6s ease" }} />
               {/* FOMO signal */}
-              {p.fomo_signal && (
+              {p?.fomo_signal && (
                 <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--mb-amber)", marginBottom: 8, padding: "6px 10px", background: "var(--mb-amber-tint)", borderRadius: 8, border: "1px solid rgba(139,90,0,0.15)" }}>
                   ⚡ {p.fomo_signal}
                 </div>
               )}
               {isExec ? (
                 (() => {
-                  const urls = buildExecSearchUrls(p.role, city);
+                  const urls = buildExecSearchUrls(role, city);
                   return (
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <a href={urls.linkedinExec} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
@@ -127,7 +163,7 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
                   <a href={searchUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                     style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
                   >🔍 Search on Naukri</a>
-                  <a href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(p.role)}&location=${encodeURIComponent(city + ", India")}&f_TPR=r604800&sortBy=DD`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                  <a href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(city + ", India")}&f_TPR=r604800&sortBy=DD`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                     style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
                   >💼 LinkedIn</a>
                 </div>
@@ -137,8 +173,8 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
         })}
 
         {/* Pivot explanation */}
-        {d.pivot_explanations?.[selectedPivot] && (
-          <InfoBox variant="navy" title={d.pivot_explanations[selectedPivot].title} body={d.pivot_explanations[selectedPivot].body} />
+        {Array.isArray(d.pivot_explanations) && d.pivot_explanations[safeSelected] && (
+          <InfoBox variant="navy" title={d.pivot_explanations[safeSelected].title} body={d.pivot_explanations[safeSelected].body} />
         )}
 
         {/* Negotiation */}
