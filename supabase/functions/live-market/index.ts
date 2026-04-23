@@ -41,7 +41,13 @@ Deno.serve(async (req) => {
     const { userId: _jwtUserId, blocked: jwtBlocked } = await validateJwtClaims(req, corsHeaders);
     if (jwtBlocked) return jwtBlocked;
 
-    const { role, industry, metroTier, scanId, country } = await req.json();
+    // Accept both `metroTier` and legacy `metro` from older frontend callers.
+    const reqBody = await req.json();
+    const role = reqBody.role;
+    const industry = reqBody.industry;
+    const metroTier = reqBody.metroTier || reqBody.metro;
+    const experienceBand = (reqBody.experienceBand || reqBody.years_experience || "").toString().trim();
+    const country = reqBody.country;
     const locale = getLocale(country);
 
     if (!role && !industry) {
@@ -54,7 +60,7 @@ Deno.serve(async (req) => {
     const supabase = createAdminClient();
 
     // DB-backed cache check
-    const cacheKey = `lm:${(role || '')}_${(industry || '')}_${(metroTier || '')}_${locale.code}`.toLowerCase().replace(/\s+/g, '_');
+    const cacheKey = `lm:${(role || '')}_${(industry || '')}_${(metroTier || '')}_${experienceBand}_${locale.code}_v2`.toLowerCase().replace(/\s+/g, '_');
     const cached = await getDbCache(supabase, cacheKey);
     if (cached) {
       return new Response(JSON.stringify({ ...cached, cached: true }), {
@@ -84,7 +90,7 @@ Deno.serve(async (req) => {
       // SOURCE 1: Tavily (PRIMARY)
       tavilySearchParallel([
         {
-          query: `"${primaryRole}" ${locale.salarySearchTerms} 2025 2026 ${tier}`,
+          query: `"${primaryRole}" ${locale.salarySearchTerms} ${experienceBand} years 2025 2026 ${tier}`,
           maxResults: 5,
           days: 30,
           topic: "general",
@@ -93,6 +99,13 @@ Deno.serve(async (req) => {
           query: `"${primaryRole}" hiring jobs demand ${locale.label} AI automation impact ${industry || ''}`,
           maxResults: 5,
           days: 14,
+          topic: "news",
+        },
+        // SECTOR NEWS — dated headlines for the user's industry & seniority
+        {
+          query: `${industry || primaryRole} industry ${locale.label} layoffs hiring funding ${experienceBand} leaders 2026`,
+          maxResults: 6,
+          days: 21,
           topic: "news",
         },
       ]),
@@ -177,6 +190,9 @@ Return ONLY valid JSON:
   "key_findings": [string] (3-5 key data points found),
   "top_hiring_companies": [string] (up to 5),
   "in_demand_skills": [string] (up to 5 most mentioned),
+  "sector_news": [
+    { "headline": string (max 14 words, factual, dated), "impact": "positive"|"negative"|"neutral", "why_it_matters": string (1 sentence, plain English, 18 words max), "source_domain": string (e.g. "economictimes.com"), "url": string }
+  ] (3-5 items — pull from the news search results, MUST be relevant to ${industry || primaryRole} sector and ${experienceBand || 'this seniority'}; skip generic tech news),
   "data_confidence": "high" | "medium" | "low"
 }
 Base ONLY on the provided data. No markdown.`,

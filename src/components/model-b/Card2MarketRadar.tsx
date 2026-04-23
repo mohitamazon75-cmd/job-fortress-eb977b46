@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { CardShell, CardHead, CardBody, Badge, LivePill, EmotionStrip, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import { supabase } from "@/integrations/supabase/client";
+import SalaryFitWidget from "./SalaryFitWidget";
+import SectorNewsFeed from "./SectorNewsFeed";
+
+interface NewsItem {
+  headline: string;
+  impact?: "positive" | "negative" | "neutral";
+  why_it_matters?: string;
+  source_domain?: string;
+  url?: string;
+}
 
 interface LiveMarketData {
   salary_range_lpa?: { min: number; max: number; median: number };
@@ -10,6 +20,7 @@ interface LiveMarketData {
   key_findings?: string[];
   top_hiring_companies?: string[];
   in_demand_skills?: string[];
+  sector_news?: NewsItem[];
   data_confidence?: string;
 }
 
@@ -38,10 +49,15 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
     const industry = cardData.user?.industry || "";
     if (!role && !industry) return;
 
+    const userObj = (cardData as any)?.user || {};
+    const metroTier = userObj.metro_tier || "tier1";
+    const country = userObj.country || "IN";
+    const exp = userObj.years_experience || "";
+
     supabase.functions.invoke("live-market", {
-      body: { role, industry, metro: "tier1", country: "IN" },
+      body: { role, industry, metroTier, experienceBand: exp, country },
     }).then(({ data }) => {
-      if (data?.salary_range_lpa || data?.key_findings?.length) {
+      if (data?.salary_range_lpa || data?.key_findings?.length || data?.sector_news?.length) {
         setLiveMarket(data);
       }
     }).catch(() => { /* non-fatal — card shows fine without live data */ });
@@ -70,6 +86,16 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         sub={c2.subline || ""}
       />
       <CardBody>
+        {/* NEW: Personalised salary fit — top-priority widget */}
+        <SalaryFitWidget
+          role={cardData.user?.current_title || ""}
+          industry={cardData.user?.industry || ""}
+          city={cardData.user?.location || ""}
+          metroTier={cardData.user?.metro_tier || "tier1"}
+          yearsExperience={cardData.user?.years_experience || ""}
+          country={cardData.user?.country || "IN"}
+        />
+
         {/* 3-part emotional structure */}
         {c2.fear_hook && (
           <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
@@ -180,6 +206,11 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
               </div>
             )}
           </div>
+        )}
+
+        {/* NEW: Sector news feed — dated headlines for user's industry */}
+        {liveMarket?.sector_news && liveMarket.sector_news.length > 0 && (
+          <SectorNewsFeed items={liveMarket.sector_news} industry={cardData.user?.industry} />
         )}
 
                 {/* Feature 1: Live market signals from Tavily — lazy-loaded, 30-min cache */}
