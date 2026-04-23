@@ -113,15 +113,32 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
         {/* Job cards */}
         {jobs.map((job: any, i: number) => {
           const mc = matchColors[job.match_color] || matchColors.navy;
-          const naukriUrl = job.search_url || buildJobSearchUrl(job.role, job.company, job.location, "naukri");
-          const linkedinUrl = buildJobSearchUrl(job.role, job.company, job.location, "linkedin");
+          // PRIORITY: real listing URL → real search URL from LLM → constructed fallback
+          // This ensures live-fetched Naukri/LinkedIn/Indeed URLs are actually used.
+          const isVerifiedLive = job.verified_live === true && (job.search_url || job.url);
+          const primaryUrl = job.url || job.search_url || buildJobSearchUrl(job.role, job.company, job.location, "naukri");
+          const isPrimaryNaukri = /naukri\./i.test(primaryUrl);
+          const isPrimaryLinkedIn = /linkedin\./i.test(primaryUrl);
+          // Always provide both Naukri AND LinkedIn search alternatives
+          const naukriUrl = isPrimaryNaukri ? primaryUrl : buildJobSearchUrl(job.role, job.company, job.location, "naukri");
+          const linkedinUrl = isPrimaryLinkedIn ? primaryUrl : buildJobSearchUrl(job.role, job.company, job.location, "linkedin");
+          const primaryLabel = isVerifiedLive
+            ? (isPrimaryLinkedIn ? "Apply on LinkedIn ↗" : isPrimaryNaukri ? "Apply on Naukri ↗" : "Apply now ↗")
+            : "Apply on Naukri ↗";
           return (
             <div key={i} style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 16, padding: 20, marginBottom: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", transition: "box-shadow 0.2s" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
                 <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.3, letterSpacing: "-0.01em" }}>{job.role}</span>
                 <span style={{ fontSize: 12, fontWeight: 800, padding: "4px 12px", borderRadius: 12, background: mc.bg, color: mc.color, border: `1.5px solid ${mc.border}`, fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}>{job.match_label}</span>
               </div>
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-ink)", marginBottom: 4 }}>{job.company}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-ink)" }}>{job.company}</span>
+                {isVerifiedLive ? (
+                  <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, background: "var(--mb-green-tint)", color: "var(--mb-green)", border: "1px solid rgba(26,107,60,0.3)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em", textTransform: "uppercase" }}>● Verified Live</span>
+                ) : (
+                  <span title="AI-curated search query — opens hundreds of live listings on Naukri" style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "var(--mb-paper)", color: "var(--mb-ink2)", border: "1px solid var(--mb-rule)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em", textTransform: "uppercase" }}>Curated Search</span>
+                )}
+              </div>
               <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", marginBottom: 10, fontWeight: 500 }}>{job.location}</div>
               {job.company_context && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", marginBottom: 10, lineHeight: 1.7, fontStyle: "italic", fontWeight: 500 }}>{job.company_context}</div>}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
@@ -130,40 +147,55 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
                 ))}
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
-                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 20, fontWeight: 800, color: "var(--mb-ink)" }}>{job.salary}</span>
-                <button
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 20, fontWeight: 800, color: "var(--mb-ink)" }}>{job.salary || "Market rate"}</span>
+                <a
+                  href={primaryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="mb-btn-primary"
                   onClick={() => {
-                    logEvent("apply_clicked", { job_company: job.company, job_role: job.role });
-                    setModal({
-                      title: `Cover Letter — ${job.role} at ${job.company}`,
-                      promptText: `Write a tailored cover letter for ${cardData.user?.name} applying to ${job.role} at ${job.company} (${job.location}).\n\nEvidence to lead with:\n${job.apply_evidence}\n\nRules:\n- Open with one extraordinary number from their evidence — NOT 'I am writing to apply'\n- Maximum 220 words\n- Every sentence must reference either their evidence OR ${job.company} specifically\n- Include a suggested email subject line at the top\n- Confident, direct tone — not apologetic`,
-                    });
+                    logEvent("apply_clicked", { job_company: job.company, job_role: job.role, verified_live: isVerifiedLive });
                   }}
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, padding: "10px 18px", borderRadius: 12, background: "var(--mb-navy)", color: "white", border: "none", cursor: "pointer", minHeight: 48, boxShadow: "0 3px 12px rgba(27,47,85,0.25)", transition: "all 150ms", letterSpacing: "0.02em" }}
-                >Apply on Naukri ↗</button>
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, padding: "10px 18px", borderRadius: 12, background: "var(--mb-navy)", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", minHeight: 48, boxShadow: "0 3px 12px rgba(27,47,85,0.25)", transition: "all 150ms", letterSpacing: "0.02em" }}
+                >{primaryLabel}</a>
               </div>
 
-              {/* Live job links */}
+              {/* Secondary: cover-letter generator + cross-platform alternatives */}
               <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 10 }}>
-                <a
-                  href={naukriUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => logEvent("job_link_clicked", { platform: "naukri", job_company: job.company, job_role: job.role })}
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
+                <button
+                  onClick={() => {
+                    logEvent("cover_letter_clicked", { job_company: job.company, job_role: job.role });
+                    setModal({
+                      title: `Cover Letter — ${job.role}${job.company && job.company !== "Naukri Search" && job.company !== "Executive Search" ? ` at ${job.company}` : ""}`,
+                      promptText: `Write a tailored cover letter for ${cardData.user?.name || "the candidate"} applying to ${job.role}${job.company && job.company !== "Naukri Search" && job.company !== "Executive Search" ? ` at ${job.company}` : ""} (${job.location}).\n\nEvidence to lead with:\n${job.apply_evidence || job.why_fit || "Use the strongest accomplishments from their resume."}\n\nRules:\n- Open with one extraordinary number from their evidence — NOT 'I am writing to apply'\n- Maximum 220 words\n- Every sentence must reference either their evidence OR the role specifically\n- Include a suggested email subject line at the top\n- Confident, direct tone — not apologetic`,
+                    });
+                  }}
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "var(--mb-teal-tint)", color: "var(--mb-teal)", border: "1.5px solid rgba(14,102,85,0.3)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
                 >
-                  🔍 Naukri ↗
-                </a>
-                <a
-                  href={linkedinUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => logEvent("job_link_clicked", { platform: "linkedin", job_company: job.company, job_role: job.role })}
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
-                >
-                  💼 LinkedIn ↗
-                </a>
+                  ✍️ Cover letter
+                </button>
+                {!isPrimaryNaukri && (
+                  <a
+                    href={naukriUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => logEvent("job_link_clicked", { platform: "naukri", job_company: job.company, job_role: job.role })}
+                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
+                  >
+                    🔍 Naukri ↗
+                  </a>
+                )}
+                {!isPrimaryLinkedIn && (
+                  <a
+                    href={linkedinUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => logEvent("job_link_clicked", { platform: "linkedin", job_company: job.company, job_role: job.role })}
+                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, padding: "7px 16px", borderRadius: 10, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40, transition: "filter 150ms", letterSpacing: "0.02em" }}
+                  >
+                    💼 LinkedIn ↗
+                  </a>
+                )}
                 <button
                   onClick={() => { addItem("saved", `${job.company} · ${job.role}`); }}
                   style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, padding: "7px 16px", borderRadius: 10, background: "var(--mb-paper)", color: "var(--mb-ink2)", border: "1.5px solid var(--mb-rule)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, minHeight: 40 }}
@@ -174,7 +206,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
 
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--mb-ink3)", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                 <span style={{ fontSize: 11 }}>🔍</span>
-                Search live openings on Naukri and LinkedIn above
+                {isVerifiedLive ? "Live posting fetched today" : "Search live openings on Naukri and LinkedIn above"}
                 {job.match_pct && (
                   <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--mb-ink3)", fontStyle: "italic" }}>
                     {job.match_pct}% match · scanned live
