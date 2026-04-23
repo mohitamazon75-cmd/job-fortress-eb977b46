@@ -275,7 +275,32 @@ export function assembleReport(input: ReportAssemblyInput): Record<string, unkno
   const monthlySalary = estimateMonthlySalary(profileInput.estimated_monthly_salary_inr, primaryJob, profileInput.experience_years, companyTier, scan.metro_tier || null);
   const geoArb = calculateGeoArbitrage(monthlySalary, profileInput.geo_advantage);
   const tier2Info = getTier2CityInfo(agent1?.industry || resolvedIndustry, scanCountry);
-  const tier2 = (scan.metro_tier !== "tier2" && geoArb) ? { recommended_city: tier2Info.city, salary_estimate_inr: Math.round(monthlySalary * tier2Info.multiplier), probability: 0.70 } : null;
+
+  // ── AUDIT (#3, #12): Seniority-gated tier-2 alternative ──
+  // Senior leaders / execs do not have viable Tier-2 markets in India for their domain
+  // (e.g. Senior Marketing Director → Jaipur is a fiction). Restrict tier-2 routing to
+  // PROFESSIONAL/MANAGER/ENTRY tiers OR when the user explicitly self-reported willingness.
+  const seniorityForGeo = (agent1?.seniority_tier as string) || (input.seniorityTier as string) || 'PROFESSIONAL';
+  const isSeniorOrExec = seniorityForGeo === 'EXECUTIVE' || seniorityForGeo === 'SENIOR_LEADER';
+  const userOptedInToRelocate = !!profileInput.geo_advantage && /relocat|tier[-\s]?2|within india/i.test(profileInput.geo_advantage);
+  let geoGatingDecision: 'allowed' | 'blocked_senior_role' | 'blocked_no_geo' | 'allowed_self_reported' = 'allowed';
+  let tier2: { recommended_city: string; salary_estimate_inr: number; probability: number } | null = null;
+
+  if (scan.metro_tier === 'tier2') {
+    geoGatingDecision = 'blocked_no_geo';
+    tier2 = null;
+  } else if (isSeniorOrExec && !userOptedInToRelocate) {
+    geoGatingDecision = 'blocked_senior_role';
+    tier2 = null;
+    console.warn(`[GeoGate] Tier-2 alt suppressed: tier=${seniorityForGeo} for role="${detectedRole}" — no viable Tier-2 market for senior leadership.`);
+  } else if (geoArb) {
+    geoGatingDecision = userOptedInToRelocate ? 'allowed_self_reported' : 'allowed';
+    tier2 = { recommended_city: tier2Info.city, salary_estimate_inr: Math.round(monthlySalary * tier2Info.multiplier), probability: 0.70 };
+  }
+  // attach gating decision to score_breakdown for debugging
+  if (det.score_breakdown) {
+    (det.score_breakdown as any).geo_gating_decision = geoGatingDecision;
+  }
 
   // CONSISTENCY FIX: All core numerical metrics come from the deterministic engine.
   // ML/LLM outputs only provide qualitative insights (judo_strategy, weekly_diet, etc.)
