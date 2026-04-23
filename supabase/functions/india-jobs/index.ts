@@ -159,6 +159,12 @@ function parseTavilyJobResults(results: any[]): JobListing[] {
         : `₹${salaryMatch[1]}L+`;
     }
 
+    // Reject titles that look like people names (e.g. "Meera Rajeevan") with no role keyword
+    const titleLc = title.toLowerCase();
+    const hasJobKeyword = /\b(engineer|developer|manager|analyst|director|officer|head|lead|chief|vp|president|consultant|architect|specialist|executive|associate|intern|designer|writer|coordinator|administrator|founder|owner|partner|advisor)\b/i.test(titleLc);
+    const looksLikePersonName = /^[A-Z][a-z]+\s+[A-Z][a-z]+$/.test(title.trim()) && !hasJobKeyword;
+    if (looksLikePersonName) continue;
+
     jobs.push({
       title: title.slice(0, 120),
       company: company.slice(0, 60) || "View listing",
@@ -167,7 +173,8 @@ function parseTavilyJobResults(results: any[]): JobListing[] {
       url: r.url,
       description_snippet: (r.content || "").slice(0, 250),
       source: "tavily",
-    });
+      verified_live: true,
+    } as JobListing);
   }
   return jobs.slice(0, 10);
 }
