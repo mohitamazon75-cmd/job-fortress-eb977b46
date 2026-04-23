@@ -345,33 +345,59 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
       </motion.div>
 
       {/* THREE-SENTENCE VERDICT */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
 
-        {/* Threat */}
-        <VerdictRow
-          delay={0.75}
-          icon={<AlertTriangle size={15} color="#dc2626" />}
-          accent="#dc2626"
-          accentBg="rgba(220,38,38,0.06)"
-          accentBorder="rgba(220,38,38,0.18)"
-          label="Biggest Threat"
-          body={
-            typeof topThreat === "string" && topThreat.length > 5
-              ? `${topThreat.charAt(0).toUpperCase() + topThreat.slice(1)} is being automated in your stack — today, not in five years.`
-              : "Your top execution skills are being automated today — not in five years."
-          }
-        />
+        {/* THE FEAR → HOPE COUPLET — single knockout block */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.78, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            position: "relative",
+            background: "white",
+            border: "1.5px solid var(--mb-rule, #e5e7eb)",
+            borderRadius: 16,
+            padding: "20px 22px",
+            overflow: "hidden",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
+          }}
+        >
+          {/* Vertical fear/hope spine */}
+          <div style={{
+            position: "absolute",
+            left: 0, top: 0, bottom: 0, width: 4,
+            background: "linear-gradient(180deg, #dc2626 0%, #dc2626 50%, #15803d 50%, #15803d 100%)",
+          }} />
 
-        {/* Moat */}
-        <VerdictRow
-          delay={0.85}
-          icon={<Shield size={15} color="#15803d" />}
-          accent="#15803d"
-          accentBg="rgba(21,128,61,0.06)"
-          accentBorder="rgba(21,128,61,0.18)"
-          label="Your Unfair Advantage"
-          body={`${topMoat} is what AI cannot replicate. That is your moat — and it compounds every year you stay sharp.`}
-        />
+          {/* Fear half */}
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
+            <div style={{ fontSize: 18, lineHeight: 1, marginTop: 2 }}>⚠️</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#dc2626", marginBottom: 4 }}>
+                The Threat
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
+                {fearLine}
+              </div>
+            </div>
+          </div>
+
+          {/* Soft separator */}
+          <div style={{ height: 1, background: "var(--mb-rule, #e5e7eb)", marginBottom: 14 }} />
+
+          {/* Hope half */}
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+            <div style={{ fontSize: 18, lineHeight: 1, marginTop: 2 }}>🛡️</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#15803d", marginBottom: 4 }}>
+                Your Edge
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
+                {hopeLine}
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Move — solid navy */}
         <motion.div
