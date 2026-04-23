@@ -53,9 +53,12 @@ function buildExecSearchUrls(role: string, city: string) {
 }
 
 export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData: any; onBack: () => void; onNext: () => void }) {
-  const d = cardData.card4_pivot;
+  const d = cardData?.card4_pivot ?? {};
+  const pivots: any[] = Array.isArray(d.pivots) ? d.pivots : [];
   const [selectedPivot, setSelectedPivot] = useState(0);
   const isExec = useMemo(() => isExecutiveCardData(cardData), [cardData]);
+  // Clamp selection if pivots shrink between renders
+  const safeSelected = pivots.length > 0 ? Math.min(selectedPivot, pivots.length - 1) : 0;
 
   const pivotBg = (c: string) => c === "green" ? "var(--mb-green-tint)" : c === "teal" ? "var(--mb-teal-tint)" : "var(--mb-navy-tint)";
 
