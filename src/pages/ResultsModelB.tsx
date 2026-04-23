@@ -327,7 +327,7 @@ export default function ResultsModelB() {
 
     // Feature 3: Fetch live Tavily learning resources when user first opens the Tools tab.
     // Fires once (guarded by weeklyIntelLoading + weeklyIntel), lazy, 30-min cached.
-    if (index === 7 && !weeklyIntelLoading && !weeklyIntel && cardData?.scan_judo?.recommended_tool) {
+    if (index === 8 && !weeklyIntelLoading && !weeklyIntel && cardData?.scan_judo?.recommended_tool) {
       setWeeklyIntelLoading(true);
       supabase.functions.invoke("fetch-weekly-intel", {
         body: {
@@ -620,7 +620,7 @@ export default function ResultsModelB() {
             {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} scanId={analysisId ?? undefined} />}
             {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
             {currentCard === 6 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} scanId={analysisId ?? undefined} />}
-            {currentCard === 7 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(6)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
+            {currentCard === 7 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(6)} onNext={() => handleTabChange(8)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
 
             {/* ── Tools tab (index 8) ─────────────────────────────────
                 Three fully-built features that were unreachable in the old flow.
