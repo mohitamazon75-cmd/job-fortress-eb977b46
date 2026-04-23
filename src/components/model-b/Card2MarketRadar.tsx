@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CardShell, CardHead, CardBody, Badge, LivePill, EmotionStrip, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
+import { CardShell, CardHead, CardBody, Badge, LivePill, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import { supabase } from "@/integrations/supabase/client";
 import SalaryFitWidget from "./SalaryFitWidget";
 import SectorNewsFeed from "./SectorNewsFeed";
