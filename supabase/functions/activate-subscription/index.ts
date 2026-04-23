@@ -170,14 +170,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Update subscription tier on profile ──────────────────────
+    // CRITICAL: profiles.id is the PK matching auth.users.id — NOT user_id.
+    // Prior bug used .eq("user_id", ...) which silently matched 0 rows;
+    // Pro upgrades never persisted. See profiles schema in types.ts.
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
       .update({
         subscription_tier: tier,
         subscription_expires_at: expiresAt,
-        updated_at: now.toISOString(),
       })
-      .eq("user_id", user.id);
+      .eq("id", user.id);
 
     if (updateError) {
       console.error("[activate-subscription] Profile update error:", updateError.message);

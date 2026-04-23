@@ -46,12 +46,12 @@ Deno.serve(async (req) => {
         );
       }
 
-      let signatureValid = true;
+      // Constant-time comparison via XOR accumulator (no early exit).
+      let diff = 0;
       for (let i = 0; i < expectedBytes.length; i++) {
-        if (expectedBytes[i] !== signatureBytes[i]) {
-          signatureValid = false;
-        }
+        diff |= expectedBytes[i] ^ signatureBytes[i];
       }
+      const signatureValid = diff === 0;
 
       if (!signatureValid) {
         console.warn("[razorpay-webhook] Invalid signature");
@@ -151,9 +151,8 @@ Deno.serve(async (req) => {
         .update({
           subscription_tier: tier,
           subscription_expires_at: expiresAt.toISOString(),
-          updated_at: now.toISOString(),
         })
-        .eq("user_id", userId);
+        .eq("id", userId); // FIX: profiles PK is `id`, not `user_id`
 
       if (updateError) {
         console.error("[razorpay-webhook] subscription.activated: profile update failed:", updateError.message);
@@ -196,9 +195,8 @@ Deno.serve(async (req) => {
         .update({
           subscription_tier: tier,
           subscription_expires_at: expiresAt.toISOString(),
-          updated_at: now.toISOString(),
         })
-        .eq("user_id", userId);
+        .eq("id", userId); // FIX: profiles PK is `id`, not `user_id`
 
       if (updateError) {
         console.error("[razorpay-webhook] subscription.charged: profile update failed:", updateError.message);
