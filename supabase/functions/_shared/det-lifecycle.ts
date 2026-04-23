@@ -4,7 +4,7 @@
  */
 
 import { CALIBRATION } from "./det-utils.ts";
-import type { ProfileInput, MarketSignalRow, ObsolescenceTimeline, SurvivabilityResult } from "./det-types.ts";
+import type { ProfileInput, MarketSignalRow, ObsolescenceTimeline, SurvivabilityResult, CohortBenchmark } from "./det-types.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // OBSOLESCENCE TIMELINE v2
@@ -100,7 +100,8 @@ function getGeoScore(geoAdvantage: string | null): number {
 
 export function calculateSurvivability(
   profile: ProfileInput,
-  determinismIndex: number
+  determinismIndex: number,
+  cohortBenchmark?: CohortBenchmark | null,
 ): SurvivabilityResult {
   const isExec = profile.seniority_tier === 'EXECUTIVE' || profile.seniority_tier === 'SENIOR_LEADER';
   const base = CALIBRATION.SURVIVABILITY_BASE + (isExec ? CALIBRATION.EXECUTIVE_SURVIVABILITY_BONUS : 0);
@@ -179,11 +180,34 @@ export function calculateSurvivability(
       : "Maintaining competitive edge requires continuous skill investment";
   }
 
-  const normalizedScore = (score - 30) / 50;
-  const sigmoidPercentile = Math.round(100 / (1 + Math.exp(-3 * normalizedScore)));
-  const peer_percentile_estimate = `~${Math.min(95, Math.max(5, sigmoidPercentile))}th percentile in your ${isExec ? 'leadership' : 'professional'} cohort`;
+  // ── Peer percentile: prefer real cohort_percentiles data over sigmoid estimate ──
+  // The DI is the threat axis used by cohort_percentiles seeds — compare DI to cohort breakpoints.
+  // Lower DI = better (less automatable) = higher percentile in survivability terms.
+  let peer_percentile_estimate: string;
+  let peer_percentile_source: 'cohort_db' | 'estimated' = 'estimated';
+  if (cohortBenchmark && cohortBenchmark.sample_size >= 100) {
+    // DI percentile inverted: a user with DI < cohort.p25 sits in the top quartile of safety.
+    let pct: number;
+    if (determinismIndex <= cohortBenchmark.p25) pct = 90;
+    else if (determinismIndex <= cohortBenchmark.p50) pct = 70;
+    else if (determinismIndex <= cohortBenchmark.p75) pct = 45;
+    else if (determinismIndex <= cohortBenchmark.p90) pct = 20;
+    else pct = 8;
+    peer_percentile_estimate = `~${pct}th percentile vs ${cohortBenchmark.sample_size.toLocaleString('en-IN')} ${cohortBenchmark.role_detected.replace(/_/g, ' ')}s${cohortBenchmark.metro_tier ? ` in ${cohortBenchmark.metro_tier}` : ''}`;
+    peer_percentile_source = 'cohort_db';
+  } else {
+    const normalizedScore = (score - 30) / 50;
+    const sigmoidPercentile = Math.round(100 / (1 + Math.exp(-3 * normalizedScore)));
+    peer_percentile_estimate = `~${Math.min(95, Math.max(5, sigmoidPercentile))}th percentile in your ${isExec ? 'leadership' : 'professional'} cohort`;
+  }
 
-  return { score, breakdown: { experience_bonus, strategic_bonus, geo_bonus, adaptability_bonus }, primary_vulnerability, peer_percentile_estimate };
+  return {
+    score,
+    breakdown: { experience_bonus, strategic_bonus, geo_bonus, adaptability_bonus },
+    primary_vulnerability,
+    peer_percentile_estimate,
+    peer_percentile_source,
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════
