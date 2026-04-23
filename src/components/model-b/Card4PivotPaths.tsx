@@ -1,16 +1,46 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { CardShell, CardHead, CardBody, EmotionStrip, SectionLabel, InfoBox, CardNav, Badge, variantColor } from "./SharedUI";
+
+// Detect executive-tier output so we can swap Naukri/LinkedIn (junior channels)
+// for executive search firms (Heidrick, Egon Zehnder, etc.). Triggers on:
+//  - current_title contains CEO / Founder / MD / Partner / President / CXO / EVP / SVP
+//  - any pivot salary uses "Cr" notation (the LLM's executive-mode output marker)
+function isExecutiveCardData(cardData: any): boolean {
+  const title = String(cardData?.user?.current_title || "").toLowerCase();
+  if (/\b(ceo|founder|co[\s-]?founder|managing\s+director|managing\s+partner|president|owner|chief\s+\w+\s+officer|cto|cfo|coo|cmo|cpo|chro|cro|cdo|ciso|cio|evp|svp|executive\s+vice\s+president|senior\s+vice\s+president)\b/.test(title)) {
+    return true;
+  }
+  const d = cardData?.card4_pivot;
+  if (!d) return false;
+  const blob = JSON.stringify([d.current_band, d.pivot_year1, d.director_band, ...(d.pivots || []).map((p: any) => p.salary || p.salary_range)]);
+  return /₹\s*\d+(\.\d+)?\s*Cr/i.test(blob);
+}
+
+// Executive search URL builders. These are the channels actual CXOs use —
+// not Naukri or generic LinkedIn job search.
+function buildExecSearchUrls(role: string, city: string) {
+  const q = encodeURIComponent(role);
+  const cityQ = encodeURIComponent(city);
+  return {
+    linkedinExec: `https://www.linkedin.com/jobs/search/?keywords=${q}&location=${cityQ}&f_E=6%2C7&sortBy=DD`, // 6=Director, 7=Executive
+    heidrick: `https://www.heidrick.com/en/search?keywords=${q}`,
+    egonZehnder: `https://www.egonzehnder.com/search?q=${q}`,
+    spencerStuart: `https://www.spencerstuart.com/search?searchTerm=${q}`,
+    kornFerry: `https://www.kornferry.com/search?q=${q}`,
+  };
+}
 
 export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData: any; onBack: () => void; onNext: () => void }) {
   const d = cardData.card4_pivot;
   const [selectedPivot, setSelectedPivot] = useState(0);
+  const isExec = useMemo(() => isExecutiveCardData(cardData), [cardData]);
 
   const pivotBg = (c: string) => c === "green" ? "var(--mb-green-tint)" : c === "teal" ? "var(--mb-teal-tint)" : "var(--mb-navy-tint)";
 
   return (
     <CardShell>
       <CardHead
-        badges={<><Badge label="04 · Action" variant="navy" /><Badge label="Matched to your resume" variant="navy" /></>}
+        badges={<><Badge label="04 · Action" variant="navy" />{isExec ? <Badge label="Executive Mode" variant="green" /> : <Badge label="Matched to your resume" variant="navy" />}</>}
         title={d.headline}
         sub={d.subline}
       />
@@ -72,14 +102,36 @@ export default function Card4PivotPaths({ cardData, onBack, onNext }: { cardData
                   ⚡ {p.fomo_signal}
                 </div>
               )}
-              <div style={{ display: "flex", gap: 6 }}>
-                <a href={searchUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                  style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
-                >🔍 Search on Naukri</a>
-                <a href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(p.role)}&location=${encodeURIComponent(city + ", India")}&f_TPR=r604800&sortBy=DD`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                  style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
-                >💼 LinkedIn</a>
-              </div>
+              {isExec ? (
+                (() => {
+                  const urls = buildExecSearchUrls(p.role, city);
+                  return (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <a href={urls.linkedinExec} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                        style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px", borderRadius: 8, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                      >💼 LinkedIn Executive</a>
+                      <a href={urls.heidrick} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                        style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px", borderRadius: 8, background: "#1A2A4A", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                      >🎯 Heidrick</a>
+                      <a href={urls.egonZehnder} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                        style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px", borderRadius: 8, background: "#3B2D5A", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                      >🔷 Egon Zehnder</a>
+                      <a href={urls.spencerStuart} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                        style={{ fontSize: 12, fontWeight: 800, padding: "6px 12px", borderRadius: 8, background: "#5A1A2A", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                      >🏛️ Spencer Stuart</a>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <a href={searchUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                    style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#4A90D9", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                  >🔍 Search on Naukri</a>
+                  <a href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(p.role)}&location=${encodeURIComponent(city + ", India")}&f_TPR=r604800&sortBy=DD`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                    style={{ fontSize: 12, fontWeight: 800, padding: "6px 14px", borderRadius: 8, background: "#0A66C2", color: "white", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, minHeight: 36 }}
+                  >💼 LinkedIn</a>
+                </div>
+              )}
             </div>
           );
         })}

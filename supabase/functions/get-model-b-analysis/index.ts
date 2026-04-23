@@ -1,5 +1,6 @@
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { detectExecutiveTier, buildExecutiveModeBlock } from "../_shared/executive-mode.ts";
 
 
 
@@ -274,7 +275,8 @@ Deno.serve(async (req) => {
     const processPromise = processAnalysis(
       supabase, LOVABLE_API_KEY, analysis_id, user_id,
       resume_filename, resumeText, userCity,
-      scan.role_detected || "", scan.industry || ""
+      scan.role_detected || "", scan.industry || "",
+      scan.years_experience || ""
     );
 
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
@@ -320,6 +322,7 @@ async function processAnalysis(
   userCity: string,
   detectedRole = "",
   detectedIndustry = "",
+  yearsExperience: string | number = "",
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
@@ -376,8 +379,19 @@ async function processAnalysis(
     console.warn("[model-b] Live jobs pre-fetch failed (non-fatal, using LLM fallback):", jobErr);
   }
 
-  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry);
+  // ── Executive Mode detection (CEO/Founder/CXO/VP+15yrs) ─────────────────
+  // When detected, an override block is appended to the user prompt forcing
+  // the model to use ₹Cr salary bands, board/PE/VC pivots, executive-search
+  // channels and equity-tier negotiation. Without this, sitting CEOs receive
+  // junior-tier output (e.g., "AI Strategy Lead, ₹90-140L on Naukri") which
+  // is a 5/10 product experience for executive users.
+  const execDetect = detectExecutiveTier(resumeText, detectedRole, yearsExperience);
+  if (execDetect.isExecutive) {
+    console.log(`[model-b] Executive Mode active: tier=${execDetect.tier} title="${execDetect.matchedTitle}" years=${execDetect.yearsHint}`);
+  }
+  const executiveBlock = buildExecutiveModeBlock(execDetect);
 
+  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry) + executiveBlock;
   let cardData: Record<string, unknown> | null = null;
   let geminiRaw: unknown = null;
   let modelUsed = PRIMARY_MODEL;
