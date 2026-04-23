@@ -183,8 +183,9 @@ Deno.serve(async (req) => {
 
     const sb = createAdminClient();
 
-    // ── Check cache (skip if force_refresh) ──
-    const cacheKey = `india-jobs-v2:${role.toLowerCase()}:${(city || "india").toLowerCase()}`;
+    // Cache key includes exec flag + skill fingerprint so executive scans don't reuse junior results
+    const skillFingerprint = (skills || []).slice(0, 3).map(s => String(s).toLowerCase()).sort().join("-").slice(0, 40);
+    const cacheKey = `india-jobs-v2:${role.toLowerCase()}:${(city || "india").toLowerCase()}:${execTier || "ic"}:${skillFingerprint}`;
 
     if (!force_refresh) {
       const { data: cached } = await sb
@@ -213,27 +214,34 @@ Deno.serve(async (req) => {
     let jobs: JobListing[] = [];
     let source: "tavily" | "adzuna" | "deterministic" = "deterministic";
 
+    // Domain set + query template depends on tier
+    const execDomains = ["linkedin.com", "naukri.com", "iimjobs.com", "hirist.tech", "instahyre.com", "cutshort.io", "blueprintleadership.com", "thefederal.com", "vahura.com"];
+    const icDomains = ["naukri.com", "linkedin.com", "indeed.co.in", "foundit.in", "instahyre.com", "cutshort.io", "wellfound.com", "hirist.tech"];
+
     // PRIMARY: Tavily search for real job listings
     try {
       const skillStr = (skills || []).slice(0, 3).join(" ");
       const cityStr = city || "India";
-      const searchQuery = `"${role}" jobs apply now hiring "${cityStr}" ${skillStr} -salary -review -"salary insights"`;
+      const expStr = experience ? `${experience} years` : "";
 
-      console.log(`[india-jobs] Tavily search: "${searchQuery}"`);
+      // Exec queries focus on senior outcomes; IC queries focus on apply-now postings.
+      // Quotes around role keep multi-word titles intact in Tavily.
+      const searchQuery = detectedExec
+        ? `"${role}" OR "Chief" OR "Head of" OR "VP" hiring "${cityStr}" India 2025 2026 ${expStr} -salary -review -"salary insights"`
+        : `"${role}" jobs apply now hiring "${cityStr}" ${skillStr} ${expStr} -salary -review -"salary insights"`;
+
+      console.log(`[india-jobs] Tavily search (exec=${detectedExec}): "${searchQuery}"`);
 
       const tavilyResult = await tavilySearch({
         query: searchQuery,
-        searchDepth: "basic",
+        searchDepth: detectedExec ? "advanced" : "basic",
         maxResults: 15,
-        includeDomains: [
-          "naukri.com", "linkedin.com", "indeed.co.in", "foundit.in",
-          "instahyre.com", "cutshort.io", "wellfound.com", "hirist.tech",
-        ],
+        includeDomains: detectedExec ? execDomains : icDomains,
         excludeDomains: [
           "glassdoor.co.in", "glassdoor.com", "ambitionbox.com",
           "payscale.com", "salary.com", "levels.fyi",
         ],
-        days: 14,
+        days: detectedExec ? 45 : 14,  // Exec listings turn over slower
         topic: "general",
         includeAnswer: false,
       }, 15000, 2);
@@ -249,8 +257,8 @@ Deno.serve(async (req) => {
       console.warn("[india-jobs] Tavily search failed (non-fatal):", e.message);
     }
 
-    // FALLBACK: Adzuna if Tavily returned nothing and keys exist
-    if (jobs.length === 0) {
+    // FALLBACK: Adzuna — SKIP for executives (Adzuna has poor exec inventory in India)
+    if (jobs.length === 0 && !detectedExec) {
       const ADZUNA_API_KEY = Deno.env.get("ADZUNA_API_KEY");
       const ADZUNA_API_ID = Deno.env.get("ADZUNA_API_ID");
       if (ADZUNA_API_KEY && ADZUNA_API_ID) {
