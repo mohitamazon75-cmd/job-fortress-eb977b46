@@ -56,3 +56,25 @@ export function getMatchTone(matchPct?: number | null) {
   if (pct >= 72) return { label: "Relevant", variant: "navy" as const };
   return { label: "Stretch", variant: "amber" as const };
 }
+
+const EXECUTIVE_HINTS = [
+  "founder", "co-founder", "ceo", "cfo", "coo", "cto", "cmo", "chro",
+  "chief executive", "chief financial", "chief operating", "chief technology",
+  "chief marketing", "chief people", "chief revenue", "managing director",
+  "president", "general partner", "venture partner", "country head",
+];
+
+export function detectExecutive(role?: string | null): boolean {
+  if (!role) return false;
+  const lower = role.toLowerCase();
+  return EXECUTIVE_HINTS.some((hint) => lower.includes(hint));
+}
+
+export const EXECUTIVE_SEARCH_FIRMS: { name: string; url: string; focus: string }[] = [
+  { name: "Egon Zehnder India", url: "https://www.egonzehnder.com/contact-us/india", focus: "Board, CEO and CXO mandates across BFSI, tech and consumer." },
+  { name: "Heidrick & Struggles", url: "https://www.heidrick.com/en/locations/india", focus: "C-suite, board and senior functional leadership." },
+  { name: "Spencer Stuart", url: "https://www.spencerstuart.com/locations/asia-pacific/india", focus: "CEO succession, board and digital leadership in India." },
+  { name: "Vahura", url: "https://www.vahura.com/", focus: "General counsel, GC, compliance and senior legal leadership." },
+  { name: "Native", url: "https://www.nativehire.com/", focus: "Founder, VP and senior tech / product mandates for funded startups." },
+  { name: "Longhouse Consulting", url: "https://longhouse.in/", focus: "PE/VC portfolio CXO and operating partner placements." },
+];
