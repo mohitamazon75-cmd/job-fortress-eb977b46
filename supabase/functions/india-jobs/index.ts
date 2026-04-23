@@ -24,6 +24,7 @@ interface JobListing {
   description_snippet: string;
   posted_days_ago?: number;
   source: string;
+  verified_live?: boolean;
 }
 
 interface UpskillRole {
@@ -112,14 +113,26 @@ function buildJobSearchUrls(role: string, skills: string[], city: string) {
 }
 
 // ── Parse Tavily results into JobListings ──
+const VALID_INDIA_CITIES = /^(Mumbai|Bangalore|Bengaluru|Delhi|NCR|New Delhi|Hyderabad|Chennai|Pune|Kolkata|Gurgaon|Gurugram|Noida|Ahmedabad|Jaipur|Kochi|Chandigarh|Indore|Lucknow|Dubai|Remote|India|Anywhere)$/i;
+
+function isLikelyJobUrl(url: string): boolean {
+  const u = url.toLowerCase();
+  // Drop people-profile, post, article, blog, content pages
+  if (u.includes("/blog/") || u.includes("/article/") || u.includes("wikipedia.org")) return false;
+  if (u.includes("/salaries") || u.includes("/salary") || u.includes("/reviews") || u.includes("/interview") || u.includes("ambitionbox") || u.includes("payscale")) return false;
+  if (u.includes("/posts/") || u.includes("/pulse/") || u.includes(".pdf")) return false;
+  // LinkedIn profile pages: linkedin.com/in/<slug> are people, NOT jobs.
+  // Only allow linkedin.com/jobs/* listings.
+  if (/linkedin\.com\/in\//.test(u)) return false;
+  if (u.includes("linkedin.com") && !u.includes("/jobs/")) return false;
+  return true;
+}
+
 function parseTavilyJobResults(results: any[]): JobListing[] {
   const jobs: JobListing[] = [];
   for (const r of results) {
     if (!r.title || !r.url) continue;
-    // Skip non-job pages
-    const url = r.url.toLowerCase();
-    if (url.includes("/blog/") || url.includes("/article/") || url.includes("wikipedia.org")) continue;
-    if (url.includes("/salaries") || url.includes("/salary") || url.includes("/reviews") || url.includes("/interview") || url.includes("ambitionbox") || url.includes("payscale")) continue;
+    if (!isLikelyJobUrl(r.url)) continue;
 
     // Extract company from title or content
     const titleParts = r.title.split(/\s+[-–|at@]\s+/);
@@ -132,11 +145,11 @@ function parseTavilyJobResults(results: any[]): JobListing[] {
       if (companyMatch) company = companyMatch[1].trim();
     }
 
-    // Extract location from content
+    // Extract location ONLY from a strict India city whitelist — prevents
+    // garbage like "ment" or "business in India" leaking through.
     let location = "India";
-    const locMatch = r.content?.match(/(?:location|city|place)[:\s]*([A-Z][A-Za-z\s,]+?)(?:\s*[-.|])/i) ||
-                     r.content?.match(/\b(Mumbai|Bangalore|Bengaluru|Delhi|NCR|Hyderabad|Chennai|Pune|Kolkata|Gurgaon|Gurugram|Noida|Ahmedabad|Jaipur|Kochi|Chandigarh|Indore|Lucknow|Dubai|Remote)\b/i);
-    if (locMatch) location = locMatch[1]?.trim() || locMatch[0]?.trim() || "India";
+    const cityMatch = r.content?.match(/\b(Mumbai|Bangalore|Bengaluru|New Delhi|Delhi|NCR|Hyderabad|Chennai|Pune|Kolkata|Gurgaon|Gurugram|Noida|Ahmedabad|Jaipur|Kochi|Chandigarh|Indore|Lucknow|Dubai|Remote)\b/i);
+    if (cityMatch) location = cityMatch[1].trim();
 
     // Extract salary if mentioned
     let salary_range: string | undefined;
@@ -147,6 +160,12 @@ function parseTavilyJobResults(results: any[]): JobListing[] {
         : `₹${salaryMatch[1]}L+`;
     }
 
+    // Reject titles that look like people names (e.g. "Meera Rajeevan") with no role keyword
+    const titleLc = title.toLowerCase();
+    const hasJobKeyword = /\b(engineer|developer|manager|analyst|director|officer|head|lead|chief|vp|president|consultant|architect|specialist|executive|associate|intern|designer|writer|coordinator|administrator|founder|owner|partner|advisor)\b/i.test(titleLc);
+    const looksLikePersonName = /^[A-Z][a-z]+\s+[A-Z][a-z]+$/.test(title.trim()) && !hasJobKeyword;
+    if (looksLikePersonName) continue;
+
     jobs.push({
       title: title.slice(0, 120),
       company: company.slice(0, 60) || "View listing",
@@ -155,7 +174,8 @@ function parseTavilyJobResults(results: any[]): JobListing[] {
       url: r.url,
       description_snippet: (r.content || "").slice(0, 250),
       source: "tavily",
-    });
+      verified_live: true,
+    } as JobListing);
   }
   return jobs.slice(0, 10);
 }
@@ -227,15 +247,15 @@ Deno.serve(async (req) => {
       // Exec queries focus on senior outcomes; IC queries focus on apply-now postings.
       // Quotes around role keep multi-word titles intact in Tavily.
       const searchQuery = detectedExec
-        ? `"${role}" OR "Chief" OR "Head of" OR "VP" hiring "${cityStr}" India 2025 2026 ${expStr} -salary -review -"salary insights"`
+        ? `("${role}" OR "Chief Operating" OR "Chief Executive" OR "Head of") hiring India ${cityStr} 2025 2026 -salary -review -"salary insights"`
         : `"${role}" jobs apply now hiring "${cityStr}" ${skillStr} ${expStr} -salary -review -"salary insights"`;
 
       console.log(`[india-jobs] Tavily search (exec=${detectedExec}): "${searchQuery}"`);
 
       const tavilyResult = await tavilySearch({
         query: searchQuery,
-        searchDepth: detectedExec ? "advanced" : "basic",
-        maxResults: 15,
+        searchDepth: "advanced",
+        maxResults: detectedExec ? 25 : 15,
         includeDomains: detectedExec ? execDomains : icDomains,
         excludeDomains: [
           "glassdoor.co.in", "glassdoor.com", "ambitionbox.com",
@@ -282,6 +302,7 @@ Deno.serve(async (req) => {
               description_snippet: (j.description || "").slice(0, 200),
               posted_days_ago: j.created ? Math.round((Date.now() - new Date(j.created).getTime()) / 86400000) : 0,
               source: "adzuna",
+              verified_live: true,
             }));
             source = "adzuna";
             console.log(`[india-jobs] Adzuna returned ${jobs.length} jobs`);
