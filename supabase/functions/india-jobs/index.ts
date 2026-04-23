@@ -144,11 +144,11 @@ function parseTavilyJobResults(results: any[]): JobListing[] {
       if (companyMatch) company = companyMatch[1].trim();
     }
 
-    // Extract location from content
+    // Extract location ONLY from a strict India city whitelist — prevents
+    // garbage like "ment" or "business in India" leaking through.
     let location = "India";
-    const locMatch = r.content?.match(/(?:location|city|place)[:\s]*([A-Z][A-Za-z\s,]+?)(?:\s*[-.|])/i) ||
-                     r.content?.match(/\b(Mumbai|Bangalore|Bengaluru|Delhi|NCR|Hyderabad|Chennai|Pune|Kolkata|Gurgaon|Gurugram|Noida|Ahmedabad|Jaipur|Kochi|Chandigarh|Indore|Lucknow|Dubai|Remote)\b/i);
-    if (locMatch) location = locMatch[1]?.trim() || locMatch[0]?.trim() || "India";
+    const cityMatch = r.content?.match(/\b(Mumbai|Bangalore|Bengaluru|New Delhi|Delhi|NCR|Hyderabad|Chennai|Pune|Kolkata|Gurgaon|Gurugram|Noida|Ahmedabad|Jaipur|Kochi|Chandigarh|Indore|Lucknow|Dubai|Remote)\b/i);
+    if (cityMatch) location = cityMatch[1].trim();
 
     // Extract salary if mentioned
     let salary_range: string | undefined;
