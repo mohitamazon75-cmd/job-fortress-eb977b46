@@ -292,7 +292,7 @@ export default function BossPerceptionSimulator({ role, years, riskScore, tasksA
             style={{ padding: "22px" }}
           >
             <button
-              onClick={() => setStep("q")}
+              onClick={startSim}
               style={{
                 width: "100%",
                 background: "linear-gradient(135deg, #ff4d4d 0%, #c41e1e 100%)",
