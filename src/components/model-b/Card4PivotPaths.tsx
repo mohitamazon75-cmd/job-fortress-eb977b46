@@ -364,6 +364,73 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
                 </p>
               </div>
 
+              {/* Peer Cohort Mirror — real signal from cohort_cache */}
+              {cohort && cohort.cohort_size >= 5 && (
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--mb-rule)", background: "var(--mb-paper)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-ink3)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                      People like you
+                    </div>
+                    <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 8px", borderRadius: 10, background: `${accent}1A`, color: accent, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                      n={cohort.cohort_size}
+                    </span>
+                  </div>
+                  <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: "var(--mb-ink)", lineHeight: 1.55, fontWeight: 600, margin: "0 0 10px", fontStyle: "italic" }}>
+                    "{cohort.insight_text}"
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
+                    {cohort.pct_improved != null && (
+                      <div style={{ background: "white", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "8px 10px", textAlign: "center" }}>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 800, color: "var(--mb-green)" }}>{Math.round(cohort.pct_improved)}%</div>
+                        <div style={{ fontSize: 10, color: "var(--mb-ink2)", fontWeight: 700, marginTop: 2 }}>improved score</div>
+                      </div>
+                    )}
+                    {cohort.median_doom_months != null && (
+                      <div style={{ background: "white", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "8px 10px", textAlign: "center" }}>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 800, color: "var(--mb-amber)" }}>{Math.round(cohort.median_doom_months)}mo</div>
+                        <div style={{ fontSize: 10, color: "var(--mb-ink2)", fontWeight: 700, marginTop: 2 }}>median runway</div>
+                      </div>
+                    )}
+                    {cohort.top_skill_gain && (
+                      <div style={{ background: "white", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "8px 10px", textAlign: "center" }}>
+                        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, color: accent, lineHeight: 1.2 }}>{cohort.top_skill_gain}</div>
+                        <div style={{ fontSize: 10, color: "var(--mb-ink2)", fontWeight: 700, marginTop: 2 }}>top skill gained</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Salary Math — concrete rupees, not bands */}
+              {currentLakhs != null && year1Lakhs != null && (
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--mb-rule)", background: `${accent}06` }}>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: accent, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+                    💸 The math, in your rupees
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                    <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, color: "var(--mb-ink3)", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>Today</div>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 18, fontWeight: 800, color: "var(--mb-ink2)", marginTop: 4 }}>{formatLakhs(currentLakhs)}</div>
+                      <div style={{ fontSize: 11, color: "var(--mb-ink3)", marginTop: 2 }}>{currentRole}</div>
+                    </div>
+                    <div style={{ background: "white", border: `1.5px solid ${accent}`, borderRadius: 10, padding: "10px 12px", boxShadow: `0 2px 8px ${accent}22` }}>
+                      <div style={{ fontSize: 10, color: accent, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>Year 1 if you land this</div>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 18, fontWeight: 800, color: accent, marginTop: 4 }}>{formatLakhs(year1Lakhs)}</div>
+                      <div style={{ fontSize: 11, color: "var(--mb-ink2)", marginTop: 2 }}>
+                        {year1Delta != null && year1Delta > 0 ? `+${formatLakhs(year1Delta)} delta` : year1Delta != null && year1Delta < 0 ? `${formatLakhs(year1Delta)} (long-term play)` : "Lateral move"}
+                      </div>
+                    </div>
+                  </div>
+                  {stayCost3yr != null && stayCost3yr > 5 && (
+                    <div style={{ background: "var(--mb-amber-tint)", border: "1.5px solid rgba(139,90,0,0.25)", borderRadius: 10, padding: "10px 14px" }}>
+                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-amber)", lineHeight: 1.55 }}>
+                        ⚠️ Opportunity cost of staying put 3 years: <strong style={{ fontFamily: "'DM Mono', monospace" }}>~{formatLakhs(stayCost3yr)}</strong> in foregone earnings.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* This week — first move */}
               <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--mb-rule)", background: `${accent}08` }}>
                 <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: accent, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
