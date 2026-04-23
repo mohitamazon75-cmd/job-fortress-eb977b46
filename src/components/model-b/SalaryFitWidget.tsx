@@ -9,6 +9,7 @@ interface Props {
   metroTier: "tier1" | "tier2" | string;
   yearsExperience: string;
   country?: string;
+  userSkills?: string[];   // From card3_shield, used to personalise "fair" guidance
 }
 
 interface SalaryFitResult {
@@ -33,36 +34,66 @@ const VERDICT_STYLE: Record<string, { bg: string; border: string; color: string;
   unverified: { bg: "var(--mb-paper)", border: "var(--mb-rule)", color: "var(--mb-ink2)", emoji: "🔍" },
 };
 
-export default function SalaryFitWidget({ role, industry, city, metroTier, yearsExperience, country }: Props) {
+// Track an event without throwing — analytics is best-effort.
+function track(event: string, props: Record<string, unknown>) {
+  try {
+    supabase.from("behavior_events").insert({
+      event_name: event,
+      properties: props,
+    } as any).then(() => { /* fire and forget */ });
+  } catch { /* swallow */ }
+}
+
+export default function SalaryFitWidget({ role, industry, city, metroTier, yearsExperience, country, userSkills }: Props) {
   const [ctcInput, setCtcInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SalaryFitResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Inline validation hint as the user types — no need to wait for submit.
+  const ctcNum = parseFloat(ctcInput);
+  const ctcHint = (() => {
+    if (!ctcInput) return "";
+    if (!Number.isFinite(ctcNum) || ctcNum <= 0) return "Enter a positive number";
+    if (ctcNum < 1) return "That's less than ₹1L — did you mean lakhs?";
+    if (ctcNum > 50000) return "That's > ₹50Cr — please re-enter without trailing zeros";
+    if (ctcNum > 500) return `Looks like ₹${ctcNum}L — confirm this is correct (very high)`;
+    return `= ₹${ctcNum}L per year`;
+  })();
+  const isHintWarning = ctcHint.includes("?") || ctcHint.includes("zeros") || ctcHint.includes("very high");
+
+  const canSubmit = !!role || !!industry;
+  const blocker = !role && !industry
+    ? "We need a role from your resume to benchmark — please complete a scan first."
+    : null;
+
   const submit = async () => {
     setError(null);
-    const ctc = parseFloat(ctcInput);
-    if (!Number.isFinite(ctc) || ctc <= 0) {
+    if (!Number.isFinite(ctcNum) || ctcNum <= 0) {
       setError("Please enter your annual CTC in lakhs (e.g. 18.5).");
       return;
     }
     setLoading(true);
+    track("salary_fit_submitted", { role, industry, city, ctc_lpa: ctcNum });
     try {
       const { data, error: fnErr } = await supabase.functions.invoke("salary-fit", {
         body: {
-          user_ctc_lpa: ctc,
+          user_ctc_lpa: ctcNum,
           role,
           industry,
           city,
           metro_tier: metroTier === "tier2" ? "tier2" : "tier1",
           years_experience: yearsExperience,
           country: country || "IN",
+          user_skills: userSkills || [],
         },
       });
       if (fnErr) throw fnErr;
       setResult(data as SalaryFitResult);
+      track("salary_fit_result", { verdict: (data as any)?.verdict, delta_pct: (data as any)?.delta_pct });
     } catch (e) {
       setError("Couldn't benchmark right now. Please try again in a moment.");
+      track("salary_fit_error", { message: (e as Error)?.message?.slice(0, 100) });
     } finally {
       setLoading(false);
     }
@@ -83,12 +114,15 @@ export default function SalaryFitWidget({ role, industry, city, metroTier, years
             <div style={{ position: "relative", flex: 1 }}>
               <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontFamily: "'DM Mono',monospace", fontWeight: 700, color: "var(--mb-ink2)", fontSize: 14 }}>₹</span>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
+                pattern="[0-9]*\.?[0-9]*"
                 placeholder="e.g. 18.5"
                 value={ctcInput}
-                onChange={(e) => setCtcInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submit()}
+                onChange={(e) => setCtcInput(e.target.value.replace(/[^0-9.]/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && canSubmit && submit()}
+                disabled={!canSubmit}
+                aria-label="Annual CTC in lakhs per annum"
                 style={{
                   width: "100%",
                   padding: "11px 56px 11px 26px",
@@ -98,25 +132,26 @@ export default function SalaryFitWidget({ role, industry, city, metroTier, years
                   fontSize: 15,
                   fontWeight: 700,
                   color: "var(--mb-ink)",
-                  background: "white",
+                  background: canSubmit ? "white" : "var(--mb-paper)",
                   outline: "none",
+                  opacity: canSubmit ? 1 : 0.6,
                 }}
               />
               <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, color: "var(--mb-ink3)", fontSize: 12, letterSpacing: "0.04em" }}>LPA</span>
             </div>
             <button
               onClick={submit}
-              disabled={loading || !ctcInput}
+              disabled={loading || !ctcInput || !canSubmit}
               style={{
                 padding: "0 20px",
                 borderRadius: 10,
-                background: loading || !ctcInput ? "var(--mb-rule)" : "var(--mb-ink)",
+                background: loading || !ctcInput || !canSubmit ? "var(--mb-rule)" : "var(--mb-ink)",
                 color: "white",
                 fontFamily: "'DM Sans',sans-serif",
                 fontWeight: 800,
                 fontSize: 13,
                 border: "none",
-                cursor: loading || !ctcInput ? "not-allowed" : "pointer",
+                cursor: loading || !ctcInput || !canSubmit ? "not-allowed" : "pointer",
                 whiteSpace: "nowrap",
                 letterSpacing: "0.02em",
               }}
@@ -124,8 +159,16 @@ export default function SalaryFitWidget({ role, industry, city, metroTier, years
               {loading ? "Checking…" : "Check fit"}
             </button>
           </div>
+          {ctcHint && (
+            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 600, color: isHintWarning ? "var(--mb-amber)" : "var(--mb-ink3)", margin: 0, marginTop: 6 }}>
+              {isHintWarning ? "⚠ " : ""}{ctcHint}
+            </p>
+          )}
           {error && (
             <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: "var(--mb-red)", margin: 0, marginTop: 8 }}>{error}</p>
+          )}
+          {blocker && (
+            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: "var(--mb-amber)", margin: 0, marginTop: 8 }}>{blocker}</p>
           )}
           <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "var(--mb-ink3)", margin: 0, marginTop: 10 }}>
             Private — never stored or shown to anyone else. Used only to compute your fit.
@@ -147,7 +190,7 @@ export default function SalaryFitWidget({ role, industry, city, metroTier, years
           <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "var(--mb-ink2)", margin: 0 }}>
             {result.headline || "We couldn't find enough data to benchmark this role yet."}
           </p>
-          <button onClick={reset} style={resetBtn}>Try a different role</button>
+          <button onClick={reset} style={resetBtn}>Try a different number</button>
         </div>
       )}
 
@@ -166,12 +209,17 @@ const resetBtn: React.CSSProperties = {
 
 function VerdictPanel({ result, onReset }: { result: SalaryFitResult; onReset: () => void }) {
   const v = VERDICT_STYLE[result.verdict || "unverified"];
-  const range = result.market_range_lpa!;
-  const userCtc = result.user_ctc_lpa!;
-  // Position user marker on the band (clamped 0–100%)
-  const span = Math.max(range.max - range.min, 0.01);
-  const markerPct = Math.max(0, Math.min(100, ((userCtc - range.min) / span) * 100));
-  const medianPct = Math.max(0, Math.min(100, ((range.median - range.min) / span) * 100));
+  const range = result.market_range_lpa;
+  const userCtc = result.user_ctc_lpa ?? 0;
+
+  // Position user marker on the band (clamped 0–100%). Range may be missing for outliers.
+  let markerPct = 50;
+  let medianPct = 50;
+  if (range) {
+    const span = Math.max(range.max - range.min, 0.01);
+    markerPct = Math.max(0, Math.min(100, ((userCtc - range.min) / span) * 100));
+    medianPct = Math.max(0, Math.min(100, ((range.median - range.min) / span) * 100));
+  }
 
   return (
     <div style={{ background: v.bg, border: `1.5px solid ${v.border}`, borderRadius: 14, padding: "16px 18px" }}>
@@ -190,23 +238,23 @@ function VerdictPanel({ result, onReset }: { result: SalaryFitResult; onReset: (
         </div>
       </div>
 
-      {/* Range bar */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'DM Mono',monospace", fontSize: 11, fontWeight: 700, color: "var(--mb-ink3)", marginBottom: 6 }}>
-          <span>₹{range.min}L</span>
-          <span style={{ color: "var(--mb-ink2)" }}>median ₹{range.median}L</span>
-          <span>₹{range.max}L</span>
+      {/* Range bar — only when we have a real market range (not for outliers) */}
+      {range && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'DM Mono',monospace", fontSize: 11, fontWeight: 700, color: "var(--mb-ink3)", marginBottom: 6 }}>
+            <span>₹{range.min}L</span>
+            <span style={{ color: "var(--mb-ink2)" }}>median ₹{range.median}L</span>
+            <span>₹{range.max}L</span>
+          </div>
+          <div style={{ position: "relative", height: 10, background: "rgba(0,0,0,0.06)", borderRadius: 5 }}>
+            <div style={{ position: "absolute", left: `${medianPct}%`, top: -2, width: 2, height: 14, background: "var(--mb-ink2)", opacity: 0.5 }} />
+            <div title={`You: ₹${userCtc}L`} style={{ position: "absolute", left: `calc(${markerPct}% - 8px)`, top: -4, width: 16, height: 18, background: v.color, borderRadius: 4, boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }} />
+          </div>
+          <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700, color: v.color, marginTop: 6, textAlign: "center" }}>
+            You: ₹{userCtc}L · ~{result.percentile}th percentile
+          </div>
         </div>
-        <div style={{ position: "relative", height: 10, background: "rgba(0,0,0,0.06)", borderRadius: 5 }}>
-          {/* Median tick */}
-          <div style={{ position: "absolute", left: `${medianPct}%`, top: -2, width: 2, height: 14, background: "var(--mb-ink2)", opacity: 0.5 }} />
-          {/* User marker */}
-          <div title={`You: ₹${userCtc}L`} style={{ position: "absolute", left: `calc(${markerPct}% - 8px)`, top: -4, width: 16, height: 18, background: v.color, borderRadius: 4, boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }} />
-        </div>
-        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700, color: v.color, marginTop: 6, textAlign: "center" }}>
-          You: ₹{userCtc}L · ~{result.percentile}th percentile
-        </div>
-      </div>
+      )}
 
       {result.rationale && result.rationale.length > 0 && (
         <ul style={{ margin: "0 0 12px 0", padding: 0, listStyle: "none" }}>
@@ -233,11 +281,19 @@ function VerdictPanel({ result, onReset }: { result: SalaryFitResult; onReset: (
         <details style={{ marginTop: 6 }}>
           <summary style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, color: "var(--mb-ink3)", cursor: "pointer" }}>Sources ({result.citations.length})</summary>
           <ul style={{ margin: "6px 0 0 0", paddingLeft: 16 }}>
-            {result.citations.map((c, i) => (
-              <li key={i} style={{ fontSize: 11, marginBottom: 2 }}>
-                <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--mb-navy)", textDecoration: "underline" }}>{c.title || c.url}</a>
-              </li>
-            ))}
+            {result.citations.map((c, i) => {
+              let domain = "";
+              try { domain = new URL(c.url).hostname.replace(/^www\./, ""); } catch { /* invalid url */ }
+              const label = (c.title || domain || c.url).slice(0, 80);
+              return (
+                <li key={i} style={{ fontSize: 11, marginBottom: 2, color: "var(--mb-ink2)" }}>
+                  <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--mb-navy)", textDecoration: "underline" }}>
+                    {label}
+                  </a>
+                  {domain && <span style={{ color: "var(--mb-ink3)", marginLeft: 6 }}>· {domain}</span>}
+                </li>
+              );
+            })}
           </ul>
         </details>
       )}
