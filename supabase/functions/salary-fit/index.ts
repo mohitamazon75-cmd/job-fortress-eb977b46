@@ -205,14 +205,16 @@ Output JSON exactly:
 {
   "market_range_lpa": { "min": number, "median": number, "max": number },
   "data_confidence": "high" | "medium" | "low",
-  "evidence": [string]   // 2-3 short bullets, each citing a source domain
+  "evidence": [string],         // 2-3 short bullets, each citing a source domain
+  "in_demand_skills": [string]  // up to 4 skills employers in this role are paying a premium for, from the data
 }
 
 Rules:
 - min/median/max in LPA (lakhs per annum), e.g. 18 not 1800000
 - "high" only if Adzuna AND Tavily agree within 25%
 - "medium" if one source is solid, other is partial
-- "low" if data is sparse or city/seniority unclear`;
+- "low" if data is sparse or city/seniority unclear
+- in_demand_skills: ONLY skills explicitly mentioned in the data; empty array if none found.`;
 
   try {
     const ctrl = new AbortController();
@@ -237,16 +239,21 @@ Rules:
     const r = parsed.market_range_lpa;
     if (!r || !Number.isFinite(r.min) || !Number.isFinite(r.median) || !Number.isFinite(r.max)) return null;
     if (r.min <= 0 || r.max < r.min) return null;
+    // Sanity: median should sit between min and max. If not, clamp.
+    const safeMedian = Math.min(Math.max(r.median, r.min), r.max);
 
     const citations = (tavily?.results || []).slice(0, 4).map((x: any) => ({
-      title: (x.title || "").slice(0, 120),
+      title: (x.title || "").slice(0, 90),
       url: x.url || "",
     })).filter((c: any) => c.url);
 
     return {
-      market_range_lpa: { min: round1(r.min), median: round1(r.median), max: round1(r.max) },
+      market_range_lpa: { min: round1(r.min), median: round1(safeMedian), max: round1(r.max) },
       data_confidence: parsed.data_confidence || "medium",
       evidence: Array.isArray(parsed.evidence) ? parsed.evidence.slice(0, 3) : [],
+      in_demand_skills: Array.isArray(parsed.in_demand_skills)
+        ? parsed.in_demand_skills.filter((s: any) => typeof s === "string").slice(0, 4)
+        : [],
       citations,
       sample_count: adzuna?.sample_count || (tavily?.results?.length ?? 0),
     };
