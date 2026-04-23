@@ -49,10 +49,15 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
     const industry = cardData.user?.industry || "";
     if (!role && !industry) return;
 
+    const userObj = (cardData as any)?.user || {};
+    const metroTier = userObj.metro_tier || "tier1";
+    const country = userObj.country || "IN";
+    const exp = userObj.years_experience || "";
+
     supabase.functions.invoke("live-market", {
-      body: { role, industry, metro: "tier1", country: "IN" },
+      body: { role, industry, metroTier, experienceBand: exp, country },
     }).then(({ data }) => {
-      if (data?.salary_range_lpa || data?.key_findings?.length) {
+      if (data?.salary_range_lpa || data?.key_findings?.length || data?.sector_news?.length) {
         setLiveMarket(data);
       }
     }).catch(() => { /* non-fatal — card shows fine without live data */ });
