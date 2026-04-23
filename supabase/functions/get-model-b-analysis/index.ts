@@ -275,7 +275,8 @@ Deno.serve(async (req) => {
     const processPromise = processAnalysis(
       supabase, LOVABLE_API_KEY, analysis_id, user_id,
       resume_filename, resumeText, userCity,
-      scan.role_detected || "", scan.industry || ""
+      scan.role_detected || "", scan.industry || "",
+      scan.years_experience || ""
     );
 
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
@@ -321,6 +322,7 @@ async function processAnalysis(
   userCity: string,
   detectedRole = "",
   detectedIndustry = "",
+  yearsExperience: string | number = "",
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
