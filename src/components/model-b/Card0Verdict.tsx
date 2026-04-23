@@ -47,10 +47,10 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
 
   // Sharper fear — pull SPECIFIC threat data from card1_risk schema
   // Schema fields: tasks_at_risk[], ai_tools_replacing (root-level on legacy scans), risk_score
+  // Use ?? not || so legitimate 0 values aren't skipped
   const threatTask = c1?.tasks_at_risk?.[0];
-  // Derive coverage % from risk_score when explicit field absent (LLM schema doesn't expose ai_coverage_pct)
-  const threatPct = c1?.ai_coverage_pct || c1?.exposure_pct
-    || (typeof c1?.risk_score === "number" ? Math.min(95, Math.max(40, c1.risk_score + 10)) : null);
+  const threatPct = c1?.ai_coverage_pct ?? c1?.exposure_pct
+    ?? (typeof c1?.risk_score === "number" ? Math.min(95, Math.max(40, c1.risk_score + 10)) : null);
   const threatTool = c1?.ai_tools_replacing?.[0]
     || cardData?.ai_tools_replacing?.[0]?.tool_name
     || cardData?.ai_tools_replacing?.[0];
@@ -83,16 +83,19 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const confidenceColor = dataDepth >= 3 ? "#15803d" : dataDepth >= 2 ? "#b45309" : "#6b7280";
 
   // Stats below the score — pulls real intelligence (with safe derivations)
-  const aiCoverage = c1?.ai_coverage_pct || c1?.exposure_pct
-    || (typeof c1?.risk_score === "number" ? c1.risk_score : null);
+  // ?? preserves legitimate 0 (a profile fully safe from AI is meaningful)
+  const aiCoverage = c1?.ai_coverage_pct ?? c1?.exposure_pct
+    ?? (typeof c1?.risk_score === "number" ? c1.risk_score : null);
   const moatCount = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong")?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
 
   // Top move — keep solid navy CTA card
   // Schema: pivots[].match_pct (not skill_overlap_pct)
+  // Operator-precedence fix: parenthesise the .split(...)+"." so the fallback works when confrontation is missing
+  const confrontationFirst = c1?.confrontation?.split(".")?.[0];
   const topMove = c4?.pivots?.[0]?.role
     ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].match_pct || c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
-    : (c1?.confrontation?.split(".")?.[0] + "." || "Start with one concrete case study this week.");
+    : (confrontationFirst ? `${confrontationFirst}.` : "Start with one concrete case study this week.");
 
   // Conic-gradient ring percentage
   const ringPct = Math.max(0, Math.min(100, rawScore));
