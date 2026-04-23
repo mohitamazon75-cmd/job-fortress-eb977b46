@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { CardShell, CardHead, CardBody, Badge, LivePill, EmotionStrip, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import { supabase } from "@/integrations/supabase/client";
+import SalaryFitWidget from "./SalaryFitWidget";
+import SectorNewsFeed from "./SectorNewsFeed";
+
+interface NewsItem {
+  headline: string;
+  impact?: "positive" | "negative" | "neutral";
+  why_it_matters?: string;
+  source_domain?: string;
+  url?: string;
+}
 
 interface LiveMarketData {
   salary_range_lpa?: { min: number; max: number; median: number };
@@ -10,6 +20,7 @@ interface LiveMarketData {
   key_findings?: string[];
   top_hiring_companies?: string[];
   in_demand_skills?: string[];
+  sector_news?: NewsItem[];
   data_confidence?: string;
 }
 
