@@ -1338,6 +1338,45 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_path_progress: {
+        Row: {
+          created_at: string
+          gap_key: string
+          gap_title: string
+          id: string
+          marked_complete_at: string | null
+          resource_url: string | null
+          scan_id: string
+          score_delta: number
+          severity: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gap_key: string
+          gap_title: string
+          id?: string
+          marked_complete_at?: string | null
+          resource_url?: string | null
+          scan_id: string
+          score_delta?: number
+          severity?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gap_key?: string
+          gap_title?: string
+          id?: string
+          marked_complete_at?: string | null
+          resource_url?: string | null
+          scan_id?: string
+          score_delta?: number
+          severity?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       learning_resources: {
         Row: {
           created_at: string | null
@@ -1371,6 +1410,36 @@ export type Database = {
           source?: string | null
           title?: string
           url?: string
+        }
+        Relationships: []
+      }
+      learning_resources_cache: {
+        Row: {
+          bundle: Json
+          cache_key: string
+          created_at: string
+          expires_at: string
+          gap_title: string
+          role_context: string | null
+          source: string
+        }
+        Insert: {
+          bundle?: Json
+          cache_key: string
+          created_at?: string
+          expires_at?: string
+          gap_title: string
+          role_context?: string | null
+          source?: string
+        }
+        Update: {
+          bundle?: Json
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          gap_title?: string
+          role_context?: string | null
+          source?: string
         }
         Relationships: []
       }
