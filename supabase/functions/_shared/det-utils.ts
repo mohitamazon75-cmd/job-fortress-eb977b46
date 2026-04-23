@@ -153,6 +153,23 @@ export function buildKGSkillIndex(skillRiskData: SkillRiskRow[]): KGSkillIndex {
   return { exact, entries };
 }
 
+// Substring containment is only safe when the shorter side is long enough that
+// it represents a real concept, not a 2-3 letter fragment. Without this guard,
+// "sql" matches "graphql", "ai" matches "email", "r" matches every skill, etc.
+// India launch fix: false skill matches were inflating/deflating risk scores.
+const MIN_CONTAINMENT_LEN = 5;
+
+function safeContainment(a: string, b: string): boolean {
+  // Require the SHORTER string to be at least MIN_CONTAINMENT_LEN chars,
+  // and require the longer string to not be massively longer (prevents
+  // "sql" -> "postgresqldba" type false positives).
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length <= b.length ? b : a;
+  if (shorter.length < MIN_CONTAINMENT_LEN) return false;
+  if (longer.length > shorter.length * 2.5) return false;
+  return longer.includes(shorter);
+}
+
 export function matchSkillToKG(
   userSkill: string,
   skillRiskData: SkillRiskRow[],
@@ -165,10 +182,10 @@ export function matchSkillToKG(
     const exactMatch = index.exact.get(normSkill);
     if (exactMatch) return exactMatch;
     for (const { norm, row } of index.entries) {
-      if (normSkill.includes(norm) || norm.includes(normSkill)) return row;
+      if (safeContainment(normSkill, norm)) return row;
     }
     for (const { norm, row } of index.entries) {
-      if (levenshteinSimilarity(normSkill, norm) > 0.7) return row;
+      if (levenshteinSimilarity(normSkill, norm) > 0.85) return row;
     }
     return null;
   }
@@ -176,7 +193,7 @@ export function matchSkillToKG(
   // Legacy path: no index
   for (const dbSkill of skillRiskData) {
     const normDb = normalize(dbSkill.skill_name);
-    if (normSkill.includes(normDb) || normDb.includes(normSkill) || levenshteinSimilarity(normSkill, normDb) > 0.7) {
+    if (safeContainment(normSkill, normDb) || levenshteinSimilarity(normSkill, normDb) > 0.85) {
       return dbSkill;
     }
   }

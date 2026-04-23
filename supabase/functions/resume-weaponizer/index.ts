@@ -68,7 +68,7 @@ Return ONLY valid JSON with this exact shape:
 
 HARD RULES (violations = bad output):
 - Every experience bullet MUST start with a power verb (Architected, Spearheaded, Orchestrated, Catalysed, Engineered, Scaled, Negotiated, Closed). NEVER use "Responsible for", "Helped with", "Worked on", "Assisted in".
-- 80% of experience_bullets MUST contain a number (₹, %, #, x, k, lakh, crore). Set has_metric=false only when the achievement is genuinely qualitative — and explain why in annotation.
+- AIM for quantified bullets, but ONLY use numbers (₹, %, #, x, k, lakh, crore) that are explicitly present or strongly implied in the user's source resume. NEVER invent revenue figures, team sizes, ARR, %, or ₹ amounts. If no metric exists, write a sharp qualitative bullet and set has_metric=false with annotation "no metric available — user should add real number". Fabricating numbers for an Indian recruiter is an instant rejection.
 - BANNED CLICHÉS — never use: "results-driven", "team player", "go-getter", "hard-working", "passionate about", "synergy", "ninja", "rockstar", "guru", "thought leader", "out-of-the-box", "leveraging".
 - skills_to_remove MUST follow format: "Skill → reason → replacement". Example: "Excel → signals manual reporting → 'Data-Driven Decision Making + SQL'".
 - ATS keywords must come from REAL Indian job postings for the target role (Naukri, LinkedIn India, Instahyre patterns).

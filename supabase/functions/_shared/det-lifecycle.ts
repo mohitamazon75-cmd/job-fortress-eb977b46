@@ -22,9 +22,13 @@ export function calculateObsolescenceTimeline(
   else if (seniorityTier === 'SENIOR_LEADER') baseMonths *= 1.20;
   else if (seniorityTier === 'MANAGER') baseMonths *= 1.10;
 
+  // India launch fix: cap acceleration so timelines don't collapse to absurd
+  // values by 2030+. Without the cap, geometric decay would drive every role
+  // toward "obsolete in 6 months" by 2035 regardless of actual skill profile.
+  // Floor multiplier at 0.55 (≈ 5 years of full acceleration, then plateau).
   const currentYear = new Date().getFullYear();
-  const yearsDelta = Math.max(0, currentYear - CALIBRATION.OBSOLESCENCE_AI_BASELINE_YEAR);
-  const accelerationMultiplier = Math.pow(1 - CALIBRATION.OBSOLESCENCE_AI_ACCELERATION_RATE, yearsDelta);
+  const yearsDelta = Math.min(5, Math.max(0, currentYear - CALIBRATION.OBSOLESCENCE_AI_BASELINE_YEAR));
+  const accelerationMultiplier = Math.max(0.55, Math.pow(1 - CALIBRATION.OBSOLESCENCE_AI_ACCELERATION_RATE, yearsDelta));
   baseMonths *= accelerationMultiplier;
 
   if (marketSignal) {
@@ -196,9 +200,16 @@ export function calculateSurvivability(
     peer_percentile_estimate = `~${pct}th percentile vs ${cohortBenchmark.sample_size.toLocaleString('en-IN')} ${cohortBenchmark.role_detected.replace(/_/g, ' ')}s${cohortBenchmark.metro_tier ? ` in ${cohortBenchmark.metro_tier}` : ''}`;
     peer_percentile_source = 'cohort_db';
   } else {
-    const normalizedScore = (score - 30) / 50;
-    const sigmoidPercentile = Math.round(100 / (1 + Math.exp(-3 * normalizedScore)));
-    peer_percentile_estimate = `~${Math.min(95, Math.max(5, sigmoidPercentile))}th percentile in your ${isExec ? 'leadership' : 'professional'} cohort`;
+    // India launch honesty fix: when there's no real cohort sample, do NOT
+    // claim a percentile. Map the score to a qualitative band so we never
+    // present a fabricated statistic to users.
+    const band =
+      score >= 75 ? "Top tier"
+      : score >= 60 ? "Above-average"
+      : score >= 45 ? "Mid-band"
+      : score >= 30 ? "Below-average"
+      : "High-risk band";
+    peer_percentile_estimate = `${band} (indicative — peer benchmark not yet available for your role)`;
   }
 
   return {
@@ -254,10 +265,11 @@ export function calculateGeoArbitrage(
   const rawDelta = targetSalary - currentMonthlySalary;
   if (rawDelta <= 0) return null;
 
-  // BUG-3 fix: Correct EV formula.
-  // ev12mo = P(relocation succeeds) × annual_salary_gain
-  const ev12mo = Math.round(probability * rawDelta * 12);
-  const probAdjusted = Math.round(ev12mo / 12); // monthly average of annual EV
+  // India launch math fix: derive each value once, no redundant divide-then-multiply.
+  // probAdjusted = expected monthly uplift if relocation succeeds, weighted by probability.
+  // ev12mo = annualised version of the same number.
+  const probAdjusted = Math.round(probability * rawDelta);
+  const ev12mo = probAdjusted * 12;
   const fastestWeeks = probability >= 0.7 ? 6 : probability >= 0.5 ? 10 : 16;
 
   const marketLabel = isDomesticIndia
