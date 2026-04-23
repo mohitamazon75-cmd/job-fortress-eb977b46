@@ -121,13 +121,21 @@ export default function RescanDetector({ onViewPrevious, onStartNew }: RescanDet
         <div className="space-y-2">
           {previousScans.map((scan, idx) => {
             const report = scan.final_json_report as (ScanReport & { determinism_index?: number }) | null;
+            // determinism_index = automation risk (higher = WORSE).
+            // Convert to Career Position Score (100 - DI, higher = SAFER) so the
+            // displayed number, color, and trend arrow all share one consistent
+            // mental model with the hero score on the report page.
             const di = report?.determinism_index ?? null;
+            const careerScore = di == null ? null : Math.max(0, Math.min(100, 100 - di));
             const prevScan = previousScans[idx + 1];
             const prevDi = prevScan?.final_json_report?.determinism_index ?? null;
-            const delta = (di != null && prevDi != null) ? di - prevDi : null;
-            const diColor = di == null ? 'text-muted-foreground' :
-              di >= 70 ? 'text-green-600' : di >= 50 ? 'text-blue-600' :
-              di >= 35 ? 'text-amber-600' : 'text-destructive';
+            const prevCareerScore = prevDi == null ? null : Math.max(0, Math.min(100, 100 - prevDi));
+            const delta = (careerScore != null && prevCareerScore != null)
+              ? careerScore - prevCareerScore
+              : null;
+            const scoreColor = careerScore == null ? 'text-muted-foreground' :
+              careerScore >= 70 ? 'text-green-600' : careerScore >= 50 ? 'text-blue-600' :
+              careerScore >= 35 ? 'text-amber-600' : 'text-destructive';
 
             return (
               <motion.button
@@ -152,17 +160,22 @@ export default function RescanDetector({ onViewPrevious, onStartNew }: RescanDet
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {scan.industry} · {formatDate(scan.created_at)}
-                    {delta != null && (
-                      <span className={`ml-2 inline-flex items-center gap-0.5 ${delta > 0 ? 'text-green-600' : delta < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {delta > 0 ? <TrendingUp className="w-2.5 h-2.5" /> : delta < 0 ? <TrendingDown className="w-2.5 h-2.5" /> : <Minus className="w-2.5 h-2.5" />}
+                    {delta != null && delta !== 0 && (
+                      <span className={`ml-2 inline-flex items-center gap-0.5 ${delta > 0 ? 'text-green-600' : 'text-destructive'}`}>
+                        {delta > 0 ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
                         {delta > 0 ? '+' : ''}{delta}
+                      </span>
+                    )}
+                    {delta === 0 && (
+                      <span className="ml-2 inline-flex items-center gap-0.5 text-muted-foreground">
+                        <Minus className="w-2.5 h-2.5" />0
                       </span>
                     )}
                   </p>
                 </div>
-                {di !== null && (
-                  <span className={`text-sm font-black tabular-nums flex-shrink-0 ml-3 ${diColor}`}>
-                    {di}/100
+                {careerScore !== null && (
+                  <span className={`text-sm font-black tabular-nums flex-shrink-0 ml-3 ${scoreColor}`}>
+                    {careerScore}/100
                   </span>
                 )}
               </motion.button>
