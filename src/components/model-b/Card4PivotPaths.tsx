@@ -1,6 +1,30 @@
 import { useState, useMemo } from "react";
 import { CardShell, CardHead, CardBody, SectionLabel, CardNav, Badge, variantColor } from "./SharedUI";
 import { toast } from "sonner";
+import { useCohortIntel } from "@/hooks/useCohortIntel";
+
+// ─────────────────────────────────────────────────────────────────────
+// Salary band parser. Extracts an INR lakh figure from strings like
+// "₹45–60L", "₹1.2 Cr", "60 LPA". Returns the midpoint in lakhs, or null.
+// Deterministic — no LLM, no fabrication. If we can't parse it, we hide
+// the math card rather than guess.
+// ─────────────────────────────────────────────────────────────────────
+function parseInrBandToLakhs(s: any): number | null {
+  if (!s || typeof s !== "string") return null;
+  const cleaned = s.replace(/[,\s]/g, "").toLowerCase();
+  const isCr = /cr|crore/.test(cleaned);
+  const nums = cleaned.match(/(\d+(?:\.\d+)?)/g);
+  if (!nums || nums.length === 0) return null;
+  const vals = nums.slice(0, 2).map(Number).filter((n) => Number.isFinite(n) && n > 0);
+  if (vals.length === 0) return null;
+  const mid = vals.length === 2 ? (vals[0] + vals[1]) / 2 : vals[0];
+  return isCr ? mid * 100 : mid; // Cr → lakhs
+}
+
+function formatLakhs(lakhs: number): string {
+  if (lakhs >= 100) return `₹${(lakhs / 100).toFixed(1)} Cr`;
+  return `₹${Math.round(lakhs)}L`;
+}
 
 // ────────────────────────────────────────────────────────────────────────
 // Pivot tab — redesigned for "wow / WTF how does it know" emotional impact.
