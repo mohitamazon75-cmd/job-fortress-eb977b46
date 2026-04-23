@@ -332,8 +332,23 @@ Select the top 8 most relevant, REAL job postings. Rank by fit to this person's 
 
     console.log(`[BestFitJobs] Ranked ${result.jobs.length} real job listings`);
 
+    // ── Server-side salary sanitization (defense against LLM hallucination) ──
+    // If the LLM returned a salary string but the source snippet has no ₹/LPA/lakh
+    // anchor, force it to null. This guarantees zero fabricated salary data
+    // regardless of prompt drift.
+    const SALARY_ANCHOR = /(₹|INR|Rs\.?|LPA|lakh|crore|cr\b|\d+\s*L\b)/i;
+    const sanitizedJobs = result.jobs.slice(0, 8).map((j: any) => {
+      if (j.salary_range && typeof j.salary_range === "string") {
+        const sourceSnippet = rawListings.find((l) => l.url === j.url)?.snippet || "";
+        if (!SALARY_ANCHOR.test(j.salary_range) || !SALARY_ANCHOR.test(sourceSnippet)) {
+          j.salary_range = null;
+        }
+      }
+      return j;
+    });
+
     const responseData = {
-      jobs: result.jobs.slice(0, 8),
+      jobs: sanitizedJobs,
       market_insight: result.market_insight || "",
       total_found: rawListings.length,
       sources: rawListings.slice(0, 6).map((l) => ({ title: l.title, url: l.url })),
