@@ -788,7 +788,7 @@ export default function ResultsModelB() {
             {/* Bottom action buttons — hidden on Verdict (own CTAs) and Tools (utility tab) */}
             {!ACTION_BUTTONS_HIDDEN_TABS.has(currentCard) && (
               <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
-                {buildActionPrompts().map((action, i) => (
+                {actionPrompts.map((action, i) => (
                   <button
                     key={i}
                     className="mb-btn-secondary"
