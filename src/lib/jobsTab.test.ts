@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoardLinks, formatLiveTimestamp, normalizeCity, parsePostedDays } from "./jobsTab";
+import { buildBoardLinks, classifyJobUrl, formatLiveTimestamp, normalizeCity, parsePostedDays } from "./jobsTab";
 
 describe("jobsTab helpers", () => {
   it("normalizes city strings for board searches", () => {
