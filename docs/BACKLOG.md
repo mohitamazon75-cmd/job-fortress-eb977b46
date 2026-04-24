@@ -68,15 +68,14 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
 - **Resolution (2026-04-24)**: extracted `journeyProgressPct` helper; 5 tests including defensive cases.
 - **Status**: done.
 
-### BL-015 — DPDP 90-day retention has no automated cleanup job
+### BL-015 — DPDP 90-day retention has no automated cleanup job → done
 - **Memory**: `mem://project/data-privacy-and-retention`.
-- **Fix**: add a `pg_cron` job that purges scans older than 90 days; add a test that calls the function with a frozen clock.
-- **Status**: open.
-
-### BL-015 — DPDP 90-day retention has no automated cleanup job
-- **Memory**: `mem://project/data-privacy-and-retention`.
-- **Fix**: add a `pg_cron` job that purges scans older than 90 days; add a test that calls the function with a frozen clock.
-- **Status**: open.
+- **Resolution (2026-04-24)**:
+  - New edge function `supabase/functions/purge-expired-scans/index.ts` deletes scans (+ satellite tables: score_history, learning_path_progress, defense_milestones, coach_nudges, scan_outcomes, scan_feedback, behavior_events, scan_vectors, cohort_cache, trajectory_predictions, weekly_briefs, chat_messages) older than 90 days. Service-role-only; rejects anonymous and user-JWT calls.
+  - Pure rule extracted to `src/lib/dpdp-retention.ts` (`shouldPurgeScan`, `retentionCutoff`).
+  - 8 unit tests in `src/test/dpdp-retention.test.ts` cover boundary (exactly 90d → keep), 91d → purge, garbage input → keep (fail-safe), custom retention windows.
+  - pg_cron job `purge-expired-scans-daily` runs daily at 02:00 UTC.
+- **Status**: done.
 
 ## Open — P2
 
