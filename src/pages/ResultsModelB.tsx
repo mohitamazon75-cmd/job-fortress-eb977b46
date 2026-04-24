@@ -335,7 +335,7 @@ export default function ResultsModelB() {
           if (retrigger?.data?.card_data) {
             const cd = retrigger.data.card_data;
             setCardData(cd);
-            setDisplayScore(cd?.jobbachao_score || 0);
+            // displayScore is derived (B5).
             setLoading(false);
             return;
           }
