@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     const { data: scan, error: scanError } = await supabase
       .from("scans")
-      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url, scan_status")
+      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url, scan_status, determinism_index")
       .eq("id", analysis_id)
       .maybeSingle();
 
