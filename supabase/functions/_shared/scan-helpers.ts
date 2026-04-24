@@ -682,6 +682,59 @@ export function sanitizeInput(text: string): string {
     .slice(0, 8000);
 }
 
+// ───────────────────────────────────────────────────────────────
+// PROMPT-INJECTION DEFENSE FOR DOWNSTREAM AGENT CONTEXT
+// ───────────────────────────────────────────────────────────────
+// Wraps a user-controlled value in <label>...</label> after stripping
+// known prompt-injection patterns and entity-escaping angle brackets.
+// Order: stringify → strip → truncate → escape → wrap.
+
+const INJECTION_PATTERNS: RegExp[] = [
+  /ignore\s+previous\s+instructions/gi,
+  /ignore\s+all\s+instructions/gi,
+  /ignore\s+prior\s+instructions/gi,
+  /ignore\s+above\s+instructions/gi,
+  /you\s+are\s+now/gi,
+  /you\s+are\s+henceforth/gi,
+  /^system:/gim,
+  /<\/?(?:user_profile|user_skills|user_role|user_company|user_name|user_moats|system|instruction|assistant)>/gi,
+  /\[\/?INST\]/gi,
+];
+
+export function wrapUserData(label: string, value: unknown): string {
+  if (value === null || value === undefined) {
+    return `<${label}></${label}>`;
+  }
+
+  // Step 1: coerce to string
+  let s: string;
+  if (typeof value === "string") {
+    s = value;
+  } else if (typeof value === "number" || typeof value === "boolean") {
+    s = String(value);
+  } else {
+    try {
+      s = JSON.stringify(value);
+    } catch {
+      s = String(value);
+    }
+  }
+
+  // Step 2: strip injection phrases on the stringified form
+  for (const pat of INJECTION_PATTERNS) {
+    s = s.replace(pat, "");
+  }
+
+  // Step 3: truncate AFTER stripping
+  if (s.length > 2000) s = s.slice(0, 2000);
+
+  // Step 4: entity-escape remaining angle brackets
+  s = s.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // Step 5: wrap
+  return `<${label}>${s}</${label}>`;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // GITHUB TOOL VALIDATION MAP
 // ═══════════════════════════════════════════════════════════════
