@@ -74,6 +74,12 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
   const execRoute = Boolean(liveJobsQuery.data?.executive_route);
   const jobs = liveJobs.length > 0 ? liveJobs.slice(0, 6) : !execRoute && Array.isArray(d?.job_matches) ? d.job_matches.slice(0, 5) : [];
   const searchLinks = buildBoardLinks(role || jobs[0]?.role || "jobs", city, liveJobsQuery.data?.search_urls);
+  // Count how many cards resolve to a generic search/listing page (vs a specific posting)
+  // so we can show one honest disclaimer above the list instead of leaving the user to infer it.
+  const genericCount = useMemo(
+    () => jobs.filter((j: any) => classifyJobUrl(j.url || j.search_url).kind === "generic").length,
+    [jobs],
+  );
   const handleRefresh = () => { setForceRefresh((n) => n + 1); };
 
   const cols: { key: keyof KanbanState; label: string }[] = [
