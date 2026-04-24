@@ -175,6 +175,18 @@ export default function ResultsModelB() {
     };
   }, []);
 
+  // B1 follow-up: re-sync journey state when analysisId changes (SPA navigation
+  // between two scans). Without this, scan-A's visited/done state would persist
+  // into scan-B until a hard refresh.
+  useEffect(() => {
+    const next = readJourneyState(journeyStorageKey);
+    setVisitedCards(next.visited);
+    setJourneyDone(next.done);
+    setCurrentCard(0);
+    // readJourneyState is stable (no closure deps that change per-render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [journeyStorageKey]);
+
   // Log helper
   const logEvent = useCallback(async (event_type: string, metadata?: Record<string, unknown>) => {
     // Also log to user_action_signals for the behavioral flywheel
