@@ -350,7 +350,8 @@ export function calculateScoreVariability(
   matchedCount: number,
   monthlySalary: number,
   marketSignal: MarketSignalRow | null,
-  industryFloor?: number
+  industryFloor?: number,
+  seniorityTier?: string | null,
 ): ScoreVariability {
   // STAT-2 fix: asymmetric confidence intervals that respect:
   //   1. The bounded nature of DI (cannot go below 0 or above 100)
@@ -370,8 +371,8 @@ export function calculateScoreVariability(
 
   const timelineLow = calculateObsolescenceTimeline(diHigh, marketSignal);
   const timelineHigh = calculateObsolescenceTimeline(diLow, marketSignal);
-  const salaryLow = calculateSalaryBleed(diLow, monthlySalary, marketSignal);
-  const salaryHigh = calculateSalaryBleed(diHigh, monthlySalary, marketSignal);
+  const salaryLow = calculateSalaryBleed(diLow, monthlySalary, marketSignal, seniorityTier);
+  const salaryHigh = calculateSalaryBleed(diHigh, monthlySalary, marketSignal, seniorityTier);
 
   return {
     di_range: { low: diLow, high: diHigh },

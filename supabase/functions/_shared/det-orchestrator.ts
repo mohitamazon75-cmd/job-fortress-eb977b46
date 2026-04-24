@@ -361,7 +361,7 @@ export function computeAll(
   // Score Variability
   // Score Variability — pass the stronger structural floor so asymmetric CI
   // respects both job-family baselines and high-risk industry/sub-sector anchors.
-  const score_variability = calculateScoreVariability(determinismIndex, diResult.matchedCount, monthlySalary, marketSignal, structuralFloor);
+  const score_variability = calculateScoreVariability(determinismIndex, diResult.matchedCount, monthlySalary, marketSignal, structuralFloor, profile.seniority_tier);
 
   // Moat & Urgency — moat now returns IC leverage bonus separately for audit (#4)
   const moatResult = calculateMoatScore(profile, skillRiskData, diResult.matchedCount);
