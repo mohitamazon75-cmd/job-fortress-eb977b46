@@ -205,13 +205,17 @@ function buildWhyFit(opts: {
 }
 
 function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: string[]) {
-  const anchors = getAnchorTokens(role);
+  // Use the COMPRESSED role for anchor extraction. A 7-word job title shouldn't
+  // require 7 anchor hits — that's why the gate was over-filtering and users
+  // were seeing 0–2 jobs out of 50 scraped.
+  const compactRole = compressRoleForSearch(role);
+  const anchors = getAnchorTokens(compactRole);
   const userSkillsCount = skills.filter((s) => s && s.trim().length > 1).length;
 
   const scored = items
     .filter((item) => item.jdURL && item.title)
     .map((item) => {
-      const s = scoreJobAgainstUser(item, role, skills);
+      const s = scoreJobAgainstUser(item, compactRole, skills);
       const days = parseDays(item.footerPlaceholderLabel);
       const matchPct = toMatchPct({
         anchorInTitle: s.anchorInTitle,
@@ -254,18 +258,30 @@ function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: st
         verified_live: true,
         source: "apify_naukri",
         anchor_in_title: s.anchorInTitle,
+        anchor_in_body: s.anchorInBody,
         match_pct: matchPct,
         match_label: toMatchLabel(matchPct),
         why_fit: whyFit,
         raw_score: s.score,
       };
     })
-    // Hard relevance gate: anchor MUST appear in title OR user skill overlap >= 25%
-    .filter((j) => j.anchor_in_title || (userSkillsCount > 0 && j.shared_skills.length / userSkillsCount >= 0.25))
-    .sort((a, b) => b.raw_score - a.raw_score)
+    // Relaxed relevance gate — keep a job if ANY of these is true:
+    //  (a) anchor token in title (strict signal)
+    //  (b) anchor token in body AND ≥1 of the user's skills is present
+    //  (c) ≥2 user skills present (skill-led match for transferable roles)
+    // The old gate (anchor-in-title OR ≥25% skill overlap) was dropping ~96% of
+    // scraped jobs for niche or executive-flavoured titles, leaving the tab empty.
+    .filter((j) => {
+      if (j.anchor_in_title) return true;
+      if (j.anchor_in_body > 0 && j.shared_skills.length >= 1) return true;
+      if (j.shared_skills.length >= 2) return true;
+      return false;
+    })
+    // Rank by match_pct first (what the user sees), then raw_score as tiebreaker.
+    .sort((a, b) => (b.match_pct - a.match_pct) || (b.raw_score - a.raw_score))
     .slice(0, 10);
 
-  return scored.map(({ raw_score, anchor_in_title, ...job }) => job);
+  return scored.map(({ raw_score, anchor_in_title, anchor_in_body, ...job }) => job);
 }
 
 Deno.serve(async (req) => {
