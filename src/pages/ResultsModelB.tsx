@@ -402,24 +402,8 @@ export default function ResultsModelB() {
     }
   }, [visitedCards, cardData, journeyDone, logEvent]);
 
-  if (!analysisId) return null;
-
-  // Progress is based on all 9 tabs (Verdict → Tools)
-  const progressPct = Math.min(100, ((Math.min(currentCard, TOTAL_JOURNEY_TABS - 1) + 1) / TOTAL_JOURNEY_TABS) * 100);
-
-  const getTabState = (i: number) => {
-    if (i === currentCard) return "active";
-    if (visitedCards.has(i)) return "done";
-    return "unvisited";
-  };
-
-  const tabColors = {
-    active: { dot: "#1B2F55", label: "#1B2F55", bg: "#EEF1F8" },
-    done: { dot: "#1A6B3C", label: "#1A6B3C", bg: "transparent" },
-    unvisited: { dot: "#D0CEC5", label: "#B8B6AE", bg: "transparent" },
-  };
-
   // Memoized — was being rebuilt on every render (P0 #6)
+  // Moved above the early return so hook order stays stable across renders.
   const actionPrompts = useMemo(() => {
     if (!cardData) return [] as Array<{ label: string; icon: string; title: string; promptText: string }>;
     const u = cardData.user || {};
@@ -440,6 +424,17 @@ export default function ResultsModelB() {
       { label: "30-day action plan", icon: "📋", title: "30-Day Action Plan", promptText: `Create a 30-day action plan for ${u.name} to land a ${pivot0.role} role in India.\n\nProfile: ${u.years_experience}+ years · ${u.current_title} · ${u.location} · Available ${u.availability}\nTop credential: ${cardData.card7_human?.advantages?.[0]?.proof_label || ''}\nTarget: ${cardData.card4_pivot?.negotiation?.open_with || ''} base\n\nPlan:\n${day1to3Line}\nDays 4–7: Research 10 target companies, map specific credentials to each JD\nDays 8–14: 5 tailored applications with evidence mapped to each company\nDays 15–20: Referral activation — personalised outreach for each target company\nDays 21–25: Interview prep using STAR answers built from resume evidence\nDays 26–30: Follow-up cadence, negotiation preparation, offer evaluation framework\n\nFor each week: specific daily actions, time estimates, success metrics.` },
     ];
   }, [cardData]);
+
+  if (!analysisId) return null;
+
+  // Progress is based on all 9 tabs (Verdict → Tools)
+  const progressPct = Math.min(100, ((Math.min(currentCard, TOTAL_JOURNEY_TABS - 1) + 1) / TOTAL_JOURNEY_TABS) * 100);
+
+  const getTabState = (i: number) => {
+    if (i === currentCard) return "active";
+    if (visitedCards.has(i)) return "done";
+    return "unvisited";
+  };
 
   const handleCopyFallback = (text: string) => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
