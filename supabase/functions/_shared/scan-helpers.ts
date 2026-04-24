@@ -27,7 +27,11 @@ const URL_SIGNAL_MAP: Array<{ keywords: string[]; industry: string; role: string
   { keywords: ["manufacturing", "operations", "supply", "plant", "quality", "production"], industry: "Manufacturing", role: "Operations Manager" },
   { keywords: ["developer", "engineer", "software", "it", "devops", "data", "programmer", "fullstack", "backend", "frontend"], industry: "IT & Software", role: "Software Engineer" },
   { keywords: ["hr", "human-resources", "talent", "recruiting", "recruitment", "people-ops"], industry: "IT & Software", role: "HR Manager" },
-  { keywords: ["sales", "business-development", "bd", "account-executive", "revenue"], industry: "Finance & Banking", role: "Sales Manager" },
+  // QA-03 fix (2026-04-24): BD/sales must NOT inherit Finance & Banking. They are
+  // a distinct functional industry. FUNCTIONAL_INDUSTRY_RULES (line ~262) already
+  // routes these correctly downstream; aligning the LinkedIn-URL inference here
+  // prevents the Finance label from leaking into Agent prompts via resolvedIndustry.
+  { keywords: ["sales", "business-development", "bd", "account-executive", "account-manager", "revenue", "partnerships"], industry: "Sales & Business Development", role: "Sales Manager" },
   { keywords: ["product", "product-manager", "pm", "product-management"], industry: "IT & Software", role: "Product Manager" },
 ];
 
