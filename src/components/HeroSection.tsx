@@ -62,25 +62,16 @@ function LivePulse({ count, label }: { count: number; label: string }) {
 }
 
 export default function HeroSection({ onStart, onStartWithRole }: HeroSectionProps) {
-  const BASE_COUNT = 5247;
-  const [scanCount, setScanCount] = useState<number | null>(BASE_COUNT);
+  const [scanCount, setScanCount] = useState<number | null>(null);
 
   useEffect(() => {
-    // Fetch real count, use as offset on top of base
     supabase
       .from('scans')
       .select('id', { count: 'exact', head: true })
       .eq('scan_status', 'complete')
       .then(({ count }) => {
-        setScanCount(BASE_COUNT + (count && count > 0 ? count : 0));
-      }, () => setScanCount(BASE_COUNT));
-
-    // Live increment: every 60-120s add 3-4 to the counter
-    const interval = setInterval(() => {
-      setScanCount(prev => (prev ?? BASE_COUNT) + Math.floor(3 + Math.random() * 2));
-    }, 60_000 + Math.floor(Math.random() * 60_000)); // 60-120s
-
-    return () => clearInterval(interval);
+        setScanCount(count && count > 0 ? count : null);
+      }, () => setScanCount(null));
   }, []);
 
   return (
