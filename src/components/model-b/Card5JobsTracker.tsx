@@ -167,6 +167,13 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
           </div>
         )}
 
+        {!execRoute && genericCount > 0 && jobs.length > 0 && (
+          <div style={{ background: "var(--mb-amber-tint)", border: "1.5px solid rgba(180,120,20,0.22)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", lineHeight: 1.55 }}>
+            <strong style={{ color: "var(--mb-amber)", fontWeight: 800 }}>Heads up:</strong>{" "}
+            {genericCount} of {jobs.length} cards below couldn't be deep-linked to a single posting — those open a targeted board search instead of one job. Look for the <strong>Search board</strong> tag.
+          </div>
+        )}
+
         {jobs.map((job: any, i: number) => {
           const live = Boolean(job.verified_live || job.url);
           const rawUrl = job.url || job.search_url || searchLinks.naukri;
