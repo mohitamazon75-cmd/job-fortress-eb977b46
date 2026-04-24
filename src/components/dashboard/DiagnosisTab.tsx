@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle, Brain, Clock, Shield, ShieldCheck, Trending
 import { getExecutiveLabel } from '@/lib/seniority-utils';
 import { formatCurrency, normalizeTools, type SkillThreatIntel } from '@/lib/scan-engine';
 import { computeStabilityScore } from '@/lib/stability-score';
+import { useAnimatedNumber } from '@/hooks/useAnimatedNumber';
 import MLWakingState from '@/components/MLWakingState';
 import PanicIndexWidget from '@/components/PanicIndexWidget';
 import CompanyBenchmarkWidget from '@/components/CompanyBenchmarkWidget';
@@ -129,6 +130,11 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
   } = props;
 
   const [riskMethodOpen, setRiskMethodOpen] = useState(false);
+
+  // P1: Animate the headline Career Position Score on dashboard land so it feels
+  // alive (matches the count-up users saw in AIDossierReveal/Card0Verdict).
+  // useAnimatedNumber respects prefers-reduced-motion automatically.
+  const animatedScore = useAnimatedNumber(displayScoreValue, 1100);
 
   return (
     <motion.div
@@ -264,8 +270,8 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
                 ? 'How strong your strategic position is against AI disruption'
                 : 'Your overall career strength against AI disruption'}
             </p>
-            <p className={`text-3xl font-black ${scoreColorClass}`}>
-              {displayScoreValue}<span className="text-base">/100</span>
+            <p className={`text-3xl font-black ${scoreColorClass}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {animatedScore}<span className="text-base">/100</span>
             </p>
             {ci && (
               <p className="text-[11px] text-muted-foreground mt-0.5 font-semibold">Range: {Math.min(100 - ci.di_range.high, 100 - ci.di_range.low)}–{Math.max(100 - ci.di_range.high, 100 - ci.di_range.low)}/100</p>
