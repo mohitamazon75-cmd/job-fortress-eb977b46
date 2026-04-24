@@ -80,29 +80,21 @@ const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 8]);
 const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
 
 // C1 #2: Streak now correctly resets to 1 if the user skips a day.
-// Previously it incremented forever regardless of gap.
+// Pure logic lives in src/lib/model-b-helpers.ts (BL-013 / INV-F02).
+import { nextStreak, journeyProgressPct } from "@/lib/model-b-helpers";
+
 function useStreak() {
   const [streak, setStreak] = useState(1);
   useEffect(() => {
     const today = new Date();
-    const todayStr = today.toDateString();
     const stored = localStorage.getItem(STREAK_DATE_KEY);
     const current = parseInt(localStorage.getItem(STREAK_KEY) || "0", 10);
-    if (stored === todayStr) {
-      setStreak(current || 1);
-      return;
-    }
-    // Different day — was it yesterday (continue) or earlier (reset)?
-    let next = 1;
-    if (stored) {
-      const last = new Date(stored);
-      const dayMs = 24 * 60 * 60 * 1000;
-      const diffDays = Math.round((today.setHours(0,0,0,0) - last.setHours(0,0,0,0)) / dayMs);
-      next = diffDays === 1 ? (current || 0) + 1 : 1;
-    }
+    const next = nextStreak(today, stored, current);
     setStreak(next);
-    localStorage.setItem(STREAK_KEY, String(next));
-    localStorage.setItem(STREAK_DATE_KEY, todayStr);
+    if (stored !== today.toDateString()) {
+      localStorage.setItem(STREAK_KEY, String(next));
+      localStorage.setItem(STREAK_DATE_KEY, today.toDateString());
+    }
   }, []);
   return streak;
 }
@@ -529,8 +521,8 @@ export default function ResultsModelB() {
 
   // Progress is based on all 9 tabs (Verdict → Tools)
   // C1 #7: progress reflects actual exploration (visited tabs), not just current index.
-  // Jumping to Tools no longer falsely shows 100% complete.
-  const progressPct = Math.min(100, (visitedCards.size / TOTAL_JOURNEY_TABS) * 100);
+  // Pure logic in src/lib/model-b-helpers.ts (BL-014 / INV-F03).
+  const progressPct = journeyProgressPct(visitedCards.size, TOTAL_JOURNEY_TABS);
 
   const getTabState = (i: number) => {
     if (i === currentCard) return "active";
