@@ -123,8 +123,6 @@ export default function Auth() {
     };
   }, [navigate]);
 
-  const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
