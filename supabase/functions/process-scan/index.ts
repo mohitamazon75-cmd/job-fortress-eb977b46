@@ -888,6 +888,16 @@ Deno.serve(async (req) => {
       console.warn(`[RoleGuard] Agent1 title differs from parsed title — using parsed title`);
     }
 
+    // QA-02 fix (2026-04-24): functional-industry override.
+    // A "Marketing Manager" extracted from a SaaS company's resume often gets
+    // industry="Technology" (employer-driven). Reclassify to functional industry
+    // so cohort matching uses the right peer group.
+    const functionalOverride = applyFunctionalIndustryOverride(resolvedIndustry, detectedRole);
+    if (functionalOverride.overridden) {
+      console.log(`[IndustryOverride] ${functionalOverride.reason}`);
+      resolvedIndustry = functionalOverride.industry;
+    }
+
     if (agent1) {
       const compoundParts = detectCompoundRole(detectedRole);
       if (compoundParts) {
