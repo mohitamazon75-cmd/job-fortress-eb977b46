@@ -466,6 +466,25 @@ function Card6BlindSpots({ report, onBack, onNext }: { report: ScanReport; onBac
 
         {advice.length > 0 && (
           <>
+            {/* P0-3: Prescription header — convert diagnosis tone → action tone */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '10px 14px', marginBottom: 12,
+              borderRadius: 10,
+              background: 'var(--mb-green-tint)',
+              border: '1.5px solid rgba(26,107,60,0.22)',
+            }}>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>⏱</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--mb-green)' }}>
+                  Fix this Sunday
+                </div>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: 'var(--mb-ink2)', fontWeight: 600, marginTop: 2 }}>
+                  Each move below takes 30–60 minutes. Pick one. Block your calendar.
+                </div>
+              </div>
+            </div>
+
             <SectionLabel label="What to do about it" />
             {advice.map((a, i) => (
               <div key={i} style={{ display: 'flex', gap: 12, padding: '14px 16px', borderRadius: 12, background: 'var(--mb-navy-tint)', border: '1px solid var(--mb-navy-tint2)', marginBottom: 10 }}>
