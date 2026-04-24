@@ -244,6 +244,15 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                 {fileError && (
                   <p className="text-sm text-destructive font-medium mt-2">{fileError}</p>
                 )}
+                {/* P1-A: Trust signal at the moment of upload — Rajesh-tier users
+                    won't upload an employer resume without seeing this here, not
+                    buried in the privacy page. */}
+                <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-prophet-green/10 border border-prophet-green/25">
+                  <Lock className="w-3 h-3 text-prophet-green" />
+                  <span className="text-[11px] font-semibold text-prophet-green">
+                    Encrypted · Auto-deleted in 90 days · DPDP-compliant · Never shared
+                  </span>
+                </div>
               </div>
               <button onClick={() => setMethod(null)} className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 ← Choose different method
