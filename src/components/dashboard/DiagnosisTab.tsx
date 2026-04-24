@@ -270,8 +270,8 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
                 ? 'How strong your strategic position is against AI disruption'
                 : 'Your overall career strength against AI disruption'}
             </p>
-            <p className={`text-3xl font-black ${scoreColorClass}`}>
-              {displayScoreValue}<span className="text-base">/100</span>
+            <p className={`text-3xl font-black ${scoreColorClass}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {animatedScore}<span className="text-base">/100</span>
             </p>
             {ci && (
               <p className="text-[11px] text-muted-foreground mt-0.5 font-semibold">Range: {Math.min(100 - ci.di_range.high, 100 - ci.di_range.low)}–{Math.max(100 - ci.di_range.high, 100 - ci.di_range.low)}/100</p>
