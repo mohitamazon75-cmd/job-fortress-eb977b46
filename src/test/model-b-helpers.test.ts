@@ -8,6 +8,7 @@
 
 import { describe, it, expect } from "vitest";
 import {
+  getAnalysisErrorCode,
   nextStreak,
   journeyProgressPct,
   shouldClearScanState,
@@ -108,5 +109,17 @@ describe("shouldClearScanState (BL-012 / INV-F01)", () => {
 
   it("DOES clear even between visually similar ids", () => {
     expect(shouldClearScanState("abc-123", "abc-124")).toBe(true);
+  });
+});
+
+describe("getAnalysisErrorCode", () => {
+  it("extracts app-level error codes from handled edge payloads", () => {
+    expect(getAnalysisErrorCode({ success: false, code: "FORBIDDEN" })).toBe("FORBIDDEN");
+  });
+
+  it("returns null for missing or invalid payloads", () => {
+    expect(getAnalysisErrorCode(null)).toBeNull();
+    expect(getAnalysisErrorCode({ success: false })).toBeNull();
+    expect(getAnalysisErrorCode("FORBIDDEN")).toBeNull();
   });
 });

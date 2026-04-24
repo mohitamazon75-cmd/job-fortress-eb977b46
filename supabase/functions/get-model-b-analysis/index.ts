@@ -90,7 +90,10 @@ Deno.serve(async (req) => {
             error: "This analysis belongs to a different account. Sign in with the original account or start a new scan.",
             code: "FORBIDDEN",
           }),
-          { status: 403, headers: jsonHeaders }
+          // Expected user-state, not a backend failure. Return 200 so the
+          // client can render its recovery UI without the preview/runtime
+          // layer flagging this as a blank-screen crash.
+          { status: 200, headers: jsonHeaders }
         );
       }
     }
