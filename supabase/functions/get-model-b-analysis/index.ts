@@ -759,7 +759,7 @@ function clampNum(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
-function applyTrustGuardrails(
+export function applyTrustGuardrails(
   cardData: Record<string, unknown>,
   detScoreAnchor: number | null,
   userCity: string,
