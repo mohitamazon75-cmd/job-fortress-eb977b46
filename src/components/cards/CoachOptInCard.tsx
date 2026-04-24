@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, MessageCircle, Bell, Check, Sparkles, Mail, Send } from 'lucide-react';
+import { Brain, MessageCircle, Bell, Check, Sparkles, Mail, Send, Inbox } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport } from '@/lib/scan-engine';
 
