@@ -153,8 +153,6 @@ export default function ResultsModelB() {
   // Feature 3: Weekly intel for the Tools tab Judo section — fetched lazily when Tools tab opens.
   const [weeklyIntel, setWeeklyIntel] = useState<WeeklyIntelData | null>(null);
   const [weeklyIntelLoading, setWeeklyIntelLoading] = useState(false);
-  // B5 (#11): displayScore is derived from the canonical jobbachao_score plus
-  // the journey-completion bonus. Avoids drift and survives refresh correctly.
 
   const streak = useStreak();
   const [streakModal, setStreakModal] = useState(false);
