@@ -161,13 +161,15 @@ function scoreJobAgainstUser(job: ApifyJob, role: string, skills: string[]) {
 }
 
 function toMatchPct(opts: { anchorInTitle: boolean; sharedSkillsCount: number; userSkillsCount: number; recencyDays: number | null }) {
-  if (!opts.anchorInTitle) return 0;
-  let pct = 65; // anchor in title floor
+  // Floor: anchor-in-title = 65, otherwise skill-only match starts at 60.
+  // Returning 0 here was making genuinely-relevant skill-matched jobs render
+  // as "0% · Stretch", which felt broken to users.
+  let pct = opts.anchorInTitle ? 65 : 60;
   if (opts.userSkillsCount > 0) {
     const overlap = Math.min(1, opts.sharedSkillsCount / opts.userSkillsCount);
     pct += Math.round(overlap * 25); // up to +25 from skills
-  } else {
-    pct += 10; // no user skills => modest bump
+  } else if (opts.anchorInTitle) {
+    pct += 10; // no user skills => modest bump only when title actually anchored
   }
   if (opts.recencyDays != null) {
     if (opts.recencyDays <= 1) pct += 4;
