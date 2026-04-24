@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle, Brain, Clock, Shield, ShieldCheck, Trending
 import { getExecutiveLabel } from '@/lib/seniority-utils';
 import { formatCurrency, normalizeTools, type SkillThreatIntel } from '@/lib/scan-engine';
 import { computeStabilityScore } from '@/lib/stability-score';
+import { useAnimatedNumber } from '@/hooks/useAnimatedNumber';
 import MLWakingState from '@/components/MLWakingState';
 import PanicIndexWidget from '@/components/PanicIndexWidget';
 import CompanyBenchmarkWidget from '@/components/CompanyBenchmarkWidget';
