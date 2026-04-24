@@ -48,6 +48,16 @@ const STREAK_DATE_KEY = "jb_streak_date";
 
 const TAB_LABELS = ["Verdict", "Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
 
+// Tabs where the header "Career Safety" score is hidden.
+// 0 = Verdict (presents its own hero score), 3 = Shield (sub-score conflict),
+// 8 = Tools (utility tab — no score frame needed).
+const HEADER_SCORE_HIDDEN_TABS = new Set([0, 3, 8]);
+// Tabs where the bottom action button grid is hidden — these tabs have their own
+// dedicated CTAs and the grid would clutter the emotional/utility frame.
+const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 8]);
+// Total content tabs in the journey (0..8 inclusive). Visiting all 9 = complete.
+const TOTAL_JOURNEY_TABS = 9;
+
 function useStreak() {
   const [streak, setStreak] = useState(1);
   useEffect(() => {
