@@ -181,11 +181,12 @@ for (const s of SCENARIOS) {
 
   // Fix 1: industry resolution
   const inferred = inferFromLinkedinUrl(s.linkedinUrl);
-  const overridden = applyFunctionalIndustryOverride(s.jobTitle, s.parsedIndustry);
+  const overrideResult = applyFunctionalIndustryOverride(s.parsedIndustry, s.jobTitle);
+  const overridden = overrideResult.industry;
   console.log(`  Industry chain:`);
   console.log(`    LinkedIn URL inference  → ${inferred.inferredIndustry ?? "(none)"}`);
   console.log(`    Parsed from resume       → ${s.parsedIndustry}`);
-  console.log(`    After functional override → ${overridden}`);
+  console.log(`    After functional override → ${overridden}${overrideResult.overridden ? " (overridden ✓)" : ""}`);
 
   // Run scoring
   const result = computeAll(
