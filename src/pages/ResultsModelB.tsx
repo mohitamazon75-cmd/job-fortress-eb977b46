@@ -684,8 +684,16 @@ export default function ResultsModelB() {
 
         {/* Error state — with auto-retry and clear messaging */}
         {error && !loading && (() => {
-          const isForbidden = /forbidden|403|different account|not found|404/i.test(error);
-          const isScanIncomplete = /didn't complete|not ready|scan_not_ready|run a new scan|start a new scan/i.test(error);
+          // Order matters: FORBIDDEN messages can also contain "start a new scan",
+          // so we must check forbidden/auth FIRST and only fall through to
+          // "scan didn't complete" for genuine SCAN_NOT_READY cases.
+          const isForbidden = /forbidden|different account|belongs to another|403/i.test(error);
+          const isAuthRequired = /please sign in|auth_required|401/i.test(error);
+          const isScanIncomplete = !isForbidden && !isAuthRequired &&
+            /didn't complete|not ready|scan_not_ready/i.test(error);
+          if (isForbidden) {
+            // Render forbidden branch (defined below) by falling through
+          }
           if (isScanIncomplete) {
             return (
               <div style={{ textAlign: "center", padding: "60px 20px", maxWidth: 440, margin: "0 auto" }}>
