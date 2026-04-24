@@ -658,13 +658,12 @@ export default function ResultsModelB() {
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink4)", marginBottom: 24, minHeight: 20 }}>
               {LOADING_MESSAGES[loadingMsg]}
             </div>
-            {/* Progress bar — animation duration matches MAX_POLLS (40 × 3s = 120s)
+            {/* Progress bar — animation duration matches MAX_POLLS (30 × 3s = 90s)
                 so the bar never visually "completes" while polling is still active.
-                B2 (#10): was 45s, which finished long before the backend on cold-start. */}
+                Keyframes live in model-b-tokens.css (C2). */}
             <div style={{ maxWidth: 320, margin: "0 auto", height: 4, background: "var(--mb-rule)", borderRadius: 2, overflow: "hidden" }}>
               <div style={{ height: 4, background: "var(--mb-navy)", borderRadius: 2, width: "0%", animation: "mbLoadBar 90s cubic-bezier(0.1, 0.6, 0.3, 1) forwards" }} />
             </div>
-            <style>{`@keyframes mbLoadBar { from { width: 0% } 50% { width: 60% } 80% { width: 82% } to { width: 95% } }`}</style>
           </div>
         )}
 
