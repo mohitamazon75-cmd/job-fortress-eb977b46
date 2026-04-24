@@ -855,7 +855,14 @@ Deno.serve(async (req) => {
     };
     const agent1RoleClean = isLazyIndustryEcho(agent1?.current_role) ? null : agent1?.current_role;
     const hintRole = isLazyIndustryEcho(resolvedRoleHint) ? null : resolvedRoleHint;
-    const rawDetectedRole = verbatimParsedTitle || agent1RoleClean || hintRole;
+    // QA-01 fix (2026-04-24): strip company-name suffixes that leak into role
+    // strings (e.g. "Director- Tescom Pvt Ltd" → "Director"). Applied at the
+    // boundary so all 3 candidate sources are sanitized uniformly before the
+    // trust hierarchy picks one.
+    const rawDetectedRole =
+      sanitizeRoleTitle(verbatimParsedTitle) ||
+      sanitizeRoleTitle(agent1RoleClean) ||
+      sanitizeRoleTitle(hintRole);
     // P0 fix (2026-04-17): NEVER emit synthetic "{Skill} Specialist" titles when the
     // profiler+parsed-title pipeline produced nothing useful. These junk titles
     // ("Senior General Execution Tasks Specialist") shipped to users and destroyed
