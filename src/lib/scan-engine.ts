@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 // ── Scan-specific client: adds x-scan-access-token header so RLS policy
 //    "Anon can select scan by access_token" allows reading without user JWT
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY as SUPABASE_KEY } from '@/lib/supabase-config';
+import { rememberAnonScan } from '@/lib/anon-scan-storage';
 
 function createScanClient(accessToken: string) {
   return createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -373,14 +374,11 @@ export async function createScan(params: {
       const scanId = fnData.id as string;
       const accessToken = fnData.accessToken as string;
 
-      // Week 1 #1: Store scan ID for anonymous migration with 30-day TTL
+      // Week 1 #1 + Audit fix #19: Store scan ID + access token for anon
+      // migration AND for refresh-recovery. Without the token, an anon refresh
+      // can't read the RLS-protected scan row and the scan is effectively lost.
       if (!user?.id) {
-        try {
-          const scanEntry = { id: scanId, storedAt: Date.now() };
-          const existing = JSON.parse(localStorage.getItem('anon_scans') || '[]');
-          const pruned = existing.filter((e: any) => Date.now() - e.storedAt < 30 * 24 * 60 * 60 * 1000);
-          localStorage.setItem('anon_scans', JSON.stringify([...pruned, scanEntry].slice(-10)));
-        } catch {}
+        rememberAnonScan(scanId, accessToken);
       }
 
       console.debug('[Scan] Created via edge function:', scanId);
@@ -454,14 +452,10 @@ export async function createScan(params: {
   const row = data as { id: string; access_token: string } | null;
   if (!row?.id) throw new Error('Scan creation returned no ID');
 
-  // Week 1 #1: Store scan ID for anonymous migration with 30-day TTL
+  // Week 1 #1 + Audit fix #19: Store scan ID + access token for anon
+  // migration AND for refresh-recovery (see anon-scan-storage.ts).
   if (!user?.id) {
-    try {
-      const scanEntry = { id: row.id, storedAt: Date.now() };
-      const existing = JSON.parse(localStorage.getItem('anon_scans') || '[]');
-      const pruned = existing.filter((e: any) => Date.now() - e.storedAt < 30 * 24 * 60 * 60 * 1000);
-      localStorage.setItem('anon_scans', JSON.stringify([...pruned, scanEntry].slice(-10)));
-    } catch {}
+    rememberAnonScan(row.id, row.access_token);
   }
 
   return { id: row.id, accessToken: row.access_token };
