@@ -37,8 +37,11 @@ function readRaw(): AnonScanEntry[] {
     if (!Array.isArray(parsed)) return [];
     // Tolerate legacy string-only entries by skipping them — they have no token anyway.
     return parsed.filter(
-      (e: any): e is AnonScanEntry =>
-        e && typeof e === 'object' && typeof e.id === 'string' && typeof e.storedAt === 'number',
+      (e: unknown): e is AnonScanEntry => {
+        if (!e || typeof e !== 'object') return false;
+        const r = e as Record<string, unknown>;
+        return typeof r.id === 'string' && typeof r.storedAt === 'number';
+      },
     );
   } catch {
     return [];
