@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, MessageCircle, Bell, Check, Sparkles, Mail, Send } from 'lucide-react';
+import { Brain, MessageCircle, Bell, Check, Sparkles, Mail, Send, Inbox } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport } from '@/lib/scan-engine';
 
@@ -99,6 +99,22 @@ export default function CoachOptInCard({ report, scanId }: Props) {
     );
   }
 
+  // Pull personalization from the scan report (with safe fallbacks)
+  const roleLabel =
+    (report as any)?.role_detected ||
+    (report as any)?.current_role ||
+    'your role';
+  const topVulnerability =
+    (report as any)?.survivability?.primary_vulnerability ||
+    (report as any)?.top_risk_skill ||
+    'your most exposed skill';
+
+  // Trim long vulnerability strings for the preview line
+  const vulnPreview =
+    typeof topVulnerability === 'string' && topVulnerability.length > 70
+      ? topVulnerability.slice(0, 70).trim() + '…'
+      : topVulnerability;
+
   return (
     <motion.div
       initial={{ scale: 0.96, opacity: 0 }}
@@ -110,35 +126,64 @@ export default function CoachOptInCard({ report, scanId }: Props) {
           <Mail className="w-6 h-6 text-prophet-green" />
         </div>
         <div>
-          <h3 className="text-base font-black text-foreground">AI Career Coach</h3>
-          <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider">Free · Email + In-app · 48 hours</p>
+          <h3 className="text-base font-black text-foreground">Your AI Career Coach</h3>
+          <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider">
+            Free · 3 nudges · 48 hours · Then we stop
+          </p>
         </div>
       </div>
 
       <p className="text-sm text-foreground/80 leading-relaxed">
-        Get 3 personalized coaching nudges delivered to your email inbox — 
-        actionable career advice based on your risk profile.
-        Fully private, no spam.
+        Don't just take our word for it. Here's the <span className="font-bold text-foreground">actual first message</span> we'd send you tonight:
       </p>
 
-      <div className="space-y-2.5">
+      {/* Sample inbox preview — what the user will actually receive */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="rounded-xl border-2 border-dashed border-prophet-green/30 bg-background/60 overflow-hidden"
+      >
+        <div className="flex items-center gap-2 px-4 py-2 bg-prophet-green/[0.08] border-b border-prophet-green/20">
+          <Inbox className="w-3.5 h-3.5 text-prophet-green" />
+          <span className="text-[10px] font-black text-prophet-green uppercase tracking-wider">
+            Sample · arrives in your inbox tonight
+          </span>
+        </div>
+        <div className="p-4 space-y-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-bold text-muted-foreground">From: JobBachao Coach</p>
+            <p className="text-[10px] text-muted-foreground">Tonight · ~9:00 PM</p>
+          </div>
+          <p className="text-sm font-black text-foreground leading-snug">
+            🎯 Tonight's 15-min move for {roleLabel}
+          </p>
+          <p className="text-xs text-foreground/75 leading-relaxed">
+            Hey — based on your scan, your biggest exposure right now is{' '}
+            <span className="font-bold text-foreground">{vulnPreview}</span>. Here's one specific thing you can do before bed that moves your score by Sunday. Open the playbook →
+          </p>
+        </div>
+      </motion.div>
+
+      {/* Compact schedule strip — what comes after the sample */}
+      <div className="grid grid-cols-3 gap-2">
         {[
-          { time: 'Tonight', icon: '🎯', desc: 'One action you can do in 15 min — delivered to your inbox' },
-          { time: 'Tomorrow', icon: '📊', desc: 'Market intel for your role — fresh insights via email' },
-          { time: 'Day 2', icon: '🏆', desc: 'Progress check + challenge a colleague to scan' },
+          { label: 'Tonight', sub: '15-min move', icon: '🎯' },
+          { label: '+24h', sub: 'Market intel', icon: '📊' },
+          { label: '+48h', sub: 'Progress check', icon: '🏆' },
         ].map((item, i) => (
           <motion.div
-            key={item.time}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 + i * 0.08 }}
-            className="flex items-center gap-3 rounded-xl bg-muted/50 border border-border/50 p-3"
+            key={item.label}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 + i * 0.06 }}
+            className="rounded-lg bg-muted/40 border border-border/50 p-2.5 text-center"
           >
-            <span className="text-lg">{item.icon}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-black text-foreground">{item.time}</p>
-              <p className="text-[11px] text-muted-foreground">{item.desc}</p>
-            </div>
+            <p className="text-base leading-none mb-1">{item.icon}</p>
+            <p className="text-[10px] font-black text-foreground uppercase tracking-wider">
+              {item.label}
+            </p>
+            <p className="text-[10px] text-muted-foreground">{item.sub}</p>
           </motion.div>
         ))}
       </div>
@@ -153,14 +198,15 @@ export default function CoachOptInCard({ report, scanId }: Props) {
           <span className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
         ) : (
           <>
-            <Sparkles className="w-4 h-4" />
-            Activate My AI Coach — Free
+            <Send className="w-4 h-4" />
+            Send me this tonight — Free
           </>
         )}
       </motion.button>
 
-      <p className="text-[10px] text-muted-foreground/60 text-center">
-        No spam, ever. Just 3 nudges over 48 hours, then we stop.
+      <p className="text-[10px] text-muted-foreground/70 text-center leading-relaxed">
+        No spam, ever. 3 emails over 48 hours, then we stop.
+        <br />Unsubscribe in one click.
       </p>
     </motion.div>
   );
