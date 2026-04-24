@@ -395,18 +395,27 @@ export default function ResultsModelB() {
 
     // Feature 3: Fetch live Tavily learning resources when user first opens the Tools tab.
     // Fires once (guarded by weeklyIntelLoading + weeklyIntel), lazy, 30-min cached.
+    // B3 (#12): one retry on failure before giving up silently.
     if (index === 8 && !weeklyIntelLoading && !weeklyIntel && cardData?.scan_judo?.recommended_tool) {
       setWeeklyIntelLoading(true);
-      supabase.functions.invoke("fetch-weekly-intel", {
-        body: {
-          role: cardData.user?.current_title || "",
-          judo_tool: (cardData.scan_judo as any)?.recommended_tool || "",
-          industry: cardData.user?.industry || "",
-          scanId: analysisId,
-        },
-      }).then(({ data }) => {
-        if (data?.resources?.length || data?.summary) setWeeklyIntel(data);
-      }).catch(() => {}).finally(() => setWeeklyIntelLoading(false));
+      const body = {
+        role: cardData.user?.current_title || "",
+        judo_tool: (cardData.scan_judo as any)?.recommended_tool || "",
+        industry: cardData.user?.industry || "",
+        scanId: analysisId,
+      };
+      const tryFetch = (attempt: number): Promise<void> =>
+        supabase.functions.invoke("fetch-weekly-intel", { body })
+          .then(({ data, error }) => {
+            if (error) throw error;
+            if (data?.resources?.length || data?.summary) setWeeklyIntel(data);
+          })
+          .catch(() => {
+            if (attempt < 1 && isMountedRef.current) {
+              return new Promise<void>(resolve => setTimeout(resolve, 1500)).then(() => tryFetch(attempt + 1));
+            }
+          });
+      tryFetch(0).finally(() => { if (isMountedRef.current) setWeeklyIntelLoading(false); });
     }
   }, [logEvent, weeklyIntelLoading, weeklyIntel, cardData, analysisId]);
 
