@@ -118,7 +118,17 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
 
 ## Open — P3
 
-*(empty — BL-030 resolved 2026-04-24.)*
+### Known prompt/schema mismatches
+
+#### BL-031 — Agent 2A: threat_timeline schema/prompt mismatch
+Discovered 2026-04-24 during prompt-injection defense work.
+- Schema (`_shared/zod-schemas.ts:186`) declares `threat_timeline` as string.
+- Prompt (`process-scan/scan-agents.ts:241`) instructs agents to return an object with `partial_displacement_year` / `significant_displacement_year` / `critical_displacement_year` keys.
+- Every recent scan emits the object form; Zod rejects it; orchestrator logs a warning and falls back to Agent 2C's `threat_timeline` (which is also an object, stored successfully).
+- Net effect: the report is correct, but one warning is logged per scan and Agent 2A's `threat_timeline` output is always discarded.
+- Fix direction: align the schema to match the prompt (object with three year fields), since the prompt is the intended behavior. Touches `zod-schemas.ts` only; no data migration needed.
+- Priority: P3 (noise only, no user impact).
+- **Status**: open.
 
 ## Resolved — P3
 
