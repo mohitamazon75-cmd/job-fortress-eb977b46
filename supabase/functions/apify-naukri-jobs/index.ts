@@ -303,7 +303,9 @@ Deno.serve(async (req) => {
     const { role, city, skills, force_refresh } = parsed.data;
     const isExecutive = parsed.data.is_executive || isExecutiveTitle(role);
     const searchUrls = buildSearchUrls(role, city);
-    const cacheKey = `apify-naukri-jobs:v3:${normalizeText(role)}:${normalizeText(city)}:${skills.slice(0, 5).map(normalizeText).sort().join("-")}:${isExecutive ? "exec" : "core"}`;
+    // v4: relaxed relevance gate + compressed search query (2026-04-24).
+    // Bumping the version invalidates v3 cache entries that were over-filtered.
+    const cacheKey = `apify-naukri-jobs:v4:${normalizeText(role)}:${normalizeText(city)}:${skills.slice(0, 5).map(normalizeText).sort().join("-")}:${isExecutive ? "exec" : "core"}`;
     const sb = createAdminClient();
 
     // Executive route: don't waste Apify credits — board search returns junk for C-suite roles.
