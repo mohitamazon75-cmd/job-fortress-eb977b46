@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 // ── Scan-specific client: adds x-scan-access-token header so RLS policy
 //    "Anon can select scan by access_token" allows reading without user JWT
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY as SUPABASE_KEY } from '@/lib/supabase-config';
+import { rememberAnonScan } from '@/lib/anon-scan-storage';
 
 function createScanClient(accessToken: string) {
   return createClient(SUPABASE_URL, SUPABASE_KEY, {
