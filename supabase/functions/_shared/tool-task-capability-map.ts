@@ -29,7 +29,12 @@ export type Capability =
   | "general_assistant"
   | "rpa"
   | "marketing"
-  | "support";
+  | "support"
+  // High-judgment categories — added so finance/leadership/sales tasks can be
+  // matched and implausible tool pairings (e.g. Playwright × M&A) are dropped.
+  | "finance_modeling"
+  | "leadership_strategy"
+  | "sales_relationship";
 
 // Tool → capability buckets it can plausibly automate.
 // Lowercased keys; matched via includes() so "GitHub Copilot X" still matches "github copilot".
@@ -104,6 +109,11 @@ const TASK_CAPABILITIES: Array<{ pattern: RegExp; caps: Capability[] }> = [
   { pattern: /\b(data entry|invoice processing|form filling|ticket logging|claims processing)\b/i, caps: ["rpa"] },
   { pattern: /\b(marketing|seo|sem|social media|campaign|brand)\b/i, caps: ["marketing"] },
   { pattern: /\b(customer support|helpdesk|ticket triage|first response)\b/i, caps: ["support"] },
+  // High-judgment task categories — no AI tool today plausibly automates these end-to-end.
+  // These will only match when paired with tools mapped to the same buckets (currently none).
+  { pattern: /\b(m&a|mergers|acquisitions|due diligence|valuation|dcf|lbo|financial model|fund raising|fundraising|investor relations|cap table)\b/i, caps: ["finance_modeling"] },
+  { pattern: /\b(strategy|leadership|board|stakeholder|vision|org design|hiring strategy|p&l ownership|pitching)\b/i, caps: ["leadership_strategy"] },
+  { pattern: /\b(enterprise negotiation|account expansion|key account|relationship building|client trust|partnerships|business development|bd)\b/i, caps: ["sales_relationship"] },
 ];
 
 function lookupToolCaps(toolName: string): Capability[] | null {
