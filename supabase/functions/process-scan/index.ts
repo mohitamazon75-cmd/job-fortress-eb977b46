@@ -892,10 +892,20 @@ Deno.serve(async (req) => {
     // A "Marketing Manager" extracted from a SaaS company's resume often gets
     // industry="Technology" (employer-driven). Reclassify to functional industry
     // so cohort matching uses the right peer group.
+    //
+    // QA-02b fix (2026-04-24): also patch agent1.industry. Multiple downstream
+    // sites use the pattern `agent1?.industry || resolvedIndustry`, so unless
+    // we sync both, the override is silently discarded for resume-based scans
+    // where Agent1 confidently extracted "Technology" from the employer.
+    // Consolidating the override here keeps a single source of truth.
     const functionalOverride = applyFunctionalIndustryOverride(resolvedIndustry, detectedRole);
     if (functionalOverride.overridden) {
       console.log(`[IndustryOverride] ${functionalOverride.reason}`);
       resolvedIndustry = functionalOverride.industry;
+      if (agent1 && typeof agent1 === "object") {
+        (agent1 as Record<string, unknown>).industry_original = (agent1 as Record<string, unknown>).industry;
+        (agent1 as Record<string, unknown>).industry = functionalOverride.industry;
+      }
     }
 
     if (agent1) {
