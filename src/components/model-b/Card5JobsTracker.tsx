@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CardShell, CardHead, CardBody, CardNav, Badge, LivePill, SectionLabel } from "./SharedUI";
 import { supabase } from "@/integrations/supabase/client";
 import PromptModal from "./PromptModal";
-import { buildBoardLinks, formatLiveTimestamp, getMatchTone, normalizeCity, detectExecutive, EXECUTIVE_SEARCH_FIRMS } from "@/lib/jobsTab";
+import { buildBoardLinks, formatLiveTimestamp, getMatchTone, normalizeCity, detectExecutive, EXECUTIVE_SEARCH_FIRMS, classifyJobUrl } from "@/lib/jobsTab";
 
 const KANBAN_KEY = "jb_kanban";
 type KanbanState = { saved: string[]; applied: string[]; interview: string[]; offer: string[] };
@@ -163,7 +163,16 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
 
         {jobs.map((job: any, i: number) => {
           const live = Boolean(job.verified_live || job.url);
-          const primaryUrl = job.url || job.search_url || searchLinks.naukri;
+          const rawUrl = job.url || job.search_url || searchLinks.naukri;
+          const classification = classifyJobUrl(rawUrl);
+          // If the URL is a generic search/listing page, swap to a targeted board search
+          // built from the user's role + city, and relabel the CTA so we don't promise
+          // a "live listing" that's actually a search results page.
+          const isGenericLink = classification.kind === "generic";
+          const primaryUrl = isGenericLink
+            ? (classification.host.includes("linkedin.com") ? searchLinks.linkedin : searchLinks.naukri)
+            : rawUrl;
+          const ctaLabel = isGenericLink ? "Search this role ↗" : "Open live listing ↗";
           const matchTone = getMatchTone(job.match_pct);
           return (
             <div key={`${job.company || "company"}-${job.title || job.role || i}`} style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 16, padding: 20, marginBottom: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
@@ -180,7 +189,8 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
                 <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--mb-ink2)", background: "var(--mb-paper)", border: "1px solid var(--mb-rule)", borderRadius: 999, padding: "5px 10px" }}>{job.location || normalizeCity(city)}</span>
                 {(job.posted_label || job.experience) && <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, color: "var(--mb-ink2)", background: "var(--mb-paper)", border: "1px solid var(--mb-rule)", borderRadius: 999, padding: "5px 10px" }}>{job.posted_label || job.experience}</span>}
-                {live && <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, color: "var(--mb-green)", background: "var(--mb-green-tint)", border: "1px solid rgba(26,107,60,0.2)", borderRadius: 999, padding: "5px 10px" }}>Verified live</span>}
+                {live && !isGenericLink && <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, color: "var(--mb-green)", background: "var(--mb-green-tint)", border: "1px solid rgba(26,107,60,0.2)", borderRadius: 999, padding: "5px 10px" }}>Verified live</span>}
+                {isGenericLink && <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, color: "var(--mb-amber)", background: "var(--mb-amber-tint)", border: "1px solid rgba(180,120,20,0.2)", borderRadius: 999, padding: "5px 10px" }}>Search board</span>}
               </div>
 
               {job.why_fit && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.7, color: "var(--mb-ink2)", marginBottom: 10 }}>{job.why_fit}</div>}
@@ -195,7 +205,7 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 20, fontWeight: 800, color: "var(--mb-ink)" }}>{job.salary || "Not disclosed"}</div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <a href={primaryUrl} target="_blank" rel="noopener noreferrer" onClick={() => logEvent("job_link_clicked", { platform: "naukri", job_role: job.title || job.role, job_company: job.company })} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-navy)", color: "white", padding: "10px 14px", minHeight: 42, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Open live listing ↗</a>
+                  <a href={primaryUrl} target="_blank" rel="noopener noreferrer" onClick={() => logEvent("job_link_clicked", { platform: "naukri", job_role: job.title || job.role, job_company: job.company, link_kind: classification.kind })} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-navy)", color: "white", padding: "10px 14px", minHeight: 42, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>{ctaLabel}</a>
                   {job.company_jobs_url && <a href={job.company_jobs_url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-paper)", color: "var(--mb-ink2)", border: "1.5px solid var(--mb-rule)", padding: "10px 14px", minHeight: 42, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Company jobs ↗</a>}
                   <button onClick={() => addItem("saved", `${job.company} · ${job.title || job.role}`)} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-green-tint)", color: "var(--mb-green)", border: "1px solid rgba(26,107,60,0.2)", padding: "10px 14px", minHeight: 42, cursor: "pointer" }}>Save</button>
                 </div>
