@@ -186,7 +186,15 @@ export function useScanFlow(callbacks: ScanFlowCallbacks): ScanFlowState {
       try {
         try { sessionStorage.removeItem('jb_pending_input'); } catch {}
 
-        const { data, error } = await supabase
+        // Audit fix #19: For anonymous users, the default `supabase` client has
+        // no JWT and no x-scan-access-token header — RLS will block the row read
+        // and the scan looks "lost" after refresh. If we have a stored anon
+        // token for this scanId, use a scan-scoped client; otherwise fall back
+        // to the default client (which still works for authed owners).
+        const anonToken = getAnonScanToken(routedScanId);
+        const readClient = anonToken ? createScanCheckClient(anonToken) : supabase;
+
+        const { data, error } = await readClient
           .from('scans')
           .select('id, scan_status, final_json_report, access_token, country, industry, years_experience, metro_tier, linkedin_url')
           .eq('id', routedScanId)
