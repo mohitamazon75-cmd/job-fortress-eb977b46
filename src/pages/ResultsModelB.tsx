@@ -55,23 +55,33 @@ const HEADER_SCORE_HIDDEN_TABS = new Set([0, 3, 8]);
 // Tabs where the bottom action button grid is hidden — these tabs have their own
 // dedicated CTAs and the grid would clutter the emotional/utility frame.
 const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 8]);
-// Total content tabs in the journey (0..8 inclusive). Visiting all 9 = complete.
-const TOTAL_JOURNEY_TABS = 9;
+// Total content tabs = single source of truth (avoids drift with TAB_LABELS).
+const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
 
+// C1 #2: Streak now correctly resets to 1 if the user skips a day.
+// Previously it incremented forever regardless of gap.
 function useStreak() {
   const [streak, setStreak] = useState(1);
   useEffect(() => {
-    const today = new Date().toDateString();
+    const today = new Date();
+    const todayStr = today.toDateString();
     const stored = localStorage.getItem(STREAK_DATE_KEY);
     const current = parseInt(localStorage.getItem(STREAK_KEY) || "0", 10);
-    if (stored !== today) {
-      const next = current + 1;
-      setStreak(next);
-      localStorage.setItem(STREAK_KEY, String(next));
-      localStorage.setItem(STREAK_DATE_KEY, today);
-    } else {
+    if (stored === todayStr) {
       setStreak(current || 1);
+      return;
     }
+    // Different day — was it yesterday (continue) or earlier (reset)?
+    let next = 1;
+    if (stored) {
+      const last = new Date(stored);
+      const dayMs = 24 * 60 * 60 * 1000;
+      const diffDays = Math.round((today.setHours(0,0,0,0) - last.setHours(0,0,0,0)) / dayMs);
+      next = diffDays === 1 ? (current || 0) + 1 : 1;
+    }
+    setStreak(next);
+    localStorage.setItem(STREAK_KEY, String(next));
+    localStorage.setItem(STREAK_DATE_KEY, todayStr);
   }, []);
   return streak;
 }
