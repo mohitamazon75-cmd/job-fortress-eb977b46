@@ -697,7 +697,7 @@ const INJECTION_PATTERNS: RegExp[] = [
   /you\s+are\s+now/gi,
   /you\s+are\s+henceforth/gi,
   /^system:/gim,
-  /<\/?(?:user_profile|user_skills|user_role|user_company|user_name|user_moats|system|instruction|assistant)>/gi,
+  /<\/?(?:user_[a-z_]+|system|instruction|assistant)>/gi,
   /\[\/?INST\]/gi,
 ];
 
