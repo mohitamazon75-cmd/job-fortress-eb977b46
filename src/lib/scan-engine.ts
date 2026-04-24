@@ -452,14 +452,10 @@ export async function createScan(params: {
   const row = data as { id: string; access_token: string } | null;
   if (!row?.id) throw new Error('Scan creation returned no ID');
 
-  // Week 1 #1: Store scan ID for anonymous migration with 30-day TTL
+  // Week 1 #1 + Audit fix #19: Store scan ID + access token for anon
+  // migration AND for refresh-recovery (see anon-scan-storage.ts).
   if (!user?.id) {
-    try {
-      const scanEntry = { id: row.id, storedAt: Date.now() };
-      const existing = JSON.parse(localStorage.getItem('anon_scans') || '[]');
-      const pruned = existing.filter((e: any) => Date.now() - e.storedAt < 30 * 24 * 60 * 60 * 1000);
-      localStorage.setItem('anon_scans', JSON.stringify([...pruned, scanEntry].slice(-10)));
-    } catch {}
+    rememberAnonScan(row.id, row.access_token);
   }
 
   return { id: row.id, accessToken: row.access_token };
