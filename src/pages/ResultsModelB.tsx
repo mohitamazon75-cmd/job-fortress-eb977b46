@@ -126,28 +126,25 @@ export default function ResultsModelB() {
   // B1 (#4): Journey state is persisted per-scan in localStorage so a refresh
   // does not reset progress or re-trigger the +6 completion bonus.
   const journeyStorageKey = analysisId ? `jb_journey_${analysisId}` : null;
-  const [visitedCards, setVisitedCards] = useState<Set<number>>(() => {
+  const readJourneyState = (key: string | null) => {
     try {
-      if (!journeyStorageKey) return new Set([0]);
-      const raw = localStorage.getItem(journeyStorageKey);
-      if (!raw) return new Set([0]);
+      if (!key) return { visited: new Set([0]), done: false };
+      const raw = localStorage.getItem(key);
+      if (!raw) return { visited: new Set([0]), done: false };
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed?.visited)) return new Set<number>(parsed.visited);
-    } catch {}
-    return new Set([0]);
-  });
+      return {
+        visited: new Set<number>(Array.isArray(parsed?.visited) ? parsed.visited : [0]),
+        done: Boolean(parsed?.done),
+      };
+    } catch { return { visited: new Set([0]), done: false }; }
+  };
+  const initialJourney = readJourneyState(journeyStorageKey);
+  const [visitedCards, setVisitedCards] = useState<Set<number>>(initialJourney.visited);
   const [actionModal, setActionModal] = useState<{ title: string; promptText: string } | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [showSavePrompt, setShowSavePrompt] = useState(false); // show for any non-email user
-  const [journeyDone, setJourneyDone] = useState(() => {
-    try {
-      if (!journeyStorageKey) return false;
-      const raw = localStorage.getItem(journeyStorageKey);
-      if (!raw) return false;
-      return Boolean(JSON.parse(raw)?.done);
-    } catch { return false; }
-  });
+  const [journeyDone, setJourneyDone] = useState(initialJourney.done);
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
   // Feature 3: Weekly intel for the Tools tab Judo section — fetched lazily when Tools tab opens.
@@ -156,10 +153,11 @@ export default function ResultsModelB() {
   // B5 (#11): displayScore is derived from the canonical jobbachao_score plus
   // the journey-completion bonus. Avoids drift, survives refresh correctly,
   // and removes 4 setDisplayScore call sites that could fall out of sync.
-  const displayScore = useMemo(() => {
-    const base = cardData?.jobbachao_score || 0;
-    return journeyDone ? base + 6 : base;
-  }, [cardData, journeyDone]);
+  const baseScore = cardData?.jobbachao_score || 0;
+  const displayScore = useMemo(
+    () => (journeyDone ? baseScore + 6 : baseScore),
+    [baseScore, journeyDone],
+  );
 
   const streak = useStreak();
   const [streakModal, setStreakModal] = useState(false);
@@ -167,6 +165,7 @@ export default function ResultsModelB() {
   // Polling lifecycle refs — guard against unmount leaks and double-chains (P0 #1, #2, #19)
   const isMountedRef = useRef(true);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intelRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollGenerationRef = useRef(0); // increments on each fetchAnalysis to invalidate prior chains
 
   useEffect(() => {
@@ -174,8 +173,21 @@ export default function ResultsModelB() {
     return () => {
       isMountedRef.current = false;
       if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+      if (intelRetryTimeoutRef.current) clearTimeout(intelRetryTimeoutRef.current);
     };
   }, []);
+
+  // B1 follow-up: re-sync journey state when analysisId changes (SPA navigation
+  // between two scans). Without this, scan-A's visited/done state would persist
+  // into scan-B until a hard refresh.
+  useEffect(() => {
+    const next = readJourneyState(journeyStorageKey);
+    setVisitedCards(next.visited);
+    setJourneyDone(next.done);
+    setCurrentCard(0);
+    // readJourneyState is stable (no closure deps that change per-render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [journeyStorageKey]);
 
   // Log helper
   const logEvent = useCallback(async (event_type: string, metadata?: Record<string, unknown>) => {
@@ -414,11 +426,19 @@ export default function ResultsModelB() {
         supabase.functions.invoke("fetch-weekly-intel", { body })
           .then(({ data, error }) => {
             if (error) throw error;
+            if (!isMountedRef.current) return;
             if (data?.resources?.length || data?.summary) setWeeklyIntel(data);
           })
           .catch(() => {
             if (attempt < 1 && isMountedRef.current) {
-              return new Promise<void>(resolve => setTimeout(resolve, 1500)).then(() => tryFetch(attempt + 1));
+              return new Promise<void>(resolve => {
+                // Dedicated ref so unmount during the 1.5s wait cancels the retry
+                // without colliding with the polling chain (pollTimeoutRef).
+                intelRetryTimeoutRef.current = setTimeout(() => {
+                  intelRetryTimeoutRef.current = null;
+                  resolve();
+                }, 1500);
+              }).then(() => isMountedRef.current ? tryFetch(attempt + 1) : undefined);
             }
           });
       tryFetch(0).finally(() => { if (isMountedRef.current) setWeeklyIntelLoading(false); });
@@ -710,7 +730,7 @@ export default function ResultsModelB() {
             {currentCard === 0 && <Card0Verdict cardData={cardData} onNext={() => handleTabChange(1)} />}
             {currentCard === 1 && <Card1RiskMirror cardData={cardData} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} />}
             {currentCard === 2 && <Card2MarketRadar cardData={cardData} onBack={() => handleTabChange(1)} onNext={() => handleTabChange(3)} />}
-            {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} overallScore={displayScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
+            {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} overallScore={baseScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
               logEvent("modal_opened", { source: "upgrade_plan" });
               setActionModal({
                 title: "60-Day Skill Upgrade Plan",
