@@ -22,33 +22,28 @@
 
 These are active hazards in the repo. Claude Code must be aware of them.
 
-### Hazard A — Parallel codebase: `job-fortress-v2/`
-There is a committed, nearly-complete parallel copy of the entire project at `job-fortress-v2/`. It contains 73 edge functions vs 79 in root, different code in `process-scan/index.ts` (1,328 lines in v2 vs 1,136 in root), and a different App.tsx. **Which one deploys is unclear.**
+### Hazard A — Parallel codebase: `job-fortress-v2/` ✅ RESOLVED (2026-04-24)
+The `job-fortress-v2/` directory has been removed. There is now one source of truth.
+- Historical context kept for institutional memory; no rule needed.
 
-- **Rule**: Until the human operator resolves this, DO NOT touch `job-fortress-v2/`. If a task seems to require work in v2, STOP and ask.
-- **Expected resolution**: either delete v2 or move it out of the repo (e.g., a separate branch) before further development.
+### Hazard B — Five `.git_old*` directories ✅ RESOLVED (2026-04-24)
+All `.git_old*` and `.git_ux_final` backups have been removed from the repo root.
 
-### Hazard B — Five `.git_old*` directories
-`.git_old`, `.git_old3`, `.git_old4`, `.git_old5`, `.git_ux_final` all exist at repo root. These are historical git-folder backups from previous rewrites. They pollute directory listings and can confuse tools.
+### Hazard C — Tests exist but don't run ✅ RESOLVED (2026-04-24)
+`vitest` is installed and the suite runs cleanly: **194 tests passing across 9 files**, including `src/test/invariants.test.ts`.
+- Run with `bun run test` (or `npm test`).
+- Per `docs/DEFINITION_OF_DONE.md`, the suite must be green before any merge.
 
-- **Rule**: Treat these as read-only archaeology. Do not modify, do not commit new changes to them. Flag their removal to the human operator when appropriate.
+### Hazard D — Pro gating is bypassed by default 🔶 OPEN (evolved form)
+The hardcoded `TESTING_BYPASS = true` was replaced by an `ENFORCE_PRO` env-var switch in `_shared/subscription-guard.ts`. While `ENFORCE_PRO` is unset (current state), `requirePro()` returns `null` for everyone — i.e. **all Pro features remain free in production**.
+- This is a **deliberate pre-PMF decision** (per operator on 2026-04-24): growth > revenue until usage justifies turning on the meter.
+- See `docs/DECISIONS.md` entry "ENFORCE_PRO=off pre-PMF".
+- `activate-subscription/index.ts` no longer has a DEV MODE fallback — the function now requires real Razorpay verification end-to-end. Safe even if `ENFORCE_PRO` flips on later.
 
-### Hazard C — Tests exist but don't run
-There are 15+ test files (`*.test.ts`) but `vitest` is not installed in `node_modules/`. `npm test` and `bun test` both fail.
+- **Rule**: Do not flip `ENFORCE_PRO=true` without first running a smoke test against the Razorpay flow (`activate-subscription` + `razorpay-webhook`).
 
-- **Rule**: Before writing any new test, verify the test runner works. If it doesn't, fixing test infrastructure IS the first task of the current session.
-
-### Hazard D — Security bypasses still active in production-adjacent code
-- `_shared/subscription-guard.ts` has `TESTING_BYPASS = true` — all Pro features accessible to free users.
-- `activate-subscription/index.ts` has a DEV MODE fallback that issues Pro status without Razorpay verification.
-- See `_audit/MASTER_AUDIT_REPORT.md` for 13 P0 issues and 77 total audit findings.
-
-- **Rule**: Do not introduce new Pro-gated features until `TESTING_BYPASS` is false in prod and the P0 audit issues are resolved.
-
-### Hazard E — No cron on `generate-weekly-brief`
-The edge function and the `weekly_briefs` table exist. The cron trigger does not. The feature silently never fires.
-
-- **Rule**: Do not reference Weekly Briefs as if they work, in UI or marketing, until the cron is wired.
+### Hazard E — No cron on `generate-weekly-brief` ✅ RESOLVED
+Cron schedule wired in migration `20260416042427_activate_retention_cron_jobs.sql` (`generate-weekly-brief-sunday`, Sunday midnight IST = 18:30 UTC Saturday).
 
 ### Hazard F — God files
 - `supabase/functions/process-scan/index.ts` — 1,136 lines
@@ -80,7 +75,7 @@ Prefer new files/modules over changing existing ones. When modifying:
 - `_shared/zod-schemas.ts` (boundary contracts)
 - Any file in `supabase/migrations/` (migrations are append-only)
 - `activate-subscription/`, `razorpay-webhook/` (payment path — consultant scope)
-- `subscription-guard.ts` (do not flip `TESTING_BYPASS` without explicit operator confirmation)
+- `subscription-guard.ts` (do not flip `ENFORCE_PRO` default without explicit operator confirmation — see Hazard D)
 - Any file over 500 lines
 
 ### Rule 4: Feature flags for everything new
@@ -203,7 +198,6 @@ Halt and request guidance if:
 - A secret/credential is encountered in code
 - A dependency needs a major-version upgrade
 - The task would violate any rule above
-- `job-fortress-v2/` or `.git_old*/` would be touched
 
 ## 8. Skills to invoke (from the operator's installed set)
 
