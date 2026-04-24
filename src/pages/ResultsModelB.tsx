@@ -774,7 +774,7 @@ export default function ResultsModelB() {
                   </Suspense>
 
                   <button onClick={() => handleTabChange(0)} style={{ width: "100%", padding: "14px", background: "var(--mb-navy)", color: "white", border: "none", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>
-                    ← Back to Risk Analysis
+                    ← Back to Verdict
                   </button>
                 </div>
               );
