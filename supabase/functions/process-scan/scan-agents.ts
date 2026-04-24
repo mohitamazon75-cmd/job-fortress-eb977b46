@@ -21,7 +21,7 @@ import {
   buildSeniorityJudoPrompt,
   buildSeniorityDietPrompt,
 } from "../_shared/agent-prompts.ts";
-import { validateOutputForTier } from "../_shared/scan-helpers.ts";
+import { validateOutputForTier, wrapUserData } from "../_shared/scan-helpers.ts";
 import { validateToolStatic } from "../_shared/scan-report-builder.ts";
 import { validateAgentOutput, Agent2ASchema, Agent2BSchema } from "../_shared/zod-schemas.ts";
 import { getPreviousScore } from "../_shared/score-history.ts";
