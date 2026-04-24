@@ -173,6 +173,7 @@ export default function ResultsModelB() {
     return () => {
       isMountedRef.current = false;
       if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+      if (intelRetryTimeoutRef.current) clearTimeout(intelRetryTimeoutRef.current);
     };
   }, []);
 
