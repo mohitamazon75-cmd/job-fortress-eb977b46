@@ -46,6 +46,27 @@ const LOADING_MESSAGES = [
 const STREAK_KEY = "jb_streak";
 const STREAK_DATE_KEY = "jb_streak_date";
 
+// C2: module-scope copy helpers — stable across renders, no useCallback needed.
+function fallbackCopy(text: string) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  } catch {}
+}
+function handleCopyFallback(text: string) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
 const TAB_LABELS = ["Verdict", "Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
 
 // Tabs where the header "Career Safety" score is hidden.
@@ -55,23 +76,33 @@ const HEADER_SCORE_HIDDEN_TABS = new Set([0, 3, 8]);
 // Tabs where the bottom action button grid is hidden — these tabs have their own
 // dedicated CTAs and the grid would clutter the emotional/utility frame.
 const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 8]);
-// Total content tabs in the journey (0..8 inclusive). Visiting all 9 = complete.
-const TOTAL_JOURNEY_TABS = 9;
+// Total content tabs = single source of truth (avoids drift with TAB_LABELS).
+const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
 
+// C1 #2: Streak now correctly resets to 1 if the user skips a day.
+// Previously it incremented forever regardless of gap.
 function useStreak() {
   const [streak, setStreak] = useState(1);
   useEffect(() => {
-    const today = new Date().toDateString();
+    const today = new Date();
+    const todayStr = today.toDateString();
     const stored = localStorage.getItem(STREAK_DATE_KEY);
     const current = parseInt(localStorage.getItem(STREAK_KEY) || "0", 10);
-    if (stored !== today) {
-      const next = current + 1;
-      setStreak(next);
-      localStorage.setItem(STREAK_KEY, String(next));
-      localStorage.setItem(STREAK_DATE_KEY, today);
-    } else {
+    if (stored === todayStr) {
       setStreak(current || 1);
+      return;
     }
+    // Different day — was it yesterday (continue) or earlier (reset)?
+    let next = 1;
+    if (stored) {
+      const last = new Date(stored);
+      const dayMs = 24 * 60 * 60 * 1000;
+      const diffDays = Math.round((today.setHours(0,0,0,0) - last.setHours(0,0,0,0)) / dayMs);
+      next = diffDays === 1 ? (current || 0) + 1 : 1;
+    }
+    setStreak(next);
+    localStorage.setItem(STREAK_KEY, String(next));
+    localStorage.setItem(STREAK_DATE_KEY, todayStr);
   }, []);
   return streak;
 }
@@ -185,11 +216,13 @@ export default function ResultsModelB() {
     setVisitedCards(next.visited);
     setJourneyDone(next.done);
     setCurrentCard(0);
+    setActionModal(null); // C1 #10: clear stale modal when scan switches
     // readJourneyState is stable (no closure deps that change per-render).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [journeyStorageKey]);
 
-  // Log helper
+  // Log helper — cardData is in deps (C1 #5) so behavioural signals carry the
+  // role/industry/score context once analysis lands, instead of always nulls.
   const logEvent = useCallback(async (event_type: string, metadata?: Record<string, unknown>) => {
     // Also log to user_action_signals for the behavioral flywheel
     const validActionTypes = ['card_viewed','job_clicked','skill_selected','vocab_copied',
@@ -213,7 +246,7 @@ export default function ResultsModelB() {
         body: { analysis_id: analysisId, user_id: userId, event_type, metadata },
       });
     } catch {}
-  }, [analysisId, userId]);
+  }, [analysisId, userId, cardData]);
 
   // Fetch data with polling support
   const fetchAnalysis = useCallback(async () => {
@@ -298,7 +331,7 @@ export default function ResultsModelB() {
 
   // Poll every 3s until result is ready — guarded by mount + generation refs (P0 #1, #2)
   const pollForResult = useCallback(async (uid: string | null, gen: number) => {
-    const MAX_POLLS = 40; // ~2 minutes max
+    const MAX_POLLS = 30; // 30 × 3s = 90s, matches loader animation (C1 #1)
     let polls = 0;
     let consecutiveErrors = 0; // P1 #9: surface error after 3 consecutive failures
 
@@ -495,7 +528,9 @@ export default function ResultsModelB() {
   if (!analysisId) return null;
 
   // Progress is based on all 9 tabs (Verdict → Tools)
-  const progressPct = Math.min(100, ((Math.min(currentCard, TOTAL_JOURNEY_TABS - 1) + 1) / TOTAL_JOURNEY_TABS) * 100);
+  // C1 #7: progress reflects actual exploration (visited tabs), not just current index.
+  // Jumping to Tools no longer falsely shows 100% complete.
+  const progressPct = Math.min(100, (visitedCards.size / TOTAL_JOURNEY_TABS) * 100);
 
   const getTabState = (i: number) => {
     if (i === currentCard) return "active";
@@ -503,26 +538,7 @@ export default function ResultsModelB() {
     return "unvisited";
   };
 
-  const handleCopyFallback = (text: string) => {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-    } else {
-      fallbackCopy(text);
-    }
-  };
-
-  const fallbackCopy = (text: string) => {
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    } catch {}
-  };
+  // C2: copy helpers reference the module-scope functions (stable, no realloc per render)
 
   return (
     <div className="mb-root" style={{ background: "var(--mb-bg)", minHeight: "100vh" }}>
@@ -642,13 +658,12 @@ export default function ResultsModelB() {
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink4)", marginBottom: 24, minHeight: 20 }}>
               {LOADING_MESSAGES[loadingMsg]}
             </div>
-            {/* Progress bar — animation duration matches MAX_POLLS (40 × 3s = 120s)
+            {/* Progress bar — animation duration matches MAX_POLLS (30 × 3s = 90s)
                 so the bar never visually "completes" while polling is still active.
-                B2 (#10): was 45s, which finished long before the backend on cold-start. */}
+                Keyframes live in model-b-tokens.css (C2). */}
             <div style={{ maxWidth: 320, margin: "0 auto", height: 4, background: "var(--mb-rule)", borderRadius: 2, overflow: "hidden" }}>
               <div style={{ height: 4, background: "var(--mb-navy)", borderRadius: 2, width: "0%", animation: "mbLoadBar 90s cubic-bezier(0.1, 0.6, 0.3, 1) forwards" }} />
             </div>
-            <style>{`@keyframes mbLoadBar { from { width: 0% } 50% { width: 60% } 80% { width: 82% } to { width: 95% } }`}</style>
           </div>
         )}
 
