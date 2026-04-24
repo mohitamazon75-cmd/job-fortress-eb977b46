@@ -223,7 +223,8 @@ export function sanitizeRoleTitle(role: string | null | undefined): string | nul
   // token, OR is Title-Case multi-word without role keywords).
   // Examples to STRIP: "Director - Tescom Pvt Ltd", "VP - Acme Corp"
   // Examples to KEEP: "Senior Manager - Business Development", "Director - Engineering"
-  const dashSplit = cleaned.split(/\s+[-–—]\s+/);
+  // Accepts " - ", " -", "- ", or bare "-" between role and company.
+  const dashSplit = cleaned.split(/\s*[-–—]\s+|\s+[-–—]\s*/);
   if (dashSplit.length === 2) {
     const [left, right] = dashSplit.map((s) => s.trim());
     const rightHasCompanyToken = COMPANY_SUFFIX_TOKENS.test(right);
