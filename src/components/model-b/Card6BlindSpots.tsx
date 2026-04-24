@@ -63,6 +63,17 @@ function GapRow({
   const title = bs.title || bs.gap || "Gap";
   const gapKey = `${index}_${title.toLowerCase().slice(0, 40).replace(/\s+/g, "_")}`;
 
+  // ── P0-3: Time-boxed prescription. Convert diagnosis → prescription tone.
+  // Severity drives both the time window and the effort budget so users feel
+  // the fix is achievable inside one weekend / one evening.
+  const sevName = String(bs.severity || "MODERATE").toUpperCase();
+  const prescription =
+    sevName === "CRITICAL"
+      ? { when: "Fix this Sunday", duration: "30 min", color: "var(--mb-red)", bg: "var(--mb-red-tint)", border: "rgba(174,40,40,0.25)" }
+      : sevName === "SERIOUS"
+      ? { when: "Fix this week", duration: "1 hour", color: "var(--mb-amber)", bg: "var(--mb-amber-tint)", border: "rgba(139,90,0,0.25)" }
+      : { when: "Fix next weekend", duration: "45 min", color: "var(--mb-navy)", bg: "var(--mb-navy-tint)", border: "var(--mb-navy-tint2)" };
+
   const fetchBundle = useCallback(async () => {
     if (bundle || loading) return;
     setLoading(true); setErr(false);
@@ -103,6 +114,31 @@ function GapRow({
             )}
           </div>
           <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, fontWeight: 500, marginBottom: 8 }}>{bs.body || bs.fix}</div>
+
+          {/* P0-3: Prescription badge — time-boxed, achievable, sets agency */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "5px 10px 5px 8px",
+              marginBottom: 10,
+              borderRadius: 8,
+              background: prescription.bg,
+              border: `1.5px solid ${prescription.border}`,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 11,
+              fontWeight: 800,
+              color: prescription.color,
+              letterSpacing: "0.04em",
+            }}
+          >
+            <span style={{ fontSize: 13, lineHeight: 1 }}>⏱</span>
+            <span style={{ textTransform: "uppercase" }}>{prescription.when}</span>
+            <span style={{ width: 1, height: 10, background: prescription.border }} />
+            <span style={{ textTransform: "none", fontWeight: 700, opacity: 0.85 }}>~{prescription.duration}</span>
+          </div>
+
           {bs.peer_benchmark && (
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-red)", marginBottom: 10, padding: "6px 10px", background: "var(--mb-red-tint)", borderRadius: 8, border: "1px solid rgba(174,40,40,0.15)" }}>
               📊 {bs.peer_benchmark}
