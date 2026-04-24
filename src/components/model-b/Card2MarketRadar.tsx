@@ -230,12 +230,11 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
             <SectionLabel label={`LIVE MARKET SIGNALS — ${new Date().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`} />
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
               {liveMarket.salary_range_lpa && (
-                <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px" }}>
-                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 800, color: "var(--mb-green)", marginBottom: 4 }}>💰 LIVE SALARY RANGE — YOUR ROLE</div>
-                  <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 16, fontWeight: 800, color: "var(--mb-ink)" }}>
-                    ₹{liveMarket.salary_range_lpa.min}–{liveMarket.salary_range_lpa.max}L · median ₹{liveMarket.salary_range_lpa.median}L
-                  </div>
-                </div>
+                <TierAwareSalaryBand
+                  baseRange={liveMarket.salary_range_lpa}
+                  userMetroTier={cardData.user?.metro_tier || "tier1"}
+                  userCity={cardData.user?.location || ""}
+                />
               )}
               {liveMarket.job_postings_trend && (
                 <div style={{ background: liveMarket.job_postings_trend === "growing" ? "var(--mb-green-tint)" : liveMarket.job_postings_trend === "declining" ? "var(--mb-red-tint)" : "var(--mb-amber-tint)", border: "1.5px solid rgba(0,0,0,0.1)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
