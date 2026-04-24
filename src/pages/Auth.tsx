@@ -123,18 +123,16 @@ export default function Auth() {
     };
   }, [navigate]);
 
-  const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setLoading(true);
 
-    if (isLocalhost) {
-      navigate('/', { replace: true });
-      return;
-    }
+    // SECURITY: localhost auth bypass removed. The proper dev path is
+    // VITE_ENABLE_DEV_AUTH_BYPASS in AuthGuard, plus the Quick Test Login
+    // button below (which uses supabase.auth.signInAnonymously()).
+
 
     try {
       await clearAnonymousSessionIfNeeded();
@@ -211,6 +209,10 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
+  // Render-scope only: gates the Quick Test Login button below.
+  // MUST NOT be referenced inside handleSubmit — see security note above.
+  const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
