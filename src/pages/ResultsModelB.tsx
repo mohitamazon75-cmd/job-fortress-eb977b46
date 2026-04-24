@@ -443,7 +443,7 @@ export default function ResultsModelB() {
     if (journeyDone) return;
     if (visitedCards.size >= TOTAL_JOURNEY_TABS && cardData) {
       setJourneyDone(true);
-      setDisplayScore(prev => prev + 6);
+      // displayScore picks up the +6 automatically via the journeyDone useMemo (B5).
       toast.success("Journey complete ✓", { duration: 2800 });
       logEvent("journey_complete");
     }
