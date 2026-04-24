@@ -210,6 +210,10 @@ export default function Auth() {
     }
   };
 
+  // Render-scope only: gates the Quick Test Login button below.
+  // MUST NOT be referenced inside handleSubmit — see security note above.
+  const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div
