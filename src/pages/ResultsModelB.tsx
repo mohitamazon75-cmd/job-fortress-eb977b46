@@ -48,6 +48,16 @@ const STREAK_DATE_KEY = "jb_streak_date";
 
 const TAB_LABELS = ["Verdict", "Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
 
+// Tabs where the header "Career Safety" score is hidden.
+// 0 = Verdict (presents its own hero score), 3 = Shield (sub-score conflict),
+// 8 = Tools (utility tab — no score frame needed).
+const HEADER_SCORE_HIDDEN_TABS = new Set([0, 3, 8]);
+// Tabs where the bottom action button grid is hidden — these tabs have their own
+// dedicated CTAs and the grid would clutter the emotional/utility frame.
+const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 8]);
+// Total content tabs in the journey (0..8 inclusive). Visiting all 9 = complete.
+const TOTAL_JOURNEY_TABS = 9;
+
 function useStreak() {
   const [streak, setStreak] = useState(1);
   useEffect(() => {
@@ -342,10 +352,10 @@ export default function ResultsModelB() {
     }
   }, [logEvent, weeklyIntelLoading, weeklyIntel, cardData, analysisId]);
 
-  // Journey complete detection
+  // Journey complete detection — only fires when user has explored ALL 9 tabs (0..8)
   useEffect(() => {
     if (journeyDone) return;
-    if (visitedCards.size >= 7 && cardData) {
+    if (visitedCards.size >= TOTAL_JOURNEY_TABS && cardData) {
       setJourneyDone(true);
       setDisplayScore(prev => prev + 6);
       toast.success("Journey complete ✓", { duration: 2800 });
@@ -355,8 +365,8 @@ export default function ResultsModelB() {
 
   if (!analysisId) return null;
 
-  // Progress is based on the 7 core content cards; Tools tab (index 7) is bonus
-  const progressPct = Math.min(100, ((Math.min(currentCard, 8) + 1) / 9) * 100);
+  // Progress is based on all 9 tabs (Verdict → Tools)
+  const progressPct = Math.min(100, ((Math.min(currentCard, TOTAL_JOURNEY_TABS - 1) + 1) / TOTAL_JOURNEY_TABS) * 100);
 
   const getTabState = (i: number) => {
     if (i === currentCard) return "active";
@@ -376,12 +386,18 @@ export default function ResultsModelB() {
     const pivot0 = cardData.card4_pivot?.pivots?.[0] || {};
     const advProofs = (cardData.card7_human?.advantages || []).map((a: any) => `- ${a.proof_label}`).join("\n");
     const missingKw = (cardData.card1_risk?.ats_missing_keywords || []).join(" · ");
-    const blindFixes = (cardData.card6_blindspots?.blind_spots || []).map((b: any) => b.fix).join("; ");
+    // Fix #10: only render the blind-spot day-1 line when fixes actually exist —
+    // prevents a trailing "Days 1–3: Fix 3 blind spots — " with empty content.
+    const blindFixesArr = (cardData.card6_blindspots?.blind_spots || []).map((b: any) => b?.fix).filter(Boolean);
+    const blindFixes = blindFixesArr.join("; ");
+    const day1to3Line = blindFixes
+      ? `Days 1–3: Fix 3 blind spots — ${blindFixes}`
+      : `Days 1–3: Audit your resume against the role JD — list 3 measurable gaps to close this week`;
     return [
       { label: "Write LinkedIn post", icon: "✏️", title: "LinkedIn Post · Lead with your strongest credential", promptText: `Write a LinkedIn post for ${u.name} announcing they are open to ${pivot0.role} roles at Indian B2B SaaS companies.\n\nKey evidence:\n${advProofs}\n- ${u.years_experience}+ years experience · Available ${u.availability} · ${u.location}\n\nRequirements:\n- Open with one extraordinary number — NOT 'I am excited to announce'\n- Maximum 200 words · Zero buzzwords · Specific\n- Clear CTA for hiring managers\n- Confident, direct tone` },
       { label: "Rewrite resume", icon: "📄", title: "Resume Rewrite — Move the numbers to the top", promptText: `Rewrite the Professional Summary and top bullets for ${u.name}'s resume for ${pivot0.role} roles at Indian B2B SaaS companies.\n\nTarget title: ${pivot0.role}\nCurrent title: ${u.current_title}\n\nStrongest evidence to surface (currently buried):\n${advProofs}\n\nATS keywords to include: ${missingKw}\n\nRules:\n- Summary must open with top credential within the first 10 words\n- Every bullet: outcome first → scale/impact → method at the end\n- Move all numbers from achievements sections into relevant job bullets\n- No bullet starts with a tool name or a verb without a number` },
       { label: "Top 10 companies", icon: "🏢", title: "Top 10 India B2B SaaS Companies", promptText: `Top 10 B2B SaaS companies in India hiring ${pivot0.role} leaders in 2026 for ${u.name}.\n\nProfile: ${u.years_experience}+ years · ${u.current_title} · ${u.location} · Available ${u.availability}\nTop credential: ${cardData.card7_human?.advantages?.[0]?.proof_label || ''}\nTarget salary: ${cardData.card4_pivot?.negotiation?.open_with || ''}\n\nFor each company: why they fit this profile specifically, appropriate role title and seniority, salary range including ESOPs, one credential to lead with in the application, best application route (direct/LinkedIn/referral).` },
-      { label: "30-day action plan", icon: "📋", title: "30-Day Action Plan", promptText: `Create a 30-day action plan for ${u.name} to land a ${pivot0.role} role in India.\n\nProfile: ${u.years_experience}+ years · ${u.current_title} · ${u.location} · Available ${u.availability}\nTop credential: ${cardData.card7_human?.advantages?.[0]?.proof_label || ''}\nTarget: ${cardData.card4_pivot?.negotiation?.open_with || ''} base\n\nPlan:\nDays 1–3: Fix 3 blind spots — ${blindFixes}\nDays 4–7: Research 10 target companies, map specific credentials to each JD\nDays 8–14: 5 tailored applications with evidence mapped to each company\nDays 15–20: Referral activation — personalised outreach for each target company\nDays 21–25: Interview prep using STAR answers built from resume evidence\nDays 26–30: Follow-up cadence, negotiation preparation, offer evaluation framework\n\nFor each week: specific daily actions, time estimates, success metrics.` },
+      { label: "30-day action plan", icon: "📋", title: "30-Day Action Plan", promptText: `Create a 30-day action plan for ${u.name} to land a ${pivot0.role} role in India.\n\nProfile: ${u.years_experience}+ years · ${u.current_title} · ${u.location} · Available ${u.availability}\nTop credential: ${cardData.card7_human?.advantages?.[0]?.proof_label || ''}\nTarget: ${cardData.card4_pivot?.negotiation?.open_with || ''} base\n\nPlan:\n${day1to3Line}\nDays 4–7: Research 10 target companies, map specific credentials to each JD\nDays 8–14: 5 tailored applications with evidence mapped to each company\nDays 15–20: Referral activation — personalised outreach for each target company\nDays 21–25: Interview prep using STAR answers built from resume evidence\nDays 26–30: Follow-up cadence, negotiation preparation, offer evaluation framework\n\nFor each week: specific daily actions, time estimates, success metrics.` },
     ];
   };
 
@@ -438,9 +454,9 @@ export default function ResultsModelB() {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 800, color: "var(--mb-ink)", letterSpacing: "-0.01em" }}>JobBachao</div>
-          {cardData && currentCard !== 0 && currentCard !== 3 && (
-            // Hidden on Shield tab (currentCard === 3) to avoid two competing scores
-            // (overall Career Safety in header vs Shield sub-score on the card).
+          {cardData && !HEADER_SCORE_HIDDEN_TABS.has(currentCard) && (
+            // Hidden on Verdict (0 — own hero), Shield (3 — sub-score conflict),
+            // and Tools (8 — utility tab) to keep each frame focused.
             <div
               style={{ display: "flex", alignItems: "baseline", gap: 6 }}
               title="Your overall JobBachao Career Safety Score (0–100). Higher = safer. Different from the AI Exposure score on the Risk tab."
@@ -639,9 +655,7 @@ export default function ResultsModelB() {
                 free_advice_1: cardData.card6_blindspots?.blind_spots?.[0]?.body || "",
                 free_advice_2: cardData.card6_blindspots?.blind_spots?.[1]?.body || "",
                 seniority_tier: "PROFESSIONAL" as const,
-                survivability: { score: 100 - (cardData.risk_score || 55), breakdown: { experience_bonus: 0, strategic_bonus: 0, geo_bonus: 0, adaptability_bonus: 0 }, primary_vulnerability: cardData.card6_blindspots?.blind_spots?.[0]?.title || "", peer_percentile_estimate: "40th" },
-                months_remaining: 24,
-                doom_clock_months: 24,
+                survivability: { score: 100 - (cardData.risk_score || 55), breakdown: { experience_bonus: 0, strategic_bonus: 0, geo_bonus: 0, adaptability_bonus: 0 }, primary_vulnerability: cardData.card6_blindspots?.blind_spots?.[0]?.title || "" },
                 country: "IN",
               } as any;
 
@@ -731,23 +745,25 @@ export default function ResultsModelB() {
               );
             })()}
 
-            {/* Bottom action buttons */}
-            <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
-              {buildActionPrompts().map((action, i) => (
-                <button
-                  key={i}
-                  className="mb-btn-secondary"
-                  onClick={() => {
-                    logEvent("modal_opened", { source: action.label });
-                    setActionModal({ title: action.title, promptText: action.promptText });
-                  }}
-                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, padding: "14px 12px", borderRadius: 12, cursor: "pointer", border: "1px solid var(--mb-rule)", background: "white", color: "var(--mb-ink)", display: "flex", alignItems: "center", gap: 10, transition: "all 150ms", minHeight: 48, boxShadow: "var(--mb-shadow-sm)" }}
-                >
-                  <span style={{ fontSize: 16 }}>{action.icon}</span>
-                  {action.label}
-                </button>
-              ))}
-            </div>
+            {/* Bottom action buttons — hidden on Verdict (own CTAs) and Tools (utility tab) */}
+            {!ACTION_BUTTONS_HIDDEN_TABS.has(currentCard) && (
+              <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+                {buildActionPrompts().map((action, i) => (
+                  <button
+                    key={i}
+                    className="mb-btn-secondary"
+                    onClick={() => {
+                      logEvent("modal_opened", { source: action.label });
+                      setActionModal({ title: action.title, promptText: action.promptText });
+                    }}
+                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, padding: "14px 12px", borderRadius: 12, cursor: "pointer", border: "1px solid var(--mb-rule)", background: "white", color: "var(--mb-ink)", display: "flex", alignItems: "center", gap: 10, transition: "all 150ms", minHeight: 48, boxShadow: "var(--mb-shadow-sm)" }}
+                  >
+                    <span style={{ fontSize: 16 }}>{action.icon}</span>
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
