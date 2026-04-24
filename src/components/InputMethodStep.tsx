@@ -132,6 +132,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                   </div>
                   <h3 className="font-bold text-foreground text-lg mb-1">Upload Resume</h3>
                   <p className="text-sm text-muted-foreground">PDF · most accurate analysis</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">Best if you have one ready</p>
                   <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-prophet-cyan bg-prophet-cyan/10 px-3 py-1 rounded-full border border-prophet-cyan/20">
                     <Zap className="w-3 h-3" /> Highest accuracy
                   </span>
@@ -152,6 +153,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                   </div>
                   <h3 className="font-bold text-foreground text-lg mb-1">LinkedIn URL</h3>
                   <p className="text-sm text-muted-foreground">Works best for public profiles</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">Fastest · no upload needed</p>
                 </div>
               </motion.button>
             </motion.div>
@@ -242,6 +244,15 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                 {fileError && (
                   <p className="text-sm text-destructive font-medium mt-2">{fileError}</p>
                 )}
+                {/* P1-A: Trust signal at the moment of upload — Rajesh-tier users
+                    won't upload an employer resume without seeing this here, not
+                    buried in the privacy page. */}
+                <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-prophet-green/10 border border-prophet-green/25">
+                  <Lock className="w-3 h-3 text-prophet-green" />
+                  <span className="text-[11px] font-semibold text-prophet-green">
+                    Encrypted · Auto-deleted in 90 days · DPDP-compliant · Never shared
+                  </span>
+                </div>
               </div>
               <button onClick={() => setMethod(null)} className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 ← Choose different method
