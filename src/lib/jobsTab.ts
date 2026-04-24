@@ -70,6 +70,50 @@ export function detectExecutive(role?: string | null): boolean {
   return EXECUTIVE_HINTS.some((hint) => lower.includes(hint));
 }
 
+/**
+ * classifyJobUrl — determines whether a job URL points to a SPECIFIC posting
+ * or a generic search/listing page. Used as a frontend safety-net so we never
+ * promise "Open live listing" when the link actually dumps the user on a search
+ * results page (a credibility-breaker).
+ *
+ * Returns:
+ *   - kind: "specific" → leave URL + CTA alone
+ *   - kind: "generic"  → relabel CTA, optionally swap to a targeted search URL
+ *   - kind: "unknown"  → unrecognized host, treat as specific (don't break)
+ */
+export function classifyJobUrl(url?: string | null): {
+  kind: "specific" | "generic" | "unknown";
+  host: string;
+} {
+  if (!url) return { kind: "generic", host: "" };
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "");
+    const path = u.pathname;
+    const search = u.search;
+
+    if (host.includes("naukri.com")) {
+      const isSpecific = /\/job-listings-|\/jd\/|jobId=/.test(path + search);
+      return { kind: isSpecific ? "specific" : "generic", host };
+    }
+    if (host.includes("linkedin.com")) {
+      const isSpecific = /\/jobs\/view\/|\/jobs\/\d{6,}/.test(path);
+      return { kind: isSpecific ? "specific" : "generic", host };
+    }
+    if (host.includes("indeed")) {
+      const isSpecific = /\/viewjob|\/rc\/clk|[?&]jk=/.test(path + search);
+      return { kind: isSpecific ? "specific" : "generic", host };
+    }
+    if (host.includes("foundit.in") || host.includes("monsterindia")) {
+      const isSpecific = /\/srp\/|\/job\/|\/jobs?\/[a-z0-9-]{8,}/i.test(path);
+      return { kind: isSpecific ? "specific" : "generic", host };
+    }
+    return { kind: "unknown", host };
+  } catch {
+    return { kind: "generic", host: "" };
+  }
+}
+
 export const EXECUTIVE_SEARCH_FIRMS: { name: string; url: string; focus: string }[] = [
   { name: "Egon Zehnder India", url: "https://www.egonzehnder.com/contact-us/india", focus: "Board, CEO and CXO mandates across BFSI, tech and consumer." },
   { name: "Heidrick & Struggles", url: "https://www.heidrick.com/en/locations/india", focus: "C-suite, board and senior functional leadership." },
