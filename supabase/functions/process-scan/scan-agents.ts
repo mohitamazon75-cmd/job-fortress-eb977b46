@@ -21,7 +21,7 @@ import {
   buildSeniorityJudoPrompt,
   buildSeniorityDietPrompt,
 } from "../_shared/agent-prompts.ts";
-import { validateOutputForTier } from "../_shared/scan-helpers.ts";
+import { validateOutputForTier, wrapUserData } from "../_shared/scan-helpers.ts";
 import { validateToolStatic } from "../_shared/scan-report-builder.ts";
 import { validateAgentOutput, Agent2ASchema, Agent2BSchema } from "../_shared/zod-schemas.ts";
 import { getPreviousScore } from "../_shared/score-history.ts";
@@ -194,14 +194,14 @@ ACTION PLAN INSTRUCTION: Because this is a RESCAN after ${daysSinceLastScan} day
 
   // ── Build shared profile context ────────────────────────────
   const sharedProfileContext = `
-PERSON: ${displayName}
+PERSON: ${wrapUserData("user_name", displayName)}
 PROFILE:
-- Full Name: ${displayName}
-- Current Role: ${detectedRole}
-- Current Company: ${displayCompany}${companyTier ? ` (${companyTier} tier)` : ""}
-- Industry: ${agent1?.industry || resolvedIndustry}${detectedSubSector ? ` → Sub-sector: ${detectedSubSector}` : ""}
+- Full Name: ${wrapUserData("user_name", displayName)}
+- Current Role: ${wrapUserData("user_role", detectedRole)}
+- Current Company: ${wrapUserData("user_company", displayCompany)}${companyTier ? ` (${companyTier} tier)` : ""}
+- Industry: ${wrapUserData("user_industry", agent1?.industry || resolvedIndustry)}${detectedSubSector ? ` → Sub-sector: ${wrapUserData("user_subsector", detectedSubSector)}` : ""}
 - Experience: ${profileInput.experience_years || "Unknown"} years
-- Location: ${agent1?.location || scan.metro_tier || "Unknown"}
+- Location: ${wrapUserData("user_location", agent1?.location || scan.metro_tier || "Unknown")}
 - Metro Tier: ${scan.metro_tier || "tier1"}
 - Monthly Salary: ${locale.currencySymbol}${monthlySalary.toLocaleString("en-IN")} (${locale.currencySymbol}${Math.round(monthlySalary * 12 / 100000 * 10) / 10}L annual CTC)
 - Salary Band: ${
@@ -212,21 +212,21 @@ PROFILE:
   "Executive / VP+ (₹40L+ CTC) — replacement cost to employer is enormous, AI risk manifests as strategic de-prioritisation not direct job loss"
 }
 - AI Replacement Cost Delta: ${locale.currencySymbol}${Math.max(0, monthlySalary - Math.round(monthlySalary * 0.03)).toLocaleString("en-IN")}/month potential AI savings for employer (use this to calibrate urgency)
-- Strategic Skills: ${JSON.stringify(profileInput.strategic_skills)}
-- Execution Skills: ${JSON.stringify(profileInput.execution_skills)}
-- All Skills: ${JSON.stringify(profileInput.all_skills)}
-- Geo Advantage: ${profileInput.geo_advantage || "None"}
-${compoundRole ? `- Compound Role: ${roleComponents.join(" + ")}` : ""}
+- Strategic Skills: ${wrapUserData("user_strategic_skills", profileInput.strategic_skills)}
+- Execution Skills: ${wrapUserData("user_execution_skills", profileInput.execution_skills)}
+- All Skills: ${wrapUserData("user_all_skills", profileInput.all_skills)}
+- Geo Advantage: ${wrapUserData("user_geo_advantage", profileInput.geo_advantage || "None")}
+${compoundRole ? `- Compound Role: ${wrapUserData("user_role_components", roleComponents.join(" + "))}` : ""}
 - Automatable Task Ratio: ${agent1?.automatable_task_ratio || "MEDIUM"}
-- Primary AI Threat: ${agent1?.primary_ai_threat_vector || "AI automation of core tasks"}
-- Moat Indicators: ${JSON.stringify(agent1?.moat_indicators || [])}
+- Primary AI Threat: ${wrapUserData("user_threat_vector", agent1?.primary_ai_threat_vector || "AI automation of core tasks")}
+- Moat Indicators: ${wrapUserData("user_moats", agent1?.moat_indicators || [])}
 ${hasImpactData ? `
 EXECUTIVE IMPACT:
 - Revenue: ${executiveImpact.revenue_scope_usd ? "$" + (executiveImpact.revenue_scope_usd / 1_000_000).toFixed(1) + "M" : "N/A"}
 - Org Scale: ${executiveImpact.team_size_org || "Unknown"} people
-- Regulatory: ${executiveImpact.regulatory_domains?.join(", ") || "None"}
+- Regulatory: ${wrapUserData("user_regulatory_domains", executiveImpact.regulatory_domains?.join(", ") || "None")}
 - Board: ${executiveImpact.board_exposure ? "YES" : "No"}
-- Moat: ${executiveImpact.moat_type || "Unknown"} — ${executiveImpact.moat_evidence || "N/A"}` : ""}
+- Moat: ${wrapUserData("user_moat_type", executiveImpact.moat_type || "Unknown")} — ${wrapUserData("user_moat_evidence", executiveImpact.moat_evidence || "N/A")}` : ""}
 
 DETERMINISTIC:
 - DI: ${det.determinism_index}/100, Moat: ${det.moat_score}/100, Urgency: ${det.urgency_score}/100
