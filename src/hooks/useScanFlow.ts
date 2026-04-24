@@ -32,6 +32,7 @@ import { subscribeScanStatus } from '@/lib/scan-engine';
 import type { ScanReport } from '@/lib/scan-engine';
 import type { ScanGoals } from '@/components/GoalCaptureModal';
 import { SUPABASE_URL as SB_URL, SUPABASE_PUBLISHABLE_KEY as SB_KEY } from '@/lib/supabase-config';
+import { getAnonScanToken } from '@/lib/anon-scan-storage';
 
 /**
  * Creates a scan-token-scoped client for reading scan status during polling.
