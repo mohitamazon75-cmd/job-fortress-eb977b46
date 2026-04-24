@@ -195,6 +195,7 @@ export default function ResultsModelB() {
     setVisitedCards(next.visited);
     setJourneyDone(next.done);
     setCurrentCard(0);
+    setActionModal(null); // C1 #10: clear stale modal when scan switches
     // readJourneyState is stable (no closure deps that change per-render).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [journeyStorageKey]);
