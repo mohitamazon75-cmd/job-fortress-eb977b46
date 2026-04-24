@@ -1097,6 +1097,30 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
                     {report.urgency_horizon}
                   </motion.p>
                 )}
+
+                {/* P0-1: Hope footer — the shield after the knife. Tier-aware so high-score users
+                    don't get false-urgency copy. Lives inside the verdict card so the user sees
+                    'threat → number → tier → urgency → here's what to do' as one unit. */}
+                {(() => {
+                  const hopeLine = careerScore >= 70
+                    ? "Below — exactly which moves keep you here."
+                    : careerScore >= 50
+                    ? "Below — the 3 moves that buy you back your runway."
+                    : careerScore >= 30
+                    ? "Below — your 90-day defense plan. This is fixable."
+                    : "Below — how to keep your edge from eroding.";
+                  return (
+                    <motion.p
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.85 }}
+                      className="text-[13px] sm:text-sm text-primary leading-relaxed mt-3 max-w-sm mx-auto font-bold"
+                    >
+                      ↓ {hopeLine}
+                    </motion.p>
+                  );
+                })()}
+
                 {report.linkedin_name && report.linkedin_name !== 'Professional' && (
                   <motion.p
                     initial={{ opacity: 0 }}

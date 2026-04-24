@@ -173,11 +173,14 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
             </motion.span>
           </motion.h1>
 
-          {/* Hope line — the shield after the knife */}
+          {/* Hope line — the shield after the knife. The promise: this is not just a diagnosis. */}
           <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
             className="text-lg sm:text-2xl md:text-3xl font-black text-primary mb-2 sm:mb-4"
           >
-            Find out — and get your defense plan.
+            In 4 minutes — know your risk, and exactly what to fix this Sunday.
           </motion.p>
 
           {/* Sub */}
