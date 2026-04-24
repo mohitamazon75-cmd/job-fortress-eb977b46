@@ -281,7 +281,8 @@ Deno.serve(async (req) => {
       supabase, LOVABLE_API_KEY, analysis_id, user_id,
       resume_filename, resumeText, userCity,
       scan.role_detected || "", scan.industry || "",
-      scan.years_experience || ""
+      scan.years_experience || "",
+      typeof scan.determinism_index === "number" ? scan.determinism_index : null,
     );
 
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
@@ -328,6 +329,7 @@ async function processAnalysis(
   detectedRole = "",
   detectedIndustry = "",
   yearsExperience: string | number = "",
+  detScoreAnchor: number | null = null,
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
