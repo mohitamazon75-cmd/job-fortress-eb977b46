@@ -14,6 +14,7 @@ import type {
   MarketSignalRow, ReplacingTool, DataQuality, ScoreBreakdown,
   DeterministicResult, KGSkillIndex, CohortBenchmark,
 } from "./det-types.ts";
+import { filterImplausiblePairings } from "./tool-task-capability-map.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // TONE TAG (deterministic)
@@ -76,7 +77,9 @@ export function extractReplacingTools(
     }
   }
 
-  return tools.slice(0, 10);
+  // Hallucination guard: drop tool/task pairings that are obviously implausible
+  // (e.g. "Playwright automates M&A modeling"). Conservative — unknown tools pass through.
+  return filterImplausiblePairings(tools, "extractReplacingTools").slice(0, 10);
 }
 
 // ═══════════════════════════════════════════════════════════════
