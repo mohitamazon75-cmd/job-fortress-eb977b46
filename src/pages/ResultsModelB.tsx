@@ -139,6 +139,18 @@ export default function ResultsModelB() {
   const streak = useStreak();
   const [streakModal, setStreakModal] = useState(false);
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Polling lifecycle refs — guard against unmount leaks and double-chains (P0 #1, #2, #19)
+  const isMountedRef = useRef(true);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollGenerationRef = useRef(0); // increments on each fetchAnalysis to invalidate prior chains
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+    };
+  }, []);
 
   // Log helper
   const logEvent = useCallback(async (event_type: string, metadata?: Record<string, unknown>) => {
