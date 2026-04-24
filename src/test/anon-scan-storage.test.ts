@@ -60,7 +60,7 @@ describe('anon-scan-storage', () => {
     expect(getAnonScanToken('scan-abc')).toBe('tok-new');
     // And only one entry exists
     const stored = JSON.parse(localStorage.getItem('anon_scans') || '[]');
-    expect(stored.filter((e: any) => e.id === 'scan-abc')).toHaveLength(1);
+    expect(stored.filter((e: { id: string }) => e.id === 'scan-abc')).toHaveLength(1);
   });
 
   it('survives malformed localStorage gracefully', () => {
