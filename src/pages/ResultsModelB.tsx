@@ -432,11 +432,12 @@ export default function ResultsModelB() {
           .catch(() => {
             if (attempt < 1 && isMountedRef.current) {
               return new Promise<void>(resolve => {
-                // Track the timeout in the existing pollTimeoutRef cleanup so
-                // unmount during the 1.5s wait cancels the retry chain.
-                const t = setTimeout(() => { if (isMountedRef.current) resolve(); }, 1500);
-                // Reuse pollTimeoutRef — at most one async chain in flight per tab open.
-                pollTimeoutRef.current = t;
+                // Dedicated ref so unmount during the 1.5s wait cancels the retry
+                // without colliding with the polling chain (pollTimeoutRef).
+                intelRetryTimeoutRef.current = setTimeout(() => {
+                  intelRetryTimeoutRef.current = null;
+                  resolve();
+                }, 1500);
               }).then(() => isMountedRef.current ? tryFetch(attempt + 1) : undefined);
             }
           });
