@@ -46,6 +46,27 @@ const LOADING_MESSAGES = [
 const STREAK_KEY = "jb_streak";
 const STREAK_DATE_KEY = "jb_streak_date";
 
+// C2: module-scope copy helpers — stable across renders, no useCallback needed.
+function fallbackCopy(text: string) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  } catch {}
+}
+function handleCopyFallback(text: string) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
 const TAB_LABELS = ["Verdict", "Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
 
 // Tabs where the header "Career Safety" score is hidden.
