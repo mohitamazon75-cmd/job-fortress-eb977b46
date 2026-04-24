@@ -131,10 +131,10 @@ export default function Auth() {
     setSuccess('');
     setLoading(true);
 
-    if (isLocalhost) {
-      navigate('/', { replace: true });
-      return;
-    }
+    // SECURITY: localhost auth bypass removed. The proper dev path is
+    // VITE_ENABLE_DEV_AUTH_BYPASS in AuthGuard, plus the Quick Test Login
+    // button below (which uses supabase.auth.signInAnonymously()).
+
 
     try {
       await clearAnonymousSessionIfNeeded();
