@@ -195,6 +195,105 @@ export function validateAgent1Output(
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ROLE TITLE SANITIZATION (QA-01 fix, 2026-04-24)
+// ═══════════════════════════════════════════════════════════════
+// Strips company names that leak into role strings during extraction.
+// Examples handled:
+//   "Director- Tescom Pvt Ltd"          → "Director"
+//   "Director - Tescom Pvt Ltd"         → "Director"
+//   "Senior Manager @ Acme Corp"        → "Senior Manager"
+//   "Software Engineer at Google"       → "Software Engineer"
+//   "Product Manager, Acme Inc"         → "Product Manager"
+// Preserves legitimate compound roles using "|", "&", "/", "+", "and"
+// (handled separately by detectCompoundRole).
+
+const COMPANY_SUFFIX_TOKENS = /\b(pvt|private|ltd|limited|llc|inc|incorporated|corp|corporation|co|company|gmbh|technologies|technology|tech|solutions|systems|services|consulting|consultancy|industries|enterprises|group|holdings|labs|studio|studios|ventures|partners|associates)\b/i;
+
+export function sanitizeRoleTitle(role: string | null | undefined): string | null {
+  if (!role) return null;
+  let cleaned = role.trim();
+  if (!cleaned) return null;
+
+  // Pattern 1: " at <Company>" / " @ <Company>" — everything after is company
+  const atMatch = cleaned.match(/^(.+?)\s+(?:at|@)\s+.+$/i);
+  if (atMatch) cleaned = atMatch[1].trim();
+
+  // Pattern 2: " - <Company>" / " – <Company>" / " — <Company>" — only strip
+  // when the right-hand side smells like a company (contains an Inc/Ltd/Pvt
+  // token, OR is Title-Case multi-word without role keywords).
+  // Examples to STRIP: "Director - Tescom Pvt Ltd", "VP - Acme Corp"
+  // Examples to KEEP: "Senior Manager - Business Development", "Director - Engineering"
+  // Accepts " - ", " -", "- ", or bare "-" between role and company.
+  const dashSplit = cleaned.split(/\s*[-–—]\s+|\s+[-–—]\s*/);
+  if (dashSplit.length === 2) {
+    const [left, right] = dashSplit.map((s) => s.trim());
+    const rightHasCompanyToken = COMPANY_SUFFIX_TOKENS.test(right);
+    const ROLE_HINT_TOKENS = /\b(engineer|engineering|manager|management|developer|designer|analyst|consultant|specialist|director|head|lead|officer|architect|scientist|administrator|executive|coordinator|operations|marketing|sales|finance|hr|product|business|development|strategy|research|data|growth|brand|content|design|creative)\b/i;
+    const rightIsRoleish = ROLE_HINT_TOKENS.test(right);
+    if (rightHasCompanyToken && !rightIsRoleish && left.length >= 2) {
+      cleaned = left;
+    }
+  }
+
+  // Pattern 3: ", <Company>" — comma + company-token suffix
+  const commaSplit = cleaned.split(/\s*,\s*/);
+  if (commaSplit.length >= 2) {
+    const tail = commaSplit.slice(1).join(", ");
+    if (COMPANY_SUFFIX_TOKENS.test(tail)) {
+      cleaned = commaSplit[0].trim();
+    }
+  }
+
+  // Final tidy: collapse whitespace, trim trailing punctuation
+  cleaned = cleaned.replace(/\s+/g, " ").replace(/[\s\-–—,;:]+$/g, "").trim();
+  return cleaned || null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FUNCTIONAL INDUSTRY OVERRIDE (QA-02 fix, 2026-04-24)
+// ═══════════════════════════════════════════════════════════════
+// When a role is clearly a functional specialty (Marketing, Sales/BD, HR,
+// Finance, Design) but the parsed industry from the resume is generic
+// "Technology" / "IT & Software" (because the *employer* is a tech company),
+// reclassify to the functional industry. This keeps cohort matching honest:
+// a Marketing Manager at a SaaS company should be benchmarked against other
+// marketers, not against software engineers.
+
+const FUNCTIONAL_INDUSTRY_RULES: Array<{ pattern: RegExp; industry: string }> = [
+  { pattern: /\b(marketing|growth|brand|seo|sem|content marketing|demand generation|performance marketing|digital marketing|cmo)\b/i, industry: "Marketing & Advertising" },
+  { pattern: /\b(sales|business development|bd|account executive|account manager|revenue|partnerships)\b/i, industry: "Sales & Business Development" },
+  { pattern: /\b(human resources|talent acquisition|recruiting|recruitment|people operations|people ops|hrbp|chro)\b/i, industry: "Human Resources" },
+  { pattern: /\b(finance manager|financial analyst|fp&a|controller|treasury|accounting|cfo)\b/i, industry: "Finance & Banking" },
+  { pattern: /\b(visual designer|ux designer|ui designer|graphic designer|product designer|creative director|art director)\b/i, industry: "Creative & Design" },
+];
+
+const GENERIC_TECH_INDUSTRIES = new Set(
+  ["technology", "it & software", "it and software", "software", "tech", "it", "technology consulting", "information technology"]
+    .map((s) => s.toLowerCase())
+);
+
+export function applyFunctionalIndustryOverride(
+  resolvedIndustry: string,
+  role: string | null | undefined,
+): { industry: string; overridden: boolean; reason: string | null } {
+  if (!role) return { industry: resolvedIndustry, overridden: false, reason: null };
+  const indLower = (resolvedIndustry || "").trim().toLowerCase();
+  if (!GENERIC_TECH_INDUSTRIES.has(indLower)) {
+    return { industry: resolvedIndustry, overridden: false, reason: null };
+  }
+  for (const rule of FUNCTIONAL_INDUSTRY_RULES) {
+    if (rule.pattern.test(role)) {
+      return {
+        industry: rule.industry,
+        overridden: true,
+        reason: `Role "${role}" is a functional specialty; reclassified from "${resolvedIndustry}" to "${rule.industry}" for cohort accuracy.`,
+      };
+    }
+  }
+  return { industry: resolvedIndustry, overridden: false, reason: null };
+}
+
+// ═══════════════════════════════════════════════════════════════
 // COMPOUND ROLE HANDLING
 // ═══════════════════════════════════════════════════════════════
 

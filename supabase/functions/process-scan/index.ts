@@ -34,6 +34,8 @@ import {
   inferCompanyTier,
   matchRoleToJobFamily,
   sanitizeInput,
+  sanitizeRoleTitle,
+  applyFunctionalIndustryOverride,
 } from "../_shared/scan-helpers.ts";
 import { computeProfileCompleteness } from "../_shared/scan-utils.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
@@ -319,9 +321,13 @@ Deno.serve(async (req) => {
       : "manual";
 
     // ══════════════════════════════════════════════════════════
-    const { industry: resolvedIndustry, reason: industryResolutionReason } = resolveIndustry(
+    const { industry: initialResolvedIndustry, reason: industryResolutionReason } = resolveIndustry(
       scan.industry, parsedLinkedinIndustry, linkedinInference.inferredIndustry, linkedinInference.confidence,
     );
+    // QA-02 fix applied later (after detectedRole is known); use a mutable
+    // binding so the functional-industry override can reclassify e.g. a
+    // Marketing Manager at a SaaS company from "Technology" → "Marketing & Advertising".
+    let resolvedIndustry = initialResolvedIndustry;
     const resolvedRoleHint = parsedLinkedinRole || linkedinInference.inferredRoleHint || "Unknown";
 
     // Extract manual key skills from enrichment_cache (provided by manual-path users).
@@ -853,7 +859,14 @@ Deno.serve(async (req) => {
     };
     const agent1RoleClean = isLazyIndustryEcho(agent1?.current_role) ? null : agent1?.current_role;
     const hintRole = isLazyIndustryEcho(resolvedRoleHint) ? null : resolvedRoleHint;
-    const rawDetectedRole = verbatimParsedTitle || agent1RoleClean || hintRole;
+    // QA-01 fix (2026-04-24): strip company-name suffixes that leak into role
+    // strings (e.g. "Director- Tescom Pvt Ltd" → "Director"). Applied at the
+    // boundary so all 3 candidate sources are sanitized uniformly before the
+    // trust hierarchy picks one.
+    const rawDetectedRole =
+      sanitizeRoleTitle(verbatimParsedTitle) ||
+      sanitizeRoleTitle(agent1RoleClean) ||
+      sanitizeRoleTitle(hintRole);
     // P0 fix (2026-04-17): NEVER emit synthetic "{Skill} Specialist" titles when the
     // profiler+parsed-title pipeline produced nothing useful. These junk titles
     // ("Senior General Execution Tasks Specialist") shipped to users and destroyed
@@ -873,6 +886,16 @@ Deno.serve(async (req) => {
     if (verbatimParsedTitle && agent1?.current_role && verbatimParsedTitle.toLowerCase() !== agent1.current_role.toLowerCase()) {
       // Security: do not log verbatim job titles — they are PII-adjacent
       console.warn(`[RoleGuard] Agent1 title differs from parsed title — using parsed title`);
+    }
+
+    // QA-02 fix (2026-04-24): functional-industry override.
+    // A "Marketing Manager" extracted from a SaaS company's resume often gets
+    // industry="Technology" (employer-driven). Reclassify to functional industry
+    // so cohort matching uses the right peer group.
+    const functionalOverride = applyFunctionalIndustryOverride(resolvedIndustry, detectedRole);
+    if (functionalOverride.overridden) {
+      console.log(`[IndustryOverride] ${functionalOverride.reason}`);
+      resolvedIndustry = functionalOverride.industry;
     }
 
     if (agent1) {
