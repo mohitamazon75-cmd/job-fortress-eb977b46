@@ -181,10 +181,16 @@ export default function ResultsModelB() {
   // Fetch data with polling support
   const fetchAnalysis = useCallback(async () => {
     if (!analysisId) return;
+    // Invalidate any in-flight polling chain from a previous call
+    pollGenerationRef.current += 1;
+    const myGen = pollGenerationRef.current;
+    if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+
     setLoading(true);
     setError("");
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!isMountedRef.current || myGen !== pollGenerationRef.current) return;
       const uid = user?.id || null;
       setUserId(uid);
       // Detect anonymous users (created by signInAnonymously) to show sign-in prompt
@@ -195,6 +201,8 @@ export default function ResultsModelB() {
       const { data, error: fnError } = await supabase.functions.invoke("get-model-b-analysis", {
         body: { analysis_id: analysisId, user_id: uid, resume_filename: "Your Resume" },
       });
+
+      if (!isMountedRef.current || myGen !== pollGenerationRef.current) return;
 
       if (fnError) {
         // Edge function returned non-2xx — try to surface a useful message
@@ -238,24 +246,32 @@ export default function ResultsModelB() {
 
       // Background processing started — poll for completion
       if (data.status === "processing") {
-        pollForResult(uid);
+        pollForResult(uid, myGen);
         return;
       }
 
       // Unexpected state
       throw new Error("Unexpected response state");
     } catch (e: any) {
+      if (!isMountedRef.current || myGen !== pollGenerationRef.current) return;
       setError(e.message || "Something went wrong");
       setLoading(false);
     }
   }, [analysisId]);
 
-  // Poll every 3s until result is ready
-  const pollForResult = useCallback(async (uid: string | null) => {
+  // Poll every 3s until result is ready — guarded by mount + generation refs (P0 #1, #2)
+  const pollForResult = useCallback(async (uid: string | null, gen: number) => {
     const MAX_POLLS = 40; // ~2 minutes max
     let polls = 0;
+    let consecutiveErrors = 0; // P1 #9: surface error after 3 consecutive failures
+
+    const scheduleNext = () => {
+      if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
+      pollTimeoutRef.current = setTimeout(poll, 3000);
+    };
 
     const poll = async () => {
+      if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
       polls++;
       if (polls > MAX_POLLS) {
         setError("Analysis is taking longer than expected. Please refresh the page.");
@@ -268,7 +284,9 @@ export default function ResultsModelB() {
           body: { analysis_id: analysisId, user_id: uid, poll: true },
         });
 
+        if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
         if (fnError) throw new Error(fnError.message);
+        consecutiveErrors = 0;
 
         if (data?.data?.card_data) {
           const cd = data.data.card_data;
@@ -279,7 +297,7 @@ export default function ResultsModelB() {
         }
 
         if (data?.status === "processing") {
-          setTimeout(poll, 3000);
+          scheduleNext();
           return;
         }
 
@@ -288,6 +306,7 @@ export default function ResultsModelB() {
           const { data: retrigger } = await supabase.functions.invoke("get-model-b-analysis", {
             body: { analysis_id: analysisId, user_id: uid, resume_filename: "Your Resume" },
           });
+          if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
           if (retrigger?.data?.card_data) {
             const cd = retrigger.data.card_data;
             setCardData(cd);
@@ -295,18 +314,25 @@ export default function ResultsModelB() {
             setLoading(false);
             return;
           }
-          setTimeout(poll, 3000);
+          scheduleNext();
           return;
         }
 
         setError("Analysis failed. Please try again.");
         setLoading(false);
       } catch {
-        setTimeout(poll, 3000);
+        if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
+        consecutiveErrors++;
+        if (consecutiveErrors >= 3) {
+          setError("Backend is unreachable. Please check your connection and try again.");
+          setLoading(false);
+          return;
+        }
+        scheduleNext();
       }
     };
 
-    setTimeout(poll, 3000);
+    pollTimeoutRef.current = setTimeout(poll, 3000);
   }, [analysisId]);
 
   useEffect(() => {
@@ -319,10 +345,11 @@ export default function ResultsModelB() {
       .select("id", { count: "exact", head: true })
       .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
       .then(({ count }) => {
+        if (!isMountedRef.current) return;
         if (count !== null && count >= 10) {
           setMonthlyScanCount(Math.floor(count / 10) * 10);
         }
-      });
+      }, () => { /* P0 #3: swallow RLS/network errors silently */ });
   }, [analysisId, navigate, fetchAnalysis]);
 
   // Loading message cycling
