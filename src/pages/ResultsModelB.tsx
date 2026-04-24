@@ -424,11 +424,18 @@ export default function ResultsModelB() {
         supabase.functions.invoke("fetch-weekly-intel", { body })
           .then(({ data, error }) => {
             if (error) throw error;
+            if (!isMountedRef.current) return;
             if (data?.resources?.length || data?.summary) setWeeklyIntel(data);
           })
           .catch(() => {
             if (attempt < 1 && isMountedRef.current) {
-              return new Promise<void>(resolve => setTimeout(resolve, 1500)).then(() => tryFetch(attempt + 1));
+              return new Promise<void>(resolve => {
+                // Track the timeout in the existing pollTimeoutRef cleanup so
+                // unmount during the 1.5s wait cancels the retry chain.
+                const t = setTimeout(() => { if (isMountedRef.current) resolve(); }, 1500);
+                // Reuse pollTimeoutRef — at most one async chain in flight per tab open.
+                pollTimeoutRef.current = t;
+              }).then(() => isMountedRef.current ? tryFetch(attempt + 1) : undefined);
             }
           });
       tryFetch(0).finally(() => { if (isMountedRef.current) setWeeklyIntelLoading(false); });
