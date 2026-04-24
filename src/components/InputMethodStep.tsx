@@ -235,7 +235,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                 />
                 <Upload className={`w-10 h-10 mx-auto mb-4 transition-colors ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
                 <p className="text-foreground font-semibold text-lg mb-1">
-                  {fileName || 'Upload your resume (PDF, Word — stays private)'}
+                  {fileName || 'Upload your resume (PDF — stays private)'}
                 </p>
                 <p className="text-sm text-muted-foreground">or click to browse • Max 5MB</p>
                 <p className="text-xs text-muted-foreground/70 mt-2">Please upload a text-based PDF, not a scanned image — image PDFs can't be read accurately.</p>
