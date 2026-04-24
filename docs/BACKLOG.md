@@ -57,21 +57,21 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
 
 ## Open — P1 (continued)
 
-### BL-012 — INV-F01 has no automated test (state leaks across scan_id)
-- **Discovered**: round 3 audit (this conversation).
-- **Files**: `src/pages/ResultsModelB.tsx`.
-- **Fix**: add a test that mounts ResultsModelB with scan_id A, switches to B, asserts modal state cleared.
-- **Status**: open. Bug itself was fixed in round 3 batch C1 — only the regression test is missing.
+### BL-012 — INV-F01 has no automated test (state leaks across scan_id) → done
+- **Resolution (2026-04-24)**: extracted `shouldClearScanState` to `src/lib/model-b-helpers.ts`; covered by `src/test/model-b-helpers.test.ts`.
+- **Status**: done.
 
-### BL-013 — INV-F02 has no automated test (streak reset on day-skip)
-- **Discovered**: round 3 audit.
-- **Files**: `src/hooks/useStreak.ts` (or wherever streak lives).
-- **Fix**: add a test mocking `Date.now()` 3 days forward; assert streak resets to 1.
-- **Status**: open. Bug fixed in round 3 — only the test is missing.
+### BL-013 — INV-F02 has no automated test (streak reset on day-skip) → done
+- **Resolution (2026-04-24)**: extracted `nextStreak` helper; 7 tests cover same-day, 1-day, 2-day, 7-day, corrupted-date, and zero-current cases.
+- **Status**: done.
 
-### BL-014 — INV-F03 has no automated test (progressPct uses visitedCards.size)
-- **Discovered**: round 3 audit.
-- **Fix**: unit test for the progress calculation.
+### BL-014 — INV-F03 has no automated test (progressPct uses visitedCards.size) → done
+- **Resolution (2026-04-24)**: extracted `journeyProgressPct` helper; 5 tests including defensive cases.
+- **Status**: done.
+
+### BL-015 — DPDP 90-day retention has no automated cleanup job
+- **Memory**: `mem://project/data-privacy-and-retention`.
+- **Fix**: add a `pg_cron` job that purges scans older than 90 days; add a test that calls the function with a frozen clock.
 - **Status**: open.
 
 ### BL-015 — DPDP 90-day retention has no automated cleanup job
