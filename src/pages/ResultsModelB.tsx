@@ -264,7 +264,7 @@ export default function ResultsModelB() {
       if (data.data?.card_data) {
         const cd = data.data.card_data;
         setCardData(cd);
-        setDisplayScore(cd?.jobbachao_score || 0);
+        // displayScore is derived from cardData (B5) — no separate state to set.
         setLoading(false);
         return;
       }
