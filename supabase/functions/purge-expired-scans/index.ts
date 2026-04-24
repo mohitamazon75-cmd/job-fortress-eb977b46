@@ -20,8 +20,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createAdminClient } from "../_shared/supabase-client.ts";
-import { getCorsHeaders, handleCorsPreFlight, okResponse, errResponse } from "../_shared/cors.ts";
-import { shouldPurgeScan } from "../../src/lib/dpdp-retention.ts";
+import { handleCorsPreFlight, okResponse, errResponse } from "../_shared/cors.ts";
 
 const RETENTION_DAYS = 90;
 
