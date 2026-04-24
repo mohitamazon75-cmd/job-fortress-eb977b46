@@ -1,6 +1,7 @@
 # 00 — Current Reality
 
-> Read this before proposing any change. It is a snapshot of what JobBachao actually is, based on a real audit of the codebase on 2026-04-18.
+> Read this before proposing any change. Snapshot last refreshed **2026-04-24** (originally 2026-04-18).
+> Sections marked ✅ have been resolved since the original snapshot — kept for institutional memory.
 
 ---
 
@@ -27,21 +28,20 @@ JobBachao is a **technically sophisticated, feature-rich, pre-PMF product** with
 
 ## What's broken or half-finished
 
-1. **Test infrastructure does not execute.** `vitest` is referenced in `package.json` but not installed in `node_modules/`. `npm test` and `bun test` both fail.
-2. **`TESTING_BYPASS = true`** in `_shared/subscription-guard.ts` — every Pro-gated feature is accessible free.
-3. **`activate-subscription/index.ts` DEV bypass** — a user can POST a fake `payment_id` and be granted Pro if Razorpay keys are absent.
-4. **Razorpay order creation is not implemented** server-side — client passes `amount` from `ProUpgradeModal.tsx`, making price manipulation trivial.
-5. **`generate-weekly-brief` has no cron** — the feature silently never fires.
-6. **13 P0 audit issues documented in `_audit/MASTER_AUDIT_REPORT.md`** — payment bypass, prompt-injection vector, tier-escalation bug, and 10 others.
-7. **77 total audit findings** across security/AI/product/UX/code-quality, most unresolved.
+1. ✅ **Test infrastructure runs** (refresh 2026-04-24). 194 tests across 9 files pass cleanly via `bun run test`. Includes `src/test/invariants.test.ts` (cross-system contracts).
+2. 🔶 **Pro gating is bypassed by default.** `TESTING_BYPASS` was removed; replaced by `ENFORCE_PRO` env switch in `_shared/subscription-guard.ts`. Currently unset → all Pro features are free in production. **This is a deliberate pre-PMF decision** (operator, 2026-04-24, see `docs/DECISIONS.md`).
+3. ✅ **`activate-subscription` DEV bypass removed** (refresh 2026-04-24). Function now requires real Razorpay verification end-to-end.
+4. **Razorpay order creation is not implemented** server-side — client passes `amount` from `ProUpgradeModal.tsx`, making price manipulation trivial. Less urgent while `ENFORCE_PRO` is off but still a P1 to fix before flipping the gate.
+5. ✅ **`generate-weekly-brief` cron wired** (migration `20260416042427_activate_retention_cron_jobs.sql`).
+6. **Older `_audit/MASTER_AUDIT_REPORT.md` is partly stale.** Re-run `docs/AUDIT_CHECKLIST_v1.md` to get the live count of P0/P1 against current invariants in `docs/INVARIANTS.md`.
 
 ## What's structurally dangerous (repo-level)
 
-1. **`job-fortress-v2/` is a full parallel committed codebase** — different edge-function count (73 vs 79), different `process-scan/index.ts` (1,328 lines vs 1,136), different `App.tsx`. Which one deploys is unclear. Operator must resolve this before anything else.
-2. **Five `.git_old*` backup directories** (`.git_old`, `.git_old3`, `.git_old4`, `.git_old5`, `.git_ux_final`) at repo root — residue from prior rewrites.
-3. **`.lovable/bugs.md` is a KidSutra bug tracker** — this repo was pivoted from a child-health app. Stale references may exist elsewhere.
-4. **Existing `CLAUDE.md` is stale** — it describes a Next.js/Anthropic-API project. It has been replaced by the new one at the repo root.
-5. **God files**: `process-scan/index.ts` (1,136 lines), `scan-engine.ts` (841), `SideHustleGenerator.tsx` (798), `VerdictReveal.tsx` (492). The team has already decided not to refactor these.
+1. ✅ **`job-fortress-v2/` removed** (refresh 2026-04-24). One source of truth.
+2. ✅ **`.git_old*` backup directories removed** (refresh 2026-04-24).
+3. **`.lovable/bugs.md` may still contain KidSutra residue** — confirm before relying on anything in `.lovable/` as ground truth.
+4. ✅ **CLAUDE.md is current** (refreshed 2026-04-24 alongside this file).
+5. **God files**: `process-scan/index.ts` (1,179 lines), `scan-engine.ts` (842), `SideHustleGenerator.tsx` (900), `VerdictReveal.tsx` (564). Grandfathered — do not refactor unless explicitly asked. Any edit must add a snapshot test first (BL-023).
 
 ## What the audit history tells us
 
@@ -79,9 +79,9 @@ The earlier strategic advice to "build SkillDNA, MarketPulse, TrustScore, Career
 
 ## The actual strategic priorities, in order
 
-1. **Resolve `job-fortress-v2/`** (decision, not work — 1 hour with operator).
-2. **Stabilization Sprint** (`01_STABILIZATION_SPRINT.md`) — 2–4 weeks.
-3. **Launch to 100 real paying users** — not a code task.
+1. ✅ **`job-fortress-v2/` resolved.**
+2. **Stabilization Sprint** (`01_STABILIZATION_SPRINT.md`) — partially done (test infra, hazard cleanup). Remaining: invariant-test backfill (BL-012/013/014), `package-lock.json` vs `bun.lock` reconciliation (BL-024).
+3. **Launch to 100 real paying users** — not a code task. Until this happens, `ENFORCE_PRO` stays off (per operator).
 4. **Then** consider new IP (`02_NEW_IP_ROADMAP.md`).
 
 ## For Claude Code: what this document means for you
