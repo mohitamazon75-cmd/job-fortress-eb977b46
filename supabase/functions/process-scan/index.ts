@@ -321,9 +321,13 @@ Deno.serve(async (req) => {
       : "manual";
 
     // ══════════════════════════════════════════════════════════
-    const { industry: resolvedIndustry, reason: industryResolutionReason } = resolveIndustry(
+    const { industry: initialResolvedIndustry, reason: industryResolutionReason } = resolveIndustry(
       scan.industry, parsedLinkedinIndustry, linkedinInference.inferredIndustry, linkedinInference.confidence,
     );
+    // QA-02 fix applied later (after detectedRole is known); use a mutable
+    // binding so the functional-industry override can reclassify e.g. a
+    // Marketing Manager at a SaaS company from "Technology" → "Marketing & Advertising".
+    let resolvedIndustry = initialResolvedIndustry;
     const resolvedRoleHint = parsedLinkedinRole || linkedinInference.inferredRoleHint || "Unknown";
 
     // Extract manual key skills from enrichment_cache (provided by manual-path users).
