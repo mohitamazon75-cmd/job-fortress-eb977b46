@@ -132,6 +132,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                   </div>
                   <h3 className="font-bold text-foreground text-lg mb-1">Upload Resume</h3>
                   <p className="text-sm text-muted-foreground">PDF · most accurate analysis</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">Best if you have one ready</p>
                   <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-prophet-cyan bg-prophet-cyan/10 px-3 py-1 rounded-full border border-prophet-cyan/20">
                     <Zap className="w-3 h-3" /> Highest accuracy
                   </span>
@@ -152,6 +153,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                   </div>
                   <h3 className="font-bold text-foreground text-lg mb-1">LinkedIn URL</h3>
                   <p className="text-sm text-muted-foreground">Works best for public profiles</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">Fastest · no upload needed</p>
                 </div>
               </motion.button>
             </motion.div>
