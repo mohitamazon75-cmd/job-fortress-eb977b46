@@ -419,8 +419,9 @@ export default function ResultsModelB() {
     unvisited: { dot: "#D0CEC5", label: "#B8B6AE", bg: "transparent" },
   };
 
-  const buildActionPrompts = () => {
-    if (!cardData) return [];
+  // Memoized — was being rebuilt on every render (P0 #6)
+  const actionPrompts = useMemo(() => {
+    if (!cardData) return [] as Array<{ label: string; icon: string; title: string; promptText: string }>;
     const u = cardData.user || {};
     const pivot0 = cardData.card4_pivot?.pivots?.[0] || {};
     const advProofs = (cardData.card7_human?.advantages || []).map((a: any) => `- ${a.proof_label}`).join("\n");
@@ -438,7 +439,7 @@ export default function ResultsModelB() {
       { label: "Top 10 companies", icon: "🏢", title: "Top 10 India B2B SaaS Companies", promptText: `Top 10 B2B SaaS companies in India hiring ${pivot0.role} leaders in 2026 for ${u.name}.\n\nProfile: ${u.years_experience}+ years · ${u.current_title} · ${u.location} · Available ${u.availability}\nTop credential: ${cardData.card7_human?.advantages?.[0]?.proof_label || ''}\nTarget salary: ${cardData.card4_pivot?.negotiation?.open_with || ''}\n\nFor each company: why they fit this profile specifically, appropriate role title and seniority, salary range including ESOPs, one credential to lead with in the application, best application route (direct/LinkedIn/referral).` },
       { label: "30-day action plan", icon: "📋", title: "30-Day Action Plan", promptText: `Create a 30-day action plan for ${u.name} to land a ${pivot0.role} role in India.\n\nProfile: ${u.years_experience}+ years · ${u.current_title} · ${u.location} · Available ${u.availability}\nTop credential: ${cardData.card7_human?.advantages?.[0]?.proof_label || ''}\nTarget: ${cardData.card4_pivot?.negotiation?.open_with || ''} base\n\nPlan:\n${day1to3Line}\nDays 4–7: Research 10 target companies, map specific credentials to each JD\nDays 8–14: 5 tailored applications with evidence mapped to each company\nDays 15–20: Referral activation — personalised outreach for each target company\nDays 21–25: Interview prep using STAR answers built from resume evidence\nDays 26–30: Follow-up cadence, negotiation preparation, offer evaluation framework\n\nFor each week: specific daily actions, time estimates, success metrics.` },
     ];
-  };
+  }, [cardData]);
 
   const handleCopyFallback = (text: string) => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
