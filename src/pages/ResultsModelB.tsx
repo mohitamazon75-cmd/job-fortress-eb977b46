@@ -310,7 +310,7 @@ export default function ResultsModelB() {
 
   // Poll every 3s until result is ready — guarded by mount + generation refs (P0 #1, #2)
   const pollForResult = useCallback(async (uid: string | null, gen: number) => {
-    const MAX_POLLS = 40; // ~2 minutes max
+    const MAX_POLLS = 30; // 30 × 3s = 90s, matches loader animation (C1 #1)
     let polls = 0;
     let consecutiveErrors = 0; // P1 #9: surface error after 3 consecutive failures
 
