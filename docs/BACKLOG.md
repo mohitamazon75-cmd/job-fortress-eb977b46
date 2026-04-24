@@ -100,6 +100,22 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
 - **Fix**: confirm Lovable build command, remove the unused one.
 - **Decision (2026-04-24)**: deferred — both lockfiles are read-only in this environment. Resolve via Lovable platform when the build command is documented.
 
+### BL-025 — Executive-tier risk score may run hot (COO/founder archetype)
+- **Discovered**: 2026-04-24 · 5-input QA sweep (Mohit, COO at scale-up).
+- **Files**: `supabase/functions/_shared/det-*.ts`, `supabase/functions/_shared/agent-prompts.ts`.
+- **Invariant**: none yet — proposing INV-S01 ("exec roles must score ≤ same-industry IC by ≥X pts").
+- **Fix sketch**: tune `executive-tier-specialization` weights in deterministic engine; add a regression fixture for COO/CEO/Founder archetypes with expected score bands.
+- **Decision (2026-04-24)**: **deferred until DAU > 100 OR first exec user complaint**. CLAUDE.md Rule 3 freezes `det-*.ts` and `agent-prompts.ts`. At single-digit scans/day, tuning on synthetic QA is negative-EV: regression risk on 4 working archetypes outweighs fixing 1 outlier nobody has reported. Reversal trigger: real user feedback on exec score, OR ≥3 exec scans in production showing the same skew.
+- **Status**: open (deferred).
+
+### BL-026 — Narrative tone occasionally drifts from "12-word, no-jargon" rule
+- **Discovered**: 2026-04-24 · 5-input QA sweep (qualitative read of verdicts).
+- **Files**: `supabase/functions/_shared/agent-prompts.ts`.
+- **Invariant**: see `mem://style/verdict-narration-standards`.
+- **Fix sketch**: tighten Agent 4 verdict prompt with stricter banned-word list and explicit sentence-length cap; add a post-LLM lint pass.
+- **Decision (2026-04-24)**: **deferred until DAU > 100**. Frozen-file edit (Rule 3). Taste-level polish, not a correctness bug. Production usage will surface which patterns actually hurt trust; tuning now on 5 synthetic resumes optimizes the wrong distribution.
+- **Status**: open (deferred).
+
 ## Open — P3
 
 *(empty — BL-030 resolved 2026-04-24.)*
