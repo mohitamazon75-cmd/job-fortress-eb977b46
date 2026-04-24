@@ -84,3 +84,14 @@ export function shouldClearScanState(
   if (!nextId) return false;
   return prevId !== nextId;
 }
+
+/**
+ * Normalize app-level analysis errors returned either as non-2xx edge
+ * responses or as 200 responses with success:false. This keeps the UI
+ * recovery path stable even when transport status differs.
+ */
+export function getAnalysisErrorCode(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") return null;
+  const code = (payload as { code?: unknown }).code;
+  return typeof code === "string" && code.length > 0 ? code : null;
+}
