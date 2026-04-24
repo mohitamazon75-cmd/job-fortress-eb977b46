@@ -80,13 +80,26 @@ function getAnchorTokens(role: string): string[] {
   return tokens.length ? [tokens.sort((a, b) => b.length - a.length)[0]] : [];
 }
 
+// Compress a long role string into a clean 2–3 token search query that Naukri
+// actually recognises. "Digital Marketing Manager - Growth & Demand Generation Leader"
+// → "digital-marketing-manager". Without this, Naukri returns junk results that
+// then fail our relevance gate and the user sees an empty jobs tab.
+function compressRoleForSearch(role: string): string {
+  const tokens = normalizeText(role).split(" ").filter(Boolean);
+  // Keep the first 3 non-stop tokens; if all are stop, fall back to first 3.
+  const core = tokens.filter((t) => t.length > 2 && !STOP_TOKENS.has(t)).slice(0, 3);
+  if (core.length >= 2) return core.join(" ");
+  return tokens.slice(0, 3).join(" ") || role;
+}
+
 function buildSearchUrls(role: string, city: string) {
-  const roleSlug = slugify(role);
+  const compactRole = compressRoleForSearch(role);
+  const roleSlug = slugify(compactRole);
   const citySlug = slugify(normalizeCity(city));
   const naukriBoard = `https://www.naukri.com/${roleSlug}-jobs-in-${citySlug}`;
   return {
     naukri: naukriBoard,
-    linkedin: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(normalizeCity(city))}&f_TPR=r604800&sortBy=DD`,
+    linkedin: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(compactRole)}&location=${encodeURIComponent(normalizeCity(city))}&f_TPR=r604800&sortBy=DD`,
     naukri_search_url: naukriBoard,
   };
 }
