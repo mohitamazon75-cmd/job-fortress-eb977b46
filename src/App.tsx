@@ -106,7 +106,9 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <BrowserRouter>
+        <BrowserRouter
+          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+        >
           <ErrorBoundary scope="app">
             <Suspense fallback={<RouteFallback />}>
               <Routes>
