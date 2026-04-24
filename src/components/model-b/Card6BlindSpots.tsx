@@ -63,6 +63,17 @@ function GapRow({
   const title = bs.title || bs.gap || "Gap";
   const gapKey = `${index}_${title.toLowerCase().slice(0, 40).replace(/\s+/g, "_")}`;
 
+  // ── P0-3: Time-boxed prescription. Convert diagnosis → prescription tone.
+  // Severity drives both the time window and the effort budget so users feel
+  // the fix is achievable inside one weekend / one evening.
+  const sevName = String(bs.severity || "MODERATE").toUpperCase();
+  const prescription =
+    sevName === "CRITICAL"
+      ? { when: "Fix this Sunday", duration: "30 min", color: "var(--mb-red)", bg: "var(--mb-red-tint)", border: "rgba(174,40,40,0.25)" }
+      : sevName === "SERIOUS"
+      ? { when: "Fix this week", duration: "1 hour", color: "var(--mb-amber)", bg: "var(--mb-amber-tint)", border: "rgba(139,90,0,0.25)" }
+      : { when: "Fix next weekend", duration: "45 min", color: "var(--mb-navy)", bg: "var(--mb-navy-tint)", border: "var(--mb-navy-tint2)" };
+
   const fetchBundle = useCallback(async () => {
     if (bundle || loading) return;
     setLoading(true); setErr(false);
