@@ -62,3 +62,12 @@
 .mb-root ::-webkit-scrollbar { width: 4px; height: 4px; }
 .mb-root ::-webkit-scrollbar-track { background: transparent; }
 .mb-root ::-webkit-scrollbar-thumb { background: var(--mb-rule2); border-radius: 2px; }
+
+/* Loader progress bar — used by ResultsModelB during analysis polling.
+   Duration matches MAX_POLLS × 3s (90s). */
+@keyframes mbLoadBar {
+  from { width: 0%; }
+  50%  { width: 60%; }
+  80%  { width: 82%; }
+  to   { width: 95%; }
+}
