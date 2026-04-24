@@ -410,7 +410,20 @@ export default function ResultsModelB() {
     }
   }, [logEvent, weeklyIntelLoading, weeklyIntel, cardData, analysisId]);
 
-  // Journey complete detection — only fires when user has explored ALL 9 tabs (0..8)
+  // B1 (#4): Persist visited tabs + completion every time they change so refresh
+  // restores progress instead of resetting it.
+  useEffect(() => {
+    if (!journeyStorageKey) return;
+    try {
+      localStorage.setItem(journeyStorageKey, JSON.stringify({
+        visited: Array.from(visitedCards),
+        done: journeyDone,
+      }));
+    } catch {}
+  }, [journeyStorageKey, visitedCards, journeyDone]);
+
+  // Journey complete detection — only fires when user has explored ALL 9 tabs (0..8).
+  // Idempotent: bonus is only applied if not already persisted as done.
   useEffect(() => {
     if (journeyDone) return;
     if (visitedCards.size >= TOTAL_JOURNEY_TABS && cardData) {
