@@ -269,8 +269,8 @@ export function computeAll(
     }
   }
 
-  // 4. Salary Bleed
-  const salaryBleed = calculateSalaryBleed(determinismIndex, monthlySalary, marketSignal);
+  // 4. Salary Bleed (seniority-tier aware so executives don't get junior-tier numbers)
+  const salaryBleed = calculateSalaryBleed(determinismIndex, monthlySalary, marketSignal, profile.seniority_tier);
 
   // 5. Survivability
   const survivability = calculateSurvivability(profile, determinismIndex, cohortBenchmark ?? null);
