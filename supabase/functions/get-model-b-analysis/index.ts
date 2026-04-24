@@ -542,6 +542,19 @@ async function processAnalysis(
   }
   // ────────────────────────────────────────────────────────────────────────────
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // POST-PROCESSING — TRUST GUARDRAILS (3 trust killers from audit)
+  // 1. Anchor risk_score to deterministic engine (kills same-user variance)
+  // 2. Whitelist quote sources (kills fabricated citations like "YPO Summit 2026")
+  // 3. Normalize search_url to canonical Naukri directory (kills broken/empty links)
+  // All operations fail OPEN on malformed input — we never strip data on edge cases.
+  // ═══════════════════════════════════════════════════════════════════════════
+  try {
+    applyTrustGuardrails(cardData, detScoreAnchor, userCity);
+  } catch (gErr) {
+    console.warn("[model-b] Trust guardrails failed (non-fatal, keeping LLM output):", gErr);
+  }
+
   const insertPayload = {
     analysis_id: analysisId,
     user_id: userId,
