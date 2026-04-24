@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
     const { data: scan, error: scanError } = await supabase
       .from("scans")
-      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url, scan_status")
+      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url, scan_status, determinism_index")
       .eq("id", analysis_id)
       .maybeSingle();
 
@@ -281,7 +281,8 @@ Deno.serve(async (req) => {
       supabase, LOVABLE_API_KEY, analysis_id, user_id,
       resume_filename, resumeText, userCity,
       scan.role_detected || "", scan.industry || "",
-      scan.years_experience || ""
+      scan.years_experience || "",
+      typeof scan.determinism_index === "number" ? scan.determinism_index : null,
     );
 
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
@@ -328,6 +329,7 @@ async function processAnalysis(
   detectedRole = "",
   detectedIndustry = "",
   yearsExperience: string | number = "",
+  detScoreAnchor: number | null = null,
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
@@ -540,6 +542,19 @@ async function processAnalysis(
   }
   // ────────────────────────────────────────────────────────────────────────────
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // POST-PROCESSING — TRUST GUARDRAILS (3 trust killers from audit)
+  // 1. Anchor risk_score to deterministic engine (kills same-user variance)
+  // 2. Whitelist quote sources (kills fabricated citations like "YPO Summit 2026")
+  // 3. Normalize search_url to canonical Naukri directory (kills broken/empty links)
+  // All operations fail OPEN on malformed input — we never strip data on edge cases.
+  // ═══════════════════════════════════════════════════════════════════════════
+  try {
+    applyTrustGuardrails(cardData, detScoreAnchor, userCity);
+  } catch (gErr) {
+    console.warn("[model-b] Trust guardrails failed (non-fatal, keeping LLM output):", gErr);
+  }
+
   const insertPayload = {
     analysis_id: analysisId,
     user_id: userId,
@@ -692,6 +707,128 @@ function validateCardData(data: Record<string, unknown>): { valid: boolean; issu
   }
   return { valid: issues.length === 0, issues };
 }
+
+// ═══════════════════════════════════════════════════════════════
+// TRUST GUARDRAILS — post-LLM normalization for the 3 audit-flagged
+// trust killers (April 2026 audit):
+//   1. Same-user score variance — anchor risk_score to deterministic engine ±5
+//   2. Fabricated quote sources — whitelist trusted publications, null others
+//   3. Broken/generic search_url — rewrite to canonical Naukri directory format
+// All operations fail OPEN; never strip data on edge cases.
+// ═══════════════════════════════════════════════════════════════
+const TRUSTED_SOURCE_PATTERNS = [
+  /\bnasscom\b/i, /\bdeloitte\b/i, /\bmckinsey\b/i, /\bbcg\b/i, /\bgartner\b/i,
+  /\bwef\b|\bworld economic forum\b/i, /\bnaukri\b/i, /\blinkedin\b/i,
+  /\bambitionbox\b/i, /\blevels\.fyi\b/i, /\bhbr\b|\bharvard business review\b/i,
+  /\bft\b|\bfinancial times\b/i, /\beconomic times\b/i, /\bmint\b/i,
+  /\bmoneycontrol\b/i, /\bbloomberg\b/i, /\breuters\b/i, /\bkpmg\b/i,
+  /\bey\b|\bernst\s*&?\s*young\b/i, /\bpwc\b|\bpricewaterhousecoopers\b/i,
+];
+
+function isTrustedSource(source: unknown): boolean {
+  if (typeof source !== "string") return false;
+  const s = source.trim();
+  if (s.length < 3 || s.length > 120) return false;
+  if (/summit|conference|forum/i.test(s) && /20(2[6-9]|3\d)/.test(s)) return false;
+  if (/\b(my|our)\s+(network|advisory|board)\b/i.test(s)) return false;
+  return TRUSTED_SOURCE_PATTERNS.some((re) => re.test(s));
+}
+
+function slugifyForNaukri(input: string): string {
+  return String(input || "").toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "").trim()
+    .replace(/\s+/g, "-").replace(/-+/g, "-");
+}
+
+function buildCanonicalNaukriUrl(role: string, city: string): string {
+  const roleSlug = slugifyForNaukri(role) || "jobs";
+  const citySlug = slugifyForNaukri(city) || "india";
+  return `https://www.naukri.com/${roleSlug}-jobs-in-${citySlug}`;
+}
+
+function isBrokenSearchUrl(url: unknown): boolean {
+  if (typeof url !== "string") return true;
+  const u = url.trim();
+  if (u.length < 12 || !/^https?:\/\//i.test(u)) return true;
+  if (/\{[^}]+\}|\[[^\]]+\]/.test(u)) return true;
+  if (/naukri\.com\/jobs-in-[^?]*\?k=/i.test(u)) return true;
+  return false;
+}
+
+function clampNum(n: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function applyTrustGuardrails(
+  cardData: Record<string, unknown>,
+  detScoreAnchor: number | null,
+  userCity: string,
+): void {
+  if (typeof detScoreAnchor === "number" && detScoreAnchor >= 0 && detScoreAnchor <= 100) {
+    const llmRisk = Number(cardData.risk_score);
+    if (Number.isFinite(llmRisk)) {
+      const bounded = clampNum(clampNum(llmRisk, detScoreAnchor - 5, detScoreAnchor + 5), 0, 100);
+      if (bounded !== llmRisk) {
+        console.log(`[model-b] risk_score anchored: LLM=${llmRisk} det=${detScoreAnchor} → ${bounded}`);
+        cardData.risk_score = bounded;
+      }
+      const c1 = cardData.card1_risk as Record<string, unknown> | undefined;
+      if (c1 && typeof c1 === "object") c1.risk_score = bounded;
+    }
+  }
+
+  const c2 = cardData.card2_market as Record<string, unknown> | undefined;
+  if (c2 && typeof c2 === "object" && "market_quote_source" in c2) {
+    if (!isTrustedSource(c2.market_quote_source)) {
+      if (c2.market_quote_source) console.log(`[model-b] dropped untrusted market_quote_source: "${c2.market_quote_source}"`);
+      c2.market_quote_source = null;
+    }
+  }
+  const c4 = cardData.card4_pivot as Record<string, unknown> | undefined;
+  if (c4 && typeof c4 === "object" && "community_quote_source" in c4) {
+    if (!isTrustedSource(c4.community_quote_source)) {
+      if (c4.community_quote_source) console.log(`[model-b] dropped untrusted community_quote_source: "${c4.community_quote_source}"`);
+      c4.community_quote_source = null;
+    }
+  }
+
+  const fallbackCity = userCity && userCity !== "India" ? userCity : "india";
+  if (c4 && Array.isArray((c4 as any).pivots)) {
+    for (const p of (c4 as any).pivots as any[]) {
+      if (!p || typeof p !== "object") continue;
+      if (isBrokenSearchUrl(p.search_url)) {
+        const role = String(p.role || "").trim();
+        const city = String(p.location || fallbackCity).trim();
+        if (role) {
+          const fixed = buildCanonicalNaukriUrl(role, city);
+          if (fixed !== p.search_url) {
+            console.log(`[model-b] fixed pivot search_url: "${p.search_url}" → "${fixed}"`);
+            p.search_url = fixed;
+          }
+        }
+      }
+    }
+  }
+  const c5 = cardData.card5_jobs as Record<string, unknown> | undefined;
+  if (c5 && Array.isArray((c5 as any).job_matches)) {
+    for (const j of (c5 as any).job_matches as any[]) {
+      if (!j || typeof j !== "object") continue;
+      if (j.verified_live === true) continue;
+      if (isBrokenSearchUrl(j.search_url)) {
+        const role = String(j.role || "").trim();
+        const city = String(j.location || fallbackCity).trim();
+        if (role) {
+          const fixed = buildCanonicalNaukriUrl(role, city);
+          if (fixed !== j.search_url) {
+            console.log(`[model-b] fixed job search_url: "${j.search_url}" → "${fixed}"`);
+            j.search_url = fixed;
+          }
+        }
+      }
+    }
+  }
+}
+
 
 // ═══════════════════════════════════════════════════════════════
 // SYSTEM PROMPT — Psychology-Driven Career Intelligence Engine
