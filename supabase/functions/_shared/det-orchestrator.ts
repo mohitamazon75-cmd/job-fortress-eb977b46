@@ -14,6 +14,7 @@ import type {
   MarketSignalRow, ReplacingTool, DataQuality, ScoreBreakdown,
   DeterministicResult, KGSkillIndex, CohortBenchmark,
 } from "./det-types.ts";
+import { filterImplausiblePairings } from "./tool-task-capability-map.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // TONE TAG (deterministic)
@@ -76,7 +77,9 @@ export function extractReplacingTools(
     }
   }
 
-  return tools.slice(0, 10);
+  // Hallucination guard: drop tool/task pairings that are obviously implausible
+  // (e.g. "Playwright automates M&A modeling"). Conservative — unknown tools pass through.
+  return filterImplausiblePairings(tools, "extractReplacingTools").slice(0, 10);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -266,8 +269,8 @@ export function computeAll(
     }
   }
 
-  // 4. Salary Bleed
-  const salaryBleed = calculateSalaryBleed(determinismIndex, monthlySalary, marketSignal);
+  // 4. Salary Bleed (seniority-tier aware so executives don't get junior-tier numbers)
+  const salaryBleed = calculateSalaryBleed(determinismIndex, monthlySalary, marketSignal, profile.seniority_tier);
 
   // 5. Survivability
   const survivability = calculateSurvivability(profile, determinismIndex, cohortBenchmark ?? null);
@@ -358,7 +361,7 @@ export function computeAll(
   // Score Variability
   // Score Variability — pass the stronger structural floor so asymmetric CI
   // respects both job-family baselines and high-risk industry/sub-sector anchors.
-  const score_variability = calculateScoreVariability(determinismIndex, diResult.matchedCount, monthlySalary, marketSignal, structuralFloor);
+  const score_variability = calculateScoreVariability(determinismIndex, diResult.matchedCount, monthlySalary, marketSignal, structuralFloor, profile.seniority_tier);
 
   // Moat & Urgency — moat now returns IC leverage bonus separately for audit (#4)
   const moatResult = calculateMoatScore(profile, skillRiskData, diResult.matchedCount);
