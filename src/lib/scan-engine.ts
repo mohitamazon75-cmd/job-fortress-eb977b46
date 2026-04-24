@@ -373,14 +373,11 @@ export async function createScan(params: {
       const scanId = fnData.id as string;
       const accessToken = fnData.accessToken as string;
 
-      // Week 1 #1: Store scan ID for anonymous migration with 30-day TTL
+      // Week 1 #1 + Audit fix #19: Store scan ID + access token for anon
+      // migration AND for refresh-recovery. Without the token, an anon refresh
+      // can't read the RLS-protected scan row and the scan is effectively lost.
       if (!user?.id) {
-        try {
-          const scanEntry = { id: scanId, storedAt: Date.now() };
-          const existing = JSON.parse(localStorage.getItem('anon_scans') || '[]');
-          const pruned = existing.filter((e: any) => Date.now() - e.storedAt < 30 * 24 * 60 * 60 * 1000);
-          localStorage.setItem('anon_scans', JSON.stringify([...pruned, scanEntry].slice(-10)));
-        } catch {}
+        rememberAnonScan(scanId, accessToken);
       }
 
       console.debug('[Scan] Created via edge function:', scanId);
