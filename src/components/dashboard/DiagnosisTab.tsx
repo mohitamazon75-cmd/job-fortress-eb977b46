@@ -131,6 +131,11 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
 
   const [riskMethodOpen, setRiskMethodOpen] = useState(false);
 
+  // P1: Animate the headline Career Position Score on dashboard land so it feels
+  // alive (matches the count-up users saw in AIDossierReveal/Card0Verdict).
+  // useAnimatedNumber respects prefers-reduced-motion automatically.
+  const animatedScore = useAnimatedNumber(displayScoreValue, 1100);
+
   return (
     <motion.div
       key="diagnosis"
