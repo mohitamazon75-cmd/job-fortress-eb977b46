@@ -810,7 +810,7 @@ export default function ResultsModelB() {
           isOpen={true}
           onClose={() => setStreakModal(false)}
           title={`Day ${streak} Action`}
-          promptText={buildStreakActions(cardData)[streak % 5] || "Give me one specific, actionable career task I can complete in the next 60 minutes to strengthen my professional position."}
+          promptText={buildStreakActions(cardData)[(Math.max(1, streak) - 1) % 5] || "Give me one specific, actionable career task I can complete in the next 60 minutes to strengthen my professional position."}
         />
       )}
 
