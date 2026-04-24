@@ -81,7 +81,7 @@ const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
 
 // C1 #2: Streak now correctly resets to 1 if the user skips a day.
 // Pure logic lives in src/lib/model-b-helpers.ts (BL-013 / INV-F02).
-import { nextStreak, journeyProgressPct } from "@/lib/model-b-helpers";
+import { getAnalysisErrorCode, nextStreak, journeyProgressPct } from "@/lib/model-b-helpers";
 
 function useStreak() {
   const [streak, setStreak] = useState(1);
@@ -271,18 +271,18 @@ export default function ResultsModelB() {
         const ctx: any = (fnError as any).context;
         let parsed: any = null;
         try { parsed = ctx?.body ? JSON.parse(ctx.body) : null; } catch {}
-        if (parsed?.code === "SCAN_NOT_READY") {
+        if (getAnalysisErrorCode(parsed) === "SCAN_NOT_READY") {
           setError("This scan didn't complete. Start a new scan to view your analysis.");
           setLoading(false);
           return;
         }
-        if (parsed?.code === "AUTH_REQUIRED") {
+        if (getAnalysisErrorCode(parsed) === "AUTH_REQUIRED") {
           setError("Please sign in to view this analysis.");
           setShowSavePrompt(true);
           setLoading(false);
           return;
         }
-        if (parsed?.code === "FORBIDDEN") {
+        if (getAnalysisErrorCode(parsed) === "FORBIDDEN") {
           // Stale/shared link pointing at another account's scan.
           // Clear cached pointers so the next scan starts cleanly.
           try {
@@ -295,7 +295,30 @@ export default function ResultsModelB() {
         }
         throw new Error(parsed?.error || fnError.message || "Analysis failed");
       }
-      if (!data?.success) throw new Error(data?.error || "Analysis failed");
+      if (!data?.success) {
+        const code = getAnalysisErrorCode(data);
+        if (code === "SCAN_NOT_READY") {
+          setError("This scan didn't complete. Start a new scan to view your analysis.");
+          setLoading(false);
+          return;
+        }
+        if (code === "AUTH_REQUIRED") {
+          setError("Please sign in to view this analysis.");
+          setShowSavePrompt(true);
+          setLoading(false);
+          return;
+        }
+        if (code === "FORBIDDEN") {
+          try {
+            localStorage.removeItem("jb_last_scan_id");
+            localStorage.removeItem("lastScanId");
+          } catch {}
+          setError(data.error || "This analysis belongs to a different account. Start a new scan.");
+          setLoading(false);
+          return;
+        }
+        throw new Error(data?.error || "Analysis failed");
+      }
 
       // If we got data immediately (cache hit), use it
       if (data.data?.card_data) {
