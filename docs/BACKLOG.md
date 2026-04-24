@@ -17,35 +17,45 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
 ## Open — P0
 
 ### BL-001 — `TESTING_BYPASS = true` in subscription-guard
-- **Discovered**: pre-existing (CLAUDE.md Hazard D).
-- **Files**: `supabase/functions/_shared/subscription-guard.ts`.
-- **Invariant**: INV-X01.
-- **Fix**: flip to `false`, run regression on Pro-gated features (defense plan, weaponized resume, coach >5 questions).
-- **Status**: open.
+## Open — P0
 
-### BL-002 — DEV-mode bypass in `activate-subscription`
-- **Discovered**: pre-existing (CLAUDE.md Hazard D).
-- **Files**: `supabase/functions/activate-subscription/index.ts`.
-- **Fix**: gate behind `Deno.env.get("ENVIRONMENT") === "development"` AND require explicit dev-only flag.
-- **Status**: open. Consultant scope per CLAUDE.md Rule 3 — coordinate before touching.
+*(none — see DECISIONS.md for ENFORCE_PRO. Razorpay order-creation BL-016 is P1.)*
 
-### BL-003 — `job-fortress-v2/` parallel codebase
-- **Discovered**: pre-existing (CLAUDE.md Hazard A).
-- **Risk**: unclear which deploys; risk of fixing the wrong one.
-- **Fix**: operator decision — delete or move to branch.
-- **Status**: open. Blocks new feature work per CLAUDE.md.
+## Resolved — P0
+
+### BL-001 — `TESTING_BYPASS = true` in subscription-guard → wontfix-for-now
+- **Discovered**: pre-existing (CLAUDE.md Hazard D, original form).
+- **Resolution (2026-04-24)**: hardcoded flag was already removed; replaced by `ENFORCE_PRO` env var which currently defaults off. Operator decision (`docs/DECISIONS.md`) is to keep Pro gating off pre-PMF. Will be revisited at DAU > 100.
+- **Status**: wontfix-for-now. Reopen when reversal trigger fires.
+
+### BL-002 — DEV-mode bypass in `activate-subscription` → done
+- **Resolution (2026-04-24)**: audit confirmed the DEV fallback is no longer present in `activate-subscription/index.ts`. Function requires real Razorpay verification.
+- **Status**: done.
+
+### BL-003 — `job-fortress-v2/` parallel codebase → done
+- **Resolution (2026-04-24)**: directory removed from repo. One source of truth.
+- **Status**: done.
 
 ## Open — P1
 
-### BL-010 — `generate-weekly-brief` has no cron
-- **Discovered**: pre-existing (CLAUDE.md Hazard E).
-- **Fix**: add `pg_cron` schedule (Mondays 06:00 IST) OR remove all UI references to Weekly Briefs.
+### BL-016 — Razorpay order-creation is client-side (price-manipulation risk)
+- **Discovered**: original audit (`00_CURRENT_REALITY.md` item 4).
+- **Files**: `src/components/ProUpgradeModal.tsx`, `supabase/functions/activate-subscription/index.ts`.
+- **Fix**: server-side `create-razorpay-order` edge function that fixes `amount` from `TIER_PRICES`. Client never passes amount.
+- **Why P1 not P0**: Pro gating is currently bypassed (BL-001 wontfix-for-now), so price tampering is moot until `ENFORCE_PRO` flips on. Must be resolved **before** flipping.
 - **Status**: open.
 
-### BL-011 — Five `.git_old*` directories pollute repo root
-- **Discovered**: pre-existing (CLAUDE.md Hazard B).
-- **Fix**: archive to a separate branch then delete from main.
-- **Status**: open.
+## Resolved — P1
+
+### BL-010 — `generate-weekly-brief` has no cron → done
+- **Resolution (2026-04-24)**: cron wired in migration `20260416042427_activate_retention_cron_jobs.sql` (Sun midnight IST).
+- **Status**: done.
+
+### BL-011 — Five `.git_old*` directories → done
+- **Resolution (2026-04-24)**: directories removed.
+- **Status**: done.
+
+## Open — P1 (continued)
 
 ### BL-012 — INV-F01 has no automated test (state leaks across scan_id)
 - **Discovered**: round 3 audit (this conversation).
