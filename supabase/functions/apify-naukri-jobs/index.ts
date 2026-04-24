@@ -80,13 +80,26 @@ function getAnchorTokens(role: string): string[] {
   return tokens.length ? [tokens.sort((a, b) => b.length - a.length)[0]] : [];
 }
 
+// Compress a long role string into a clean 2–3 token search query that Naukri
+// actually recognises. "Digital Marketing Manager - Growth & Demand Generation Leader"
+// → "digital-marketing-manager". Without this, Naukri returns junk results that
+// then fail our relevance gate and the user sees an empty jobs tab.
+function compressRoleForSearch(role: string): string {
+  const tokens = normalizeText(role).split(" ").filter(Boolean);
+  // Keep the first 3 non-stop tokens; if all are stop, fall back to first 3.
+  const core = tokens.filter((t) => t.length > 2 && !STOP_TOKENS.has(t)).slice(0, 3);
+  if (core.length >= 2) return core.join(" ");
+  return tokens.slice(0, 3).join(" ") || role;
+}
+
 function buildSearchUrls(role: string, city: string) {
-  const roleSlug = slugify(role);
+  const compactRole = compressRoleForSearch(role);
+  const roleSlug = slugify(compactRole);
   const citySlug = slugify(normalizeCity(city));
   const naukriBoard = `https://www.naukri.com/${roleSlug}-jobs-in-${citySlug}`;
   return {
     naukri: naukriBoard,
-    linkedin: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}&location=${encodeURIComponent(normalizeCity(city))}&f_TPR=r604800&sortBy=DD`,
+    linkedin: `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(compactRole)}&location=${encodeURIComponent(normalizeCity(city))}&f_TPR=r604800&sortBy=DD`,
     naukri_search_url: naukriBoard,
   };
 }
@@ -148,13 +161,15 @@ function scoreJobAgainstUser(job: ApifyJob, role: string, skills: string[]) {
 }
 
 function toMatchPct(opts: { anchorInTitle: boolean; sharedSkillsCount: number; userSkillsCount: number; recencyDays: number | null }) {
-  if (!opts.anchorInTitle) return 0;
-  let pct = 65; // anchor in title floor
+  // Floor: anchor-in-title = 65, otherwise skill-only match starts at 60.
+  // Returning 0 here was making genuinely-relevant skill-matched jobs render
+  // as "0% · Stretch", which felt broken to users.
+  let pct = opts.anchorInTitle ? 65 : 60;
   if (opts.userSkillsCount > 0) {
     const overlap = Math.min(1, opts.sharedSkillsCount / opts.userSkillsCount);
     pct += Math.round(overlap * 25); // up to +25 from skills
-  } else {
-    pct += 10; // no user skills => modest bump
+  } else if (opts.anchorInTitle) {
+    pct += 10; // no user skills => modest bump only when title actually anchored
   }
   if (opts.recencyDays != null) {
     if (opts.recencyDays <= 1) pct += 4;
@@ -192,13 +207,17 @@ function buildWhyFit(opts: {
 }
 
 function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: string[]) {
-  const anchors = getAnchorTokens(role);
+  // Use the COMPRESSED role for anchor extraction. A 7-word job title shouldn't
+  // require 7 anchor hits — that's why the gate was over-filtering and users
+  // were seeing 0–2 jobs out of 50 scraped.
+  const compactRole = compressRoleForSearch(role);
+  const anchors = getAnchorTokens(compactRole);
   const userSkillsCount = skills.filter((s) => s && s.trim().length > 1).length;
 
   const scored = items
     .filter((item) => item.jdURL && item.title)
     .map((item) => {
-      const s = scoreJobAgainstUser(item, role, skills);
+      const s = scoreJobAgainstUser(item, compactRole, skills);
       const days = parseDays(item.footerPlaceholderLabel);
       const matchPct = toMatchPct({
         anchorInTitle: s.anchorInTitle,
@@ -241,18 +260,30 @@ function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: st
         verified_live: true,
         source: "apify_naukri",
         anchor_in_title: s.anchorInTitle,
+        anchor_in_body: s.anchorInBody,
         match_pct: matchPct,
         match_label: toMatchLabel(matchPct),
         why_fit: whyFit,
         raw_score: s.score,
       };
     })
-    // Hard relevance gate: anchor MUST appear in title OR user skill overlap >= 25%
-    .filter((j) => j.anchor_in_title || (userSkillsCount > 0 && j.shared_skills.length / userSkillsCount >= 0.25))
-    .sort((a, b) => b.raw_score - a.raw_score)
+    // Relaxed relevance gate — keep a job if ANY of these is true:
+    //  (a) anchor token in title (strict signal)
+    //  (b) anchor token in body AND ≥1 of the user's skills is present
+    //  (c) ≥2 user skills present (skill-led match for transferable roles)
+    // The old gate (anchor-in-title OR ≥25% skill overlap) was dropping ~96% of
+    // scraped jobs for niche or executive-flavoured titles, leaving the tab empty.
+    .filter((j) => {
+      if (j.anchor_in_title) return true;
+      if (j.anchor_in_body > 0 && j.shared_skills.length >= 1) return true;
+      if (j.shared_skills.length >= 2) return true;
+      return false;
+    })
+    // Rank by match_pct first (what the user sees), then raw_score as tiebreaker.
+    .sort((a, b) => (b.match_pct - a.match_pct) || (b.raw_score - a.raw_score))
     .slice(0, 10);
 
-  return scored.map(({ raw_score, anchor_in_title, ...job }) => job);
+  return scored.map(({ raw_score, anchor_in_title, anchor_in_body, ...job }) => job);
 }
 
 Deno.serve(async (req) => {
@@ -272,7 +303,9 @@ Deno.serve(async (req) => {
     const { role, city, skills, force_refresh } = parsed.data;
     const isExecutive = parsed.data.is_executive || isExecutiveTitle(role);
     const searchUrls = buildSearchUrls(role, city);
-    const cacheKey = `apify-naukri-jobs:v3:${normalizeText(role)}:${normalizeText(city)}:${skills.slice(0, 5).map(normalizeText).sort().join("-")}:${isExecutive ? "exec" : "core"}`;
+    // v4: relaxed relevance gate + compressed search query (2026-04-24).
+    // Bumping the version invalidates v3 cache entries that were over-filtered.
+    const cacheKey = `apify-naukri-jobs:v4:${normalizeText(role)}:${normalizeText(city)}:${skills.slice(0, 5).map(normalizeText).sort().join("-")}:${isExecutive ? "exec" : "core"}`;
     const sb = createAdminClient();
 
     // Executive route: don't waste Apify credits — board search returns junk for C-suite roles.
