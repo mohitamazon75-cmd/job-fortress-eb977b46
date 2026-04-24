@@ -60,7 +60,8 @@ export function calculateObsolescenceTimeline(
 export function calculateSalaryBleed(
   determinismIndex: number,
   monthlySalary: number,
-  marketSignal: MarketSignalRow | null
+  marketSignal: MarketSignalRow | null,
+  seniorityTier?: string | null,
 ): { monthly: number; total5yr: number; depreciationRate: number; marketAmplifier: number; aiPressureAdd: number; finalRate: number } {
   let depreciationRate = CALIBRATION.SALARY_BLEED_BASE_RATE * Math.pow(determinismIndex / CALIBRATION.SALARY_BLEED_DI_NORM, CALIBRATION.SALARY_BLEED_POWER);
 
@@ -76,11 +77,24 @@ export function calculateSalaryBleed(
     depreciationRate += aiPressureAdd;
   }
 
+  // QA-04 fix (2026-04-24): Executive salary anchor.
+  // Without this, a Founder/CEO gets the same depreciation rate as a junior IC,
+  // which breaks credibility (auditor-flagged: "exec sees ₹X bleed/month, laughs").
+  // Executives have equity, optionality, and decision authority — their cash comp
+  // erodes much slower than execution-tier roles. Floor multiplier applied AFTER
+  // market signals so amplifiers still register, just at a damped level.
+  const tierMultiplier =
+    seniorityTier === 'EXECUTIVE' ? 0.35 :
+    seniorityTier === 'SENIOR_LEADER' ? 0.55 :
+    seniorityTier === 'MANAGER' ? 0.80 :
+    1.0;
+  depreciationRate *= tierMultiplier;
+
   const finalRate = Math.min(depreciationRate, CALIBRATION.SALARY_BLEED_CAP);
   const monthlyBleed = Math.floor(monthlySalary * finalRate / 12);
   const total5yr = monthlyBleed * 60;
 
-  return { monthly: monthlyBleed, total5yr, depreciationRate: CALIBRATION.SALARY_BLEED_BASE_RATE * Math.pow(determinismIndex / CALIBRATION.SALARY_BLEED_DI_NORM, CALIBRATION.SALARY_BLEED_POWER), marketAmplifier, aiPressureAdd, finalRate };
+  return { monthly: monthlyBleed, total5yr, depreciationRate: CALIBRATION.SALARY_BLEED_BASE_RATE * Math.pow(determinismIndex / CALIBRATION.SALARY_BLEED_DI_NORM, CALIBRATION.SALARY_BLEED_POWER) * tierMultiplier, marketAmplifier, aiPressureAdd, finalRate };
 }
 
 // ═══════════════════════════════════════════════════════════════
