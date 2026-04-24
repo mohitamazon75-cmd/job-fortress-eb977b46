@@ -722,9 +722,17 @@ export default function ResultsModelB() {
             {currentCard === 8 && (() => {
               // Build a minimal ScanReport-shaped object from cardData so the
               // existing tool components (built for ScanReport) work without changes.
+              // B4 (#24): country and seniority_tier now derived from cardData
+              // instead of hardcoded "IN" / "PROFESSIONAL".
+              const u = cardData.user || {};
+              const detectedCountry = (u.country || cardData.country || "IN").toString().toUpperCase();
+              const yearsNum = parseInt(String(u.years_experience || "").replace(/[^\d]/g, ""), 10);
+              const detectedSeniority = !isNaN(yearsNum)
+                ? (yearsNum >= 15 ? "EXECUTIVE" : yearsNum >= 8 ? "SENIOR" : yearsNum >= 3 ? "PROFESSIONAL" : "EARLY")
+                : "PROFESSIONAL";
               const syntheticReport = {
-                role: cardData.user?.current_title || "Professional",
-                industry: cardData.user?.industry || "Technology",
+                role: u.current_title || "Professional",
+                industry: u.industry || "Technology",
                 determinism_index: cardData.risk_score || 55,
                 moat_score: cardData.shield_score || 50,
                 all_skills: (cardData.card3_shield?.skills || []).map((s: any) => s.name),
@@ -732,9 +740,9 @@ export default function ResultsModelB() {
                 execution_skills_dead: (cardData.card3_shield?.skills || []).filter((s: any) => s.level === "critical-gap").map((s: any) => s.name),
                 free_advice_1: cardData.card6_blindspots?.blind_spots?.[0]?.body || "",
                 free_advice_2: cardData.card6_blindspots?.blind_spots?.[1]?.body || "",
-                seniority_tier: "PROFESSIONAL" as const,
+                seniority_tier: detectedSeniority as any,
                 survivability: { score: 100 - (cardData.risk_score || 55), breakdown: { experience_bonus: 0, strategic_bonus: 0, geo_bonus: 0, adaptability_bonus: 0 }, primary_vulnerability: cardData.card6_blindspots?.blind_spots?.[0]?.title || "" },
-                country: "IN",
+                country: detectedCountry,
               } as any;
 
               return (
