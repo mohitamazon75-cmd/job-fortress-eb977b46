@@ -123,12 +123,31 @@ export default function ResultsModelB() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentCard, setCurrentCard] = useState(0);
-  const [visitedCards, setVisitedCards] = useState<Set<number>>(new Set([0]));
+  // B1 (#4): Journey state is persisted per-scan in localStorage so a refresh
+  // does not reset progress or re-trigger the +6 completion bonus.
+  const journeyStorageKey = analysisId ? `jb_journey_${analysisId}` : null;
+  const [visitedCards, setVisitedCards] = useState<Set<number>>(() => {
+    try {
+      if (!journeyStorageKey) return new Set([0]);
+      const raw = localStorage.getItem(journeyStorageKey);
+      if (!raw) return new Set([0]);
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed?.visited)) return new Set<number>(parsed.visited);
+    } catch {}
+    return new Set([0]);
+  });
   const [actionModal, setActionModal] = useState<{ title: string; promptText: string } | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [showSavePrompt, setShowSavePrompt] = useState(false); // show for any non-email user
-  const [journeyDone, setJourneyDone] = useState(false);
+  const [journeyDone, setJourneyDone] = useState(() => {
+    try {
+      if (!journeyStorageKey) return false;
+      const raw = localStorage.getItem(journeyStorageKey);
+      if (!raw) return false;
+      return Boolean(JSON.parse(raw)?.done);
+    } catch { return false; }
+  });
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
   // Feature 3: Weekly intel for the Tools tab Judo section — fetched lazily when Tools tab opens.
