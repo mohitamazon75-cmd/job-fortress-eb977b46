@@ -517,26 +517,7 @@ export default function ResultsModelB() {
     return "unvisited";
   };
 
-  const handleCopyFallback = (text: string) => {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-    } else {
-      fallbackCopy(text);
-    }
-  };
-
-  const fallbackCopy = (text: string) => {
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    } catch {}
-  };
+  // C2: copy helpers reference the module-scope functions (stable, no realloc per render)
 
   return (
     <div className="mb-root" style={{ background: "var(--mb-bg)", minHeight: "100vh" }}>
