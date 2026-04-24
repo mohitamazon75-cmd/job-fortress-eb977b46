@@ -507,7 +507,9 @@ export default function ResultsModelB() {
   if (!analysisId) return null;
 
   // Progress is based on all 9 tabs (Verdict → Tools)
-  const progressPct = Math.min(100, ((Math.min(currentCard, TOTAL_JOURNEY_TABS - 1) + 1) / TOTAL_JOURNEY_TABS) * 100);
+  // C1 #7: progress reflects actual exploration (visited tabs), not just current index.
+  // Jumping to Tools no longer falsely shows 100% complete.
+  const progressPct = Math.min(100, (visitedCards.size / TOTAL_JOURNEY_TABS) * 100);
 
   const getTabState = (i: number) => {
     if (i === currentCard) return "active";
