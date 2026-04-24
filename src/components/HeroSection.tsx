@@ -288,7 +288,7 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
           </motion.div>
 
           {/* Social proof bar */}
-          {scanCount !== null && scanCount > 0 && (
+          {scanCount !== null && scanCount >= 50 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -297,7 +297,7 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
             >
               <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card/50">
                 <Users className="w-3.5 h-3.5 text-primary" />
-                <span className="text-xs font-bold text-foreground">{scanCount.toLocaleString()}+ professionals</span>
+                <span className="text-xs font-bold text-foreground">{scanCount.toLocaleString()}{scanCount >= 100 ? '+' : ''} professionals</span>
                 <span className="text-xs text-muted-foreground">already analyzed</span>
               </div>
             </motion.div>
