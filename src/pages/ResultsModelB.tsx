@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -139,6 +139,18 @@ export default function ResultsModelB() {
   const streak = useStreak();
   const [streakModal, setStreakModal] = useState(false);
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Polling lifecycle refs — guard against unmount leaks and double-chains (P0 #1, #2, #19)
+  const isMountedRef = useRef(true);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollGenerationRef = useRef(0); // increments on each fetchAnalysis to invalidate prior chains
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+    };
+  }, []);
 
   // Log helper
   const logEvent = useCallback(async (event_type: string, metadata?: Record<string, unknown>) => {
@@ -169,10 +181,16 @@ export default function ResultsModelB() {
   // Fetch data with polling support
   const fetchAnalysis = useCallback(async () => {
     if (!analysisId) return;
+    // Invalidate any in-flight polling chain from a previous call
+    pollGenerationRef.current += 1;
+    const myGen = pollGenerationRef.current;
+    if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+
     setLoading(true);
     setError("");
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!isMountedRef.current || myGen !== pollGenerationRef.current) return;
       const uid = user?.id || null;
       setUserId(uid);
       // Detect anonymous users (created by signInAnonymously) to show sign-in prompt
@@ -183,6 +201,8 @@ export default function ResultsModelB() {
       const { data, error: fnError } = await supabase.functions.invoke("get-model-b-analysis", {
         body: { analysis_id: analysisId, user_id: uid, resume_filename: "Your Resume" },
       });
+
+      if (!isMountedRef.current || myGen !== pollGenerationRef.current) return;
 
       if (fnError) {
         // Edge function returned non-2xx — try to surface a useful message
@@ -226,24 +246,32 @@ export default function ResultsModelB() {
 
       // Background processing started — poll for completion
       if (data.status === "processing") {
-        pollForResult(uid);
+        pollForResult(uid, myGen);
         return;
       }
 
       // Unexpected state
       throw new Error("Unexpected response state");
     } catch (e: any) {
+      if (!isMountedRef.current || myGen !== pollGenerationRef.current) return;
       setError(e.message || "Something went wrong");
       setLoading(false);
     }
   }, [analysisId]);
 
-  // Poll every 3s until result is ready
-  const pollForResult = useCallback(async (uid: string | null) => {
+  // Poll every 3s until result is ready — guarded by mount + generation refs (P0 #1, #2)
+  const pollForResult = useCallback(async (uid: string | null, gen: number) => {
     const MAX_POLLS = 40; // ~2 minutes max
     let polls = 0;
+    let consecutiveErrors = 0; // P1 #9: surface error after 3 consecutive failures
+
+    const scheduleNext = () => {
+      if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
+      pollTimeoutRef.current = setTimeout(poll, 3000);
+    };
 
     const poll = async () => {
+      if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
       polls++;
       if (polls > MAX_POLLS) {
         setError("Analysis is taking longer than expected. Please refresh the page.");
@@ -256,7 +284,9 @@ export default function ResultsModelB() {
           body: { analysis_id: analysisId, user_id: uid, poll: true },
         });
 
+        if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
         if (fnError) throw new Error(fnError.message);
+        consecutiveErrors = 0;
 
         if (data?.data?.card_data) {
           const cd = data.data.card_data;
@@ -267,7 +297,7 @@ export default function ResultsModelB() {
         }
 
         if (data?.status === "processing") {
-          setTimeout(poll, 3000);
+          scheduleNext();
           return;
         }
 
@@ -276,6 +306,7 @@ export default function ResultsModelB() {
           const { data: retrigger } = await supabase.functions.invoke("get-model-b-analysis", {
             body: { analysis_id: analysisId, user_id: uid, resume_filename: "Your Resume" },
           });
+          if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
           if (retrigger?.data?.card_data) {
             const cd = retrigger.data.card_data;
             setCardData(cd);
@@ -283,18 +314,25 @@ export default function ResultsModelB() {
             setLoading(false);
             return;
           }
-          setTimeout(poll, 3000);
+          scheduleNext();
           return;
         }
 
         setError("Analysis failed. Please try again.");
         setLoading(false);
       } catch {
-        setTimeout(poll, 3000);
+        if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
+        consecutiveErrors++;
+        if (consecutiveErrors >= 3) {
+          setError("Backend is unreachable. Please check your connection and try again.");
+          setLoading(false);
+          return;
+        }
+        scheduleNext();
       }
     };
 
-    setTimeout(poll, 3000);
+    pollTimeoutRef.current = setTimeout(poll, 3000);
   }, [analysisId]);
 
   useEffect(() => {
@@ -307,10 +345,11 @@ export default function ResultsModelB() {
       .select("id", { count: "exact", head: true })
       .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
       .then(({ count }) => {
+        if (!isMountedRef.current) return;
         if (count !== null && count >= 10) {
           setMonthlyScanCount(Math.floor(count / 10) * 10);
         }
-      });
+      }, () => { /* P0 #3: swallow RLS/network errors silently */ });
   }, [analysisId, navigate, fetchAnalysis]);
 
   // Loading message cycling
@@ -363,25 +402,10 @@ export default function ResultsModelB() {
     }
   }, [visitedCards, cardData, journeyDone, logEvent]);
 
-  if (!analysisId) return null;
-
-  // Progress is based on all 9 tabs (Verdict → Tools)
-  const progressPct = Math.min(100, ((Math.min(currentCard, TOTAL_JOURNEY_TABS - 1) + 1) / TOTAL_JOURNEY_TABS) * 100);
-
-  const getTabState = (i: number) => {
-    if (i === currentCard) return "active";
-    if (visitedCards.has(i)) return "done";
-    return "unvisited";
-  };
-
-  const tabColors = {
-    active: { dot: "#1B2F55", label: "#1B2F55", bg: "#EEF1F8" },
-    done: { dot: "#1A6B3C", label: "#1A6B3C", bg: "transparent" },
-    unvisited: { dot: "#D0CEC5", label: "#B8B6AE", bg: "transparent" },
-  };
-
-  const buildActionPrompts = () => {
-    if (!cardData) return [];
+  // Memoized — was being rebuilt on every render (P0 #6)
+  // Moved above the early return so hook order stays stable across renders.
+  const actionPrompts = useMemo(() => {
+    if (!cardData) return [] as Array<{ label: string; icon: string; title: string; promptText: string }>;
     const u = cardData.user || {};
     const pivot0 = cardData.card4_pivot?.pivots?.[0] || {};
     const advProofs = (cardData.card7_human?.advantages || []).map((a: any) => `- ${a.proof_label}`).join("\n");
@@ -399,6 +423,17 @@ export default function ResultsModelB() {
       { label: "Top 10 companies", icon: "🏢", title: "Top 10 India B2B SaaS Companies", promptText: `Top 10 B2B SaaS companies in India hiring ${pivot0.role} leaders in 2026 for ${u.name}.\n\nProfile: ${u.years_experience}+ years · ${u.current_title} · ${u.location} · Available ${u.availability}\nTop credential: ${cardData.card7_human?.advantages?.[0]?.proof_label || ''}\nTarget salary: ${cardData.card4_pivot?.negotiation?.open_with || ''}\n\nFor each company: why they fit this profile specifically, appropriate role title and seniority, salary range including ESOPs, one credential to lead with in the application, best application route (direct/LinkedIn/referral).` },
       { label: "30-day action plan", icon: "📋", title: "30-Day Action Plan", promptText: `Create a 30-day action plan for ${u.name} to land a ${pivot0.role} role in India.\n\nProfile: ${u.years_experience}+ years · ${u.current_title} · ${u.location} · Available ${u.availability}\nTop credential: ${cardData.card7_human?.advantages?.[0]?.proof_label || ''}\nTarget: ${cardData.card4_pivot?.negotiation?.open_with || ''} base\n\nPlan:\n${day1to3Line}\nDays 4–7: Research 10 target companies, map specific credentials to each JD\nDays 8–14: 5 tailored applications with evidence mapped to each company\nDays 15–20: Referral activation — personalised outreach for each target company\nDays 21–25: Interview prep using STAR answers built from resume evidence\nDays 26–30: Follow-up cadence, negotiation preparation, offer evaluation framework\n\nFor each week: specific daily actions, time estimates, success metrics.` },
     ];
+  }, [cardData]);
+
+  if (!analysisId) return null;
+
+  // Progress is based on all 9 tabs (Verdict → Tools)
+  const progressPct = Math.min(100, ((Math.min(currentCard, TOTAL_JOURNEY_TABS - 1) + 1) / TOTAL_JOURNEY_TABS) * 100);
+
+  const getTabState = (i: number) => {
+    if (i === currentCard) return "active";
+    if (visitedCards.has(i)) return "done";
+    return "unvisited";
   };
 
   const handleCopyFallback = (text: string) => {
@@ -739,7 +774,7 @@ export default function ResultsModelB() {
                   </Suspense>
 
                   <button onClick={() => handleTabChange(0)} style={{ width: "100%", padding: "14px", background: "var(--mb-navy)", color: "white", border: "none", borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>
-                    ← Back to Risk Analysis
+                    ← Back to Verdict
                   </button>
                 </div>
               );
@@ -748,7 +783,7 @@ export default function ResultsModelB() {
             {/* Bottom action buttons — hidden on Verdict (own CTAs) and Tools (utility tab) */}
             {!ACTION_BUTTONS_HIDDEN_TABS.has(currentCard) && (
               <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
-                {buildActionPrompts().map((action, i) => (
+                {actionPrompts.map((action, i) => (
                   <button
                     key={i}
                     className="mb-btn-secondary"
@@ -775,7 +810,7 @@ export default function ResultsModelB() {
           isOpen={true}
           onClose={() => setStreakModal(false)}
           title={`Day ${streak} Action`}
-          promptText={buildStreakActions(cardData)[streak % 5] || "Give me one specific, actionable career task I can complete in the next 60 minutes to strengthen my professional position."}
+          promptText={buildStreakActions(cardData)[(Math.max(1, streak) - 1) % 5] || "Give me one specific, actionable career task I can complete in the next 60 minutes to strengthen my professional position."}
         />
       )}
 
