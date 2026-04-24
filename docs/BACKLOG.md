@@ -38,14 +38,13 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
 
 ## Open — P1
 
-### BL-016 — Razorpay order-creation is client-side (price-manipulation risk)
-- **Discovered**: original audit (`00_CURRENT_REALITY.md` item 4).
-- **Files**: `src/components/ProUpgradeModal.tsx`, `supabase/functions/activate-subscription/index.ts`.
-- **Fix**: server-side `create-razorpay-order` edge function that fixes `amount` from `TIER_PRICES`. Client never passes amount.
-- **Why P1 not P0**: Pro gating is currently bypassed (BL-001 wontfix-for-now), so price tampering is moot until `ENFORCE_PRO` flips on. Must be resolved **before** flipping.
-- **Status**: open.
+*(none — BL-016 resolved 2026-04-24.)*
 
 ## Resolved — P1
+
+### BL-016 — Razorpay order-creation is client-side (price-manipulation risk) → done
+- **Resolution (2026-04-24)**: `supabase/functions/create-razorpay-order/index.ts` is in place. Server fixes `amount` from `TIER_PRICES` (`pro_monthly: ₹300`, `pro: ₹1,999`) — client never passes amount. `ProUpgradeModal.tsx` calls `createServerOrder()` then opens Razorpay checkout with the server-issued `order_id`. A pending `payments` row is inserted server-side; `activate-subscription` verifies the signature before flipping the user to Pro. Pre-condition for flipping `ENFORCE_PRO=true` is now satisfied.
+- **Status**: done.
 
 ### BL-010 — `generate-weekly-brief` has no cron → done
 - **Resolution (2026-04-24)**: cron wired in migration `20260416042427_activate_retention_cron_jobs.sql` (Sun midnight IST).
