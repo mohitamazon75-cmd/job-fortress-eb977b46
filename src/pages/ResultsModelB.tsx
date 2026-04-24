@@ -199,7 +199,8 @@ export default function ResultsModelB() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [journeyStorageKey]);
 
-  // Log helper
+  // Log helper — cardData is in deps (C1 #5) so behavioural signals carry the
+  // role/industry/score context once analysis lands, instead of always nulls.
   const logEvent = useCallback(async (event_type: string, metadata?: Record<string, unknown>) => {
     // Also log to user_action_signals for the behavioral flywheel
     const validActionTypes = ['card_viewed','job_clicked','skill_selected','vocab_copied',
@@ -223,7 +224,7 @@ export default function ResultsModelB() {
         body: { analysis_id: analysisId, user_id: userId, event_type, metadata },
       });
     } catch {}
-  }, [analysisId, userId]);
+  }, [analysisId, userId, cardData]);
 
   // Fetch data with polling support
   const fetchAnalysis = useCallback(async () => {
