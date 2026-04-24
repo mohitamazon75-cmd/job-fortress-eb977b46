@@ -65,21 +65,16 @@ export default function AuthGuard({ children, fallback, requiredRole }: AuthGuar
 
   const checkUserRole = async (userId: string) => {
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('subscription_tier')
-        .eq('id', userId)
-        .single();
+      // SECURITY FIX: Look up the actual role from user_roles (not subscription tier).
+      // The server (admin-dashboard edge function) uses has_role(); the client must match.
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', requiredRole as 'admin' | 'user')
+        .maybeSingle();
 
-      if (error || !profile) {
-        setIsAuthorized(false);
-        navigate('/', { replace: true });
-        return;
-      }
-
-      // Map subscription_tier to role: 'pro'/'enterprise' tier = admin access
-      const effectiveRole = (profile as { subscription_tier?: string }).subscription_tier === 'pro' || (profile as { subscription_tier?: string }).subscription_tier === 'enterprise' ? 'admin' : 'user';
-      if (requiredRole && effectiveRole !== requiredRole) {
+      if (error || !data) {
         setIsAuthorized(false);
         navigate('/', { replace: true });
         return;
