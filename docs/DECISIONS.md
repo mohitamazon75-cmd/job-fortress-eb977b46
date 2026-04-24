@@ -33,3 +33,13 @@
 **Owner**: name.
 **Related**: BL-###, invariant IDs, file paths.
 ```
+
+---
+
+## Assessments RLS — re-audit 2026-04-24
+
+External audit flagged USING (true) on assessments (migration
+20260304053357). Investigation confirmed this was already replaced by
+the scans-join policy in migration 20260304054450 ~12h later. No
+action taken. Reconsider adding a direct user_id column if any
+frontend starts querying assessments directly.
