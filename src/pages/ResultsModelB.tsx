@@ -123,18 +123,43 @@ export default function ResultsModelB() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentCard, setCurrentCard] = useState(0);
-  const [visitedCards, setVisitedCards] = useState<Set<number>>(new Set([0]));
+  // B1 (#4): Journey state is persisted per-scan in localStorage so a refresh
+  // does not reset progress or re-trigger the +6 completion bonus.
+  const journeyStorageKey = analysisId ? `jb_journey_${analysisId}` : null;
+  const [visitedCards, setVisitedCards] = useState<Set<number>>(() => {
+    try {
+      if (!journeyStorageKey) return new Set([0]);
+      const raw = localStorage.getItem(journeyStorageKey);
+      if (!raw) return new Set([0]);
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed?.visited)) return new Set<number>(parsed.visited);
+    } catch {}
+    return new Set([0]);
+  });
   const [actionModal, setActionModal] = useState<{ title: string; promptText: string } | null>(null);
   const [loadingMsg, setLoadingMsg] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [showSavePrompt, setShowSavePrompt] = useState(false); // show for any non-email user
-  const [journeyDone, setJourneyDone] = useState(false);
+  const [journeyDone, setJourneyDone] = useState(() => {
+    try {
+      if (!journeyStorageKey) return false;
+      const raw = localStorage.getItem(journeyStorageKey);
+      if (!raw) return false;
+      return Boolean(JSON.parse(raw)?.done);
+    } catch { return false; }
+  });
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
   // Feature 3: Weekly intel for the Tools tab Judo section — fetched lazily when Tools tab opens.
   const [weeklyIntel, setWeeklyIntel] = useState<WeeklyIntelData | null>(null);
   const [weeklyIntelLoading, setWeeklyIntelLoading] = useState(false);
-  const [displayScore, setDisplayScore] = useState(0);
+  // B5 (#11): displayScore is derived from the canonical jobbachao_score plus
+  // the journey-completion bonus. Avoids drift, survives refresh correctly,
+  // and removes 4 setDisplayScore call sites that could fall out of sync.
+  const displayScore = useMemo(() => {
+    const base = cardData?.jobbachao_score || 0;
+    return journeyDone ? base + 6 : base;
+  }, [cardData, journeyDone]);
 
   const streak = useStreak();
   const [streakModal, setStreakModal] = useState(false);
@@ -239,7 +264,7 @@ export default function ResultsModelB() {
       if (data.data?.card_data) {
         const cd = data.data.card_data;
         setCardData(cd);
-        setDisplayScore(cd?.jobbachao_score || 0);
+        // displayScore is derived from cardData (B5) — no separate state to set.
         setLoading(false);
         return;
       }
@@ -291,7 +316,7 @@ export default function ResultsModelB() {
         if (data?.data?.card_data) {
           const cd = data.data.card_data;
           setCardData(cd);
-          setDisplayScore(cd?.jobbachao_score || 0);
+          // displayScore is derived (B5).
           setLoading(false);
           return;
         }
@@ -310,7 +335,7 @@ export default function ResultsModelB() {
           if (retrigger?.data?.card_data) {
             const cd = retrigger.data.card_data;
             setCardData(cd);
-            setDisplayScore(cd?.jobbachao_score || 0);
+            // displayScore is derived (B5).
             setLoading(false);
             return;
           }
@@ -376,27 +401,49 @@ export default function ResultsModelB() {
 
     // Feature 3: Fetch live Tavily learning resources when user first opens the Tools tab.
     // Fires once (guarded by weeklyIntelLoading + weeklyIntel), lazy, 30-min cached.
+    // B3 (#12): one retry on failure before giving up silently.
     if (index === 8 && !weeklyIntelLoading && !weeklyIntel && cardData?.scan_judo?.recommended_tool) {
       setWeeklyIntelLoading(true);
-      supabase.functions.invoke("fetch-weekly-intel", {
-        body: {
-          role: cardData.user?.current_title || "",
-          judo_tool: (cardData.scan_judo as any)?.recommended_tool || "",
-          industry: cardData.user?.industry || "",
-          scanId: analysisId,
-        },
-      }).then(({ data }) => {
-        if (data?.resources?.length || data?.summary) setWeeklyIntel(data);
-      }).catch(() => {}).finally(() => setWeeklyIntelLoading(false));
+      const body = {
+        role: cardData.user?.current_title || "",
+        judo_tool: (cardData.scan_judo as any)?.recommended_tool || "",
+        industry: cardData.user?.industry || "",
+        scanId: analysisId,
+      };
+      const tryFetch = (attempt: number): Promise<void> =>
+        supabase.functions.invoke("fetch-weekly-intel", { body })
+          .then(({ data, error }) => {
+            if (error) throw error;
+            if (data?.resources?.length || data?.summary) setWeeklyIntel(data);
+          })
+          .catch(() => {
+            if (attempt < 1 && isMountedRef.current) {
+              return new Promise<void>(resolve => setTimeout(resolve, 1500)).then(() => tryFetch(attempt + 1));
+            }
+          });
+      tryFetch(0).finally(() => { if (isMountedRef.current) setWeeklyIntelLoading(false); });
     }
   }, [logEvent, weeklyIntelLoading, weeklyIntel, cardData, analysisId]);
 
-  // Journey complete detection — only fires when user has explored ALL 9 tabs (0..8)
+  // B1 (#4): Persist visited tabs + completion every time they change so refresh
+  // restores progress instead of resetting it.
+  useEffect(() => {
+    if (!journeyStorageKey) return;
+    try {
+      localStorage.setItem(journeyStorageKey, JSON.stringify({
+        visited: Array.from(visitedCards),
+        done: journeyDone,
+      }));
+    } catch {}
+  }, [journeyStorageKey, visitedCards, journeyDone]);
+
+  // Journey complete detection — only fires when user has explored ALL 9 tabs (0..8).
+  // Idempotent: bonus is only applied if not already persisted as done.
   useEffect(() => {
     if (journeyDone) return;
     if (visitedCards.size >= TOTAL_JOURNEY_TABS && cardData) {
       setJourneyDone(true);
-      setDisplayScore(prev => prev + 6);
+      // displayScore picks up the +6 automatically via the journeyDone useMemo (B5).
       toast.success("Journey complete ✓", { duration: 2800 });
       logEvent("journey_complete");
     }
@@ -575,11 +622,13 @@ export default function ResultsModelB() {
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink4)", marginBottom: 24, minHeight: 20 }}>
               {LOADING_MESSAGES[loadingMsg]}
             </div>
-            {/* Progress bar */}
+            {/* Progress bar — animation duration matches MAX_POLLS (40 × 3s = 120s)
+                so the bar never visually "completes" while polling is still active.
+                B2 (#10): was 45s, which finished long before the backend on cold-start. */}
             <div style={{ maxWidth: 320, margin: "0 auto", height: 4, background: "var(--mb-rule)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: 4, background: "var(--mb-navy)", borderRadius: 2, width: "0%", animation: "mbLoadBar 45s cubic-bezier(0.1, 0.6, 0.3, 1) forwards" }} />
+              <div style={{ height: 4, background: "var(--mb-navy)", borderRadius: 2, width: "0%", animation: "mbLoadBar 90s cubic-bezier(0.1, 0.6, 0.3, 1) forwards" }} />
             </div>
-            <style>{`@keyframes mbLoadBar { from { width: 0% } 50% { width: 65% } 80% { width: 85% } to { width: 96% } }`}</style>
+            <style>{`@keyframes mbLoadBar { from { width: 0% } 50% { width: 60% } 80% { width: 82% } to { width: 95% } }`}</style>
           </div>
         )}
 
@@ -679,9 +728,17 @@ export default function ResultsModelB() {
             {currentCard === 8 && (() => {
               // Build a minimal ScanReport-shaped object from cardData so the
               // existing tool components (built for ScanReport) work without changes.
+              // B4 (#24): country and seniority_tier now derived from cardData
+              // instead of hardcoded "IN" / "PROFESSIONAL".
+              const u = cardData.user || {};
+              const detectedCountry = (u.country || cardData.country || "IN").toString().toUpperCase();
+              const yearsNum = parseInt(String(u.years_experience || "").replace(/[^\d]/g, ""), 10);
+              const detectedSeniority = !isNaN(yearsNum)
+                ? (yearsNum >= 15 ? "EXECUTIVE" : yearsNum >= 8 ? "SENIOR" : yearsNum >= 3 ? "PROFESSIONAL" : "EARLY")
+                : "PROFESSIONAL";
               const syntheticReport = {
-                role: cardData.user?.current_title || "Professional",
-                industry: cardData.user?.industry || "Technology",
+                role: u.current_title || "Professional",
+                industry: u.industry || "Technology",
                 determinism_index: cardData.risk_score || 55,
                 moat_score: cardData.shield_score || 50,
                 all_skills: (cardData.card3_shield?.skills || []).map((s: any) => s.name),
@@ -689,9 +746,9 @@ export default function ResultsModelB() {
                 execution_skills_dead: (cardData.card3_shield?.skills || []).filter((s: any) => s.level === "critical-gap").map((s: any) => s.name),
                 free_advice_1: cardData.card6_blindspots?.blind_spots?.[0]?.body || "",
                 free_advice_2: cardData.card6_blindspots?.blind_spots?.[1]?.body || "",
-                seniority_tier: "PROFESSIONAL" as const,
+                seniority_tier: detectedSeniority as any,
                 survivability: { score: 100 - (cardData.risk_score || 55), breakdown: { experience_bonus: 0, strategic_bonus: 0, geo_bonus: 0, adaptability_bonus: 0 }, primary_vulnerability: cardData.card6_blindspots?.blind_spots?.[0]?.title || "" },
-                country: "IN",
+                country: detectedCountry,
               } as any;
 
               return (
