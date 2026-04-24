@@ -86,23 +86,29 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
 ### BL-021 — ESLint rule for "no inline <style> or @keyframes in JSX"
 - **Invariant**: INV-F05.
 
-### BL-022 — Grep guard for `TESTING_BYPASS = true` in CI
-- **Invariant**: INV-X01.
-- **Fix**: GitHub Action that fails build if grep matches.
+### BL-022 — Grep guard for `TESTING_BYPASS = true` in CI → done
+- **Resolution (2026-04-24)**: `scripts/guard-no-bypass.sh` greps `src/` and `supabase/functions/` for `TESTING_BYPASS = true` and the historical "DEV MODE" payment shortcut. Exits non-zero on any match. Run via `bash scripts/guard-no-bypass.sh` in CI/pre-commit. This permanently vaccinates against Hazard D regressions.
+- **Status**: done.
 
 ### BL-023 — God files frozen-but-untested
 - **Files**: `process-scan/index.ts` (1136 lines), `scan-engine.ts` (841), `SideHustleGenerator.tsx` (798), `VerdictReveal.tsx` (492).
 - **Fix**: add at least one snapshot test per file before any future edit.
+- **Decision (2026-04-24)**: deferred — snapshot tests on 800-line components produce unreadable diffs and false confidence. CLAUDE.md §1 Hazard F ("do not refactor unless explicitly asked") is the real safety net.
 
 ### BL-024 — `package-lock.json` and `bun.lock` both present
 - **Files**: repo root.
 - **Fix**: confirm Lovable build command, remove the unused one.
+- **Decision (2026-04-24)**: deferred — both lockfiles are read-only in this environment. Resolve via Lovable platform when the build command is documented.
 
 ## Open — P3
 
-### BL-030 — React Router v7 future-flag warnings in test output
-- **Files**: `src/App.tsx` router config.
-- **Fix**: opt into `v7_startTransition` and `v7_relativeSplatPath`.
+*(empty — BL-030 resolved 2026-04-24.)*
+
+## Resolved — P3
+
+### BL-030 — React Router v7 future-flag warnings in test output → done
+- **Resolution (2026-04-24)**: `src/App.tsx` opts into `v7_startTransition` and `v7_relativeSplatPath`. Test output is now warning-free.
+- **Status**: done.
 
 ---
 
