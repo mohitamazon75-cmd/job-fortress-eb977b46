@@ -74,6 +74,12 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
   const execRoute = Boolean(liveJobsQuery.data?.executive_route);
   const jobs = liveJobs.length > 0 ? liveJobs.slice(0, 6) : !execRoute && Array.isArray(d?.job_matches) ? d.job_matches.slice(0, 5) : [];
   const searchLinks = buildBoardLinks(role || jobs[0]?.role || "jobs", city, liveJobsQuery.data?.search_urls);
+  // Count how many cards resolve to a generic search/listing page (vs a specific posting)
+  // so we can show one honest disclaimer above the list instead of leaving the user to infer it.
+  const genericCount = useMemo(
+    () => jobs.filter((j: any) => classifyJobUrl(j.url || j.search_url).kind === "generic").length,
+    [jobs],
+  );
   const handleRefresh = () => { setForceRefresh((n) => n + 1); };
 
   const cols: { key: keyof KanbanState; label: string }[] = [
@@ -158,6 +164,13 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
         {liveJobsQuery.isError && (
           <div style={{ background: "var(--mb-red-tint)", border: "1.5px solid rgba(174,40,40,0.18)", borderRadius: 14, padding: 16, marginBottom: 18, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-red)", fontWeight: 700 }}>
             Live feed error. You can still use the direct board links below while I fall back to saved results.
+          </div>
+        )}
+
+        {!execRoute && genericCount > 0 && jobs.length > 0 && (
+          <div style={{ background: "var(--mb-amber-tint)", border: "1.5px solid rgba(180,120,20,0.22)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", lineHeight: 1.55 }}>
+            <strong style={{ color: "var(--mb-amber)", fontWeight: 800 }}>Heads up:</strong>{" "}
+            {genericCount} of {jobs.length} cards below couldn't be deep-linked to a single posting — those open a targeted board search instead of one job. Look for the <strong>Search board</strong> tag.
           </div>
         )}
 
