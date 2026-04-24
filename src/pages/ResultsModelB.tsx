@@ -165,6 +165,7 @@ export default function ResultsModelB() {
   // Polling lifecycle refs — guard against unmount leaks and double-chains (P0 #1, #2, #19)
   const isMountedRef = useRef(true);
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intelRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollGenerationRef = useRef(0); // increments on each fetchAnalysis to invalidate prior chains
 
   useEffect(() => {
