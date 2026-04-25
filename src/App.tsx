@@ -104,6 +104,7 @@ function useStaleSessionRecovery() {
 
 const App = () => {
   useStaleSessionRecovery();
+  useGlobalErrorHandlers();
 
   return (
     <QueryClientProvider client={queryClient}>
