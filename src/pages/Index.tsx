@@ -47,6 +47,7 @@ const MatrixLoading = lazyWithRetry(() => import('@/components/MatrixLoading'));
 const SevenCardReveal = lazyWithRetry(() => import('@/components/SevenCardReveal'));
 const AIDossierReveal = lazyWithRetry(() => import('@/components/AIDossierReveal'));
 const MoneyShotCard = lazyWithRetry(() => import('@/components/MoneyShotCard'));
+const CrisisSupport = lazyWithRetry(() => import('@/components/CrisisSupport'));
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport, createScan, uploadResume, triggerProcessScan, subscribeScanStatus } from '@/lib/scan-engine';
 import { createClient } from '@supabase/supabase-js';
@@ -812,7 +813,25 @@ const Index = () => {
         </div>
       ))}
       {phase === 'money-shot' && (scanReport ? (
-        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}><MoneyShotCard report={scanReport} onContinue={handleMoneyShotComplete} scanId={scanId} /></Suspense>
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}>
+          <>
+            <MoneyShotCard report={scanReport} onContinue={handleMoneyShotComplete} scanId={scanId} />
+            {/* Non-blocking crisis support strip — Indian mental-health helplines.
+                Rendered after the high-impact Replacement Invoice so users who feel
+                overwhelmed have a calm, verified off-ramp. Never gates the flow. */}
+            <CrisisSupport />
+            {/* Explicit skip — MoneyShot is no longer mandatory. Users who don't want
+                the salary kill-shot can jump straight to the constructive defense plan. */}
+            <div className="max-w-2xl mx-auto px-4 pb-12 text-center">
+              <button
+                onClick={handleMoneyShotComplete}
+                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+              >
+                Skip — take me to my action plan
+              </button>
+            </div>
+          </>
+        </Suspense>
       ) : (
         <div className="min-h-screen bg-background flex items-center justify-center">
           <p className="text-muted-foreground">Loading results...</p>
