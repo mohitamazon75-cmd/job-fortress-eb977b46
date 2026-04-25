@@ -130,6 +130,16 @@ Discovered 2026-04-24 during prompt-injection defense work.
 - Priority: P3 (noise only, no user impact).
 - **Status**: open.
 
+### BL-032 — Pre-existing lint baseline is red (~828 errors)
+- Discovered 2026-04-25 during post-revert verification.
+- 828 errors, mostly `@typescript-eslint/no-explicit-any` across the codebase. One `@typescript-eslint/no-require-imports` in `tailwind.config.ts`.
+- Not introduced by recent fixes (verified: none of the reverted files appear in the error list). Baseline has been red throughout the audit/fix sequence.
+- Past prompt summaries phrased outcomes as "no new errors in touched files" — accurate — but a few summaries called it "lint passes" loosely.
+- Going forward: lint convention is "no new errors in touched files" verified by diffing pre/post error counts on changed paths, not "`bun run lint` exits 0".
+- Fix direction: incremental cleanup tied to module owners; don't do as a single sweep (would touch hundreds of files and create enormous review surface).
+- Priority: P3 (style debt, no runtime impact).
+- **Status**: open.
+
 ## Resolved — P3
 
 ### BL-030 — React Router v7 future-flag warnings in test output → done
