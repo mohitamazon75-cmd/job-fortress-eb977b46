@@ -111,9 +111,9 @@ Return ONLY valid JSON:
     } catch (e) {
       console.warn("[career-obituary] Tool catalog fetch failed (non-fatal):", e);
     }
-    const language = useHindi ? "hi" : "en";
+    const langCode = useHindi ? "hi" : "en";
     console.log(
-      `[catalog-wiring] obituary ${language} prompt: ` +
+      `[catalog-wiring] obituary ${langCode} prompt: ` +
       `placeholder remaining = ${substitutedPrompt.includes("{{TOOL_CATALOG}}")}, ` +
       `length delta = ${substitutedPrompt.length - originalPrompt.length}`,
     );
