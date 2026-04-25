@@ -72,20 +72,44 @@ const PHRASE_RULES: ScrubRule[] = [
 //
 // We deliberately require leading TitleCase so we don't grab
 // arbitrary words like "the v2 release" or "iPhone 15 Pro".
+// Curated stems of known LLM/AI-tool families. Bare numeric suffix
+// matching is restricted to these to avoid mauling phrases like
+// "Tier 1", "May 2025", "Top 10". Add stems sparingly.
+const TOOL_STEMS = [
+  "GPT",
+  "Claude",
+  "Gemini",
+  "Llama",
+  "Mistral",
+  "Sora",
+  "Cursor",
+  "Midjourney",
+  "Devin",
+  "Copilot",
+  "Firefly",
+  "DALL-E",
+  "Stable Diffusion",
+  "Runway",
+  "Pika",
+  "Suno",
+];
+const STEM_ALT = TOOL_STEMS.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+
 const TOOL_NAME_PATTERNS: { pattern: RegExp; label: string }[] = [
-  // "Midjourney v7", "Cursor v3", "Gen-4" — version-suffix style
+  // "Midjourney v7", "Cursor v3", "Foo v2" — version-suffix style.
+  // Leading TitleCase token bound; "v" + digit suffix.
   {
     pattern: /\b([A-Z][a-zA-Z0-9]+(?:[-\s][A-Z][a-zA-Z0-9]+)?)\s+v\d+(?:\.\d+)?\b/g,
     label: "tool_version_suffix_v",
   },
-  // "Sora 2", "GPT 5", "Claude 4" — bare numeric suffix
+  // "Sora 2", "GPT 5", "Claude 4" — bare numeric suffix, restricted to known stems
   {
-    pattern: /\b([A-Z][a-zA-Z]+)\s+(\d+(?:\.\d+)?)\b/g,
+    pattern: new RegExp(`\\b(${STEM_ALT})\\s+(\\d+(?:\\.\\d+)?)(?!\\s*(?:%|years?|months?|days?|hours?))\\b`, "g"),
     label: "tool_numeric_suffix",
   },
-  // "GPT-5", "Gen-4", "Claude-4" — hyphenated numeric
+  // "GPT-5", "Gen-4", "Claude-4" — hyphenated numeric (any TitleCase stem)
   {
-    pattern: /\b([A-Z][a-zA-Z]+)-(\d+(?:\.\d+)?)\b/g,
+    pattern: /\b(?:GPT|Claude|Gemini|Llama|Mistral|Sora|Gen|Cursor|Midjourney)-(\d+(?:\.\d+)?)\b/g,
     label: "tool_hyphen_numeric",
   },
   // "Notion AI", "Copilot Pro", "Workspace AI" — capability suffix
