@@ -87,17 +87,15 @@ export function skillPresent(skillNorm: string, haystackNorm: string): boolean {
   // Strategy 3: synonyms. Look up by the normalized skill — but the map
   // keys may contain punctuation (e.g. "node.js", "a/b testing", "ci/cd"),
   // so try both the normalized form and a punctuation-preserving lookup.
-  // NOTE: synonym variants check DIRECT substring only — no token-aware
-  // fallback. Synonym variants composed of common single-word tokens
-  // (e.g. "team management", "performance marketing") fire too easily on
-  // token-aware match against long JDs where the tokens appear independently.
-  // The canonical user-supplied skill keeps token-aware (Strategy 2) because
-  // the user wrote it themselves and accepts the looser matching.
   const variants = SKILL_SYNONYMS[skillNorm] ?? lookupSynonymsLoose(skillNorm);
   if (variants) {
     for (const variant of variants) {
       const vNorm = normalizeText(variant);
       if (vNorm.length >= 3 && haystackNorm.includes(vNorm)) return true;
+      const vTokens = vNorm.split(" ").filter((t) => t.length >= 3);
+      if (vTokens.length > 0 && vTokens.every((t) => haystackNorm.includes(t))) {
+        return true;
+      }
     }
   }
 
