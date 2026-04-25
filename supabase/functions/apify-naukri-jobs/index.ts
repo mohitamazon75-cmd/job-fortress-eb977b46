@@ -371,24 +371,29 @@ function buildWhyFit(opts: {
   return parts.join(" · ");
 }
 
-function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: string[]) {
+function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: string[], userExperienceRaw: string) {
   // Use the COMPRESSED role for anchor extraction. A 7-word job title shouldn't
   // require 7 anchor hits — that's why the gate was over-filtering and users
   // were seeing 0–2 jobs out of 50 scraped.
   const compactRole = compressRoleForSearch(role);
   const anchors = getAnchorTokens(compactRole);
   const userSkillsCount = skills.filter((s) => s && s.trim().length > 1).length;
+  const userYears = parseUserYears(userExperienceRaw);
 
   const scored = items
     .filter((item) => item.jdURL && item.title)
     .map((item) => {
       const s = scoreJobAgainstUser(item, compactRole, skills);
       const days = parseDays(item.footerPlaceholderLabel);
+      const expBand = item.experienceText || item.experience || null;
+      const parsedBand = parseListingExperienceBand(expBand);
+      const expPenalty = experienceGapPenalty(userYears, parsedBand);
       const matchPct = toMatchPct({
         anchorInTitle: s.anchorInTitle,
         sharedSkillsCount: s.sharedSkills.length,
         userSkillsCount,
         recencyDays: days,
+        experiencePenalty: expPenalty,
       });
 
       const tags = (item.tagsAndSkills || "")
@@ -397,7 +402,6 @@ function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: st
         .filter(Boolean)
         .slice(0, 6);
 
-      const expBand = item.experienceText || item.experience || null;
       const postedLabel = item.footerPlaceholderLabel || null;
       const whyFit = buildWhyFit({
         sharedSkills: s.sharedSkills,
@@ -406,6 +410,8 @@ function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: st
         postedLabel,
         anchorTokens: anchors,
         anchorInTitle: s.anchorInTitle,
+        userYears,
+        listingBand: parsedBand,
       });
 
       return {
@@ -428,6 +434,16 @@ function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: st
         anchor_in_body: s.anchorInBody,
         match_pct: matchPct,
         match_label: toMatchLabel(matchPct),
+        // Surface a "weak signal" hint to the UI so the card can be de-emphasised.
+        // Trigger: low score OR significant experience gap. Either reason is enough.
+        weak_signal: matchPct < 60 || expPenalty <= -15,
+        weak_signal_reason: matchPct < 60
+          ? "Low overall match — verify before applying"
+          : expPenalty <= -15
+            ? (parsedBand && userYears != null && parsedBand.max != null && parsedBand.max * 2 <= userYears
+                ? `Listing targets ${parsedBand.min}-${parsedBand.max} yrs — well below your ${userYears} yrs`
+                : `Listing seniority is far from yours — verify before applying`)
+            : null,
         why_fit: whyFit,
         raw_score: s.score,
       };
