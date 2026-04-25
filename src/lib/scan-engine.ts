@@ -462,9 +462,15 @@ export async function createScan(params: {
 }
 
 export async function uploadResume(file: File, scanId: string): Promise<string> {
-  const { data: { session } } = await supabase.auth.getSession();
+  // Resolve a fresh access token, with one retry if the session is mid-refresh
+  // (common right after Google login when an old token is being rotated).
+  let session = (await supabase.auth.getSession()).data.session;
   if (!session?.access_token) {
-    throw new Error('Your session expired before the resume upload completed. Please try again.');
+    await new Promise((r) => setTimeout(r, 600));
+    session = (await supabase.auth.getSession()).data.session;
+  }
+  if (!session?.access_token) {
+    throw new Error('Your session expired before the resume upload completed. Please sign in again and retry.');
   }
 
   if (isAnonymousSession(session)) {
@@ -475,17 +481,32 @@ export async function uploadResume(file: File, scanId: string): Promise<string> 
   formData.append('scanId', scanId);
   formData.append('file', file, file.name || 'resume.pdf');
 
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/upload-resume`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: formData,
-  });
+  // One automatic retry on transient network/5xx — pre-PMF user testing tolerates a 1.2s delay
+  // far better than a hard failure that orphans the scan row.
+  let response: Response | null = null;
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      response = await fetch(`${SUPABASE_URL}/functions/v1/upload-resume`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
+      });
+      if (response.ok) break;
+      if (response.status < 500 && response.status !== 0) break; // 4xx — don't retry
+    } catch (err) {
+      lastErr = err;
+    }
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 800));
+  }
+
+  if (!response) {
+    throw new Error(lastErr instanceof Error ? lastErr.message : 'Network error during resume upload');
+  }
 
   const payload = await response.json().catch(() => null) as { filePath?: string; error?: string } | null;
   if (!response.ok || !payload?.filePath) {
-    throw new Error(payload?.error || 'Resume upload failed');
+    throw new Error(payload?.error || `Resume upload failed (HTTP ${response.status})`);
   }
 
   return payload.filePath;
