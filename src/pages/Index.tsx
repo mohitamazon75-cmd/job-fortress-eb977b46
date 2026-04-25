@@ -765,12 +765,14 @@ const Index = () => {
           industry={industry}
           yearsExperience={yearsExperience}
           metroTier={metroTier}
+          monthlyCTC={userReportedCTC}
           hasLinkedIn={!!linkedinUrl}
           hasResume={!!resumeFileRef.current}
           onSelectCountry={handleSelectCountry}
           onSelectIndustry={handleSelectIndustry}
           onSelectExperience={handleSelectExperience}
           onSelectMetro={handleSelectMetro}
+          onSubmitCTC={handleSubmitCTC}
           onSelectSkills={handleSelectSkills}
           onSkipSkills={handleSkipSkills}
           onBack={handleBack}
