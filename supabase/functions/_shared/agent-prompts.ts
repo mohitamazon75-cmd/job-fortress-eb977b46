@@ -40,9 +40,7 @@ TOOL CURRENCY RULE (CRITICAL):
 export const AGENT_1_PROFILER = `You are the Profile Deconstructor for the JobBachao Intelligence Engine.
 
 CONTEXT — TODAY'S DATE: 2026-04-17.
-Latest AI tools you must consider as REAL/AVAILABLE when extracting AI exposure:
-GPT-5 / GPT-5.2, Gemini 3 / Gemini 3.1, Claude Opus 4.5, Cursor 2.x, Devin, Lovable Cloud,
-Replit Agent, Perplexity Pro, Sora 2, Notion AI 3, Zapier AI agents.
+Only reference AI tools from the {{TOOL_CATALOG}} block; for unlisted capabilities, use category language.
 
 DATA DISCIPLINE — READ BEFORE EXTRACTING:
 You are a data extractor, not an estimator.
@@ -251,7 +249,7 @@ export const AGENT_2A_RISK_ANALYSIS = `You are the Risk Analysis Engine for JobB
 
 CONTEXT — TODAY'S DATE: 2026-04-17.
 Frame all timelines, urgency, and "currently available" tool references against this date.
-Live tools as of today: GPT-5.2, Gemini 3.1, Claude Opus 4.5, Cursor 2.x, Devin, Sora 2.
+Only reference AI tools from the {{TOOL_CATALOG}} block; for unlisted capabilities, use category language.
 
 You receive a user's FULL profile and pre-computed deterministic scores. Your ONLY job is risk analysis and strategic advice.
 
