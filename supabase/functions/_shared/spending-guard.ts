@@ -1,11 +1,29 @@
 // ═══════════════════════════════════════════════════════════════
-// Spending Guard v2 — with in-memory cache to avoid DB hit on
-// every single edge function call. Cache TTL = 30s.
+// Spending Guard v3 — daily LLM cost ceiling.
+//
+// Two-layer estimate, evaluated each call:
+//   1) ACTUAL cost — sum(estimated_cost_usd) from token_usage_log today.
+//      This is the ground truth because it reflects real per-call usage.
+//   2) APPROX cost — sum(call_count × FUNCTION_COST_WEIGHT) from
+//      daily_usage_stats today. Used as a fallback / belt-and-suspenders
+//      when token_usage_log writes lag.
+//
+// We take the MAX of the two as the budget signal — fail loudly rather
+// than silently overspending.
+//
+// At-budget behavior:
+//   - Non-critical functions return allowed=false (503) — hard stop.
+//   - "process-scan" is degraded (allowed=true, degraded=true) so existing
+//     in-flight scans can complete on cheaper Flash models.
+//   - HARD_KILL: above 1.5× budget, even process-scan is blocked.
 // ═══════════════════════════════════════════════════════════════
 
 import { createAdminClient } from "./supabase-client.ts";
+import { DAILY_COST_CAP_USD } from "./constants.ts";
 
-// Cost weights per function (approximate $/call)
+// Approximate cost-per-call weight (used only when token_usage_log
+// hasn't been written yet). Keep loose — actual costs from
+// token_usage_log dominate once available.
 const FUNCTION_COST_WEIGHTS: Record<string, number> = {
   "process-scan": 0.50,
   "chat-report": 0.05,
@@ -33,7 +51,10 @@ const FUNCTION_COST_WEIGHTS: Record<string, number> = {
   "market-radar": 0.15,
 };
 
-const DAILY_BUDGET_USD = 2500; // Viral-scale daily limit
+// Single source of truth — pulled from constants.ts
+const DAILY_BUDGET_USD = DAILY_COST_CAP_USD;
+// Hard kill above 1.5× budget — even critical paths are blocked.
+const HARD_KILL_MULTIPLIER = 1.5;
 
 // ─── In-memory cache ────────────────────────────────────────
 // Avoids a DB round-trip on every single function call.
