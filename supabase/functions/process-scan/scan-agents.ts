@@ -27,6 +27,7 @@ import { validateAgentOutput, Agent2ASchema, Agent2BSchema } from "../_shared/zo
 import { getPreviousScore } from "../_shared/score-history.ts";
 import { getKG } from "../_shared/riskiq-knowledge-graph.ts";
 import { estimateMonthlySalary, calculateGeoArbitrage, type MarketSignalRow } from "../_shared/deterministic-engine.ts";
+import { getCurrentToolCatalog, formatCatalog } from "../_shared/tool-catalog.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
@@ -129,6 +130,18 @@ export async function orchestrateAgents(
     companyHealthResult, skillDemandResults, kgContext, locale, scanCountry,
     hasTimeBudget,
   } = input;
+
+  // Fetch live tool catalog once for prompt injection (10-min cached).
+  const { createClient: _createClientForCatalog } = await import("https://esm.sh/@supabase/supabase-js@2");
+  const _catalogClient = _createClientForCatalog(supabaseUrl, supabaseServiceRoleKey);
+  const toolCatalog = await getCurrentToolCatalog(_catalogClient);
+  const catalogBlock = formatCatalog(toolCatalog);
+  const sub = (p: string) => p.replaceAll("{{TOOL_CATALOG}}", catalogBlock);
+  const PROMPT_AGENT_2A = sub(AGENT_2A_RISK_ANALYSIS);
+  const PROMPT_AGENT_2B = sub(AGENT_2B_ACTION_PLAN);
+  const PROMPT_AGENT_2C = sub(AGENT_2C_PIVOT_MAPPING);
+  const PROMPT_JUDO = sub(JUDO_STRATEGY_SYSTEM_PROMPT);
+  const PROMPT_DIET = sub(WEEKLY_DIET_SYSTEM_PROMPT);
 
   const seniorityTier = agent1?.seniority_tier || "PROFESSIONAL";
   const expYears = profileInput.experience_years ?? 5;
