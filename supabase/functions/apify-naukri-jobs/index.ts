@@ -2,6 +2,7 @@ import { z } from "https://esm.sh/zod@3.25.76";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
+import { SKILL_SYNONYMS } from "../_shared/skill-synonyms.ts";
 
 const APIFY_ACTOR_ID = "alpcnRV9YI9lYVPWk";
 const CACHE_TTL_HOURS = 6;
@@ -51,6 +52,68 @@ type ApifyJob = {
 
 function normalizeText(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Returns true if the user skill is "present" in the haystack.
+ * Tries three strategies in order:
+ *   1. Direct contiguous substring (existing behavior)
+ *   2. All sub-tokens of the skill (≥3 chars each) appear somewhere
+ *      in haystack (handles "Node.js" → "node js" → matches "node"
+ *      and "js" anywhere)
+ *   3. Any synonym from SKILL_SYNONYMS[skill] matches via 1 or 2
+ * Tokens shorter than 3 chars are excluded to avoid false positives
+ * on fragments like "ai", "ml", "go" that smuggle into unrelated tags.
+ *
+ * Inputs are expected pre-normalized via normalizeText (lowercase,
+ * alphanumerics + single spaces). The synonym map key is the user's
+ * raw skill normalized with the SAME function — we re-derive it here
+ * for callers that pass normalized input directly.
+ */
+export function skillPresent(skillNorm: string, haystackNorm: string): boolean {
+  if (!skillNorm || !haystackNorm) return false;
+
+  // Strategy 1: direct contiguous substring (only meaningful if skill
+  // itself is ≥3 chars — shorter skills are noise-prone, fall through).
+  if (skillNorm.length >= 3 && haystackNorm.includes(skillNorm)) return true;
+
+  // Strategy 2: token-aware. Split the skill on whitespace, keep tokens
+  // ≥3 chars, require ALL of them to appear somewhere in haystack.
+  const tokens = skillNorm.split(" ").filter((t) => t.length >= 3);
+  if (tokens.length > 0 && tokens.every((t) => haystackNorm.includes(t))) {
+    return true;
+  }
+
+  // Strategy 3: synonyms. Look up by the normalized skill — but the map
+  // keys may contain punctuation (e.g. "node.js", "a/b testing", "ci/cd"),
+  // so try both the normalized form and a punctuation-preserving lookup.
+  const variants = SKILL_SYNONYMS[skillNorm] ?? lookupSynonymsLoose(skillNorm);
+  if (variants) {
+    for (const variant of variants) {
+      const vNorm = normalizeText(variant);
+      if (vNorm.length >= 3 && haystackNorm.includes(vNorm)) return true;
+      const vTokens = vNorm.split(" ").filter((t) => t.length >= 3);
+      if (vTokens.length > 0 && vTokens.every((t) => haystackNorm.includes(t))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// Map keys may carry punctuation (node.js, a/b testing, ci/cd, go-to-market…).
+// Caller passes a normalized skill, so we also try matching against keys after
+// normalizing the keys themselves. Built once per cold start.
+let _normKeyIndex: Map<string, string[]> | null = null;
+function lookupSynonymsLoose(skillNorm: string): string[] | undefined {
+  if (!_normKeyIndex) {
+    _normKeyIndex = new Map();
+    for (const [k, v] of Object.entries(SKILL_SYNONYMS)) {
+      _normKeyIndex.set(normalizeText(k), v);
+    }
+  }
+  return _normKeyIndex.get(skillNorm);
 }
 
 function normalizeCity(city: string) {
@@ -137,7 +200,7 @@ function scoreJobAgainstUser(job: ApifyJob, role: string, skills: string[]) {
 
   // User skills overlap (computed against listing tags + body, not against itself).
   const userSkillsNorm = skills.map((s) => normalizeText(s)).filter((s) => s.length > 1);
-  const sharedSkills = userSkillsNorm.filter((s) => haystack.includes(s));
+  const sharedSkills = userSkillsNorm.filter((s) => skillPresent(s, haystack));
   const skillOverlapPct = userSkillsNorm.length ? sharedSkills.length / userSkillsNorm.length : 0;
 
   // Recency
@@ -160,27 +223,45 @@ function scoreJobAgainstUser(job: ApifyJob, role: string, skills: string[]) {
   };
 }
 
-function toMatchPct(opts: { anchorInTitle: boolean; sharedSkillsCount: number; userSkillsCount: number; recencyDays: number | null }) {
-  // Floor: anchor-in-title = 65, otherwise skill-only match starts at 60.
-  // Returning 0 here was making genuinely-relevant skill-matched jobs render
-  // as "0% · Stretch", which felt broken to users.
-  let pct = opts.anchorInTitle ? 65 : 60;
+export function toMatchPct(opts: {
+  anchorInTitle: boolean;
+  sharedSkillsCount: number;
+  userSkillsCount: number;
+  recencyDays: number | null;
+}) {
+  // Lower floor: was 60/65, now 40/55. Lets stretch jobs actually
+  // read as stretches and creates real spread above them.
+  let pct = opts.anchorInTitle ? 55 : 40;
+
+  // Bigger skill bump: was max +25, now max +40. Skills do more work.
   if (opts.userSkillsCount > 0) {
     const overlap = Math.min(1, opts.sharedSkillsCount / opts.userSkillsCount);
-    pct += Math.round(overlap * 25); // up to +25 from skills
+    pct += Math.round(overlap * 40);
   } else if (opts.anchorInTitle) {
-    pct += 10; // no user skills => modest bump only when title actually anchored
+    pct += 10;
   }
+
+  // NEW penalty: anchor-in-title with ZERO skill overlap is suspicious
+  // (this catches Java jobs in a Node search, marketing jobs in a tele-
+  // marketing search, etc.). Penalty does not apply when user has no
+  // skills declared.
+  if (opts.anchorInTitle && opts.userSkillsCount > 0 && opts.sharedSkillsCount === 0) {
+    pct -= 10;
+  }
+
+  // Recency unchanged
   if (opts.recencyDays != null) {
     if (opts.recencyDays <= 1) pct += 4;
     else if (opts.recencyDays <= 7) pct += 2;
   }
-  return Math.max(60, Math.min(96, pct));
+
+  // Wider band: was 60-96, now 35-96. Stretch can mean stretch.
+  return Math.max(35, Math.min(96, pct));
 }
 
-function toMatchLabel(matchPct: number) {
-  if (matchPct >= 85) return "Strong fit";
-  if (matchPct >= 72) return "Relevant";
+export function toMatchLabel(matchPct: number) {
+  if (matchPct >= 80) return "Strong fit";   // was 85
+  if (matchPct >= 65) return "Relevant";      // was 72
   return "Stretch";
 }
 
