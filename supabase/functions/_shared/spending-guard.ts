@@ -50,7 +50,7 @@ export interface SpendingCheckResult {
   message?: string;
 }
 
-export async function checkDailySpending(functionName: string, userId?: string): Promise<SpendingCheckResult> {
+export async function checkDailySpending(functionName: string): Promise<SpendingCheckResult> {
   const now = Date.now();
 
   // Fast path: return cached result if fresh
