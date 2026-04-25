@@ -10,12 +10,14 @@ interface OnboardingFlowProps {
   industry: string;
   yearsExperience: string;
   metroTier: string;
+  monthlyCTC: number | null;
   hasLinkedIn?: boolean;
   hasResume?: boolean;
   onSelectCountry: (v: string) => void;
   onSelectIndustry: (v: string) => void;
   onSelectExperience: (v: string) => void;
   onSelectMetro: (v: string) => void;
+  onSubmitCTC: (monthlyInLocalCurrency: number | null) => void;
   onSelectSkills?: (skills: string) => void;
   onSkipSkills?: () => void;
   onBack?: (fromStep: number) => void;
