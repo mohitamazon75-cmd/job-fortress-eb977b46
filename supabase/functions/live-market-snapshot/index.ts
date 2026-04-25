@@ -559,7 +559,7 @@ Deno.serve(async (req) => {
         });
     }
 
-    return json(buildSnapshot(rawJobs, all_skills, cached));
+    return json(buildSnapshot(rawJobs, all_skills, cached, role));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[live-market-snapshot] unhandled:", message);
