@@ -24,6 +24,18 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     chunkSizeWarningLimit: 4000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Dedupe heavy charting library shared across 7 components
+          // (ScoreTrendCard, ScoreHistoryChart, CareerResilienceEngine,
+          // ScoreTimeline, SkillCrisisResponseCenter, BetaChildHistory, ui/chart)
+          recharts: ["recharts"],
+          // Framer-motion is also widely shared and large
+          motion: ["framer-motion"],
+        },
+      },
+    },
   },
   resolve: {
     alias: {

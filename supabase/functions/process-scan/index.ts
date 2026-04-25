@@ -289,7 +289,10 @@ Deno.serve(async (req) => {
 
     // ── Input validation ──
     if (!scan.linkedin_url && !scan.industry && !hasResume) {
-      await supabase.from("scans").update({ scan_status: "invalid_input" }).eq("id", scanId);
+      await supabase.from("scans").update({
+        scan_status: "invalid_input",
+        feedback_flag: "no_input_provided",
+      }).eq("id", scanId);
       clearTimeout(globalTimer);
       return new Response(JSON.stringify({ error: "No LinkedIn URL, resume, or industry provided" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }

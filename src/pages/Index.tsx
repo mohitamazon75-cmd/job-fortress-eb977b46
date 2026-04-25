@@ -271,6 +271,7 @@ const Index = () => {
     scanReport, setScanReport,
     moneyShotSeen, setMoneyShotSeen,
     errorScanStatus, setErrorScanStatus,
+    errorReason,
     showRateLimitUpsell, setShowRateLimitUpsell,
     showReAuth, setShowReAuth,
     showPostRevealGoalModal, setShowPostRevealGoalModal,
@@ -872,8 +873,14 @@ const Index = () => {
                 </div>
                 <h1 className="text-2xl font-black text-foreground">Analysis Incomplete</h1>
                 <p className="text-muted-foreground">
-                  Our intelligence engine couldn't complete your analysis. This can happen due to high demand or data availability issues. No mock data was served — we only show real results.
+                  {errorReason?.message
+                    || "Our intelligence engine couldn't complete your analysis. This can happen due to high demand or data availability issues. No mock data was served — we only show real results."}
                 </p>
+                {errorReason?.feedback_flag && (
+                  <p className="text-xs text-muted-foreground/60 mt-1">
+                    Reason code: <code>{errorReason.feedback_flag}</code>
+                  </p>
+                )}
               </>
             )}
             <div className="flex gap-3 justify-center flex-wrap">
