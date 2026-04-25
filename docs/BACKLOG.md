@@ -116,7 +116,29 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
 - **Decision (2026-04-24)**: **deferred until DAU > 100**. Frozen-file edit (Rule 3). Taste-level polish, not a correctness bug. Production usage will surface which patterns actually hurt trust; tuning now on 5 synthetic resumes optimizes the wrong distribution.
 - **Status**: open (deferred).
 
-## Open — P3
+### BL-034 — Naukri matcher: address residual FP classes (Phase 2A follow-up)
+
+- **Discovered**: 2026-04-25, Phase 2A-iii measurement (`apify-naukri-jobs`).
+- **Files**: `supabase/functions/apify-naukri-jobs/index.ts`,
+  `supabase/functions/_shared/skill-synonyms.ts`.
+- **Symptom**: three false-positive classes survive 2A-ii, capping
+  avg eyeball-relevance at ~68% on the R1/R2/R3 reference set:
+  1. Synonym-token FPs ("team management", "performance marketing"
+     fire on token-aware match against long JDs).
+  2. Canonical-token FPs ("system design" matches "system
+     integration" + "design engineer" in unrelated JDs).
+  3. Short-skill substring FPs ("aws" inside "laws").
+- **Fix path**: structural, not tuning. Likely embedding-based
+  skill similarity (cosine on tag/skill vectors with threshold)
+  or per-job LLM classification. Estimated multi-week effort.
+- **Decision (2026-04-25)**: deferred. Tuning the substring
+  matcher further produces zero-sum trades between FP classes
+  (verified during 2A-iii — see DECISIONS.md "Naukri matcher
+  overhaul — Phase 2A complete"). Real fix waits for either a
+  Phase 2B card design that surfaces calibration honestly to
+  users, or a structural matcher rewrite.
+- **Status**: open (deferred).
+
 
 ### Known prompt/schema mismatches
 
