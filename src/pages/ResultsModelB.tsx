@@ -879,7 +879,7 @@ export default function ResultsModelB() {
               }
             })()}
 
-            {/* ── Tools tab (index 8) ─────────────────────────────────
+            {/* ── Tools tab (last index — 8 for execs, 9 for non-execs) ────────────
                 Three fully-built features that were unreachable in the old flow.
                 Lazy-loaded — zero bundle cost until the user taps Tools. */}
             {currentCard === TOOLS_TAB_INDEX && (() => {
