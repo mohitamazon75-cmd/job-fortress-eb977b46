@@ -27,6 +27,8 @@ import { validateAgentOutput, Agent2ASchema, Agent2BSchema } from "../_shared/zo
 import { getPreviousScore } from "../_shared/score-history.ts";
 import { getKG } from "../_shared/riskiq-knowledge-graph.ts";
 import { estimateMonthlySalary, calculateGeoArbitrage, type MarketSignalRow } from "../_shared/deterministic-engine.ts";
+import { getCurrentToolCatalog, formatCatalog } from "../_shared/tool-catalog.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
@@ -103,6 +105,9 @@ export interface AgentOrchestrationResult {
   monthlySalary: number;
   isRescan: boolean;
   previousScoreData: any;
+  /** Live tool catalog used to substitute {{TOOL_CATALOG}} in agent prompts.
+   *  Forwarded to scan-pipeline so the post-LLM scrubAll() pass can match it. */
+  toolCatalogTools: string[];
 }
 
 // ═══════════════════════════════════════════════════════════════
