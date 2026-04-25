@@ -337,14 +337,14 @@ ${kgContext}`;
 
   // Judo + Diet promise
   const judoDietPromise = hasTimeBudget(15_000) ? Promise.allSettled([
-    callAgentRace(LOVABLE_API_KEY, "JudoStrategy", JUDO_STRATEGY_SYSTEM_PROMPT,
+    callAgentRace(LOVABLE_API_KEY, "JudoStrategy", PROMPT_JUDO,
       buildSeniorityJudoPrompt(seniorityTier, expYears, displayName, displayCompany,
         agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry,
         profileInput.strategic_skills, profileInput.execution_skills, profileInput.all_skills,
         det.determinism_index, det.survivability.score, scan.metro_tier || "tier1", null,
         profileInput.executive_impact || null),
       activeModel, "google/gemini-3-flash-preview", 0.3, 25_000).then(r => r.data),
-    callAgent(LOVABLE_API_KEY, "WeeklyDiet", WEEKLY_DIET_SYSTEM_PROMPT,
+    callAgent(LOVABLE_API_KEY, "WeeklyDiet", PROMPT_DIET,
       buildSeniorityDietPrompt(seniorityTier, expYears, displayName,
         agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry,
         profileInput.strategic_skills, null),
@@ -356,13 +356,13 @@ ${kgContext}`;
   // at 15-25s on long prompts (gpt-5, gemini-3-pro). p50 latency for these prompts
   // is ~22s; 25s left almost no headroom for the first-attempt model.
   const agents2Promise = Promise.allSettled([
-    callAgentRace(LOVABLE_API_KEY, "Agent2A:Risk", AGENT_2A_RISK_ANALYSIS,
+    callAgentRace(LOVABLE_API_KEY, "Agent2A:Risk", PROMPT_AGENT_2A,
       `Generate risk analysis for:\n${sharedProfileContext}\n\nUse "${displayName}" by name. Reference "${displayCompany}".`,
       activeModel, "google/gemini-3-flash-preview", 0.3, 25_000).then(r => r.data),
-    callAgentRace(LOVABLE_API_KEY, "Agent2B:Plan", AGENT_2B_ACTION_PLAN,
+    callAgentRace(LOVABLE_API_KEY, "Agent2B:Plan", PROMPT_AGENT_2B,
       `Generate tier-calibrated action plan for:\n${sharedProfileContext}\nTier: ${seniorityTier}\nCountry: ${locale.label}\nCurrency: ${locale.currency}\nGeo Arbitrage Delta: ${locale.currencySymbol}${geoArb?.probability_adjusted_delta_inr || 0}/month\nJob Boards: ${locale.jobBoards.join(", ")}${rescanContext ? `\n${rescanContext}` : ''}`,
       activeModel, "google/gemini-3-flash-preview", 0.35, 25_000).then(r => r.data),
-    callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", AGENT_2C_PIVOT_MAPPING,
+    callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", PROMPT_AGENT_2C,
       `Map career pivots for:\n${sharedProfileContext}\nMoat Score: ${det.moat_score}/100. Pivots must be realistic for ${seniorityTier} tier.\nCountry: ${locale.label}. Use job titles from ${locale.jobBoards.join("/")}.`,
       FAST_MODEL, 0.3, 30_000).then(r => r.data),
   ]);
