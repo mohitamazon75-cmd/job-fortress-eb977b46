@@ -38,14 +38,14 @@ import {
   sanitizeRoleTitle,
   applyFunctionalIndustryOverride,
 } from "../_shared/scan-helpers.ts";
-import { computeProfileCompleteness, deterministicSeedFromScanId } from "../_shared/scan-utils.ts";
+import { computeProfileCompleteness, deterministicSeedFromString } from "../_shared/scan-utils.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
 import { orchestrateAgents } from "./scan-agents.ts";
 import { runScanPipeline } from "./scan-pipeline.ts";
 
 // New shared modules
 import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
-import { callAgent, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
+import { FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
 import { callAgentWithFallback } from "../_shared/model-fallback.ts";
 import { recordScoreHistory, getPreviousScore } from "../_shared/score-history.ts";
 import { Agent1Schema, clampAgent1Output, validateAgentOutput, checkAutomationSignalConsistency } from "../_shared/zod-schemas.ts";
@@ -666,12 +666,20 @@ Deno.serve(async (req) => {
       // DETERMINISM (operator ground rule: accuracy over speed):
       // - Pin to Pro (no race) for accuracy. Flash stays as fallback
       //   if Pro fails or times out (via callAgentWithFallback chain).
-      // - temperature=0 + per-scan seed makes skill extraction
-      //   reproducible for the same scanId.
+      // - temperature=0 + content-derived seed makes skill extraction
+      //   reproducible across repeated scans of the same resume/profile.
       // - This is the ONLY score-affecting LLM call in the scan
       //   pipeline. All other LLM calls are narrative-only and
       //   are intentionally left non-deterministic.
-      const profilerSeed = deterministicSeedFromScanId(scanId);
+      const profilerSeed = deterministicSeedFromString([
+        "Agent1:Profiler:v1",
+        scan.resume_file_path || scan.linkedin_url || "manual",
+        rawProfileText,
+        resolvedIndustry,
+        scan.years_experience || "",
+        scan.metro_tier || "",
+        scanCountry,
+      ].join("\n---\n"));
       const profilerResult = await callAgentWithFallback(
         LOVABLE_API_KEY,
         "Agent1:Profiler",

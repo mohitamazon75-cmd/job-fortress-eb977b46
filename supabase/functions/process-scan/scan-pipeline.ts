@@ -38,6 +38,7 @@ import {
   runQualityEditor,
   normalizeFounderImmediateStep,
 } from "../_shared/scan-report-builder.ts";
+import { deterministicSeedFromString } from "../_shared/scan-utils.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import type { CompanyHealthResult } from "../_shared/company-health.ts";
 import type { SkillDemandResult } from "../_shared/skill-demand-validator.ts";
@@ -201,6 +202,7 @@ Return null if unclear. No explanation, no markdown.`;
         LOVABLE_API_KEY, "SubSectorBreaker",
         "You are a role classifier. Return only valid JSON.",
         subSectorPrompt, FLASH_MODEL, 0.0, 6_000,
+        deterministicSeedFromString(`SubSectorBreaker:v1:${detectedRole}:${linkedinCompany || ""}:${(agent1 as any)?.industry || resolvedIndustry}`),
       );
       if ((subResp as any)?.industry_sub_sector) {
         detectedSubSector = (subResp as any).industry_sub_sector;

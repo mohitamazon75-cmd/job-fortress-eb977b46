@@ -15,6 +15,7 @@ import {
   sanitizeEvidenceSnippet,
   isTrustedLinkedinResult,
   stripUnverifiedNumbers,
+  deterministicSeedFromString,
 } from "../_shared/scan-utils.ts";
 import { inferFromLinkedinUrl, parseExperienceYears } from "../_shared/scan-helpers.ts";
 import { parseResumeWithAffinda } from "../_shared/affinda-parser.ts";
@@ -140,6 +141,7 @@ async function parseResume(
     let binary = "";
     for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
     const resumeBase64 = btoa(binary);
+    const resumeParserSeed = deterministicSeedFromString(`resume-parser:v1:${resumeBase64}`);
 
     // Launch Affinda in parallel with the LLM vision call.
     // Affinda gives accurate years-from-dates and structured certifications.
@@ -278,7 +280,8 @@ CRITICAL RULES:
               ],
             },
           ],
-          temperature: 0.05,
+          temperature: 0,
+          seed: resumeParserSeed,
           generationConfig: { responseMimeType: "application/json" },
         }),
         signal,

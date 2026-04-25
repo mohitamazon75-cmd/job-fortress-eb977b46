@@ -159,7 +159,7 @@ async function callAgentCore(
 
       console.error(`[${agentName}] JSON parse failed:`, content.slice(0, 300));
       // Single retry with explicit JSON nudge (cheaper than full retry)
-      return retryWithJsonNudge(apiKey, agentName, systemPrompt, userPrompt, content, model, Math.min(timeoutMs, 20_000));
+      return retryWithJsonNudge(apiKey, agentName, systemPrompt, userPrompt, content, model, Math.min(timeoutMs, 20_000), seed);
     }
   } catch (err: any) {
     clearTimeout(timeout);
@@ -242,6 +242,7 @@ async function retryWithJsonNudge(
   previousContent: string,
   model: string,
   timeoutMs: number,
+  seed?: number,
 ): Promise<any> {
   try {
     const controller = new AbortController();
@@ -257,7 +258,8 @@ async function retryWithJsonNudge(
           { role: "assistant", content: previousContent },
           { role: "user", content: "Your previous response was not valid JSON. Please respond with ONLY a valid JSON object, no markdown, no code fences, no explanation." },
         ],
-        temperature: 0.1,
+        temperature: 0,
+        ...(typeof seed === "number" ? { seed } : {}),
         response_format: { type: "json_object" },
         generationConfig: { responseMimeType: "application/json" },
       }),
