@@ -146,6 +146,14 @@ Discovered 2026-04-24 during prompt-injection defense work.
 - **Resolution (2026-04-24)**: `src/App.tsx` opts into `v7_startTransition` and `v7_relativeSplatPath`. Test output is now warning-free.
 - **Status**: done.
 
+### BL-033 — External audit fix sequence (2026-04-24 → 2026-04-25)
+- 8 fixes shipped per the sequence in DECISIONS.md "Audit-fix
+  sequence — completed 2026-04-25".
+- Reverted intermediate state once (8c original attempt overran
+  a single turn; clean history rollback). All other slices shipped
+  atomically.
+- Status: done.
+
 ---
 
 ## Done
