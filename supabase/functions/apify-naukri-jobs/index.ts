@@ -356,6 +356,8 @@ function buildWhyFit(opts: {
   postedLabel: string | null;
   anchorTokens: string[];
   anchorInTitle: boolean;
+  userYears?: number | null;
+  listingBand?: { min: number; max: number | null } | null;
 }) {
   const parts: string[] = [];
   if (opts.anchorInTitle) {
@@ -366,7 +368,20 @@ function buildWhyFit(opts: {
   } else if (opts.userSkillsCount > 0) {
     parts.push("None of your declared skills appear in this listing — verify before applying");
   }
-  if (opts.experience) parts.push(`Experience band: ${opts.experience}`);
+  // Surface a seniority gap when both sides are known and the gap is significant.
+  // Specifically called out so the user sees WHY a card is de-emphasised.
+  if (opts.userYears != null && opts.listingBand) {
+    const { min, max } = opts.listingBand;
+    if (max != null && max * 2 <= opts.userYears) {
+      parts.push(`⚠ Listing targets ${min}-${max} yrs · you have ${opts.userYears}`);
+    } else if (min > opts.userYears + 4) {
+      parts.push(`⚠ Listing wants ${min}+ yrs · you have ${opts.userYears}`);
+    } else if (opts.experience) {
+      parts.push(`Experience band: ${opts.experience}`);
+    }
+  } else if (opts.experience) {
+    parts.push(`Experience band: ${opts.experience}`);
+  }
   if (opts.postedLabel) parts.push(`Posted ${opts.postedLabel.toLowerCase()}`);
   return parts.join(" · ");
 }
