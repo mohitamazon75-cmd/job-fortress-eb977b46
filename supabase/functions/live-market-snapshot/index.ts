@@ -188,6 +188,33 @@ export function aggregateTopTags(jobs: ApifyJob[]): Array<{ tag: string; count: 
     .map(([tag, count]) => ({ tag, count, pct: Math.round((count / total) * 100) }));
 }
 
+// ─────────────────────────────────────────────────────────────────
+// DESIGN NOTE — overlap is computed against TOP-8 TAGS, not full
+// job text. Rationale:
+//
+//   1. Top-8 tags represent what hiring managers consistently ask
+//      for. Matching against them tells the user "your skills are
+//      what this market wants" — semantically meaningful.
+//   2. Full job text matching has known false-positive classes
+//      documented in docs/DECISIONS.md (Phase 2A-iii): "team" +
+//      "management" tokens, "system" + "design" tokens, "aws"
+//      inside "laws". Using full text for the match column would
+//      surface those FPs to users.
+//   3. When Naukri's corpus for a role is polluted (e.g. Bangalore
+//      Engineering Manager board returns sales/insurance/finance
+//      listings), the top 8 tags don't reflect what the role
+//      actually requires. In that case, overlap.shown=false is
+//      the correct behavior — the column hides rather than shows
+//      misleading data.
+//
+// The shown >= 2 gate ensures we only render the match column
+// when ≥2 of the user's skills actually appear in the top-8
+// tags — i.e. when the corpus represents the user's role.
+//
+// Phase 2B-iii (UI) MUST disclose this gating to users when
+// overlap is hidden, e.g. "Tag-based skill match not available
+// for this role's posting set in this city."
+// ─────────────────────────────────────────────────────────────────
 export function computeUserSkillOverlap(
   topTags: Array<{ tag: string }>,
   userSkills: string[],
