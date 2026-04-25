@@ -30,7 +30,7 @@ Get the app into a state where it can comfortably handle ~1,000 free users over 
 Each PR is small, focused, and shippable on its own. Status updated as we go.
 
 ### PR1 — Reliability: Scan failure UI + retry
-**Status**: 🟡 In progress
+**Status**: ✅ Complete (2026-04-25)
 **Files**: ~3 (1 new component, 1 page edit, possibly 1 hook)
 **Why**: Today's earlier fixes (orphan prevention, fast-fail, session retry) stop the bleeding on the backend. But users with errored scans currently see nothing actionable. We need a visible "Try again" CTA when `scans.status = 'error'`.
 
@@ -42,7 +42,7 @@ Each PR is small, focused, and shippable on its own. Status updated as we go.
 ---
 
 ### PR2 — Scale: DB indexes + query hygiene
-**Status**: ⚪ Not started
+**Status**: ✅ Complete (2026-04-25)
 **Files**: 1 migration, possibly 1 query edit
 **Why**: At 1,000 users with multiple scans each, common lookups (`scans.user_id`, `scans.status`, `score_history.user_id`, `scan_rate_limits.user_id`) will full-scan without indexes.
 
