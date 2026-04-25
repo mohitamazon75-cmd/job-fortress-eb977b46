@@ -189,8 +189,25 @@ export function buildProfileContext(report: any): string {
   const extractionConfidence = report.extraction_confidence || report.rawExtractionQuality || "medium";
   const sanitizedProfileText = sanitizeProfileEvidence(rawProfileText, company, role);
   // Agent2A displacement data (from Fix 2 — urgency_horizon + threat_timeline)
+  // BL-031: tolerate legacy string form by extracting any 4-digit years.
   const urgencyHorizon = report.urgency_horizon || null;
-  const threatTimeline = report.threat_timeline || null;
+  const rawThreatTimeline = report.threat_timeline;
+  let threatTimeline: any = null;
+  if (rawThreatTimeline && typeof rawThreatTimeline === "object" && !Array.isArray(rawThreatTimeline)) {
+    threatTimeline = rawThreatTimeline;
+  } else if (typeof rawThreatTimeline === "string") {
+    const years = Array.from(rawThreatTimeline.matchAll(/(20\d{2})/g)).map((m) => Number(m[1]));
+    if (years.length > 0) {
+      years.sort((a, b) => a - b);
+      threatTimeline = {
+        partial_displacement_year: years[0] ?? null,
+        significant_displacement_year: years[1] ?? years[0] ?? null,
+        critical_displacement_year: years[2] ?? null,
+        primary_threat_tool: null,
+        at_risk_task: null,
+      };
+    }
+  }
 
   // Build evidence quality directive based on extraction confidence
   const evidenceDirective = extractionConfidence === "low"
