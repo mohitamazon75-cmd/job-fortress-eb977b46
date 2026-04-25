@@ -28,7 +28,10 @@ import { SKILL_SYNONYMS } from "../_shared/skill-synonyms.ts";
 const APIFY_ACTOR_ID = "alpcnRV9YI9lYVPWk";
 const CACHE_TTL_HOURS = 6;
 const RUN_LIMIT = 50;
-const CACHE_VERSION = "v1";
+// v2: adds corpus_relevance signal so the card can downgrade to a
+// thin-signal render when Naukri's corpus doesn't reflect the user's role.
+// Bumping invalidates v1 caches that lacked the new field.
+const CACHE_VERSION = "v2";
 
 // Same EXECUTIVE_HINTS as src/lib/jobsTab.ts (kept in sync manually —
 // duplicated to avoid cross-tier import).
