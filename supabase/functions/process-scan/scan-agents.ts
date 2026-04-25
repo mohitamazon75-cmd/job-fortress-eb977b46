@@ -347,8 +347,8 @@ ${kgContext}`;
     );
   }
 
-  // ML Gateway promise
-  const mlPromise = (async () => {
+  // ML Gateway promise (Issue #12: timed for determinism_meta)
+  const mlPromise = timed("ML:obsolescence", "ml-gateway", null, (async () => {
     try {
       const ML_GATEWAY_URL = `${supabaseUrl}/functions/v1/ml-gateway`;
       const mlController = new AbortController();
@@ -380,7 +380,7 @@ ${kgContext}`;
       console.warn("[ML] Fallback to deterministic:", mlErr?.name || mlErr);
       return { data: null, timedOut: false };
     }
-  })();
+  })());
 
   // Judo + Diet promise
   const judoDietPromise = hasTimeBudget(15_000) ? Promise.allSettled([
