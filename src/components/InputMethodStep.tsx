@@ -195,9 +195,10 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
               {linkedinError && linkedinUrl && (
                 <p className="text-sm text-destructive font-medium mt-2 px-1">{linkedinError}</p>
               )}
-              <div className="mt-3 px-3 py-2 rounded-lg bg-muted/50 border border-border/60">
+              <div className="mt-3 px-3 py-2 rounded-lg bg-prophet-green/5 border border-prophet-green/20">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  ⚠️ <span className="font-semibold text-foreground">Heads up:</span> LinkedIn often blocks scraping, so extracted data may be partial or stale. For the most accurate score, <span className="font-semibold text-foreground">upload your resume instead</span>.
+                  <Lock className="w-3 h-3 inline-block mr-1 text-prophet-green" />
+                  We read your <span className="font-semibold text-foreground">public profile only</span> — no password, no login, no LinkedIn account access.
                 </p>
               </div>
               <motion.button
