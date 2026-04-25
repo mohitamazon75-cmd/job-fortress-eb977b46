@@ -84,8 +84,9 @@ Deno.serve(async (req: Request) => {
       const isPro = profile?.subscription_tier === "pro"
         && profile?.subscription_expires_at
         && new Date(profile.subscription_expires_at as string) > new Date();
-      // Free: 3/day. Pro: 50/day. (Reverted from testing-only 50/50 — 2026-04-24)
-      const dailyLimit = isPro ? 50 : 3;
+      // TESTING MODE (2026-04-25): pricing/gating disabled. Both tiers get 100/day.
+      // Restore to (isPro ? 50 : 3) before re-enabling pricing.
+      const dailyLimit = 100;
 
       if ((dailyCount ?? 0) >= dailyLimit) {
         console.warn(`[create-scan] Daily cap reached for user ${userId}: ${dailyCount}/${dailyLimit}`);
