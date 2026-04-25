@@ -61,11 +61,13 @@ function synthR1(): ApifyJob[] {
   }));
 }
 function synthR2(): ApifyJob[] {
-  // Marketing-shaped corpus polluted with sales tags (mirrors real R2).
+  // Marketing-shaped corpus polluted with sales tags + sales titles
+  // (mirrors real R2 Naukri behavior: "marketing manager" search returns
+  // mostly field-sales executive postings in tier-2/3 cities).
   return Array.from({ length: 10 }, (_, i) => ({
-    title: "Digital Marketing Manager",
-    tagsAndSkills: i < 7 ? "Field Sales,B2C Sales,Lead Generation,Customer Service" : "Brand Marketing,Communication",
-    jobDescription: "Sales-led marketing role.",
+    title: i < 7 ? "Field Sales Executive" : "Insurance Advisor",
+    tagsAndSkills: i < 7 ? "Field Sales,B2C Sales,Lead Generation,Customer Service" : "Insurance,Cold Calling,Communication",
+    jobDescription: "Sales-led role.",
     footerPlaceholderLabel: "Today",
     salaryDetail: i < 6
       ? { hideSalary: false, minimumSalary: 300000, maximumSalary: 500000 }
