@@ -161,6 +161,12 @@ function slugify(text: string): string {
     .replace(/\s+/g, "-") || "jobs";
 }
 
+function compactRoleForSearch(role: string): string {
+  const tokens = normalizeText(role).split(" ").filter(Boolean);
+  const compact = tokens.filter((t) => !SEARCH_MODIFIER_STOPWORDS.has(t)).slice(0, 4);
+  return (compact.length >= 2 ? compact : tokens.slice(0, 4)).join(" ") || role;
+}
+
 // Inline copy of skillPresent from apify-naukri-jobs/index.ts.
 // Kept verbatim so the matcher behaviour is identical to the existing
 // production matcher. If that helper changes, mirror the change here.
@@ -381,7 +387,21 @@ const ROLE_TITLE_STOPWORDS = new Set([
 export function roleTokens(role: string): string[] {
   return normalizeText(role)
     .split(" ")
-    .filter((t) => t.length >= 4 && !ROLE_TITLE_STOPWORDS.has(t));
+    .filter((t) => (t.length >= 4 || SHORT_ROLE_TOKENS.has(t)) && !ROLE_TITLE_STOPWORDS.has(t));
+}
+
+export function filterRelevantJobs(jobs: ApifyJob[], role: string, userSkills: string[]): ApifyJob[] {
+  const tokens = roleTokens(role);
+  const skillNorms = userSkills.map(normalizeText).filter((s) => s.length >= 2);
+  if (tokens.length === 0 && skillNorms.length === 0) return jobs;
+  const relevant = jobs.filter((job) => {
+    const title = normalizeText(job.title || "");
+    const haystack = normalizeText([job.title, job.tagsAndSkills, job.jobDescription].filter(Boolean).join(" "));
+    const titleHit = tokens.some((t) => title.includes(t));
+    const skillHits = skillNorms.filter((s) => skillPresent(s, haystack)).length;
+    return titleHit || skillHits >= 2;
+  });
+  return relevant.length >= 5 ? relevant : jobs;
 }
 
 export function computeCorpusRelevance(
