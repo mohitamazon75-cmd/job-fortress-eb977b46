@@ -199,3 +199,12 @@ Agent1:Profiler (the only score-affecting LLM call in `process-scan`) is now det
 ```
 
 Bump the next ID monotonically. **Never reuse IDs.** Closed entries stay in the file forever — they document what we shipped.
+
+### BL-035 — Fabricated testimonials in `SocialProofSection.tsx`
+- **Found**: 2026-04-25 (soft-launch QA pass).
+- **Problem**: Three testimonials with named individuals ("Rahul M.", "Priya S.", "Aditya K."), specific employers, scores, and exact salary outcomes ("34% salary jump", "28% raise") — but the platform has only single-digit scans/day per `CLAUDE.md`. Disclaimer "Real outcomes from real users" makes this an explicit misrepresentation.
+- **Conflict**: Directly contradicts `mem://style/social-proof-credibility` ("technically honest").
+- **Risk**: Misrepresentation under India Consumer Protection Act 2019 §2(28) (misleading advertisement); reputational risk if a journalist or competitor surfaces it; ASCI guideline violation.
+- **Operator decision (2026-04-25)**: Leave as-is for now, log to backlog. Re-evaluate before any press / paid acquisition.
+- **Owner**: unassigned.
+- **Status**: open (deferred — not a launch blocker per operator).
