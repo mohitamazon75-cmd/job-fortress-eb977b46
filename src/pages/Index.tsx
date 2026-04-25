@@ -581,13 +581,28 @@ const Index = () => {
 
   const handleSelectMetro = async (v: string) => {
     setMetroTier(v);
-    // Manual path: show skills step before scanning
+    // CTC capture step is now mandatory (skippable) for ALL paths.
+    // Powers the salary-bleed kill-shot section in the report.
+    setStep(5);
+  };
+
+  const handleSubmitCTC = async (monthlyCTC: number | null) => {
+    // Convert non-INR currencies to INR for storage (server stores estimated_monthly_salary_inr).
+    // Rough conversion is fine — the field is used for ratio calculations, not exact comparisons,
+    // and the server clamps to [5k, 5M] INR anyway.
+    let inrValue: number | null = null;
+    if (monthlyCTC !== null) {
+      const rate = country === 'US' ? 84 : country === 'AE' ? 23 : 1;
+      inrValue = Math.round(monthlyCTC * rate);
+    }
+    setUserReportedCTC(inrValue);
+
+    // Manual path: still need skills step (step 6). Otherwise launch immediately.
     if (!linkedinUrl && !resumeFileRef.current) {
-      setStep(5);
+      setStep(6);
       return;
     }
-    // LinkedIn/resume path: launch scan directly
-    await launchScan(v, '');
+    await launchScan(metroTier, '');
   };
 
   const handleSelectSkills = async (skills: string) => {
