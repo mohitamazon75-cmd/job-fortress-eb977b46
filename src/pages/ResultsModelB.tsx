@@ -820,20 +820,64 @@ export default function ResultsModelB() {
         {/* Main content */}
         {cardData && !loading && !error && (
           <>
-            {currentCard === 0 && <Card0Verdict cardData={cardData} onNext={() => handleTabChange(1)} />}
-            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} />}
-            {currentCard === 2 && <Card2MarketRadar cardData={cardData} onBack={() => handleTabChange(1)} onNext={() => handleTabChange(3)} />}
-            {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} overallScore={baseScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
-              logEvent("modal_opened", { source: "upgrade_plan" });
-              setActionModal({
-                title: "60-Day Skill Upgrade Plan",
-                promptText: `Create a 60-day skill upgrade plan for ${cardData.user?.name} based on their resume.\n\nCurrent skills: ${(cardData.card3_shield?.skills || []).map((s: any) => s.name).join(", ")}\nSkill gaps: ${(cardData.card3_shield?.skills || []).filter((s: any) => s.level === "buildable" || s.level === "critical-gap").map((s: any) => s.name).join(", ")}\n\nFor each week:\n- Specific learning resources (free, India-accessible)\n- Practice exercises with measurable outcomes\n- Portfolio project milestones\n- Time estimates (assume 1hr/day on weekdays)`
-              });
-            }} />}
-            {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} scanId={analysisId ?? undefined} />}
-            {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
-            {currentCard === 6 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} scanId={analysisId ?? undefined} />}
-            {currentCard === 7 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(6)} onNext={() => handleTabChange(8)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
+            {(() => {
+              // Pattern B: render the active card by key, derived from the
+              // dynamic `cards` array. Indices shift when LiveMarketCard is
+              // spliced in for non-execs; key-based lookup keeps every Card
+              // child unaware of its position.
+              const active = cards[currentCard];
+              if (!active) return null;
+              const onBack = currentCard > 0 ? () => handleTabChange(currentCard - 1) : undefined;
+              const onNext = currentCard < cards.length - 1 ? () => handleTabChange(currentCard + 1) : undefined;
+              switch (active.key) {
+                case "verdict":
+                  return <Card0Verdict cardData={cardData} onNext={onNext ?? (() => {})} />;
+                case "live-market":
+                  return (
+                    <LiveMarketCard
+                      role={role || "Professional"}
+                      city={cityForMarket}
+                      all_skills={allSkillsForMarket}
+                      onPrev={onBack}
+                      onNext={onNext}
+                    />
+                  );
+                case "risk":
+                  // R1 (approved this turn): no in-card Back; users use the tab pill row to go back.
+                  return <Card1RiskMirror cardData={cardData} onNext={onNext ?? (() => {})} monthlyScanCount={monthlyScanCount} />;
+                case "market":
+                  return <Card2MarketRadar cardData={cardData} onBack={onBack ?? (() => {})} onNext={onNext ?? (() => {})} />;
+                case "shield":
+                  return (
+                    <Card3SkillShield
+                      cardData={cardData}
+                      onBack={onBack ?? (() => {})}
+                      onNext={onNext ?? (() => {})}
+                      overallScore={baseScore}
+                      scanId={analysisId ?? undefined}
+                      onUpgradePlan={() => {
+                        logEvent("modal_opened", { source: "upgrade_plan" });
+                        setActionModal({
+                          title: "60-Day Skill Upgrade Plan",
+                          promptText: `Create a 60-day skill upgrade plan for ${cardData.user?.name} based on their resume.\n\nCurrent skills: ${(cardData.card3_shield?.skills || []).map((s: any) => s.name).join(", ")}\nSkill gaps: ${(cardData.card3_shield?.skills || []).filter((s: any) => s.level === "buildable" || s.level === "critical-gap").map((s: any) => s.name).join(", ")}\n\nFor each week:\n- Specific learning resources (free, India-accessible)\n- Practice exercises with measurable outcomes\n- Portfolio project milestones\n- Time estimates (assume 1hr/day on weekdays)`,
+                        });
+                      }}
+                    />
+                  );
+                case "pivot":
+                  return <Card4PivotPaths cardData={cardData} onBack={onBack ?? (() => {})} onNext={onNext ?? (() => {})} scanId={analysisId ?? undefined} />;
+                case "jobs":
+                  return <Card5JobsTracker cardData={cardData} onBack={onBack ?? (() => {})} onNext={onNext ?? (() => {})} analysisId={analysisId} />;
+                case "blind-spots":
+                  return <Card6BlindSpots cardData={cardData} onBack={onBack ?? (() => {})} onNext={onNext ?? (() => {})} scanId={analysisId ?? undefined} />;
+                case "human":
+                  return <Card7HumanAdvantage cardData={cardData} onBack={onBack ?? (() => {})} onNext={onNext} copyFallback={handleCopyFallback} analysisId={analysisId} />;
+                case "tools":
+                  return null; // Rendered separately below to keep the inline JSX block untouched.
+                default:
+                  return null;
+              }
+            })()}
 
             {/* ── Tools tab (index 8) ─────────────────────────────────
                 Three fully-built features that were unreachable in the old flow.
