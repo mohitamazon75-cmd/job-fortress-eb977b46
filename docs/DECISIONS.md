@@ -71,3 +71,51 @@ Future work if revisited:
   user over last 24h against a configurable cap (default ~$5/user/day).
 - Return 429 with code USER_SPENDING_CAP (distinct from the global
   503 SERVICE_DEGRADED).
+
+---
+
+## Audit-fix sequence — completed 2026-04-25
+
+External audit dated 2026-04-24 identified 50 findings across 5 lenses.
+After re-verifying findings against current source, 8 actionable
+technical/security/scalability fixes were sequenced and shipped:
+
+- Step 1: AuthGuard admin role lookup fixed (was conflating
+  subscription_tier with role; now reads user_roles table to match
+  server-side has_role()).
+- Step 2: Auth.tsx localhost auth-bypass short-circuit removed
+  (was running before credential check; could be exploited via
+  reverse-proxy or dev tunnels).
+- Step 3: Assessments RLS — investigation revealed audit finding was
+  stale (USING (true) was already replaced 12h after the broken
+  migration). No code change; documented in DECISIONS.
+- Step 4: Fake social-proof counter (BASE_COUNT = 5247) removed from
+  HeroSection. Counter now shows real count, hidden below 50.
+- Step 5: Prompt-injection defense added to scan-agents
+  sharedProfileContext. wrapUserData() helper sanitizes 14 user-
+  controlled fields before they enter downstream agent contexts.
+- Step 6: Per-user spending cap deferred (would require schema
+  change; existing rate limiter already bounds per-user compute
+  adequately at current traffic). Dead user-id-filtered branch
+  removed from spending-guard.
+- Step 7: Dual-lockfile reconciled. package-lock.json removed,
+  bun.lock canonical, .gitignore guards re-add.
+- Step 8: DB-backed tool catalog replaces hardcoded LLM/tool
+  version names in agent prompts. Three slices (8a: helper,
+  8b: scrubber extension, 8c: wiring + verification). Real-scan
+  verification confirmed catalog substitution works end-to-end
+  with no narrative degradation.
+
+Additional findings (UX/product/payment) deferred per operator scope
+(technical/security/scalability only).
+
+Net deltas:
+
+- 8 prompts shipped, 1 phantom finding correctly avoided.
+- One mid-flight revert (8c original attempt) resolved cleanly via
+  history rollback; no broken state shipped.
+- Test suite: 194 → 231 vitest, plus 24 new Deno tests for catalog
+  and scrubber.
+- Build clean throughout.
+- Lint baseline unchanged (~828 pre-existing errors, tracked in
+  BL-032).
