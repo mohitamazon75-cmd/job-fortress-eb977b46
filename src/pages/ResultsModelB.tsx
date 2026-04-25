@@ -665,10 +665,10 @@ export default function ResultsModelB() {
         {loading && (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "var(--mb-ink)", marginBottom: 8, lineHeight: 1.25 }}>
-              Running your career through every model + the last 24 hours of market signals
+              Stress-testing your career against every frontier model and the last 24 hours of market signals
             </div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 4 }}>
-              {cardData?.resume_filename || "Your Resume"} · Gemini 3 Pro · GPT-5 · 396-tool catalog · live India hiring data
+              {cardData?.resume_filename || "Your Resume"} · multi-model reasoning ensemble · 396-tool exposure catalog · live India hiring telemetry
             </div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink4)", marginBottom: 24, minHeight: 20 }}>
               {LOADING_MESSAGES[loadingMsg]}
