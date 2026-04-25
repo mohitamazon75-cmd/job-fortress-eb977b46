@@ -231,7 +231,7 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         )}
 
         <InfoBox variant="amber" title={`India market signal — ${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`} body={c1.india_data_insight || ""} />
-        <CardNav onBack={onBack} onNext={onNext} nextLabel="See salary reality →" />
+        <CardNav onBack={onBack} onNext={onNext} nextLabel="See your live market →" />
       </CardBody>
     </CardShell>
   );

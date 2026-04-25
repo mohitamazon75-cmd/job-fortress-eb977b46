@@ -67,12 +67,12 @@ function handleCopyFallback(text: string) {
   }
 }
 
-const TAB_LABELS = ["Verdict", "Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
+const TAB_LABELS = ["Verdict", "Risk", "Live Market", "Trends", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
 
 // Tabs where the header "Career Safety" score is hidden.
-// 0 = Verdict (presents its own hero score), 3 = Shield (sub-score conflict),
-// 8 = Tools (utility tab — no score frame needed).
-const HEADER_SCORE_HIDDEN_TABS = new Set([0, 3, 8]);
+// 0 = Verdict, 4 = Shield (sub-score conflict), 9 = Tools.
+// (Indices shifted +1 from index 2 onward after Live Market splice.)
+const HEADER_SCORE_HIDDEN_TABS = new Set([0, 4, 9]);
 // Tabs where the bottom action button grid is hidden — these tabs have their own
 // dedicated CTAs and the grid would clutter the emotional/utility frame.
 const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 8]);
