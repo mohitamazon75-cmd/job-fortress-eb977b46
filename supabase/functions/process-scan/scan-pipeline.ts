@@ -302,7 +302,7 @@ Return null if unclear. No explanation, no markdown.`;
   try {
     deduplicateReportText(finalReport);
     if (hasTimeBudget(5_000)) {
-      const _catalogClient = createClient(input.supabaseUrl, input.supabaseServiceRoleKey);
+      const _catalogClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const _catalog = await getCurrentToolCatalog(_catalogClient);
       await runQualityEditor(
         finalReport, detectedRole, displayName, displayCompany,
