@@ -578,7 +578,7 @@ function SnapshotView({
                         textTransform: "uppercase",
                       }}
                     >
-                      Posting Freshness ({total} total)
+                      Posting Freshness ({posting_count ?? categorized} total{uncategorized > 0 ? ` · ${uncategorized} undated` : ""})
                     </div>
                   </div>
                 </div>
