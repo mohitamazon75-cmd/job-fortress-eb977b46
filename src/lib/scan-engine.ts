@@ -627,11 +627,49 @@ export async function triggerProcessScan(
   return tryInvoke();
 }
 
+export type ScanFailureReason = {
+  status: string;
+  feedback_flag: string | null;
+  message: string;
+};
+
+// Map backend feedback_flag → user-facing message + remediation hint
+export function mapScanFailureReason(
+  status: string,
+  feedback_flag: string | null,
+): ScanFailureReason {
+  const flag = (feedback_flag || '').toLowerCase();
+  let message: string;
+  switch (flag) {
+    case 'no_input_provided':
+      message = "We didn't receive a LinkedIn URL, resume, or industry. Please add at least one and re-run the scan.";
+      break;
+    case 'profiler_failed_no_title':
+      message = "We couldn't extract your job title from your profile. Please add your current title and key skills, then re-run the scan.";
+      break;
+    case 'role_extraction_failed':
+      message = "We couldn't detect your role from the data provided. Please type your current job title manually and re-run the scan.";
+      break;
+    case 'fabrication_guard':
+      message = "We couldn't reliably read your profile data. Please add your current job title and 3–5 key skills, then re-run the scan.";
+      break;
+    default:
+      if (status === 'invalid_input') {
+        message = "Your profile data was incomplete. Please add your job title and key skills, then re-run the scan.";
+      } else if (status === 'failed' || status === 'error') {
+        message = "Our intelligence engine couldn't complete your analysis. Please retry — no mock data is ever served.";
+      } else {
+        message = "Analysis incomplete. Please retry.";
+      }
+  }
+  return { status, feedback_flag, message };
+}
+
 export function subscribeScanStatus(
   scanId: string,
   accessToken: string,
   onComplete: (report: ScanReport) => void,
-  onError?: () => void
+  onError?: (reason?: ScanFailureReason) => void
 ) {
   // Use scan-specific client with x-scan-access-token header so RLS allows reading
   const scanClient = createScanClient(accessToken);
@@ -658,11 +696,11 @@ export function subscribeScanStatus(
     onComplete(report);
   };
 
-  const reject = () => {
+  const reject = (reason?: ScanFailureReason) => {
     if (resolved) return;
     resolved = true;
     clearTimers();
-    onError?.();
+    onError?.(reason);
   };
 
   const verifyTerminalState = async (source: string) => {
