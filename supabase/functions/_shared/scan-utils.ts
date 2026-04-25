@@ -95,18 +95,20 @@ export function isTrustedLinkedinResult(
   return title.includes("linkedin") || content.includes("linkedin");
 }
 
+/** Generate a stable 31-bit positive integer seed from stable input content. */
+export function deterministicSeedFromString(input: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) % 2147483647 || 1;
+}
+
 /**
- * Generate a stable 31-bit positive integer seed from a scanId
- * string. Same scanId always produces the same seed, so the same
- * scan run repeatedly yields identical Agent1 output. Different
- * scans (different scanIds) get different seeds, preserving
- * legitimate per-scan variation while making each scan internally
- * reproducible.
+ * Backwards-compatible scanId seed helper. Prefer deterministicSeedFromString()
+ * with resume/profile content when reproducibility must survive across scans.
  */
 export function deterministicSeedFromScanId(scanId: string): number {
-  let h = 0;
-  for (let i = 0; i < scanId.length; i++) {
-    h = ((h << 5) - h + scanId.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h) || 1;
+  return deterministicSeedFromString(scanId);
 }
