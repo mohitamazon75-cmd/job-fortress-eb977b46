@@ -65,7 +65,21 @@ Deno.serve(async (req) => {
     // Wait for all dispatches to be sent (not for processing to complete)
     await Promise.allSettled(triggers);
 
-    // 2. Mark long-stuck processing scans as error so UI shows retry button
+    // 2a. Fast-fail orphans where the client crashed between create-scan and upload-resume.
+    // These are recognizable by the placeholder resume_file_path = 'pending-upload' and
+    // will never make progress because process-scan was never invoked. 2-min cap keeps
+    // the user's "Try again" CTA fast during the 50-user testing window.
+    const orphanCutoff = new Date(Date.now() - 2 * 60_000).toISOString();
+    const { data: orphans } = await supabase
+      .from("scans")
+      .update({ scan_status: "error" })
+      .eq("scan_status", "processing")
+      .eq("resume_file_path", "pending-upload")
+      .lt("created_at", orphanCutoff)
+      .select("id");
+    if (orphans?.length) result.marked_error += orphans.length;
+
+    // 2b. Mark long-stuck processing scans as error so UI shows retry button
     const processingCutoff = new Date(Date.now() - PROCESSING_TIMEOUT_MIN * 60_000).toISOString();
     const { data: stuckProcessing, error: procErr } = await supabase
       .from("scans")
@@ -77,7 +91,7 @@ Deno.serve(async (req) => {
     if (procErr) {
       result.errors.push(`processing update: ${procErr.message}`);
     } else {
-      result.marked_error = (stuckProcessing ?? []).length;
+      result.marked_error += (stuckProcessing ?? []).length;
     }
 
     return new Response(JSON.stringify({ success: true, ...result }), {
