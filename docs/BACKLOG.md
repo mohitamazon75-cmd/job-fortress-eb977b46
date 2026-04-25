@@ -139,6 +139,7 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
   users, or a structural matcher rewrite.
 - **Status**: open (deferred).
 
+## Open — P3
 
 ### Known prompt/schema mismatches
 
