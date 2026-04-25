@@ -328,6 +328,25 @@ ${kgContext}`;
   // ═══════════════════════════════════════════════════════════════
   console.log(`[Orchestrator] Launching Steps 7+8+9 in parallel at ${((Date.now() - globalStart) / 1000).toFixed(1)}s`);
 
+  // Issue #12: per-agent timing instrumentation. Times wall-clock duration of
+  // each promise without altering the agent calls themselves. Each entry below
+  // is recorded in determinism_meta.runs and surfaced on the admin debug view.
+  const parallelStart = Date.now();
+  const agentRuns: AgentRunMeta[] = [];
+  const recordRun = (m: AgentRunMeta) => { agentRuns.push(m); };
+  function timed<T>(
+    name: string,
+    model: string | null,
+    temperature: number | null,
+    p: Promise<T>,
+  ): Promise<T> {
+    const t0 = Date.now();
+    return p.then(
+      (v) => { recordRun({ name, model, temperature, duration_ms: Date.now() - t0, status: "success" }); return v; },
+      (e) => { recordRun({ name, model, temperature, duration_ms: Date.now() - t0, status: e?.name === "AbortError" ? "timeout" : "failed" }); throw e; },
+    );
+  }
+
   // ML Gateway promise
   const mlPromise = (async () => {
     try {
