@@ -5,11 +5,14 @@ import BossPerceptionSimulator from "./BossPerceptionSimulator";
 interface Props {
   cardData: any;
   onNext: () => void;
+  /** Optional. Currently unused (Card1 is first content card after Verdict);
+   *  added for nav consistency with Card2+ in case the deck order changes. */
+  onBack?: () => void;
   /** Monthly scan count for social proof. Fetched once by ResultsModelB and passed down. */
   monthlyScanCount?: number | null;
 }
 
-export default function Card1RiskMirror({ cardData, onNext, monthlyScanCount }: Props) {
+export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanCount }: Props) {
   const c1 = cardData.card1_risk;
   const u = cardData.user || {};
   const disruptionYear = c1?.disruption_year || "2027";
@@ -228,7 +231,7 @@ export default function Card1RiskMirror({ cardData, onNext, monthlyScanCount }: 
         )}
 
         <InfoBox variant="amber" title={`India market signal — ${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`} body={c1.india_data_insight || ""} />
-        <CardNav onNext={onNext} nextLabel="See salary reality →" />
+        <CardNav onBack={onBack} onNext={onNext} nextLabel="See salary reality →" />
       </CardBody>
     </CardShell>
   );
