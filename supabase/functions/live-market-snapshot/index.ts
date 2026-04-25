@@ -101,6 +101,16 @@ export type SnapshotResult = {
     within_7d_count: number;
     older_count: number;
   };
+  // NEW v2 — measures how well the corpus matches the user's role.
+  // When low, the UI should hide the tag list (which would be misleading)
+  // and render a thin-signal view with salary+recency only. See
+  // computeCorpusRelevance for the scoring rubric.
+  corpus_relevance: {
+    score: number;          // 0..100
+    band: "strong" | "partial" | "thin";
+    title_overlap_pct: number; // % of postings whose title contains a role-token
+    skill_match_in_top_tags: number; // count of user skills found in top tags
+  };
   source: { name: "Naukri.com"; via: "Apify"; fetched_at: string };
 };
 
