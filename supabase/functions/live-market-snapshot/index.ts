@@ -477,13 +477,14 @@ export function emptyShape(opts: { is_executive: boolean; error?: string }): Sna
 
 export function buildSnapshot(jobs: ApifyJob[], userSkills: string[], cached: boolean, role = ""): SnapshotResult {
   const now = new Date().toISOString();
-  const top = aggregateTopTags(jobs);
+  const relevantJobs = filterRelevantJobs(jobs, role, userSkills);
+  const top = aggregateTopTags(relevantJobs);
   const overlap = computeUserSkillOverlap(top, userSkills);
-  const salary = aggregateSalary(jobs);
-  const recency = aggregateRecency(jobs);
-  const relevance = computeCorpusRelevance(jobs, top, userSkills, role);
+  const salary = aggregateSalary(relevantJobs);
+  const recency = aggregateRecency(relevantJobs);
+  const relevance = computeCorpusRelevance(relevantJobs, top, userSkills, role);
   return {
-    posting_count: jobs.length,
+    posting_count: relevantJobs.length,
     fetched_at: now,
     cached,
     is_executive: false,
@@ -503,7 +504,7 @@ export function buildSnapshot(jobs: ApifyJob[], userSkills: string[], cached: bo
 async function fetchApify(role: string, city: string): Promise<ApifyJob[]> {
   const apiToken = Deno.env.get("APIFY_API_TOKEN");
   if (!apiToken) throw new Error("APIFY_API_TOKEN is not configured");
-  const roleSlug = slugify(role);
+  const roleSlug = slugify(compactRoleForSearch(role));
   const citySlug = slugify(normalizeCity(city));
   const searchUrl = `https://www.naukri.com/${roleSlug}-jobs-in-${citySlug}`;
   const url = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?token=${apiToken}`;
