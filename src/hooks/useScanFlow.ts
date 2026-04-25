@@ -348,6 +348,8 @@ export function useScanFlow(callbacks: ScanFlowCallbacks): ScanFlowState {
     setMoneyShotSeen,
     errorScanStatus,
     setErrorScanStatus,
+    errorReason,
+    setErrorReason,
     showRateLimitUpsell,
     setShowRateLimitUpsell,
     showReAuth,
