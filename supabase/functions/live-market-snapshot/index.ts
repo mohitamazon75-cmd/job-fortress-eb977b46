@@ -212,8 +212,8 @@ export function aggregateTopTags(jobs: ApifyJob[]): Array<{ tag: string; count: 
 // tags — i.e. when the corpus represents the user's role.
 //
 // Phase 2B-iii (UI) MUST disclose this gating to users when
-// overlap is hidden, e.g. "Tag-based skill match not available
-// for this role's posting set in this city."
+// overlap is hidden, e.g. "Skill-match not shown — this market's
+// top tags don't cleanly reflect {role} skills."
 // ─────────────────────────────────────────────────────────────────
 export function computeUserSkillOverlap(
   topTags: Array<{ tag: string }>,
