@@ -27,6 +27,7 @@ import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spe
 import {
   AGENT_1_PROFILER,
 } from "../_shared/agent-prompts.ts";
+import { getCurrentToolCatalog, formatCatalog } from "../_shared/tool-catalog.ts";
 import {
   resolveIndustry,
   validateAgent1Output,
@@ -648,7 +649,9 @@ Deno.serve(async (req) => {
     }
 
     if (!agent1) {
-      const profilerResult = await callAgentRace(LOVABLE_API_KEY, "Agent1:Profiler", AGENT_1_PROFILER,
+      const toolCatalog = await getCurrentToolCatalog(supabase);
+      const agent1Prompt = AGENT_1_PROFILER.replaceAll("{{TOOL_CATALOG}}", formatCatalog(toolCatalog));
+      const profilerResult = await callAgentRace(LOVABLE_API_KEY, "Agent1:Profiler", agent1Prompt,
         agent1UserPrompt, PRO_MODEL, "google/gemini-3-flash-preview", 0.1, 25_000);
       agent1 = profilerResult.data;
       // Validate and clamp Agent 1 output ranges
