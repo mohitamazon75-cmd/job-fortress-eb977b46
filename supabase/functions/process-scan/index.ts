@@ -38,7 +38,7 @@ import {
   sanitizeRoleTitle,
   applyFunctionalIndustryOverride,
 } from "../_shared/scan-helpers.ts";
-import { computeProfileCompleteness, deterministicSeedFromScanId } from "../_shared/scan-utils.ts";
+import { computeProfileCompleteness, deterministicSeedFromString } from "../_shared/scan-utils.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
 import { orchestrateAgents } from "./scan-agents.ts";
 import { runScanPipeline } from "./scan-pipeline.ts";
