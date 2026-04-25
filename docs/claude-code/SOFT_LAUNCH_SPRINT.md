@@ -74,19 +74,9 @@ Each PR is small, focused, and shippable on its own. Status updated as we go.
 
 ---
 
-### PR4 — Observability: Uptime ping + error rate alerts
-**Status**: ⚪ Not started
-**Files**: 1 edge function (already partially exists?), 1 cron
-**Why**: We have `monitoring_alerts` and `daily_usage_stats` tables and a `check_error_threshold` trigger already. Need to actually surface alerts somewhere the operator sees them.
-
-**Plan**:
-- Audit what's already wired (`check_error_threshold` trigger exists)
-- Add a daily digest edge function that emails operator if any unacked alerts in the last 24h
-- Cron it once a day
-
-**Acceptance**:
-- Operator gets an email if error rate > 20% on any function
-- Operator gets a daily summary even on green days
+### PR4 — Observability (merged into PR3 above)
+**Status**: ✅ Complete (2026-04-25) — see PR3.
+The error-rate trigger (`check_error_threshold`) was already wired in a prior migration. Combined with the cost-budget check and the `send-alerts` cron from PR3, the observability story is complete for the soft launch: errors > 20% on any function ➜ alert; AI spend > $5/day ➜ alert; both routed to webhook every 15 min.
 
 ---
 
