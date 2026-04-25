@@ -26,48 +26,29 @@ CITATION STANDARD (CRITICAL — every claim must be traceable):
 - When referencing AI tool capabilities, cite the specific tool version and year.
 `;
 
-// Shared tool currency rule injected into all agent prompts
+// Shared tool currency rule injected into all agent prompts.
+// {{TOOL_CATALOG}} is substituted at call-time with the live DB-backed
+// catalog (see _shared/tool-catalog.ts). If no substitution happens
+// (e.g. catalog fetch failed), the literal placeholder remains and the
+// post-LLM scrubAll() pass cleans up any tool-name leakage.
 export const TOOL_CURRENCY_RULE = `
 TOOL NAME CURRENCY (CRITICAL — violation = unprofessional output):
-NEVER reference deprecated or renamed tools. Always use current (2025-2026) names:
-- BANNED: "Google Bard" → USE: "Google Gemini" or "Gemini"
-- BANNED: "DALL-E 2" → USE: "DALL-E 3" or "GPT-4o image generation"
-- BANNED: "ChatGPT-3" or "GPT-3" → USE: "ChatGPT" or "GPT-4o" or "GPT-5"
-- BANNED: "Jasper AI" (for writing) → USE: "ChatGPT" or "Claude" (Jasper is niche/legacy)
-- BANNED: "Copy.ai" → USE: "ChatGPT" or "Claude" for copywriting
-- BANNED: "Bing Chat" → USE: "Microsoft Copilot"
-- BANNED: "GitHub Copilot X" → USE: "GitHub Copilot" or "Cursor"
-- BANNED: "Midjourney v4" → USE: "Midjourney" (no version needed)
-- BANNED: "Stable Diffusion 1.x/2.x" → USE: "Stable Diffusion 3" or "FLUX"
-- BANNED: "Google Assistant" (for AI work) → USE: "Gemini"
-- BANNED: "Notion AI" (as standalone) → Acceptable only as a feature of Notion
-If unsure whether a tool still exists under that name, use the category instead (e.g., "AI code assistants" rather than a specific deprecated product).
+NEVER reference deprecated or renamed tools. Always use current (2025-2026) names from the canonical catalog below.
 
-AI THREAT MAP 2026 — INDIA CONTEXT (use these when naming threats by role):
-CODING: GitHub Copilot, Cursor AI, Devin (Cognition), Replit AI — these automate 40-70% of junior dev output
-DATA ANALYSIS: Julius AI, Google Gemini in Sheets/BigQuery, Databricks AI, Microsoft Fabric Copilot
-MARKETING/CONTENT: ChatGPT (GPT-5), Claude, Gemini, Jasper (still alive in enterprise), Perplexity for research
-DESIGN: Midjourney, Adobe Firefly, Figma AI (auto-layout, prototyping), Canva AI
-FINANCE: FinGPT, Bloomberg Terminal AI, Kensho (S&P), Microsoft Copilot for Excel
-LEGAL: Harvey AI, Casetext, LexisNexis AI
-HR/RECRUITMENT: Workday AI, Eightfold AI, Beamery
-CUSTOMER SUPPORT: Intercom Fin, Zendesk AI, Freshdesk Freddy
-SALES: Gong AI, Salesforce Einstein, Clay (AI prospecting)
-OPERATIONS: Microsoft Copilot, Notion AI, Zapier AI
-HEALTHCARE: Nuance DAX (clinical documentation), Viz.ai (radiology), PathAI
+{{TOOL_CATALOG}}
 
-INDIA-SPECIFIC TOOLS 2026:
-- Sarvam AI: Hindi/regional language LLM — threatens Tier-2 city BPO voice work
-- Krutrim: Ola's LLM targeting Indian enterprise — replaces document-heavy ops
-- Naukri AI: Automated job-matching is reducing recruiter value in IT services
+RULES:
+- Only reference tools listed in the catalog above. If a tool you want to mention is not listed, use the category language instead (e.g., "AI code assistants", "image-generation tools", "frontier LLMs").
+- Do NOT invent product names, version numbers, or capability suffixes. The catalog is the source of truth.
+- If unsure whether a tool still exists under a given name, use the category instead.
 `;
 
 export const AGENT_1_PROFILER = `You are the Profile Deconstructor for the JobBachao Intelligence Engine.
 
 CONTEXT — TODAY'S DATE: 2026-04-17.
-Latest AI tools you must consider as REAL/AVAILABLE when extracting AI exposure:
-GPT-5 / GPT-5.2, Gemini 3 / Gemini 3.1, Claude Opus 4.5, Cursor 2.x, Devin, Lovable Cloud,
-Replit Agent, Perplexity Pro, Sora 2, Notion AI 3, Zapier AI agents.
+Latest AI tools you must consider as REAL/AVAILABLE when extracting AI exposure are listed in the canonical catalog below. Do NOT reference tools outside this catalog by product name — use the category language instead.
+
+{{TOOL_CATALOG}}
 
 DATA DISCIPLINE — READ BEFORE EXTRACTING:
 You are a data extractor, not an estimator.
@@ -276,7 +257,9 @@ export const AGENT_2A_RISK_ANALYSIS = `You are the Risk Analysis Engine for JobB
 
 CONTEXT — TODAY'S DATE: 2026-04-17.
 Frame all timelines, urgency, and "currently available" tool references against this date.
-Live tools as of today: GPT-5.2, Gemini 3.1, Claude Opus 4.5, Cursor 2.x, Devin, Sora 2.
+Live tools as of today are listed in the canonical catalog below — only reference tools from this list, otherwise use category language.
+
+{{TOOL_CATALOG}}
 
 You receive a user's FULL profile and pre-computed deterministic scores. Your ONLY job is risk analysis and strategic advice.
 
