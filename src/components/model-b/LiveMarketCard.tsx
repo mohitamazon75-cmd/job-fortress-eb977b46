@@ -593,7 +593,7 @@ function SnapshotView({
                         textTransform: "uppercase",
                       }}
                     >
-                      Posting Freshness ({posting_count ?? categorized} total{uncategorized > 0 ? ` · ${uncategorized} undated` : ""})
+                      Posting Freshness ({totalPool} relevant{uncategorized > 0 ? ` · ${uncategorized} undated` : ""})
                     </div>
                   </div>
                 </div>
