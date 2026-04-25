@@ -465,22 +465,33 @@ function SnapshotView({
           const sameDay = recency?.same_day_count ?? 0;
           const within7d = recency?.within_7d_count ?? 0;
           const older = recency?.older_count ?? 0;
-          const total = sameDay + within7d + older;
+          const categorized = sameDay + within7d + older;
           const fresh = sameDay + within7d;
-          const freshPct = total > 0 ? Math.round((fresh / total) * 100) : 0;
+          // Naukri sometimes returns postings without a parseable "X days ago"
+          // label. Don't fabricate a velocity verdict from a zero-sample bucket.
+          const hasSignal = categorized >= 3;
+          const freshPct = categorized > 0 ? Math.round((fresh / categorized) * 100) : 0;
+          const uncategorized = Math.max(0, (posting_count ?? 0) - categorized);
 
-          let velocityLabel = "COOL";
+          let velocityLabel = "—";
           let velocityColor = "var(--mb-ink2)";
-          let velocityNote = "Most postings are older than a week — hiring is steady, not urgent.";
-          if (freshPct >= 70) {
-            velocityLabel = "HOT";
-            velocityColor = "#B8341C";
-            velocityNote = `${freshPct}% of postings are less than 7 days old — recruiters are actively hiring this week.`;
-          } else if (freshPct >= 40) {
-            velocityLabel = "ACTIVE";
-            velocityColor = "#8B6F1F";
-            velocityNote = `${freshPct}% of postings are less than 7 days old — a healthy, consistent hiring pulse.`;
+          let velocityNote = `Posting dates weren't parseable for enough listings to judge hiring velocity. ${posting_count ?? 0} ${posting_count === 1 ? "posting was" : "postings were"} pulled.`;
+          if (hasSignal) {
+            if (freshPct >= 70) {
+              velocityLabel = "HOT";
+              velocityColor = "#B8341C";
+              velocityNote = `${freshPct}% of dated postings are less than 7 days old — recruiters are actively hiring this week.`;
+            } else if (freshPct >= 40) {
+              velocityLabel = "ACTIVE";
+              velocityColor = "#8B6F1F";
+              velocityNote = `${freshPct}% of dated postings are less than 7 days old — a steady, consistent hiring pulse.`;
+            } else {
+              velocityLabel = "COOL";
+              velocityColor = "var(--mb-ink2)";
+              velocityNote = `Only ${freshPct}% of dated postings are less than 7 days old — most listings are stale, hiring is not urgent right now.`;
+            }
           }
+
 
           return (
             <div style={{ marginBottom: 22 }}>
