@@ -42,7 +42,7 @@ Each PR is small, focused, and shippable on its own. Status updated as we go.
 ---
 
 ### PR2 — Scale: DB indexes + query hygiene
-**Status**: ⚪ Not started
+**Status**: ✅ Complete (2026-04-25)
 **Files**: 1 migration, possibly 1 query edit
 **Why**: At 1,000 users with multiple scans each, common lookups (`scans.user_id`, `scans.status`, `score_history.user_id`, `scan_rate_limits.user_id`) will full-scan without indexes.
 
