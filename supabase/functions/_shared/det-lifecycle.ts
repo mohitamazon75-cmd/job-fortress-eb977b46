@@ -90,7 +90,25 @@ export function calculateSalaryBleed(
     1.0;
   depreciationRate *= tierMultiplier;
 
-  const finalRate = Math.min(depreciationRate, CALIBRATION.SALARY_BLEED_CAP);
+  // P0 #2 fix (2026-04-25): Replace hard cap with smooth soft-clamp.
+  // The previous Math.min() caused two near-identical résumés (raw rates 0.59
+  // vs 0.61) to land at 0.59 vs 0.60 — a discrete snap that produced the
+  // bimodal salary_bleed clusters seen in cross-account scans of the same
+  // résumé. We now use a softplus-based asymptote: rates well below the cap
+  // pass through unchanged (within ~0.1%), rates near the cap blend smoothly,
+  // and rates above the cap approach but never exceed CAP. This preserves the
+  // economic invariant (no role loses >60%/yr) while removing the
+  // determinism-breaking discontinuity at the boundary.
+  //   softClamp(r, cap, k) = cap - (1/k) * ln(1 + exp(k * (cap - r)))
+  // k=40 keeps the transition tight (~5pp window around the cap) so the
+  // calibrated curve is barely perturbed below ~0.55.
+  const SOFT_CLAMP_K = 40;
+  const cap = CALIBRATION.SALARY_BLEED_CAP;
+  const margin = cap - depreciationRate;
+  // Numerically stable softplus: log1p(exp(x)) = max(x,0) + log1p(exp(-|x|))
+  const kx = SOFT_CLAMP_K * margin;
+  const softplus = Math.max(kx, 0) + Math.log1p(Math.exp(-Math.abs(kx)));
+  const finalRate = cap - softplus / SOFT_CLAMP_K;
   const monthlyBleed = Math.floor(monthlySalary * finalRate / 12);
   const total5yr = monthlyBleed * 60;
 
