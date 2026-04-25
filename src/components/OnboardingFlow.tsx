@@ -10,12 +10,14 @@ interface OnboardingFlowProps {
   industry: string;
   yearsExperience: string;
   metroTier: string;
+  monthlyCTC: number | null;
   hasLinkedIn?: boolean;
   hasResume?: boolean;
   onSelectCountry: (v: string) => void;
   onSelectIndustry: (v: string) => void;
   onSelectExperience: (v: string) => void;
   onSelectMetro: (v: string) => void;
+  onSubmitCTC: (monthlyInLocalCurrency: number | null) => void;
   onSelectSkills?: (skills: string) => void;
   onSkipSkills?: () => void;
   onBack?: (fromStep: number) => void;
@@ -45,12 +47,14 @@ export default function OnboardingFlow({
   industry,
   yearsExperience,
   metroTier,
+  monthlyCTC,
   hasLinkedIn = false,
   hasResume = false,
   onSelectCountry,
   onSelectIndustry,
   onSelectExperience,
   onSelectMetro,
+  onSubmitCTC,
   onSelectSkills,
   onSkipSkills,
   onBack,
@@ -60,8 +64,67 @@ export default function OnboardingFlow({
   const [customIndustry, setCustomIndustry] = useState('');
   const [customIndustryError, setCustomIndustryError] = useState('');
   const [skillsError, setSkillsError] = useState('');
+  const [ctcInput, setCtcInput] = useState<string>(monthlyCTC ? String(monthlyCTC) : '');
+  const [ctcError, setCtcError] = useState('');
   const isManualPath = !hasLinkedIn && !hasResume;
-  const showSkillsStep = isManualPath && step === 5;
+  // Step 5 = CTC for everyone. Skills (manual path only) becomes step 6.
+  const showSkillsStep = isManualPath && step === 6;
+  const showCTCStep = step === 5;
+
+  // Currency config per country — drives quick-pick bands and label.
+  // Bands chosen to cover ~80% of users without forcing them to type.
+  const currencyConfig = (() => {
+    switch (country) {
+      case 'US':
+        return {
+          symbol: '$', code: 'USD', label: 'monthly take-home',
+          // monthly take-home in USD — entry, mid, senior, exec
+          quickPicks: [3000, 5500, 9000, 15000],
+          minValid: 500, maxValid: 100000,
+        };
+      case 'AE':
+        return {
+          symbol: 'AED', code: 'AED', label: 'monthly salary',
+          quickPicks: [8000, 18000, 35000, 60000],
+          minValid: 1000, maxValid: 500000,
+        };
+      default: // IN and others
+        return {
+          symbol: '₹', code: 'INR', label: 'monthly in-hand',
+          // monthly in-hand INR — junior, mid, senior, lead/director
+          quickPicks: [50000, 120000, 250000, 500000],
+          minValid: 5000, maxValid: 5000000,
+        };
+    }
+  })();
+
+  const handleSubmitCTC = () => {
+    const trimmed = ctcInput.trim();
+    if (!trimmed) {
+      // Treat empty as skip — pass null
+      onSubmitCTC(null);
+      return;
+    }
+    const parsed = Number(trimmed.replace(/[^\d.]/g, ''));
+    if (!Number.isFinite(parsed) || parsed < currencyConfig.minValid || parsed > currencyConfig.maxValid) {
+      setCtcError(`Enter a value between ${currencyConfig.symbol}${currencyConfig.minValid.toLocaleString()} and ${currencyConfig.symbol}${currencyConfig.maxValid.toLocaleString()}`);
+      return;
+    }
+    setCtcError('');
+    onSubmitCTC(Math.round(parsed));
+  };
+
+  const stepConfig = [
+    { label: 'Location', icon: Globe },
+    { label: 'Industry', icon: Briefcase },
+    { label: 'Experience', icon: Clock },
+    { label: 'Metro', icon: MapPin },
+    { label: 'Salary', icon: Sparkles },
+    ...(isManualPath ? [{ label: 'Skills', icon: Sparkles }] : []),
+  ];
+
+  const metroTiers = METRO_TIERS_BY_COUNTRY[country] || METRO_TIERS_BY_COUNTRY.IN;
+  const totalSteps = isManualPath ? 6 : 5;
 
   const handleSkillsSubmit = () => {
     // Sanitize each skill individually so injection phrases get filtered
@@ -79,16 +142,6 @@ export default function OnboardingFlow({
     onSelectSkills?.(cleanedSkills.join(', '));
   };
 
-  const stepConfig = [
-    { label: 'Location', icon: Globe },
-    { label: 'Industry', icon: Briefcase },
-    { label: 'Experience', icon: Clock },
-    { label: 'Metro', icon: MapPin },
-    ...(isManualPath ? [{ label: 'Skills', icon: Sparkles }] : []),
-  ];
-
-  const metroTiers = METRO_TIERS_BY_COUNTRY[country] || METRO_TIERS_BY_COUNTRY.IN;
-  const totalSteps = isManualPath ? 5 : 4;
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
@@ -374,7 +427,96 @@ export default function OnboardingFlow({
             </div>
           )}
 
-          {/* Step 5: Key Skills (manual path only) */}
+          {/* Step 5: Monthly Salary (CTC) — optional, but enables salary-bleed kill-shot */}
+          {showCTCStep && (
+            <div>
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-foreground mb-2">Your {currencyConfig.label}</h2>
+                <p className="text-muted-foreground">
+                  Lets us calculate exactly how much salary AI puts at risk for <span className="font-medium text-foreground">your</span> package.
+                  Skip if you'd rather not — we'll show ranges instead.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Quick-pick bands */}
+                <div className="grid grid-cols-2 gap-3">
+                  {currencyConfig.quickPicks.map((amount) => {
+                    const isActive = monthlyCTC === amount;
+                    return (
+                      <motion.button
+                        key={amount}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          setCtcInput(String(amount));
+                          setCtcError('');
+                          onSubmitCTC(amount);
+                        }}
+                        className={`p-4 rounded-xl border text-center transition-all duration-200 ${
+                          isActive
+                            ? 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary/20'
+                            : 'border-border bg-card hover:border-primary/30 hover:shadow-sm'
+                        }`}
+                      >
+                        <span className={`text-lg font-bold block ${
+                          isActive ? 'text-primary' : 'text-foreground'
+                        }`}>
+                          {currencyConfig.symbol}{amount.toLocaleString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">/month</span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom input */}
+                <div>
+                  <label className="text-xs text-muted-foreground font-medium mb-1.5 block">
+                    Or enter exact amount ({currencyConfig.code} per month)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                      {currencyConfig.symbol}
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={ctcInput}
+                      onChange={(e) => {
+                        setCtcInput(e.target.value);
+                        setCtcError('');
+                      }}
+                      placeholder="e.g. 150000"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </div>
+                  {ctcError && <p className="text-xs text-destructive font-medium mt-1.5">{ctcError}</p>}
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    Stored privately, only used to compute your salary-at-risk number.
+                  </p>
+                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={handleSubmitCTC}
+                  className="w-full py-3 rounded-xl font-semibold text-primary-foreground transition-all"
+                  style={{ background: 'var(--gradient-primary)' }}
+                >
+                  Continue
+                </motion.button>
+                <button
+                  onClick={() => onSubmitCTC(null)}
+                  className="w-full py-3 rounded-xl font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Skip — show salary as a range
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 6: Key Skills (manual path only) */}
           {showSkillsStep && (
             <div>
               <div className="text-center mb-8">
