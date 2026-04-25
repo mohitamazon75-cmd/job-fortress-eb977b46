@@ -45,7 +45,7 @@ import { runScanPipeline } from "./scan-pipeline.ts";
 
 // New shared modules
 import { checkRateLimit } from "../_shared/scan-rate-limiter.ts";
-import { callAgent, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
+import { FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
 import { callAgentWithFallback } from "../_shared/model-fallback.ts";
 import { recordScoreHistory, getPreviousScore } from "../_shared/score-history.ts";
 import { Agent1Schema, clampAgent1Output, validateAgentOutput, checkAutomationSignalConsistency } from "../_shared/zod-schemas.ts";
