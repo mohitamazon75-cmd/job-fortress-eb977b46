@@ -111,26 +111,7 @@ export async function checkDailySpending(functionName: string): Promise<Spending
       console.log(`[SpendingGuard] WARNING: ${functionName} at ${Math.round(totalEstimatedSpend / DAILY_BUDGET_USD * 100)}%`);
     }
 
-    // Per-user daily limit (only query if global budget is fine)
-    if (userId) {
-      const { data: userStats } = await sb
-        .from("daily_usage_stats")
-        .select("call_count")
-        .eq("user_id", userId)
-        .eq("stat_date", today);
 
-      const userCallCount = (userStats || []).reduce((sum: number, r: any) => sum + (r.call_count || 0), 0);
-      const USER_DAILY_LIMIT = 25;
-
-      if (userCallCount >= USER_DAILY_LIMIT) {
-        console.warn(`[SpendingGuard] BLOCKED ${functionName}: user ${userId} daily limit (${userCallCount}/${USER_DAILY_LIMIT})`);
-        return {
-          allowed: false, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD,
-          reason: "user_daily_limit_exceeded",
-          message: "Daily limit reached. Try again tomorrow.",
-        };
-      }
-    }
 
     return { allowed: true, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
   } catch (err) {
