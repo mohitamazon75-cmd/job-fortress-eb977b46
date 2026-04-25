@@ -45,6 +45,7 @@ Before deleting `package-lock.json`, we need a Lovable deploy log to confirm whe
 - If Lovable uses Bun → delete `package-lock.json`
 - If Lovable uses npm → delete `bun.lock` instead and keep `package-lock.json`
 Either way, the final state is one lockfile. Not done today because we didn't have a recent deploy log to inspect.
+Resolved 2026-04-25: package-lock.json removed; bun.lock canonical.
 
 ### Pre-existing failure in scan pipeline (not caused by our work)
 During smoke testing after PR #2 merged, a real scan failed with `Analysis Incomplete`. Supabase edge function logs (viewed via Lovable) showed:

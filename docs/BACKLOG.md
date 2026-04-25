@@ -95,10 +95,10 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
 - **Fix**: add at least one snapshot test per file before any future edit.
 - **Decision (2026-04-24)**: deferred — snapshot tests on 800-line components produce unreadable diffs and false confidence. CLAUDE.md §1 Hazard F ("do not refactor unless explicitly asked") is the real safety net.
 
-### BL-024 — `package-lock.json` and `bun.lock` both present
+### BL-024 — `package-lock.json` and `bun.lock` both present → done
 - **Files**: repo root.
-- **Fix**: confirm Lovable build command, remove the unused one.
-- **Decision (2026-04-24)**: deferred — both lockfiles are read-only in this environment. Resolve via Lovable platform when the build command is documented.
+- **Resolution (2026-04-25)**: `package-lock.json` removed; `bun.lock` is the sole lockfile. Added `package-lock.json` to `.gitignore` to prevent re-introduction. CLAUDE.md and README.md updated accordingly.
+- **Status**: done.
 
 ### BL-025 — Executive-tier risk score may run hot (COO/founder archetype)
 - **Discovered**: 2026-04-24 · 5-input QA sweep (Mohit, COO at scale-up).

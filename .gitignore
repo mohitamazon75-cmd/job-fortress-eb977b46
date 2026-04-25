@@ -36,3 +36,6 @@ src/_archive/
 hero-blueprint-card.jsx
 vite.config.ts.timestamp-*
 vitest.config.ts.timestamp-*
+
+# bun.lock is canonical; package-lock.json must not be re-added
+package-lock.json
