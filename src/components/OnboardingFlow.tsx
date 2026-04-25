@@ -47,12 +47,14 @@ export default function OnboardingFlow({
   industry,
   yearsExperience,
   metroTier,
+  monthlyCTC,
   hasLinkedIn = false,
   hasResume = false,
   onSelectCountry,
   onSelectIndustry,
   onSelectExperience,
   onSelectMetro,
+  onSubmitCTC,
   onSelectSkills,
   onSkipSkills,
   onBack,
@@ -62,23 +64,54 @@ export default function OnboardingFlow({
   const [customIndustry, setCustomIndustry] = useState('');
   const [customIndustryError, setCustomIndustryError] = useState('');
   const [skillsError, setSkillsError] = useState('');
+  const [ctcInput, setCtcInput] = useState<string>(monthlyCTC ? String(monthlyCTC) : '');
+  const [ctcError, setCtcError] = useState('');
   const isManualPath = !hasLinkedIn && !hasResume;
-  const showSkillsStep = isManualPath && step === 5;
+  // Step 5 = CTC for everyone. Skills (manual path only) becomes step 6.
+  const showSkillsStep = isManualPath && step === 6;
+  const showCTCStep = step === 5;
 
-  const handleSkillsSubmit = () => {
-    // Sanitize each skill individually so injection phrases get filtered
-    // before they ever reach the LLM pipeline.
-    const cleanedSkills = skillsInput
-      .split(/[,\n]+/)
-      .map(s => sanitizePromptInput(s, { maxLength: 60 }))
-      .filter(Boolean);
-    if (cleanedSkills.length > 20) {
-      setSkillsError('Please enter your top 20 skills maximum');
-      onSkillsError?.('Please enter your top 20 skills maximum');
+  // Currency config per country — drives quick-pick bands and label.
+  // Bands chosen to cover ~80% of users without forcing them to type.
+  const currencyConfig = (() => {
+    switch (country) {
+      case 'US':
+        return {
+          symbol: '$', code: 'USD', label: 'monthly take-home',
+          // monthly take-home in USD — entry, mid, senior, exec
+          quickPicks: [3000, 5500, 9000, 15000],
+          minValid: 500, maxValid: 100000,
+        };
+      case 'AE':
+        return {
+          symbol: 'AED', code: 'AED', label: 'monthly salary',
+          quickPicks: [8000, 18000, 35000, 60000],
+          minValid: 1000, maxValid: 500000,
+        };
+      default: // IN and others
+        return {
+          symbol: '₹', code: 'INR', label: 'monthly in-hand',
+          // monthly in-hand INR — junior, mid, senior, lead/director
+          quickPicks: [50000, 120000, 250000, 500000],
+          minValid: 5000, maxValid: 5000000,
+        };
+    }
+  })();
+
+  const handleSubmitCTC = () => {
+    const trimmed = ctcInput.trim();
+    if (!trimmed) {
+      // Treat empty as skip — pass null
+      onSubmitCTC(null);
       return;
     }
-    setSkillsError('');
-    onSelectSkills?.(cleanedSkills.join(', '));
+    const parsed = Number(trimmed.replace(/[^\d.]/g, ''));
+    if (!Number.isFinite(parsed) || parsed < currencyConfig.minValid || parsed > currencyConfig.maxValid) {
+      setCtcError(`Enter a value between ${currencyConfig.symbol}${currencyConfig.minValid.toLocaleString()} and ${currencyConfig.symbol}${currencyConfig.maxValid.toLocaleString()}`);
+      return;
+    }
+    setCtcError('');
+    onSubmitCTC(Math.round(parsed));
   };
 
   const stepConfig = [
@@ -86,11 +119,12 @@ export default function OnboardingFlow({
     { label: 'Industry', icon: Briefcase },
     { label: 'Experience', icon: Clock },
     { label: 'Metro', icon: MapPin },
+    { label: 'Salary', icon: Sparkles },
     ...(isManualPath ? [{ label: 'Skills', icon: Sparkles }] : []),
   ];
 
   const metroTiers = METRO_TIERS_BY_COUNTRY[country] || METRO_TIERS_BY_COUNTRY.IN;
-  const totalSteps = isManualPath ? 5 : 4;
+  const totalSteps = isManualPath ? 6 : 5;
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
