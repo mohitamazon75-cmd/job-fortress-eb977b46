@@ -326,7 +326,7 @@ function SnapshotView({
   onPrev?: () => void;
   onNext?: () => void;
 }) {
-  const { posting_count, top_tags, user_skill_overlap, salary, source, fetched_at, cached } = snapshot;
+  const { posting_count, top_tags, user_skill_overlap, salary, recency, source, fetched_at, cached } = snapshot;
   const matchedSet = useMemo(
     () => new Set(user_skill_overlap.matched_skills.map((s) => s.toLowerCase())),
     [user_skill_overlap.matched_skills]
