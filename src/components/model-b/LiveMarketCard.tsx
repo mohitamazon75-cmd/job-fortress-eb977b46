@@ -326,7 +326,7 @@ function SnapshotView({
   onPrev?: () => void;
   onNext?: () => void;
 }) {
-  const { posting_count, top_tags, user_skill_overlap, salary, source, fetched_at, cached } = snapshot;
+  const { posting_count, top_tags, user_skill_overlap, salary, recency, source, fetched_at, cached } = snapshot;
   const matchedSet = useMemo(
     () => new Set(user_skill_overlap.matched_skills.map((s) => s.toLowerCase())),
     [user_skill_overlap.matched_skills]
@@ -458,116 +458,149 @@ function SnapshotView({
           </div>
         )}
 
-        {/* Salary */}
-        <div style={{ marginBottom: 22 }}>
-          <div
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 12,
-              fontWeight: 800,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "var(--mb-ink3)",
-              marginBottom: 14,
-            }}
-          >
-            Salary
-          </div>
-          {salary.shown ? (
-            <div
-              style={{
-                background: "var(--mb-navy-tint)",
-                border: "1.5px solid var(--mb-navy-tint2)",
-                borderRadius: 14,
-                padding: "18px 20px",
-              }}
-            >
+        {/* Hiring Velocity — replaces salary block (Naukri salary data is unfiltered
+            by seniority and misleads senior roles, so we surface posting freshness
+            instead, which IS reliable from the same dataset). */}
+        {(() => {
+          const sameDay = recency?.same_day_count ?? 0;
+          const within7d = recency?.within_7d_count ?? 0;
+          const older = recency?.older_count ?? 0;
+          const total = sameDay + within7d + older;
+          const fresh = sameDay + within7d;
+          const freshPct = total > 0 ? Math.round((fresh / total) * 100) : 0;
+
+          let velocityLabel = "COOL";
+          let velocityColor = "var(--mb-ink2)";
+          let velocityNote = "Most postings are older than a week — hiring is steady, not urgent.";
+          if (freshPct >= 70) {
+            velocityLabel = "HOT";
+            velocityColor = "#B8341C";
+            velocityNote = `${freshPct}% of postings are less than 7 days old — recruiters are actively hiring this week.`;
+          } else if (freshPct >= 40) {
+            velocityLabel = "ACTIVE";
+            velocityColor = "#8B6F1F";
+            velocityNote = `${freshPct}% of postings are less than 7 days old — a healthy, consistent hiring pulse.`;
+          }
+
+          return (
+            <div style={{ marginBottom: 22 }}>
               <div
                 style={{
                   fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: "var(--mb-ink2)",
-                  marginBottom: 10,
+                  fontSize: 12,
+                  fontWeight: 800,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "var(--mb-ink3)",
+                  marginBottom: 14,
                 }}
               >
-                Disclosed pay across {salary.n_disclosed} of {salary.n_total} postings
+                Hiring Velocity
               </div>
               <div
                 style={{
-                  display: "flex",
-                  gap: 28,
-                  flexWrap: "wrap",
-                  alignItems: "baseline",
+                  background: "var(--mb-navy-tint)",
+                  border: "1.5px solid var(--mb-navy-tint2)",
+                  borderRadius: 14,
+                  padding: "18px 20px",
                 }}
               >
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 32,
-                      fontWeight: 800,
-                      color: "var(--mb-navy)",
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    {formatLpa(salary.median_lpa)} <span style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink2)" }}>LPA</span>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 28,
+                    flexWrap: "wrap",
+                    alignItems: "baseline",
+                    marginBottom: 12,
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: "'DM Mono', monospace",
+                        fontSize: 32,
+                        fontWeight: 800,
+                        color: velocityColor,
+                        lineHeight: 1.1,
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      {velocityLabel}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        color: "var(--mb-ink3)",
+                        marginTop: 4,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Market Pulse
+                    </div>
                   </div>
-                  <div
-                    style={{
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: 11.5,
-                      fontWeight: 700,
-                      color: "var(--mb-ink3)",
-                      marginTop: 4,
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Median
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: "'DM Mono', monospace",
+                        fontSize: 18,
+                        fontWeight: 700,
+                        color: "var(--mb-ink)",
+                      }}
+                    >
+                      {sameDay} <span style={{ fontSize: 13, color: "var(--mb-ink2)" }}>today</span>
+                      {" · "}
+                      {within7d} <span style={{ fontSize: 13, color: "var(--mb-ink2)" }}>this week</span>
+                      {" · "}
+                      {older} <span style={{ fontSize: 13, color: "var(--mb-ink2)" }}>older</span>
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        color: "var(--mb-ink3)",
+                        marginTop: 4,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Posting Freshness ({total} total)
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <div
-                    style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 18,
-                      fontWeight: 700,
-                      color: "var(--mb-ink)",
-                    }}
-                  >
-                    {formatLpa(salary.p25_lpa)} – {formatLpa(salary.p75_lpa)} <span style={{ fontSize: 13, color: "var(--mb-ink2)" }}>LPA</span>
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: 11.5,
-                      fontWeight: 700,
-                      color: "var(--mb-ink3)",
-                      marginTop: 4,
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Range (P25–P75)
-                  </div>
+                <div
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    color: "var(--mb-ink2)",
+                    lineHeight: 1.55,
+                    paddingTop: 10,
+                    borderTop: "1px dashed var(--mb-rule)",
+                  }}
+                >
+                  {velocityNote}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 12,
+                    color: "var(--mb-ink3)",
+                    fontStyle: "italic",
+                    marginTop: 10,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  Salary band hidden — Naukri's disclosed pay isn't filtered by seniority,
+                  and showing a junior-skewed range for your level would mislead. Use the
+                  Negotiation Anchors in your action plan for level-matched compensation.
                 </div>
               </div>
             </div>
-          ) : (
-            <div
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 13.5,
-                color: "var(--mb-ink3)",
-                fontStyle: "italic",
-                lineHeight: 1.65,
-              }}
-            >
-              Salary disclosure too sparse to compute. Most postings hide pay.
-            </div>
-          )}
-        </div>
+          );
+        })()}
 
         {/* Source */}
         <div
