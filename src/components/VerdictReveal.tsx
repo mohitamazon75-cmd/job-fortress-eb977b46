@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { ScanReport } from '@/lib/scan-engine';
+import { normalizeThreatTimeline } from '@/lib/threat-timeline';
 import { ArrowRight, Shield, BarChart3, Sparkles, Users, TrendingDown, BrainCircuit, Gem, Banknote, Star, AlertTriangle, Clock } from 'lucide-react';
 import { inferSeniorityTier, isExecutiveTier } from '@/lib/seniority-utils';
 import { computeStabilityScore, computeScoreBreakdown } from '@/lib/stability-score';
@@ -468,7 +469,8 @@ export default function VerdictReveal({ report, onComplete }: VerdictRevealProps
 
                   {/* ═══ DISPLACEMENT TIMELINE CALLOUT ═══ */}
                   {(() => {
-                    const timeline = (report as any).threat_timeline;
+                    // BL-031: normalize across legacy string / new object / array shapes.
+                    const timeline = normalizeThreatTimeline((report as any).threat_timeline);
                     const significantYear = timeline?.significant_displacement_year;
                     const atRiskTask = timeline?.at_risk_task;
                     const primaryThreat = timeline?.primary_threat_tool;
