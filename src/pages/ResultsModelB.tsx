@@ -11,7 +11,9 @@ import Card5JobsTracker from "@/components/model-b/Card5JobsTracker";
 import Card6BlindSpots from "@/components/model-b/Card6BlindSpots";
 import Card7HumanAdvantage from "@/components/model-b/Card7HumanAdvantage";
 import Card0Verdict from "@/components/model-b/Card0Verdict";
+import LiveMarketCard from "@/components/model-b/LiveMarketCard";
 import PromptModal from "@/components/model-b/PromptModal";
+import { detectExecutive } from "@/lib/jobsTab";
 
 // Issue 1-A: Lazy-load the three highest-value previously-hidden features.
 // These were fully built but permanently unreachable in the old flow.
