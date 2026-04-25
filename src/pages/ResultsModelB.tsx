@@ -560,7 +560,8 @@ export default function ResultsModelB() {
     } catch {}
   }, [journeyStorageKey, visitedCards, journeyDone]);
 
-  // Journey complete detection — only fires when user has explored ALL 9 tabs (0..8).
+  // Journey complete detection — fires when user has explored ALL tabs.
+  // Total varies by sequence: 9 for execs, 10 for non-execs (LiveMarket inserted).
   // Idempotent: bonus is only applied if not already persisted as done.
   useEffect(() => {
     if (journeyDone) return;
@@ -570,7 +571,7 @@ export default function ResultsModelB() {
       toast.success("Journey complete ✓", { duration: 2800 });
       logEvent("journey_complete");
     }
-  }, [visitedCards, cardData, journeyDone, logEvent]);
+  }, [visitedCards, cardData, journeyDone, logEvent, TOTAL_JOURNEY_TABS]);
 
   // Memoized — was being rebuilt on every render (P0 #6)
   // Moved above the early return so hook order stays stable across renders.
