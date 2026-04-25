@@ -663,8 +663,25 @@ Deno.serve(async (req) => {
         `length delta = ${agent1SystemPrompt.length - AGENT_1_PROFILER.length}`,
       );
 
-      const profilerResult = await callAgentRace(LOVABLE_API_KEY, "Agent1:Profiler", agent1SystemPrompt,
-        agent1UserPrompt, PRO_MODEL, "google/gemini-3-flash-preview", 0.1, 25_000);
+      // DETERMINISM (operator ground rule: accuracy over speed):
+      // - Pin to Pro (no race) for accuracy. Flash stays as fallback
+      //   if Pro fails or times out (via callAgentWithFallback chain).
+      // - temperature=0 + per-scan seed makes skill extraction
+      //   reproducible for the same scanId.
+      // - This is the ONLY score-affecting LLM call in the scan
+      //   pipeline. All other LLM calls are narrative-only and
+      //   are intentionally left non-deterministic.
+      const profilerSeed = deterministicSeedFromScanId(scanId);
+      const profilerResult = await callAgentWithFallback(
+        LOVABLE_API_KEY,
+        "Agent1:Profiler",
+        agent1SystemPrompt,
+        agent1UserPrompt,
+        PRO_MODEL,
+        0,           // temperature
+        25_000,      // timeout
+        profilerSeed,
+      );
       agent1 = profilerResult.data;
       // Validate and clamp Agent 1 output ranges
       if (agent1) {
