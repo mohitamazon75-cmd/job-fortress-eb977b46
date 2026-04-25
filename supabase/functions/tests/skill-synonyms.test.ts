@@ -142,6 +142,29 @@ Deno.test("toMatchPct: strongest possible (anchor + full overlap + same-day) cap
 });
 
 // ─────────────────────────────────────────────────────────────────────
+// KNOWN LIMITATION (no unit test) — synonym-token false-positive class
+// ─────────────────────────────────────────────────────────────────────
+// Synonym variants composed of two common single-word tokens (e.g.
+// "team management", "performance marketing") can fire on token-aware
+// match (Strategy 3's vTokens.every loop) when the tokens appear
+// independently anywhere in a long JD haystack — e.g. "people management"
+// matches "join our high-performance team for management consulting"
+// because both "team" and "management" appear, despite "team management"
+// not appearing as a phrase.
+//
+// A targeted patch removing token-aware from the synonym loop was tested
+// in Phase 2A-iii and reverted because it surfaced two larger pre-existing
+// false-positive classes (canonical token-aware on multi-word skills like
+// "system design"; short-skill substring like "aws" inside "laws") that
+// produced net-negative eyeball impact. See docs/DECISIONS.md
+// "Naukri matcher overhaul — Phase 2A complete" for the full analysis.
+//
+// We deliberately do NOT have a unit test pinning this behavior either way:
+// it's a known limitation, not a guaranteed-prevented bug. Real fix path
+// is structural (embeddings or per-job LLM classification), out of scope
+// for Phase 2A.
+
+// ─────────────────────────────────────────────────────────────────────
 // (j) Label cutoffs — boundary-precise
 // ─────────────────────────────────────────────────────────────────────
 Deno.test("toMatchLabel: 80 → Strong fit", () => {
@@ -158,20 +181,4 @@ Deno.test("toMatchLabel: 65 → Relevant (lower bound)", () => {
 
 Deno.test("toMatchLabel: 64 → Stretch", () => {
   assertEquals(toMatchLabel(64), "Stretch");
-});
-
-// ─────────────────────────────────────────────────────────────────────
-// (k) Synonym variants do NOT match via token-aware fallback
-// (post-2A-iii patch: prevents "team" + "management" co-occurrence
-// false positives on long JDs)
-// ─────────────────────────────────────────────────────────────────────
-Deno.test("synonym variants do NOT match via token-aware: 'team management' synonym does not match 'high-performance team for management consulting'", () => {
-  // The canonical "people management" maps to variants including
-  // "team management". Without token-aware on synonyms, this haystack
-  // — which has "team" and "management" but not as a phrase — must
-  // NOT match.
-  assertStrictEquals(
-    skillPresent("people management", "join our high performance team for management consulting"),
-    false,
-  );
 });
