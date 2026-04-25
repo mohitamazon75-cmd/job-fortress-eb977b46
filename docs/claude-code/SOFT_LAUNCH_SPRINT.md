@@ -1,6 +1,6 @@
 # Soft Launch Sprint — 1 Week to 1,000 Users
 
-> **Status**: Active
+> **Status**: ✅ Complete (all 6 PRs shipped 2026-04-25 — same day, ahead of schedule)
 > **Started**: 2026-04-25
 > **Target**: Soft launch in 7 days, free pricing, ~1,000 users
 > **Decided by**: Operator on 2026-04-25 (sequence: one PR per workstream; pricing: free; timeline: 1 week)
