@@ -509,6 +509,10 @@ ${kgContext}`;
   const validatedAgent2 = validateOutputForTier(agent2, seniorityTier, displayName);
   console.log(`[Orchestrator] Steps 7+8+9 complete at ${((Date.now() - globalStart) / 1000).toFixed(1)}s`);
 
+  // Issue #12: assemble parallel-block stats for determinism_meta.
+  const parallelBlockMs = Date.now() - parallelStart;
+  const parallelTimedOut = raceResult === 'PARALLEL_TIMEOUT';
+
   return {
     mlObsolescence,
     mlTimedOut,
@@ -520,5 +524,11 @@ ${kgContext}`;
     isRescan,
     previousScoreData,
     toolCatalogTools: catalog.tools,
+    agentMeta: {
+      parallel_block_ms: parallelBlockMs,
+      parallel_deadline_ms: parallelDeadlineMs,
+      parallel_timed_out: parallelTimedOut,
+      runs: agentRuns,
+    },
   };
 }
