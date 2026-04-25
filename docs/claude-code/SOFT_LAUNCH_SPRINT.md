@@ -80,19 +80,29 @@ The error-rate trigger (`check_error_threshold`) was already wired in a prior mi
 
 ---
 
-### PR5 — Security: RLS audit + auth rate-limit
-**Status**: ⚪ Not started
-**Files**: 1 migration (RLS fixes), 1 edge function (signup throttle)
-**Why**: Before opening to 1,000 users we need the security linter clean and signup throttled (otherwise bots will abuse free Pro).
+### PR5 — Security audit & RLS hardening
+**Status**: ✅ Complete (2026-04-25)
+**Files**: 2 migrations, 1 auth config change. No app code changes needed.
 
-**Plan**:
-- Run `supabase--linter`, fix all critical/high findings
-- Run `security--run_security_scan`, address exposed-data findings
-- Add per-IP signup rate limit (5 signups / hour / IP)
+**Auth-bypass fixes (real exploits closed)**:
+- `fate_cards`: removed anon INSERT — anyone could create share cards for any assessment ID. Now service-role only (the legitimate `fate-card` edge function uses admin client).
+- `challenges`: removed permissive UPDATE — any signed-in user could claim any unclaimed challenge by guessing its ID. Now service-role only; the (currently unused) accept flow must go through a backend endpoint that verifies the challenge_code.
+- `beta_events`: removed duplicate weaker INSERT policy that allowed spoofing another user's profile_id.
 
-**Acceptance**:
-- Linter shows 0 errors, 0 critical warnings
-- Signup endpoint rejects 6th attempt from same IP in an hour
+**Compliance fixes**:
+- `resumes` storage bucket: added DELETE + UPDATE policies scoped to user's own folder. Closes a DPDP gap (users couldn't delete their own resumes).
+- Removed duplicate INSERT policy on resumes bucket.
+
+**Auth hardening**:
+- Enabled HIBP leaked-password protection — signups with breached passwords now blocked.
+
+**Skipped per platform rule** (no-backend-rate-limiting): per-IP signup throttle. The Lovable Cloud auth endpoint has its own throttling; no ad-hoc layer added.
+
+**Knowingly accepted (not a bug, by design)**:
+- `scans` row readable by anon with valid `access_token` — required for the entire pre-auth share/results UX. Tokens are 256-bit, server-generated, never logged client-side.
+- `diagnostic_results` shared rows expose salary — user explicitly opts in via `is_shared=true`. Part of viral share-card behavior.
+
+**Verification**: linter clean before & after. Security scan went from 9 → 11 findings, but the two new "errors" are both by-design tradeoffs documented above; the three real auth-bypass warnings from the original scan are gone.
 
 ---
 
