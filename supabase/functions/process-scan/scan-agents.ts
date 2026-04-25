@@ -27,6 +27,8 @@ import { validateAgentOutput, Agent2ASchema, Agent2BSchema } from "../_shared/zo
 import { getPreviousScore } from "../_shared/score-history.ts";
 import { getKG } from "../_shared/riskiq-knowledge-graph.ts";
 import { estimateMonthlySalary, calculateGeoArbitrage, type MarketSignalRow } from "../_shared/deterministic-engine.ts";
+import { getCurrentToolCatalog, formatCatalog } from "../_shared/tool-catalog.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
@@ -103,6 +105,9 @@ export interface AgentOrchestrationResult {
   monthlySalary: number;
   isRescan: boolean;
   previousScoreData: any;
+  /** Live tool catalog used to substitute {{TOOL_CATALOG}} in agent prompts.
+   *  Forwarded to scan-pipeline so the post-LLM scrubAll() pass can match it. */
+  toolCatalogTools: string[];
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -134,6 +139,20 @@ export async function orchestrateAgents(
   const expYears = profileInput.experience_years ?? 5;
   const displayName = linkedinName || agent1?.current_role || "you";
   const displayCompany = linkedinCompany || agent1?.current_company || "your company";
+
+  // ── Tool catalog (live, DB-backed) ─────────────────────────
+  // Fetched once per scan; substituted into agent system prompts via sub().
+  // Failure here is non-fatal: getCurrentToolCatalog() returns an empty
+  // catalog and formatCatalog() emits an "(unavailable)" sentinel; the
+  // post-LLM scrubAll() pass still catches stale tool-name leakage.
+  const catalog = await getCurrentToolCatalog(createAdminClient());
+  const catalogBlock = formatCatalog(catalog);
+  console.log(
+    `[catalog-wiring] catalog has ${catalog.tools.length} tools; ` +
+    `formatted block ${catalogBlock.length} chars; ` +
+    `first 120 chars: ${catalogBlock.slice(0, 120)}`,
+  );
+  const sub = (prompt: string) => prompt.replaceAll("{{TOOL_CATALOG}}", catalogBlock);
 
   const monthlySalary = estimateMonthlySalary(
     profileInput.estimated_monthly_salary_inr, 
@@ -324,14 +343,14 @@ ${kgContext}`;
 
   // Judo + Diet promise
   const judoDietPromise = hasTimeBudget(15_000) ? Promise.allSettled([
-    callAgentRace(LOVABLE_API_KEY, "JudoStrategy", JUDO_STRATEGY_SYSTEM_PROMPT,
+    callAgentRace(LOVABLE_API_KEY, "JudoStrategy", sub(JUDO_STRATEGY_SYSTEM_PROMPT),
       buildSeniorityJudoPrompt(seniorityTier, expYears, displayName, displayCompany,
         agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry,
         profileInput.strategic_skills, profileInput.execution_skills, profileInput.all_skills,
         det.determinism_index, det.survivability.score, scan.metro_tier || "tier1", null,
         profileInput.executive_impact || null),
       activeModel, "google/gemini-3-flash-preview", 0.3, 25_000).then(r => r.data),
-    callAgent(LOVABLE_API_KEY, "WeeklyDiet", WEEKLY_DIET_SYSTEM_PROMPT,
+    callAgent(LOVABLE_API_KEY, "WeeklyDiet", sub(WEEKLY_DIET_SYSTEM_PROMPT),
       buildSeniorityDietPrompt(seniorityTier, expYears, displayName,
         agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry,
         profileInput.strategic_skills, null),
@@ -343,13 +362,13 @@ ${kgContext}`;
   // at 15-25s on long prompts (gpt-5, gemini-3-pro). p50 latency for these prompts
   // is ~22s; 25s left almost no headroom for the first-attempt model.
   const agents2Promise = Promise.allSettled([
-    callAgentRace(LOVABLE_API_KEY, "Agent2A:Risk", AGENT_2A_RISK_ANALYSIS,
+    callAgentRace(LOVABLE_API_KEY, "Agent2A:Risk", sub(AGENT_2A_RISK_ANALYSIS),
       `Generate risk analysis for:\n${sharedProfileContext}\n\nUse "${displayName}" by name. Reference "${displayCompany}".`,
       activeModel, "google/gemini-3-flash-preview", 0.3, 25_000).then(r => r.data),
-    callAgentRace(LOVABLE_API_KEY, "Agent2B:Plan", AGENT_2B_ACTION_PLAN,
+    callAgentRace(LOVABLE_API_KEY, "Agent2B:Plan", sub(AGENT_2B_ACTION_PLAN),
       `Generate tier-calibrated action plan for:\n${sharedProfileContext}\nTier: ${seniorityTier}\nCountry: ${locale.label}\nCurrency: ${locale.currency}\nGeo Arbitrage Delta: ${locale.currencySymbol}${geoArb?.probability_adjusted_delta_inr || 0}/month\nJob Boards: ${locale.jobBoards.join(", ")}${rescanContext ? `\n${rescanContext}` : ''}`,
       activeModel, "google/gemini-3-flash-preview", 0.35, 25_000).then(r => r.data),
-    callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", AGENT_2C_PIVOT_MAPPING,
+    callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", sub(AGENT_2C_PIVOT_MAPPING),
       `Map career pivots for:\n${sharedProfileContext}\nMoat Score: ${det.moat_score}/100. Pivots must be realistic for ${seniorityTier} tier.\nCountry: ${locale.label}. Use job titles from ${locale.jobBoards.join("/")}.`,
       FAST_MODEL, 0.3, 30_000).then(r => r.data),
   ]);
@@ -452,5 +471,6 @@ ${kgContext}`;
     monthlySalary,
     isRescan,
     previousScoreData,
+    toolCatalogTools: catalog.tools,
   };
 }

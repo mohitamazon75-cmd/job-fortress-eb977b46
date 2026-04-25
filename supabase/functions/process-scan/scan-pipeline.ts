@@ -271,7 +271,7 @@ Return null if unclear. No explanation, no markdown.`;
     return { success: false, error: String(e), step: "agents" };
   }
 
-  const { mlObsolescence, mlTimedOut, validatedAgent2, seniorityTier, displayName, displayCompany } = agentResults;
+  const { mlObsolescence, mlTimedOut, validatedAgent2, seniorityTier, displayName, displayCompany, toolCatalogTools } = agentResults;
 
   // Diagnostics
   const va2 = validatedAgent2 as any;
@@ -304,6 +304,7 @@ Return null if unclear. No explanation, no markdown.`;
       await runQualityEditor(
         finalReport, detectedRole, displayName, displayCompany,
         (agent1 as any)?.industry || resolvedIndustry, LOVABLE_API_KEY,
+        toolCatalogTools,
       );
       scanDiagnostics.qualityEditor = "ran";
     } else {
