@@ -79,21 +79,135 @@ export function scrubString(input: string): { output: string; hits: Map<string, 
   return { output, hits };
 }
 
-/**
- * Recursively walk a JSON-like value and scrub all string leaves in place.
- * Mutates objects/arrays. Returns aggregate stats.
- */
-export function scrubReport(report: unknown): ScrubResult {
-  const aggregate = new Map<string, number>();
-  let totalScrubbed = 0;
+// ───────────────────────────────────────────────────────────────
+// Tool-name pattern detection
+//
+// Hardcoded LLM/tool product names (e.g. "GPT-5", "Claude 4 Opus",
+// "Midjourney v7") rot fast and look stale within months. When a
+// catalog of currently-relevant tool names is provided, replace
+// any matched product-name patterns NOT in the catalog with neutral
+// category language.
+//
+// Patterns are conservative on purpose. We do NOT match a generic
+// "capability suffix" (Pro/AI/Studio/Workspace) — too high a false
+// positive rate on legitimate copy.
+// ───────────────────────────────────────────────────────────────
 
-  function walk(node: unknown, parent?: Record<string, unknown> | unknown[], key?: string | number): void {
-    if (typeof node === "string") {
-      const { output, hits } = scrubString(node);
+interface ToolPattern {
+  pattern: RegExp;
+  // Returns the replacement category phrase given the matched name.
+  category: (match: string) => string;
+  label: string;
+}
+
+// Category mapper — keep deliberately small and generic.
+function categorize(name: string): string {
+  const n = name.toLowerCase();
+  if (/(midjourney|dall[- ]?e|firefly|stable\s*diffusion|imagen|flux)/i.test(n)) {
+    return "image-generation tools";
+  }
+  if (/(runway|sora|pika|veo|kling)/i.test(n)) {
+    return "video-generation tools";
+  }
+  if (/(devin|cursor|copilot|codeium|windsurf|cline)/i.test(n)) {
+    return "AI coding assistants";
+  }
+  if (/(gpt|claude|gemini|llama|mistral|grok|qwen|deepseek|opus|sonnet|haiku)/i.test(n)) {
+    return "frontier LLMs";
+  }
+  if (/(v0|bolt|lovable|replit\s*agent)/i.test(n)) {
+    return "AI app builders";
+  }
+  return "current AI tools";
+}
+
+const TOOL_PATTERNS: ToolPattern[] = [
+  // "<Name> v<digits>" or "<Name> Gen-<digits>" e.g. "Midjourney v7", "Runway Gen-4"
+  {
+    pattern: /\b([A-Z][A-Za-z0-9]{2,20})\s+(?:v|Gen-?)\d+(?:\.\d+)?\b/g,
+    category: (m) => categorize(m),
+    label: "versioned_tool_name",
+  },
+  // Frontier-LLM family names with version e.g. "GPT-5", "Claude 4 Opus", "Gemini 3 Pro", "Llama 4"
+  {
+    pattern: /\b(?:GPT-\d+(?:\.\d+)?(?:\s*(?:mini|nano|turbo))?|Claude\s+\d+(?:\.\d+)?\s*(?:Opus|Sonnet|Haiku)?|Gemini\s+\d+(?:\.\d+)?\s*(?:Pro|Flash|Ultra)?|Llama\s+\d+(?:\.\d+)?|Mistral\s+(?:Large|Medium|Small)\s+\d*|Grok-?\d+)\b/g,
+    category: (m) => categorize(m),
+    label: "frontier_llm_versioned",
+  },
+  // Standalone known-stale product names that don't carry a version suffix
+  // (kept tight — only names that are unambiguously product names in context)
+  {
+    pattern: /\b(?:Devin|Sora|Midjourney|Runway|Firefly|DALL-?E|Cursor|Windsurf|Codeium|v0\.dev|Bolt\.new)\b/g,
+    category: (m) => categorize(m),
+    label: "known_tool_name",
+  },
+];
+
+export interface ScrubAllOptions {
+  catalog?: { tools: string[] };
+}
+
+/**
+ * Returns true if the matched name is in the allow-list catalog.
+ * Case-insensitive whole-name match.
+ */
+function inCatalog(match: string, catalog: { tools: string[] } | undefined): boolean {
+  if (!catalog || !catalog.tools.length) return false;
+  const m = match.trim().toLowerCase();
+  return catalog.tools.some((t) => t.trim().toLowerCase() === m);
+}
+
+/**
+ * Like scrubString, but also scrubs tool-name patterns absent from
+ * the provided catalog. If no catalog is provided, behaves identically
+ * to scrubString (only phrase rules apply).
+ */
+export function scrubStringAll(
+  input: string,
+  opts: ScrubAllOptions = {},
+): { output: string; hits: Map<string, number> } {
+  // First: phrase rules (unchanged).
+  const phrase = scrubString(input);
+  let output = phrase.output;
+  const hits = new Map<string, number>(phrase.hits);
+
+  // Second: tool-name rules (only if a catalog is supplied; without
+  // one we have no way to distinguish stale-but-OK from fresh).
+  if (opts.catalog) {
+    for (const rule of TOOL_PATTERNS) {
+      output = output.replace(rule.pattern, (match) => {
+        if (inCatalog(match, opts.catalog)) return match;
+        hits.set(rule.label, (hits.get(rule.label) ?? 0) + 1);
+        return rule.category(match);
+      });
+    }
+  }
+
+  return { output, hits };
+}
+
+/**
+ * Recursively walk a JSON-like value, applying `transform` to every
+ * string leaf. If transform returns hits.size > 0, the parent is
+ * mutated in place with the rewritten string.
+ *
+ * Returns aggregate hit-count map and total scrub count for the
+ * caller to assemble into a ScrubResult.
+ */
+function walkStrings(
+  node: unknown,
+  transform: (s: string) => { output: string; hits: Map<string, number> },
+): { aggregate: Map<string, number>; total: number } {
+  const aggregate = new Map<string, number>();
+  let total = 0;
+
+  function visit(n: unknown, parent?: Record<string, unknown> | unknown[], key?: string | number): void {
+    if (typeof n === "string") {
+      const { output, hits } = transform(n);
       if (hits.size > 0) {
         for (const [label, count] of hits) {
           aggregate.set(label, (aggregate.get(label) ?? 0) + count);
-          totalScrubbed += count;
+          total += count;
         }
         if (parent !== undefined && key !== undefined) {
           // deno-lint-ignore no-explicit-any
@@ -102,21 +216,42 @@ export function scrubReport(report: unknown): ScrubResult {
       }
       return;
     }
-    if (Array.isArray(node)) {
-      for (let i = 0; i < node.length; i++) walk(node[i], node, i);
+    if (Array.isArray(n)) {
+      for (let i = 0; i < n.length; i++) visit(n[i], n, i);
       return;
     }
-    if (node && typeof node === "object") {
-      for (const k of Object.keys(node as Record<string, unknown>)) {
-        walk((node as Record<string, unknown>)[k], node as Record<string, unknown>, k);
+    if (n && typeof n === "object") {
+      for (const k of Object.keys(n as Record<string, unknown>)) {
+        visit((n as Record<string, unknown>)[k], n as Record<string, unknown>, k);
       }
     }
   }
 
-  walk(report);
+  visit(node);
+  return { aggregate, total };
+}
 
+/**
+ * Recursively walk a JSON-like value and scrub all string leaves in place.
+ * Mutates objects/arrays. Returns aggregate stats.
+ */
+export function scrubReport(report: unknown): ScrubResult {
+  const { aggregate, total } = walkStrings(report, scrubString);
   return {
-    scrubbed: totalScrubbed,
+    scrubbed: total,
+    hits: [...aggregate.entries()].map(([label, count]) => ({ label, count })),
+  };
+}
+
+/**
+ * Like scrubReport, but additionally scrubs tool-name patterns absent
+ * from the provided catalog. Behaves identically to scrubReport when
+ * no catalog is supplied.
+ */
+export function scrubAll(report: unknown, opts: ScrubAllOptions = {}): ScrubResult {
+  const { aggregate, total } = walkStrings(report, (s) => scrubStringAll(s, opts));
+  return {
+    scrubbed: total,
     hits: [...aggregate.entries()].map(([label, count]) => ({ label, count })),
   };
 }
