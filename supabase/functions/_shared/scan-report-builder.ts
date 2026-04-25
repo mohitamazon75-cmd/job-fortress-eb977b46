@@ -18,7 +18,7 @@ import {
 import { getLocale } from "./locale-config.ts";
 import { callAgent } from "./ai-agent-caller.ts";
 import { checkAutomationSignalConsistency } from "./zod-schemas.ts";
-import { scrubReport } from "./forbidden-phrase-scrubber.ts";
+import { scrubAll } from "./forbidden-phrase-scrubber.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -199,6 +199,7 @@ export async function runQualityEditor(
   displayCompany: string,
   resolvedIndustry: string,
   apiKey: string,
+  toolCatalogTools?: string[],
 ): Promise<void> {
   try {
     const qualityCheckFields = {
@@ -224,9 +225,15 @@ export async function runQualityEditor(
 
   // ── Last-mile safety net: deterministic regex scrub ────────
   // Catches forbidden doom phrases the LLM may have leaked
-  // (e.g. "by 2027 your employer will fire you").
+  // (e.g. "by 2027 your employer will fire you") AND tool-name
+  // references not present in the live catalog (replaced with
+  // category language). When toolCatalogTools is undefined or
+  // empty, scrubAll falls back to phrase-only behaviour.
   try {
-    const result = scrubReport(finalReport);
+    const catalog = toolCatalogTools && toolCatalogTools.length > 0
+      ? { tools: toolCatalogTools }
+      : undefined;
+    const result = scrubAll(finalReport, { catalog });
     if (result.scrubbed > 0) {
       console.log(`[Orchestrator] Phrase scrubber rewrote ${result.scrubbed} forbidden phrase(s):`, result.hits);
     }
