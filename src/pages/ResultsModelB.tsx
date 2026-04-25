@@ -32,15 +32,15 @@ interface WeeklyIntelData {
 }
 
 const LOADING_MESSAGES = [
-  "📄 Extracting skills and experience from your resume...",
-  "🧠 Matching your profile against 98 role archetypes...",
+  "🛰️ Pulling AI disruption signals from the last 24 hours...",
+  "🧠 Cross-checking your profile against Gemini 3 Pro + GPT-5 reasoning...",
+  "📡 Scanning 396 live AI tools for direct overlap with your skills...",
   "⚡ Computing your AI exposure score — 6 deterministic factors...",
-  "🔍 Identifying which specific AI tools threaten each skill...",
-  "📊 Fetching live salary data for your role and city...",
-  "💼 Searching Naukri, LinkedIn, Indeed for matching roles...",
-  "🛡️ Mapping your moat skills — what AI can't replicate...",
+  "📊 Fetching today's salary benchmarks for your role and city...",
+  "💼 Querying Naukri, LinkedIn, Indeed for fresh matching roles...",
+  "🛡️ Mapping your moat skills — what AI still can't replicate...",
   "🎯 Building your personalised 90-day defense plan...",
-  "🔄 Running final calibration against India 2026 data...",
+  "🔄 Final calibration against India 2026 hiring + layoff data...",
 ];
 
 const STREAK_KEY = "jb_streak";
@@ -664,11 +664,11 @@ export default function ResultsModelB() {
         {/* Loading state */}
         {loading && (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "var(--mb-ink)", marginBottom: 8 }}>
-              Analysing your resume...
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "var(--mb-ink)", marginBottom: 8, lineHeight: 1.25 }}>
+              Running your career through every model + the last 24 hours of market signals
             </div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 4 }}>
-              {cardData?.resume_filename || "Your Resume"}
+              {cardData?.resume_filename || "Your Resume"} · Gemini 3 Pro · GPT-5 · 396-tool catalog · live India hiring data
             </div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink4)", marginBottom: 24, minHeight: 20 }}>
               {LOADING_MESSAGES[loadingMsg]}
