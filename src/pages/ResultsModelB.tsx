@@ -11,7 +11,9 @@ import Card5JobsTracker from "@/components/model-b/Card5JobsTracker";
 import Card6BlindSpots from "@/components/model-b/Card6BlindSpots";
 import Card7HumanAdvantage from "@/components/model-b/Card7HumanAdvantage";
 import Card0Verdict from "@/components/model-b/Card0Verdict";
+import LiveMarketCard from "@/components/model-b/LiveMarketCard";
 import PromptModal from "@/components/model-b/PromptModal";
+import { detectExecutive } from "@/lib/jobsTab";
 
 // Issue 1-A: Lazy-load the three highest-value previously-hidden features.
 // These were fully built but permanently unreachable in the old flow.
@@ -67,17 +69,11 @@ function handleCopyFallback(text: string) {
   }
 }
 
-const TAB_LABELS = ["Verdict", "Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
-
-// Tabs where the header "Career Safety" score is hidden.
-// 0 = Verdict (presents its own hero score), 3 = Shield (sub-score conflict),
-// 8 = Tools (utility tab — no score frame needed).
-const HEADER_SCORE_HIDDEN_TABS = new Set([0, 3, 8]);
-// Tabs where the bottom action button grid is hidden — these tabs have their own
-// dedicated CTAs and the grid would clutter the emotional/utility frame.
-const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 8]);
-// Total content tabs = single source of truth (avoids drift with TAB_LABELS).
-const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
+// Tab labels, header-score visibility, action-button visibility, and total
+// journey-tab count are derived per-render from the `cards` array (Pattern B
+// for the LiveMarketCard splice). The cards array conditionally inserts the
+// LiveMarket entry between Verdict and Risk for non-executive scans only —
+// see the `cards` useMemo inside ResultsModelB.
 
 // C1 #2: Streak now correctly resets to 1 if the user skips a day.
 // Pure logic lives in src/lib/model-b-helpers.ts (BL-013 / INV-F02).
@@ -180,6 +176,65 @@ export default function ResultsModelB() {
   const displayScore = useMemo(
     () => (journeyDone ? baseScore + 6 : baseScore),
     [baseScore, journeyDone],
+  );
+
+  // Phase 2B-iii-b: Live Market Snapshot splice.
+  // Non-executive scans see a 10-card carousel (with LiveMarket between Verdict and Risk).
+  // Executive scans see the original 9-card carousel (LiveMarket skipped — exec hiring is
+  // headhunter/board-driven, not Naukri-postings driven, so the snapshot is meaningless).
+  const role = String(cardData?.user?.current_title || cardData?.user?.title || "").trim();
+  const isExecutive = useMemo(() => detectExecutive(role), [role]);
+
+  const cityForMarket = String(
+    cardData?.user?.location || cardData?.user?.city || "India"
+  ).trim() || "India";
+  const allSkillsForMarket = useMemo(
+    () => ((cardData?.card3_shield?.skills || []) as Array<{ name?: string }>)
+      .map((s) => s?.name)
+      .filter((n): n is string => typeof n === "string" && n.length > 0),
+    [cardData],
+  );
+
+  // The cards array is the single source of truth for the carousel sequence,
+  // labels, and per-tab UI flags. Every index reference (TAB_LABELS,
+  // HEADER_SCORE_HIDDEN_TABS, ACTION_BUTTONS_HIDDEN_TABS, TOTAL_JOURNEY_TABS,
+  // TOOLS_TAB_INDEX) is derived from this list.
+  type CardEntry = {
+    key: string;
+    label: string;
+    hideHeaderScore?: boolean;
+    hideActionButtons?: boolean;
+  };
+  const cards = useMemo<CardEntry[]>(() => {
+    const list: CardEntry[] = [
+      { key: "verdict", label: "Verdict", hideHeaderScore: true, hideActionButtons: true },
+    ];
+    if (!isExecutive) {
+      list.push({ key: "live-market", label: "Live market" });
+    }
+    list.push(
+      { key: "risk",        label: "Risk" },
+      { key: "market",      label: "Market" },
+      { key: "shield",      label: "Shield", hideHeaderScore: true },
+      { key: "pivot",       label: "Pivot" },
+      { key: "jobs",        label: "Jobs" },
+      { key: "blind-spots", label: "Blind spots" },
+      { key: "human",       label: "Human" },
+      { key: "tools",       label: "🛠 Tools", hideHeaderScore: true, hideActionButtons: true },
+    );
+    return list;
+  }, [isExecutive]);
+
+  const TAB_LABELS = useMemo(() => cards.map((c) => c.label), [cards]);
+  const TOTAL_JOURNEY_TABS = cards.length;
+  const TOOLS_TAB_INDEX = cards.length - 1;
+  const HEADER_SCORE_HIDDEN_TABS = useMemo(
+    () => new Set(cards.map((c, i) => (c.hideHeaderScore ? i : -1)).filter((i) => i >= 0)),
+    [cards],
+  );
+  const ACTION_BUTTONS_HIDDEN_TABS = useMemo(
+    () => new Set(cards.map((c, i) => (c.hideActionButtons ? i : -1)).filter((i) => i >= 0)),
+    [cards],
   );
 
   const streak = useStreak();
@@ -462,7 +517,7 @@ export default function ResultsModelB() {
     // Feature 3: Fetch live Tavily learning resources when user first opens the Tools tab.
     // Fires once (guarded by weeklyIntelLoading + weeklyIntel), lazy, 30-min cached.
     // B3 (#12): one retry on failure before giving up silently.
-    if (index === 8 && !weeklyIntelLoading && !weeklyIntel && cardData?.scan_judo?.recommended_tool) {
+    if (index === TOOLS_TAB_INDEX && !weeklyIntelLoading && !weeklyIntel && cardData?.scan_judo?.recommended_tool) {
       setWeeklyIntelLoading(true);
       const body = {
         role: cardData.user?.current_title || "",
@@ -491,7 +546,7 @@ export default function ResultsModelB() {
           });
       tryFetch(0).finally(() => { if (isMountedRef.current) setWeeklyIntelLoading(false); });
     }
-  }, [logEvent, weeklyIntelLoading, weeklyIntel, cardData, analysisId]);
+  }, [logEvent, weeklyIntelLoading, weeklyIntel, cardData, analysisId, TOOLS_TAB_INDEX]);
 
   // B1 (#4): Persist visited tabs + completion every time they change so refresh
   // restores progress instead of resetting it.
@@ -505,7 +560,8 @@ export default function ResultsModelB() {
     } catch {}
   }, [journeyStorageKey, visitedCards, journeyDone]);
 
-  // Journey complete detection — only fires when user has explored ALL 9 tabs (0..8).
+  // Journey complete detection — fires when user has explored ALL tabs.
+  // Total varies by sequence: 9 for execs, 10 for non-execs (LiveMarket inserted).
   // Idempotent: bonus is only applied if not already persisted as done.
   useEffect(() => {
     if (journeyDone) return;
@@ -515,7 +571,7 @@ export default function ResultsModelB() {
       toast.success("Journey complete ✓", { duration: 2800 });
       logEvent("journey_complete");
     }
-  }, [visitedCards, cardData, journeyDone, logEvent]);
+  }, [visitedCards, cardData, journeyDone, logEvent, TOTAL_JOURNEY_TABS]);
 
   // Memoized — was being rebuilt on every render (P0 #6)
   // Moved above the early return so hook order stays stable across renders.
@@ -765,25 +821,69 @@ export default function ResultsModelB() {
         {/* Main content */}
         {cardData && !loading && !error && (
           <>
-            {currentCard === 0 && <Card0Verdict cardData={cardData} onNext={() => handleTabChange(1)} />}
-            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} />}
-            {currentCard === 2 && <Card2MarketRadar cardData={cardData} onBack={() => handleTabChange(1)} onNext={() => handleTabChange(3)} />}
-            {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} overallScore={baseScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
-              logEvent("modal_opened", { source: "upgrade_plan" });
-              setActionModal({
-                title: "60-Day Skill Upgrade Plan",
-                promptText: `Create a 60-day skill upgrade plan for ${cardData.user?.name} based on their resume.\n\nCurrent skills: ${(cardData.card3_shield?.skills || []).map((s: any) => s.name).join(", ")}\nSkill gaps: ${(cardData.card3_shield?.skills || []).filter((s: any) => s.level === "buildable" || s.level === "critical-gap").map((s: any) => s.name).join(", ")}\n\nFor each week:\n- Specific learning resources (free, India-accessible)\n- Practice exercises with measurable outcomes\n- Portfolio project milestones\n- Time estimates (assume 1hr/day on weekdays)`
-              });
-            }} />}
-            {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} scanId={analysisId ?? undefined} />}
-            {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
-            {currentCard === 6 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} scanId={analysisId ?? undefined} />}
-            {currentCard === 7 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(6)} onNext={() => handleTabChange(8)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
+            {(() => {
+              // Pattern B: render the active card by key, derived from the
+              // dynamic `cards` array. Indices shift when LiveMarketCard is
+              // spliced in for non-execs; key-based lookup keeps every Card
+              // child unaware of its position.
+              const active = cards[currentCard];
+              if (!active) return null;
+              const onBack = currentCard > 0 ? () => handleTabChange(currentCard - 1) : undefined;
+              const onNext = currentCard < cards.length - 1 ? () => handleTabChange(currentCard + 1) : undefined;
+              switch (active.key) {
+                case "verdict":
+                  return <Card0Verdict cardData={cardData} onNext={onNext ?? (() => {})} />;
+                case "live-market":
+                  return (
+                    <LiveMarketCard
+                      role={role || "Professional"}
+                      city={cityForMarket}
+                      all_skills={allSkillsForMarket}
+                      onPrev={onBack}
+                      onNext={onNext}
+                    />
+                  );
+                case "risk":
+                  // R1 (approved this turn): no in-card Back; users use the tab pill row to go back.
+                  return <Card1RiskMirror cardData={cardData} onNext={onNext ?? (() => {})} monthlyScanCount={monthlyScanCount} />;
+                case "market":
+                  return <Card2MarketRadar cardData={cardData} onBack={onBack ?? (() => {})} onNext={onNext ?? (() => {})} />;
+                case "shield":
+                  return (
+                    <Card3SkillShield
+                      cardData={cardData}
+                      onBack={onBack ?? (() => {})}
+                      onNext={onNext ?? (() => {})}
+                      overallScore={baseScore}
+                      scanId={analysisId ?? undefined}
+                      onUpgradePlan={() => {
+                        logEvent("modal_opened", { source: "upgrade_plan" });
+                        setActionModal({
+                          title: "60-Day Skill Upgrade Plan",
+                          promptText: `Create a 60-day skill upgrade plan for ${cardData.user?.name} based on their resume.\n\nCurrent skills: ${(cardData.card3_shield?.skills || []).map((s: any) => s.name).join(", ")}\nSkill gaps: ${(cardData.card3_shield?.skills || []).filter((s: any) => s.level === "buildable" || s.level === "critical-gap").map((s: any) => s.name).join(", ")}\n\nFor each week:\n- Specific learning resources (free, India-accessible)\n- Practice exercises with measurable outcomes\n- Portfolio project milestones\n- Time estimates (assume 1hr/day on weekdays)`,
+                        });
+                      }}
+                    />
+                  );
+                case "pivot":
+                  return <Card4PivotPaths cardData={cardData} onBack={onBack ?? (() => {})} onNext={onNext ?? (() => {})} scanId={analysisId ?? undefined} />;
+                case "jobs":
+                  return <Card5JobsTracker cardData={cardData} onBack={onBack ?? (() => {})} onNext={onNext ?? (() => {})} analysisId={analysisId} />;
+                case "blind-spots":
+                  return <Card6BlindSpots cardData={cardData} onBack={onBack ?? (() => {})} onNext={onNext ?? (() => {})} scanId={analysisId ?? undefined} />;
+                case "human":
+                  return <Card7HumanAdvantage cardData={cardData} onBack={onBack ?? (() => {})} onNext={onNext} copyFallback={handleCopyFallback} analysisId={analysisId} />;
+                case "tools":
+                  return null; // Rendered separately below to keep the inline JSX block untouched.
+                default:
+                  return null;
+              }
+            })()}
 
-            {/* ── Tools tab (index 8) ─────────────────────────────────
+            {/* ── Tools tab (last index — 8 for execs, 9 for non-execs) ────────────
                 Three fully-built features that were unreachable in the old flow.
                 Lazy-loaded — zero bundle cost until the user taps Tools. */}
-            {currentCard === 8 && (() => {
+            {currentCard === TOOLS_TAB_INDEX && (() => {
               // Build a minimal ScanReport-shaped object from cardData so the
               // existing tool components (built for ScanReport) work without changes.
               // B4 (#24): country and seniority_tier now derived from cardData
