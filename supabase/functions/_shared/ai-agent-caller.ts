@@ -111,6 +111,15 @@ async function callAgentCore(
     }
     requestBody.response_format = { type: "json_object" };
 
+    if (agentName.startsWith("Agent1:Profiler")) {
+      console.log("[DETERMINISM_DEBUG] Agent1 request body:", JSON.stringify({
+        model: requestBody.model,
+        temperature: requestBody.temperature,
+        seed: requestBody.seed,
+        messages_count: Array.isArray(requestBody.messages) ? requestBody.messages.length : undefined,
+      }));
+    }
+
     const resp = await fetch(AI_URL, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
