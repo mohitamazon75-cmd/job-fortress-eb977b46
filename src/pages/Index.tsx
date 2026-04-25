@@ -47,6 +47,7 @@ const MatrixLoading = lazyWithRetry(() => import('@/components/MatrixLoading'));
 const SevenCardReveal = lazyWithRetry(() => import('@/components/SevenCardReveal'));
 const AIDossierReveal = lazyWithRetry(() => import('@/components/AIDossierReveal'));
 const MoneyShotCard = lazyWithRetry(() => import('@/components/MoneyShotCard'));
+const CrisisSupport = lazyWithRetry(() => import('@/components/CrisisSupport'));
 import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport, createScan, uploadResume, triggerProcessScan, subscribeScanStatus } from '@/lib/scan-engine';
 import { createClient } from '@supabase/supabase-js';
