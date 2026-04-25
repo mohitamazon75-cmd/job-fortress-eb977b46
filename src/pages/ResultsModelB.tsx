@@ -882,7 +882,7 @@ export default function ResultsModelB() {
             {/* ── Tools tab (index 8) ─────────────────────────────────
                 Three fully-built features that were unreachable in the old flow.
                 Lazy-loaded — zero bundle cost until the user taps Tools. */}
-            {currentCard === 8 && (() => {
+            {currentCard === TOOLS_TAB_INDEX && (() => {
               // Build a minimal ScanReport-shaped object from cardData so the
               // existing tool components (built for ScanReport) work without changes.
               // B4 (#24): country and seniority_tier now derived from cardData
