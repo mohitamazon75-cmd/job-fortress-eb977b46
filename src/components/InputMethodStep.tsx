@@ -108,9 +108,9 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
             </p>
           </div>
 
-          {/* Method selector — Resume FIRST: it's the reliable personalization path.
-              LinkedIn URL scraping is unreliable (LinkedIn blocks it); resume PDF
-              parsing gives real skill-level data. Order reflects actual accuracy. */}
+          {/* Method selector — both paths are first-class.
+              Resume = direct PDF parsing. LinkedIn = paid structured scraper
+              (harvestapi via Apify, no cookies, no blocks). Equal hierarchy. */}
           {!method && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -118,7 +118,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
               transition={{ delay: 0.3 }}
               className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6"
             >
-              {/* RESUME — primary, most accurate */}
+              {/* RESUME */}
               <motion.button
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
@@ -131,29 +131,32 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                     <FileText className="w-8 h-8 text-prophet-cyan" />
                   </div>
                   <h3 className="font-bold text-foreground text-lg mb-1">Upload Resume</h3>
-                  <p className="text-sm text-muted-foreground">PDF · most accurate analysis</p>
+                  <p className="text-sm text-muted-foreground">PDF · full work history</p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">Best if you have one ready</p>
                   <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-prophet-cyan bg-prophet-cyan/10 px-3 py-1 rounded-full border border-prophet-cyan/20">
-                    <Zap className="w-3 h-3" /> Highest accuracy
+                    <Lock className="w-3 h-3" /> Stays private
                   </span>
                 </div>
               </motion.button>
 
-              {/* LINKEDIN — secondary, accuracy depends on public profile */}
+              {/* LINKEDIN — equal hierarchy, paid structured scraper backend */}
               <motion.button
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setMethod('linkedin')}
-                className="group relative p-5 sm:p-8 rounded-2xl border-2 border-border bg-card hover:border-primary/50 transition-all duration-300 text-center overflow-hidden"
+                className="group relative p-5 sm:p-8 rounded-2xl border-2 border-primary/40 bg-card hover:border-primary transition-all duration-300 text-center overflow-hidden"
               >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'var(--gradient-oracle)' }} />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'hsl(var(--primary) / 0.04)' }} />
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.08)' }}>
+                  <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
                     <Linkedin className="w-8 h-8 text-primary" />
                   </div>
                   <h3 className="font-bold text-foreground text-lg mb-1">LinkedIn URL</h3>
-                  <p className="text-sm text-muted-foreground">Works best for public profiles</p>
+                  <p className="text-sm text-muted-foreground">Public profile · full work history</p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">Fastest · no upload needed</p>
+                  <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                    <Zap className="w-3 h-3" /> One-click
+                  </span>
                 </div>
               </motion.button>
             </motion.div>
