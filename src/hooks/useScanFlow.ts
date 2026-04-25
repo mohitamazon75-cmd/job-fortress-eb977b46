@@ -29,7 +29,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { subscribeScanStatus } from '@/lib/scan-engine';
-import type { ScanReport } from '@/lib/scan-engine';
+import type { ScanReport, ScanFailureReason } from '@/lib/scan-engine';
 import type { ScanGoals } from '@/components/GoalCaptureModal';
 import { SUPABASE_URL as SB_URL, SUPABASE_PUBLISHABLE_KEY as SB_KEY } from '@/lib/supabase-config';
 import { getAnonScanToken } from '@/lib/anon-scan-storage';
@@ -104,6 +104,8 @@ export interface ScanFlowState {
   setMoneyShotSeen: (v: boolean) => void;
   errorScanStatus: string | null;
   setErrorScanStatus: (v: string | null) => void;
+  errorReason: ScanFailureReason | null;
+  setErrorReason: (v: ScanFailureReason | null) => void;
   showRateLimitUpsell: boolean;
   setShowRateLimitUpsell: (v: boolean) => void;
   showReAuth: boolean;
@@ -135,6 +137,7 @@ export function useScanFlow(callbacks: ScanFlowCallbacks): ScanFlowState {
   const [scanReport, setScanReport] = useState<ScanReport | null>(null);
   const [moneyShotSeen, setMoneyShotSeen] = useState(false);
   const [errorScanStatus, setErrorScanStatus] = useState<string | null>(null);
+  const [errorReason, setErrorReason] = useState<ScanFailureReason | null>(null);
   const [showRateLimitUpsell, setShowRateLimitUpsell] = useState(false);
   const [showReAuth, setShowReAuth] = useState(false);
   const [showPostRevealGoalModal, setShowPostRevealGoalModal] = useState(false);
@@ -242,8 +245,9 @@ export function useScanFlow(callbacks: ScanFlowCallbacks): ScanFlowState {
               setMoneyShotSeen(false);
               setPhase('seven-cards');
             },
-            () => {
+            (reason) => {
               if (!isMountedRef.current || cancelled) return;
+              if (reason) setErrorReason(reason);
               setPhase('error');
             },
           );
