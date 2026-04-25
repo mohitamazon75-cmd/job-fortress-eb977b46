@@ -304,6 +304,7 @@ export function toMatchPct(opts: {
   sharedSkillsCount: number;
   userSkillsCount: number;
   recencyDays: number | null;
+  experiencePenalty?: number; // from experienceGapPenalty(); -25..+6, default 0
 }) {
   // Lower floor: was 60/65, now 40/55. Lets stretch jobs actually
   // read as stretches and creates real spread above them.
@@ -329,6 +330,13 @@ export function toMatchPct(opts: {
   if (opts.recencyDays != null) {
     if (opts.recencyDays <= 1) pct += 4;
     else if (opts.recencyDays <= 7) pct += 2;
+  }
+
+  // Experience-gap penalty (Farheen-fix). Catches "11yr senior matched to 1-3yr role"
+  // junior pollution, and "5yr engineer matched to staff/principal" overshooting.
+  // Returns 0 when either side is unparseable, so this never injects spurious noise.
+  if (typeof opts.experiencePenalty === "number") {
+    pct += opts.experiencePenalty;
   }
 
   // Wider band: was 60-96, now 35-96. Stretch can mean stretch.
