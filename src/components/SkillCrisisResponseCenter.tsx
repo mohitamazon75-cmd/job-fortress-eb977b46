@@ -407,7 +407,7 @@ export default function SkillCrisisResponseCenter({ report, onComplete }: SkillC
             {/* Displacement Timeline Strip — only when Agent2A threat_timeline is present.
                 BL-031: normalize across legacy string / new object / array shapes. */}
             {(() => {
-              const tl = normalizeThreatTimeline((report as Record<string, unknown>).threat_timeline);
+              const tl = normalizeThreatTimeline((report as unknown as Record<string, unknown>).threat_timeline);
               if (!tl) return null;
               const sigYear = tl.significant_displacement_year;
               const yearsLeft = sigYear ? sigYear - new Date().getFullYear() : null;

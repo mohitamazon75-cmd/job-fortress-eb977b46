@@ -470,7 +470,7 @@ export default function VerdictReveal({ report, onComplete }: VerdictRevealProps
                   {/* ═══ DISPLACEMENT TIMELINE CALLOUT ═══ */}
                   {(() => {
                     // BL-031: normalize across legacy string / new object / array shapes.
-                    const timeline = normalizeThreatTimeline((report as Record<string, unknown>).threat_timeline);
+                    const timeline = normalizeThreatTimeline((report as unknown as Record<string, unknown>).threat_timeline);
                     const significantYear = timeline?.significant_displacement_year;
                     const atRiskTask = timeline?.at_risk_task;
                     const primaryThreat = timeline?.primary_threat_tool;
