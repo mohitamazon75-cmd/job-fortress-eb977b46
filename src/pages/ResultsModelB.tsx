@@ -178,6 +178,65 @@ export default function ResultsModelB() {
     [baseScore, journeyDone],
   );
 
+  // Phase 2B-iii-b: Live Market Snapshot splice.
+  // Non-executive scans see a 10-card carousel (with LiveMarket between Verdict and Risk).
+  // Executive scans see the original 9-card carousel (LiveMarket skipped — exec hiring is
+  // headhunter/board-driven, not Naukri-postings driven, so the snapshot is meaningless).
+  const role = String(cardData?.user?.current_title || cardData?.user?.title || "").trim();
+  const isExecutive = useMemo(() => detectExecutive(role), [role]);
+
+  const cityForMarket = String(
+    cardData?.user?.location || cardData?.user?.city || "India"
+  ).trim() || "India";
+  const allSkillsForMarket = useMemo(
+    () => ((cardData?.card3_shield?.skills || []) as Array<{ name?: string }>)
+      .map((s) => s?.name)
+      .filter((n): n is string => typeof n === "string" && n.length > 0),
+    [cardData],
+  );
+
+  // The cards array is the single source of truth for the carousel sequence,
+  // labels, and per-tab UI flags. Every index reference (TAB_LABELS,
+  // HEADER_SCORE_HIDDEN_TABS, ACTION_BUTTONS_HIDDEN_TABS, TOTAL_JOURNEY_TABS,
+  // TOOLS_TAB_INDEX) is derived from this list.
+  type CardEntry = {
+    key: string;
+    label: string;
+    hideHeaderScore?: boolean;
+    hideActionButtons?: boolean;
+  };
+  const cards = useMemo<CardEntry[]>(() => {
+    const list: CardEntry[] = [
+      { key: "verdict", label: "Verdict", hideHeaderScore: true, hideActionButtons: true },
+    ];
+    if (!isExecutive) {
+      list.push({ key: "live-market", label: "Live market" });
+    }
+    list.push(
+      { key: "risk",        label: "Risk" },
+      { key: "market",      label: "Market" },
+      { key: "shield",      label: "Shield", hideHeaderScore: true },
+      { key: "pivot",       label: "Pivot" },
+      { key: "jobs",        label: "Jobs" },
+      { key: "blind-spots", label: "Blind spots" },
+      { key: "human",       label: "Human" },
+      { key: "tools",       label: "🛠 Tools", hideHeaderScore: true, hideActionButtons: true },
+    );
+    return list;
+  }, [isExecutive]);
+
+  const TAB_LABELS = useMemo(() => cards.map((c) => c.label), [cards]);
+  const TOTAL_JOURNEY_TABS = cards.length;
+  const TOOLS_TAB_INDEX = cards.length - 1;
+  const HEADER_SCORE_HIDDEN_TABS = useMemo(
+    () => new Set(cards.map((c, i) => (c.hideHeaderScore ? i : -1)).filter((i) => i >= 0)),
+    [cards],
+  );
+  const ACTION_BUTTONS_HIDDEN_TABS = useMemo(
+    () => new Set(cards.map((c, i) => (c.hideActionButtons ? i : -1)).filter((i) => i >= 0)),
+    [cards],
+  );
+
   const streak = useStreak();
   const [streakModal, setStreakModal] = useState(false);
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
