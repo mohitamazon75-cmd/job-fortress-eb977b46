@@ -334,6 +334,93 @@ export function aggregateRecency(jobs: ApifyJob[]): SnapshotResult["recency"] {
   return { same_day_count: same, within_7d_count: w7, older_count: older };
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// computeCorpusRelevance — Phase 2B-iv corrective layer.
+//
+// Naukri's role-keyword search is fuzzy. For "Engineering Manager Bangalore"
+// it returns sales/finance/broking listings; for "Marketing Manager Mumbai"
+// it returns field-sales pollution. The earlier card design correctly
+// hid the SKILL OVERLAP column when matches were sparse, but it still
+// rendered the polluted top-tag list as if those tags represented the
+// user's market — which felt wrong and was the reason the card was
+// pulled from production.
+//
+// This function gives the UI an honest signal to downgrade gracefully:
+//   strong   → render full card (tags + salary + recency)
+//   partial  → render tags WITH a "this market is mixed" disclaimer
+//   thin     → hide tags entirely; render salary + recency only
+//
+// Score = weighted blend of two corpus-grounded signals:
+//   1. title_overlap_pct: % of postings whose title shares a non-stopword
+//      token with the user's role (e.g. "engineering" or "marketing")
+//   2. skill_match_in_top_tags: how many user skills surface in top tags
+//
+// Both are corpus-derived, deterministic, and need no LLM.
+// ─────────────────────────────────────────────────────────────────────
+const ROLE_TITLE_STOPWORDS = new Set([
+  "senior", "junior", "lead", "principal", "staff", "associate", "assistant",
+  "manager", "head", "specialist", "executive", "officer", "professional",
+  "the", "and", "of", "in", "at", "for", "to", "a", "an", "i", "ii", "iii",
+]);
+
+export function roleTokens(role: string): string[] {
+  return normalizeText(role)
+    .split(" ")
+    .filter((t) => t.length >= 4 && !ROLE_TITLE_STOPWORDS.has(t));
+}
+
+export function computeCorpusRelevance(
+  jobs: ApifyJob[],
+  topTags: Array<{ tag: string }>,
+  userSkills: string[],
+  role: string,
+): SnapshotResult["corpus_relevance"] {
+  const total = jobs.length || 1;
+  const tokens = roleTokens(role);
+
+  let titleHits = 0;
+  if (tokens.length > 0) {
+    for (const j of jobs) {
+      const titleN = normalizeText(j.title || "");
+      if (!titleN) continue;
+      if (tokens.some((t) => titleN.includes(t))) titleHits++;
+    }
+  } else {
+    // No discriminating tokens (e.g. role = "Manager") — fall back to
+    // assuming corpus is plausibly relevant; rely on skill match instead.
+    titleHits = Math.round(total * 0.5);
+  }
+  const titlePct = Math.round((titleHits / total) * 100);
+
+  // skill_match_in_top_tags — count user skills that appear in any top tag.
+  let skillMatch = 0;
+  for (const skill of userSkills) {
+    const sN = normalizeText(skill);
+    if (!sN) continue;
+    for (const { tag } of topTags) {
+      if (skillPresent(sN, normalizeText(tag))) { skillMatch++; break; }
+    }
+  }
+
+  // Score blend: title overlap is the stronger signal (anchors corpus to
+  // the role) so it weights 65; skill overlap caps at 35 once 4 skills hit.
+  const skillScore = Math.min(35, skillMatch * 9);    // 4 hits = 35
+  const titleScore = Math.round(titlePct * 0.65);     // 100% titles = 65
+  const score = Math.min(100, titleScore + skillScore);
+
+  let band: "strong" | "partial" | "thin";
+  if (score >= 55) band = "strong";
+  else if (score >= 30) band = "partial";
+  else band = "thin";
+
+  return {
+    score,
+    band,
+    title_overlap_pct: titlePct,
+    skill_match_in_top_tags: skillMatch,
+  };
+}
+
 // Stable empty/error shape — used for executive route, fetch failures,
 // and any path where we cannot return real data.
 export function emptyShape(opts: { is_executive: boolean; error?: string }): SnapshotResult {
@@ -348,16 +435,18 @@ export function emptyShape(opts: { is_executive: boolean; error?: string }): Sna
     user_skill_overlap: { shown: false, matched_count: 0, matched_skills: [], missing_top_tags: [] },
     salary: { shown: false, n_disclosed: 0, n_total: 0, median_lpa: null, p25_lpa: null, p75_lpa: null },
     recency: { same_day_count: 0, within_7d_count: 0, older_count: 0 },
+    corpus_relevance: { score: 0, band: "thin", title_overlap_pct: 0, skill_match_in_top_tags: 0 },
     source: { name: "Naukri.com", via: "Apify", fetched_at: now },
   };
 }
 
-export function buildSnapshot(jobs: ApifyJob[], userSkills: string[], cached: boolean): SnapshotResult {
+export function buildSnapshot(jobs: ApifyJob[], userSkills: string[], cached: boolean, role = ""): SnapshotResult {
   const now = new Date().toISOString();
   const top = aggregateTopTags(jobs);
   const overlap = computeUserSkillOverlap(top, userSkills);
   const salary = aggregateSalary(jobs);
   const recency = aggregateRecency(jobs);
+  const relevance = computeCorpusRelevance(jobs, top, userSkills, role);
   return {
     posting_count: jobs.length,
     fetched_at: now,
@@ -367,6 +456,7 @@ export function buildSnapshot(jobs: ApifyJob[], userSkills: string[], cached: bo
     user_skill_overlap: overlap,
     salary,
     recency,
+    corpus_relevance: relevance,
     source: { name: "Naukri.com", via: "Apify", fetched_at: now },
   };
 }
