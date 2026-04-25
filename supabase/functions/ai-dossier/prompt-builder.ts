@@ -192,9 +192,16 @@ export function buildProfileContext(report: any): string {
   // BL-031: tolerate legacy string form by extracting any 4-digit years.
   const urgencyHorizon = report.urgency_horizon || null;
   const rawThreatTimeline = report.threat_timeline;
-  let threatTimeline: any = null;
+  type NormalizedTT = {
+    partial_displacement_year: number | null;
+    significant_displacement_year: number | null;
+    critical_displacement_year: number | null;
+    primary_threat_tool: string | null;
+    at_risk_task: string | null;
+  };
+  let threatTimeline: NormalizedTT | null = null;
   if (rawThreatTimeline && typeof rawThreatTimeline === "object" && !Array.isArray(rawThreatTimeline)) {
-    threatTimeline = rawThreatTimeline;
+    threatTimeline = rawThreatTimeline as NormalizedTT;
   } else if (typeof rawThreatTimeline === "string") {
     const years = Array.from(rawThreatTimeline.matchAll(/(20\d{2})/g)).map((m) => Number(m[1]));
     if (years.length > 0) {
