@@ -709,12 +709,13 @@ export function subscribeScanStatus(
     try {
       const { data } = await scanClient
         .from('scans')
-        .select('scan_status, final_json_report, industry')
+        .select('scan_status, final_json_report, industry, feedback_flag')
         .eq('id', scanId)
         .single();
 
       const row = data as Record<string, unknown> | null;
       const status = String(row?.scan_status || '');
+      const flag = (row?.feedback_flag as string | null) ?? null;
 
       if (status === 'complete' && row?.final_json_report) {
         console.debug(`[Scan] ${source} recovered completed scan after terminal signal`);
@@ -736,13 +737,14 @@ export function subscribeScanStatus(
         startPolling();
         return;
       }
+
+      reject(mapScanFailureReason(status, flag));
+      return;
     } catch (error) {
       console.warn(`[Scan] ${source} terminal-state verification failed; continuing to poll`, error);
       startPolling();
       return;
     }
-
-    reject();
   };
 
   // Immediate check: the scan may already be complete before we subscribe
@@ -751,7 +753,7 @@ export function subscribeScanStatus(
     try {
       const { data } = await scanClient
         .from('scans')
-        .select('scan_status, final_json_report, industry')
+        .select('scan_status, final_json_report, industry, feedback_flag')
         .eq('id', scanId)
         .single();
       const row = data as Record<string, unknown> | null;
