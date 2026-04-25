@@ -28,10 +28,10 @@ import { SKILL_SYNONYMS } from "../_shared/skill-synonyms.ts";
 const APIFY_ACTOR_ID = "alpcnRV9YI9lYVPWk";
 const CACHE_TTL_HOURS = 6;
 const RUN_LIMIT = 50;
-// v2: adds corpus_relevance signal so the card can downgrade to a
-// thin-signal render when Naukri's corpus doesn't reflect the user's role.
-// Bumping invalidates v1 caches that lacked the new field.
-const CACHE_VERSION = "v2";
+// v3: strips seniority modifiers from the Naukri search URL and aggregates
+// only role-relevant listings, preventing polluted corpora from leaking into
+// tags/salary. Bumping invalidates v2 raw caches fetched with noisier URLs.
+const CACHE_VERSION = "v3";
 
 // Same EXECUTIVE_HINTS as src/lib/jobsTab.ts (kept in sync manually —
 // duplicated to avoid cross-tier import).
@@ -55,7 +55,22 @@ const TAG_STOPWORDS = new Set([
   "tamil",          // language tag (Chennai corpora)
   "team",           // generic
   "work",           // generic
+  "recruitment",    // recruiter-board pollution on tech searches
+  "hiring",         // recruiter-board pollution
+  "talent acquisition",
+  "talent sourcing",
+  "customer service",
+  "customer support",
+  "business development",
 ]);
+
+const SEARCH_MODIFIER_STOPWORDS = new Set([
+  "senior", "sr", "junior", "jr", "lead", "principal", "staff",
+  "associate", "assistant", "intern", "remote", "hybrid", "contract",
+  "i", "ii", "iii", "iv",
+]);
+
+const SHORT_ROLE_TOKENS = new Set(["ai", "ml", "hr", "ux", "ui", "qa", "bi", "it"]);
 
 // ─────────────────────────────────────────────────────────────────────
 // Types
