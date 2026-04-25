@@ -74,70 +74,89 @@ export interface SpendingCheckResult {
 export async function checkDailySpending(functionName: string): Promise<SpendingCheckResult> {
   const now = Date.now();
 
+  const evaluate = (totalEstimatedSpend: number): SpendingCheckResult => {
+    const isCritical = functionName === "process-scan";
+    const hardKill = totalEstimatedSpend >= DAILY_BUDGET_USD * HARD_KILL_MULTIPLIER;
+    const atBudget = totalEstimatedSpend >= DAILY_BUDGET_USD;
+
+    // HARD KILL: even critical paths blocked when 1.5× over budget.
+    if (hardKill) {
+      return {
+        allowed: false,
+        degraded: false,
+        estimatedSpendUsd: totalEstimatedSpend,
+        budgetUsd: DAILY_BUDGET_USD,
+        reason: "hard_kill",
+        message: `Daily AI budget exceeded ($${totalEstimatedSpend.toFixed(2)} / cap $${DAILY_BUDGET_USD}). All AI features paused until tomorrow.`,
+      };
+    }
+    if (atBudget && !isCritical) {
+      return {
+        allowed: false,
+        degraded: false,
+        estimatedSpendUsd: totalEstimatedSpend,
+        budgetUsd: DAILY_BUDGET_USD,
+        reason: "at_budget",
+      };
+    }
+    if (atBudget && isCritical) {
+      return { allowed: true, degraded: true, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
+    }
+    return { allowed: true, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
+  };
+
   // Fast path: return cached result if fresh
   if (cachedSpend && (now - cachedSpend.ts) < CACHE_TTL_MS) {
-    const totalEstimatedSpend = cachedSpend.value;
-    const isCritical = functionName === "process-scan";
-    const atBudget = totalEstimatedSpend >= DAILY_BUDGET_USD;
-
-    if (atBudget && !isCritical) {
-      return { allowed: false, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
-    }
-    if (atBudget && isCritical) {
-      return { allowed: true, degraded: true, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
-    }
-    return { allowed: true, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
+    return evaluate(cachedSpend.value);
   }
 
-  // Slow path: query DB
+  // Slow path: query DB — combine actual + approximate signals
   const sb = createAdminClient();
-
   const today = new Date().toISOString().split("T")[0];
+  const todayIso = `${today}T00:00:00Z`;
 
   try {
-    const { data: stats, error } = await sb
-      .from("daily_usage_stats")
-      .select("function_name, call_count")
-      .eq("stat_date", today);
+    const [statsRes, actualRes] = await Promise.all([
+      sb.from("daily_usage_stats").select("function_name, call_count").eq("stat_date", today),
+      sb.from("token_usage_log")
+        .select("estimated_cost_usd")
+        .gte("created_at", todayIso),
+    ]);
 
-    if (error) {
-      console.error("[SpendingGuard] DB error, BLOCKING (fail-closed):", error.message);
-      return { allowed: false, degraded: false, estimatedSpendUsd: 0, budgetUsd: DAILY_BUDGET_USD };
+    if (statsRes.error && actualRes.error) {
+      console.error("[SpendingGuard] Both signals failed, BLOCKING (fail-closed):", statsRes.error?.message, actualRes.error?.message);
+      return { allowed: false, degraded: false, estimatedSpendUsd: 0, budgetUsd: DAILY_BUDGET_USD, reason: "db_error" };
     }
 
-    let totalEstimatedSpend = 0;
-    for (const row of stats || []) {
+    // Approximate (call-count × weight)
+    let approxSpend = 0;
+    for (const row of statsRes.data || []) {
       const weight = FUNCTION_COST_WEIGHTS[row.function_name] || 0.02;
-      totalEstimatedSpend += row.call_count * weight;
+      approxSpend += row.call_count * weight;
+    }
+    // Actual (sum of recorded LLM costs)
+    let actualSpend = 0;
+    for (const row of actualRes.data || []) {
+      actualSpend += Number(row.estimated_cost_usd) || 0;
     }
 
-    // Update cache
+    // Take the larger of the two — fail loudly, not silently.
+    const totalEstimatedSpend = Math.max(approxSpend, actualSpend);
+
     cachedSpend = { value: totalEstimatedSpend, ts: now };
 
-    const isCritical = functionName === "process-scan";
-    const atBudget = totalEstimatedSpend >= DAILY_BUDGET_USD;
-    const nearBudget = totalEstimatedSpend >= DAILY_BUDGET_USD * 0.8;
-
-    if (atBudget && !isCritical) {
-      console.warn(`[SpendingGuard] BLOCKED ${functionName}: $${totalEstimatedSpend.toFixed(2)}/$${DAILY_BUDGET_USD}`);
-      return { allowed: false, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
+    const result = evaluate(totalEstimatedSpend);
+    if (!result.allowed) {
+      console.warn(`[SpendingGuard] BLOCKED ${functionName}: actual=$${actualSpend.toFixed(2)} approx=$${approxSpend.toFixed(2)} cap=$${DAILY_BUDGET_USD} reason=${result.reason}`);
+    } else if (result.degraded) {
+      console.warn(`[SpendingGuard] DEGRADED ${functionName}: actual=$${actualSpend.toFixed(2)} cap=$${DAILY_BUDGET_USD}`);
+    } else if (totalEstimatedSpend >= DAILY_BUDGET_USD * 0.8) {
+      console.log(`[SpendingGuard] WARNING: ${functionName} at ${Math.round(totalEstimatedSpend / DAILY_BUDGET_USD * 100)}% (actual $${actualSpend.toFixed(2)})`);
     }
-
-    if (atBudget && isCritical) {
-      console.warn(`[SpendingGuard] DEGRADED ${functionName}: switching to Flash models`);
-      return { allowed: true, degraded: true, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
-    }
-
-    if (nearBudget) {
-      console.log(`[SpendingGuard] WARNING: ${functionName} at ${Math.round(totalEstimatedSpend / DAILY_BUDGET_USD * 100)}%`);
-    }
-
-
-
-    return { allowed: true, degraded: false, estimatedSpendUsd: totalEstimatedSpend, budgetUsd: DAILY_BUDGET_USD };
+    return result;
   } catch (err) {
     console.error("[SpendingGuard] Exception, BLOCKING (fail-closed):", err);
-    return { allowed: false, degraded: false, estimatedSpendUsd: 0, budgetUsd: DAILY_BUDGET_USD };
+    return { allowed: false, degraded: false, estimatedSpendUsd: 0, budgetUsd: DAILY_BUDGET_USD, reason: "exception" };
   }
 }
 
