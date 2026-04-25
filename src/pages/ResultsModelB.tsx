@@ -546,7 +546,7 @@ export default function ResultsModelB() {
           });
       tryFetch(0).finally(() => { if (isMountedRef.current) setWeeklyIntelLoading(false); });
     }
-  }, [logEvent, weeklyIntelLoading, weeklyIntel, cardData, analysisId]);
+  }, [logEvent, weeklyIntelLoading, weeklyIntel, cardData, analysisId, TOOLS_TAB_INDEX]);
 
   // B1 (#4): Persist visited tabs + completion every time they change so refresh
   // restores progress instead of resetting it.
