@@ -126,6 +126,23 @@ export default function OnboardingFlow({
   const metroTiers = METRO_TIERS_BY_COUNTRY[country] || METRO_TIERS_BY_COUNTRY.IN;
   const totalSteps = isManualPath ? 6 : 5;
 
+  const handleSkillsSubmit = () => {
+    // Sanitize each skill individually so injection phrases get filtered
+    // before they ever reach the LLM pipeline.
+    const cleanedSkills = skillsInput
+      .split(/[,\n]+/)
+      .map(s => sanitizePromptInput(s, { maxLength: 60 }))
+      .filter(Boolean);
+    if (cleanedSkills.length > 20) {
+      setSkillsError('Please enter your top 20 skills maximum');
+      onSkillsError?.('Please enter your top 20 skills maximum');
+      return;
+    }
+    setSkillsError('');
+    onSelectSkills?.(cleanedSkills.join(', '));
+  };
+
+
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
       {/* Background pattern */}
