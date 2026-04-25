@@ -119,3 +119,89 @@ Net deltas:
 - Build clean throughout.
 - Lint baseline unchanged (~828 pre-existing errors, tracked in
   BL-032).
+
+---
+
+## 2026-04-25 — Naukri matcher overhaul — Phase 2A complete
+
+**Goal recap**: improve skill-overlap and eyeball-relevance of the
+`apify-naukri-jobs` edge function vs the broken-by-default baseline,
+where literal substring matching collapsed real fits to 0% overlap on
+roles with vocabulary variants (e.g. user "SEO" vs job tag
+"Search Engine Optimization").
+
+**What was changed (Phase 2A-ii)**:
+
+- NEW `supabase/functions/_shared/skill-synonyms.ts` — ~32 canonical
+  entries / ~96 directional variant pairs, scoped to top user-volume
+  skill clusters (marketing/GTM, engineering, leadership, data).
+- Token-aware `skillPresent` matcher in
+  `supabase/functions/apify-naukri-jobs/index.ts` (3-tier strategy:
+  direct substring → token-aware on canonical → synonym lookup).
+- Recalibrated `toMatchPct`: band widened 60–96 → 35–96, skill weight
+  bumped from max +25 to +40, new −10 penalty for anchor-in-title
+  with zero skill overlap.
+- Tightened `toMatchLabel` cutoffs: 85 → 80 for "Strong fit",
+  72 → 65 for "Relevant".
+
+**Before/after metrics across three reference profiles**
+(R1 Senior Java Dev BLR, R2 Digital Marketing Mgr MUM, R3 Eng Mgr BLR):
+
+|                        | Pre-fix | Post-fix |
+|------------------------|---------|----------|
+| Avg skill-overlap      | 53%     | **92%**  |
+| Avg eyeball-relevance  | 53%     | 68.3%    |
+| R2 skill-overlap       | 0%      | **75%**  |
+| R2 eyeball             | 33%     | 25% (1/4)|
+| Score spread           | 8–17    | 13 / 3 / 30 |
+
+**Success criteria result: 7 of 10 passed.**
+
+- PASSED: C1 avg skill-overlap, C4 R2 overlap, C5a/b R1 ratio &
+  count, C5d R2 absolute, C5e/f R3 ratio & count.
+- FAILED:
+  - C2 avg eyeball by 1.7 pts (68.3% vs 70%)
+  - C3 spread on 1/3 roles vs 2/3 target
+  - C5c R2 ratio by 8 pts (25% vs 33%)
+
+**Known limitations (inputs to Phase 2B card design)**:
+
+Substring-on-lowercased-text has structural limits. Three
+false-positive classes were identified during 2A-iii measurement:
+
+1. **Synonym-token FPs** — variants composed of common single-word
+   tokens ("team management", "performance marketing") fire on
+   token-aware match against long JDs where the tokens appear
+   independently (e.g. "join our team" + "stakeholder management").
+2. **Canonical-token FPs** — multi-word user-supplied skills like
+   "system design" match when the tokens appear independently in
+   unrelated JDs (e.g. "system integration" + "design engineer").
+3. **Short-skill substring FPs** — skills ≤3 chars (e.g. "aws")
+   substring-match inside unrelated words ("aws" inside "laws").
+
+A targeted patch killing class 1 was tested in 2A-iii and reverted
+because it surfaced classes 2 and 3 (previously masked) with net
+**negative** eyeball impact: avg eyeball regressed 68.3% → 65.0%.
+
+For Phase 2B (the Nuclear Card), the card UI must disclose
+calibration honestly — show posting counts and skill-match rates
+alongside any specific job listings, so users can sanity-check
+matches at a glance.
+
+**Future direction (not committing to do this now)**: real matcher
+quality improvements likely require either embedding-based skill
+similarity (e.g. compare user skill embeddings to tag embeddings
+with a cosine threshold) or per-job LLM classification. Both are
+weeks of work and out of scope for Phase 2.
+
+**Files changed in 2A-ii**:
+
+- NEW: `supabase/functions/_shared/skill-synonyms.ts`
+- NEW: `supabase/functions/tests/skill-synonyms.test.ts`
+- MODIFIED: `supabase/functions/apify-naukri-jobs/index.ts`
+
+**Phase 2A status: COMPLETE with documented limitations.**
+Phase 2B (Nuclear Card) can proceed.
+
+**Owner**: founder.
+**Related**: BL-033 (residual FP classes — see BACKLOG.md).
