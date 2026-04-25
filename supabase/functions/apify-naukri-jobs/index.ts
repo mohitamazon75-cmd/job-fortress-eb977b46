@@ -32,6 +32,82 @@ const RequestSchema = z.object({
   force_refresh: z.boolean().optional().default(false),
 });
 
+// Parse a free-form years-of-experience string into a number.
+// Accepts: "11", "11 years", "11+", "10-12 yrs", "10 to 12". Returns null on failure.
+export function parseUserYears(input: string | undefined | null): number | null {
+  if (!input) return null;
+  const m = String(input).match(/(\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) && n >= 0 && n <= 60 ? n : null;
+}
+
+// Parse a Naukri listing's experience band like "1-3 Yrs", "5+ Yrs", "0-2 yrs".
+// Returns { min, max } in years, or null. Open-ended bands ("5+") get max=null.
+export function parseListingExperienceBand(input: string | undefined | null): { min: number; max: number | null } | null {
+  if (!input) return null;
+  const s = String(input).toLowerCase();
+  // "1-3", "10 - 12"
+  const range = s.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (range) {
+    const min = Number(range[1]);
+    const max = Number(range[2]);
+    if (Number.isFinite(min) && Number.isFinite(max) && min <= max) return { min, max };
+  }
+  // "5+ yrs", "10+ years"
+  const open = s.match(/(\d+)\s*\+/);
+  if (open) {
+    const min = Number(open[1]);
+    if (Number.isFinite(min)) return { min, max: null };
+  }
+  // single number "5 yrs"
+  const single = s.match(/(\d+)/);
+  if (single) {
+    const n = Number(single[1]);
+    if (Number.isFinite(n)) return { min: n, max: n };
+  }
+  return null;
+}
+
+/**
+ * Returns a match-percentage delta in [-30, +6] based on the gap between the
+ * user's years of experience and the listing's required band.
+ *
+ *   - Listing requires roughly the user's level (within ±2 yrs of band): +6 (perfect)
+ *   - User overqualified by 1-2 levels (band max < user but within 4 yrs): 0 (neutral)
+ *   - User wildly overqualified (band max ≤ user/2, e.g. 11yr user vs 1-3yr role): -25 (junior pollution)
+ *   - User underqualified (band min > user + 4): -20 (overshooting senior role)
+ *   - Open-ended "X+" bands: only penalize if X > user + 4
+ *
+ * Returns 0 (neutral) when either side cannot be parsed — never injects noise.
+ */
+export function experienceGapPenalty(userYears: number | null, band: { min: number; max: number | null } | null): number {
+  if (userYears == null || !band) return 0;
+  const { min, max } = band;
+
+  // Underqualified — listing wants more than user has
+  if (min > userYears + 4) return -20;
+
+  // Open-ended "X+" — only neutral or slight negative if X is far above user
+  if (max == null) {
+    if (min <= userYears + 2) return 0; // user qualifies
+    return -10; // marginally underqualified
+  }
+
+  // User is within band (with 1-yr grace either side) — perfect match
+  if (userYears >= min - 1 && userYears <= max + 1) return 6;
+
+  // Wildly overqualified — band tops out at half or less of user's experience.
+  // This is the Farheen-case junior pollution signal.
+  if (max * 2 <= userYears) return -25;
+
+  // Mildly overqualified — band max below user but within 4 yrs
+  if (max < userYears && max + 4 >= userYears) return 0;
+
+  // Heavily overqualified — band max well below user but not extreme
+  return -12;
+}
+
 type ApifyJob = {
   title?: string;
   companyName?: string;
