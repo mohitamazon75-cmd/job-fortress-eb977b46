@@ -38,6 +38,14 @@ export type LiveMarketSnapshot = {
     p75_lpa: number | null;
   };
   recency: { same_day_count: number; within_7d_count: number; older_count: number };
+  // v2: lets the UI honestly downgrade when Naukri's corpus is polluted
+  // for a role (returns adjacent-role listings that would mislead users).
+  corpus_relevance: {
+    score: number;
+    band: "strong" | "partial" | "thin";
+    title_overlap_pct: number;
+    skill_match_in_top_tags: number;
+  };
   source: { name: "Naukri.com"; via: "Apify"; fetched_at: string };
 };
 
