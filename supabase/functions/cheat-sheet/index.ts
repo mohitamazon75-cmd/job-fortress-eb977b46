@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     const supabase = createAdminClient();
 
     // Spending guard
-    const spendCheck = await checkDailySpending("cheat-sheet", _jwtUserId);
+    const spendCheck = await checkDailySpending("cheat-sheet");
     if (!spendCheck.allowed) return buildSpendingBlockedResponse(corsHeaders, spendCheck);
 
     const skillsList = (skills || []).slice(0, 8).join(", ");
