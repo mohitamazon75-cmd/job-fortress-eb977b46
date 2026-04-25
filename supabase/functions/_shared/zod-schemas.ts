@@ -178,24 +178,42 @@ export const Agent2ASchema = z.object({
   dead_end_narrative: z.string().optional(),
   cultural_risk_assessment: z.any().optional().nullable(),
   pivot_rationale: z.string().optional().nullable(),
-  // AUDIT FIX: these fields were added to the Agent 2A prompt but never to the Zod schema.
-  // validateAgentOutput() strips any field not in the schema → they were silently dropped
-  // every scan even though Agent 2A generated them. Added here to preserve them.
+  // BL-031 fix (2026-04-25): Zod schema now matches the Agent 2A prompt contract
+  // (supabase/functions/_shared/agent-prompts.ts AGENT_2A) and the downstream
+  // consumers (src/lib/scan-engine.ts SkillThreatIntel, SkillCrisisResponseCenter,
+  // VerdictReveal, ai-dossier/prompt-builder).
+  //
+  // Previous shape (string for threat_timeline; legacy fields for skill_threat_intel
+  // and skill_trajectory) caused validateAgentOutput() to throw on every scan, which
+  // silently fell back to the raw LLM output. That worked for new scans but produced
+  // a bimodal persisted shape (raw passthrough vs older string variants) — the
+  // root cause of Card4PivotPaths / Displacement Timeline render drift across scans.
   moat_narrative: z.string().optional().nullable(),
   urgency_horizon: z.string().optional().nullable(),
-  threat_timeline: z.string().optional().nullable(),
+  // Object form per AGENT_2A prompt. Kept permissive (z.any) on inner fields so a
+  // partial LLM response still validates and we never regress to "raw fallback".
+  threat_timeline: z.object({
+    partial_displacement_year: z.any().optional().nullable(),
+    significant_displacement_year: z.any().optional().nullable(),
+    critical_displacement_year: z.any().optional().nullable(),
+    primary_threat_tool: z.any().optional().nullable(),
+    at_risk_task: z.any().optional().nullable(),
+  }).optional().nullable(),
   skill_threat_intel: z.array(z.object({
     skill: z.string(),
     threat_tool: z.string().optional(),
-    timeline: z.string().optional(),
-    severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]).optional(),
-    defence: z.string().optional(),
+    what_ai_does: z.string().optional(),
+    what_human_still_owns: z.string().optional(),
+    industry_proof: z.string().optional(),
+    risk_level: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
+    risk_pct: z.number().optional(), // legacy — older scans only
   })).optional().nullable(),
   skill_trajectory: z.array(z.object({
     skill: z.string(),
-    action: z.string().optional(),
-    timeline: z.string().optional(),
-    outcome: z.string().optional(),
+    current_state: z.string().optional(),
+    month_1: z.string().optional(),
+    month_3: z.string().optional(),
+    pivot_title: z.string().optional(),
   })).optional().nullable(),
 });
 
