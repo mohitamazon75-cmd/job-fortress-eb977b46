@@ -14,10 +14,11 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createAdminClient } from "../_shared/supabase-client.ts";
-import { corsHeaders } from "../_shared/cors.ts";
+import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return handleCorsPreFlight(req);
+  const corsHeaders = getCorsHeaders(req);
 
   const warnThreshold = Number(Deno.env.get("COST_BUDGET_WARN_USD") ?? "5");
   const critThreshold = Number(Deno.env.get("COST_BUDGET_CRIT_USD") ?? "20");
