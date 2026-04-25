@@ -98,6 +98,26 @@ Return ONLY valid JSON:
   "epitaph": "One devastating tombstone line. Max 12 words. The kind of line people put in their bio."
 }`;
 
+    // ── Substitute live tool catalog into systemPrompt ──
+    const originalPrompt = systemPrompt;
+    let substitutedPrompt = systemPrompt;
+    let catalogTools: string[] = [];
+    try {
+      const adminClient = createAdminClient();
+      const obitCatalog = await getCurrentToolCatalog(adminClient);
+      catalogTools = obitCatalog.tools;
+      const obitCatalogBlock = formatCatalog(obitCatalog);
+      substitutedPrompt = systemPrompt.replaceAll("{{TOOL_CATALOG}}", obitCatalogBlock);
+    } catch (e) {
+      console.warn("[career-obituary] Tool catalog fetch failed (non-fatal):", e);
+    }
+    const language = useHindi ? "hi" : "en";
+    console.log(
+      `[catalog-wiring] obituary ${language} prompt: ` +
+      `placeholder remaining = ${substitutedPrompt.includes("{{TOOL_CATALOG}}")}, ` +
+      `length delta = ${substitutedPrompt.length - originalPrompt.length}`,
+    );
+
     const aiCtrl = new AbortController();
     const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const response = await fetch(AI_URL, {
@@ -109,7 +129,7 @@ Return ONLY valid JSON:
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: substitutedPrompt },
           { role: "user", content: `Write the obituary for this profession. Make it so personal they'll screenshot it within 5 seconds:\n\n${profileContext}` },
         ],
         temperature: 0.85,
