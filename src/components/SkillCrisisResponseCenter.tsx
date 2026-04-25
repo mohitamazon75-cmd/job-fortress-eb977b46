@@ -6,6 +6,7 @@ import {
   BookOpen, Wrench, BarChart3, X, Briefcase
 } from 'lucide-react';
 import { type ScanReport, normalizeTools } from '@/lib/scan-engine';
+import { normalizeThreatTimeline } from '@/lib/threat-timeline';
 import { computeStabilityScore } from '@/lib/stability-score';
 import { inferSeniorityTier, isExecutiveTier } from '@/lib/seniority-utils';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
@@ -403,9 +404,11 @@ export default function SkillCrisisResponseCenter({ report, onComplete }: SkillC
               </div>
             </div>
 
-            {/* Displacement Timeline Strip — only when Agent2A threat_timeline is present */}
-            {(report as any).threat_timeline && (() => {
-              const tl = (report as any).threat_timeline;
+            {/* Displacement Timeline Strip — only when Agent2A threat_timeline is present.
+                BL-031: normalize across legacy string / new object / array shapes. */}
+            {(() => {
+              const tl = normalizeThreatTimeline((report as unknown as Record<string, unknown>).threat_timeline);
+              if (!tl) return null;
               const sigYear = tl.significant_displacement_year;
               const yearsLeft = sigYear ? sigYear - new Date().getFullYear() : null;
               const isUrgent = yearsLeft !== null && yearsLeft <= 2;
