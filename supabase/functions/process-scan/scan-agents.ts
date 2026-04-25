@@ -95,6 +95,21 @@ export interface AgentOrchestrationInput {
   resumeAchievements?: string | null;
 }
 
+// Issue #12: per-agent observability shape persisted into determinism_meta.
+// Pure addition — no changes to agent calls, models, or temperatures.
+export interface AgentRunMeta {
+  /** Agent label as used in logs (e.g. "Agent2A:Risk", "ML:obsolescence"). */
+  name: string;
+  /** Model string passed to the AI gateway (e.g. "google/gemini-3-pro-preview"). */
+  model: string | null;
+  /** Temperature passed to the AI gateway. */
+  temperature: number | null;
+  /** Wall-clock duration in ms (from Promise resolution timing). */
+  duration_ms: number;
+  /** Outcome — mirrors scanDiagnostics buckets. */
+  status: "success" | "timeout" | "failed" | "skipped";
+}
+
 export interface AgentOrchestrationResult {
   mlObsolescence: any;
   mlTimedOut: boolean;
@@ -108,6 +123,13 @@ export interface AgentOrchestrationResult {
   /** Live tool catalog used to substitute {{TOOL_CATALOG}} in agent prompts.
    *  Forwarded to scan-pipeline so the post-LLM scrubAll() pass can match it. */
   toolCatalogTools: string[];
+  /** Issue #12: per-agent observability for the determinism debug view. */
+  agentMeta: {
+    parallel_block_ms: number;
+    parallel_deadline_ms: number;
+    parallel_timed_out: boolean;
+    runs: AgentRunMeta[];
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════
