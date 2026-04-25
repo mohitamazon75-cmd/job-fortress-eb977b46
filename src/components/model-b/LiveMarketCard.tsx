@@ -699,6 +699,24 @@ export default function LiveMarketCard({
     );
   }
 
+  // v2: route by corpus_relevance band. Thin = the corpus doesn't reflect
+  // the user's role; render salary+recency only with explicit disclosure
+  // instead of misleading tag list. Strong/partial both fall through to
+  // the full SnapshotView (partial adds an inline disclaimer).
+  // Defensive default for any cached v1 payload that lacks the field.
+  const band = snapshot.corpus_relevance?.band ?? "strong";
+  if (band === "thin") {
+    return (
+      <ThinSignalView
+        snapshot={snapshot}
+        role={role}
+        displayCity={displayCity}
+        onPrev={onPrev}
+        onNext={onNext}
+      />
+    );
+  }
+
   return (
     <SnapshotView
       snapshot={snapshot}
