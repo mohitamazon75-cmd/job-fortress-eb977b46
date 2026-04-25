@@ -91,6 +91,12 @@ Return ONLY valid JSON:
   "epitaph": "One devastating tombstone line. Max 12 words. The kind of line people put in their bio."
 }`;
 
+    // Fetch live tool catalog and substitute {{TOOL_CATALOG}} in both prompts.
+    const _catalogClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const _catalog = await getCurrentToolCatalog(_catalogClient);
+    const _catalogBlock = formatCatalog(_catalog);
+    const finalSystemPrompt = systemPrompt.replaceAll("{{TOOL_CATALOG}}", _catalogBlock);
+
     const aiCtrl = new AbortController();
     const aiT = setTimeout(() => aiCtrl.abort(), 30_000);
     const response = await fetch(AI_URL, {
@@ -102,7 +108,7 @@ Return ONLY valid JSON:
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: finalSystemPrompt },
           { role: "user", content: `Write the obituary for this profession. Make it so personal they'll screenshot it within 5 seconds:\n\n${profileContext}` },
         ],
         temperature: 0.85,
@@ -140,7 +146,7 @@ Return ONLY valid JSON:
       }
     }
 
-    return new Response(JSON.stringify({
+    const payload = {
       headline: parsed.headline || `${roleLabel}: A Career Cut Short`,
       subheadline: parsed.subheadline || "Survived by an outdated LinkedIn profile and 47 unread Jira tickets",
       dateline: parsed.dateline || `${cityLabel.toUpperCase()}, ${dateStr}`,
@@ -149,7 +155,9 @@ Return ONLY valid JSON:
       survived_by: parsed.survived_by || "a half-finished Coursera certificate; 47 unread Jira tickets; a motivational desk quote that read 'Hustle Hard'",
       epitaph: parsed.epitaph || "Here lies a role that could have learned Python.",
       generatedAt: new Date().toISOString(),
-    }), {
+    };
+    scrubAll(payload, { catalog: _catalog.tools });
+    return new Response(JSON.stringify(payload), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (error) {
