@@ -75,7 +75,7 @@ const TAB_LABELS = ["Verdict", "Risk", "Live Market", "Trends", "Shield", "Pivot
 const HEADER_SCORE_HIDDEN_TABS = new Set([0, 4, 9]);
 // Tabs where the bottom action button grid is hidden — these tabs have their own
 // dedicated CTAs and the grid would clutter the emotional/utility frame.
-const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 8]);
+const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 9]);
 // Total content tabs = single source of truth (avoids drift with TAB_LABELS).
 const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
 
