@@ -81,6 +81,7 @@ async function callAgentCore(
   model = PRO_MODEL,
   temperature = 0.3,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  seed?: number,
 ): Promise<any> {
   console.log(`[${agentName}] Starting on ${model.split("/").pop()} (${timeoutMs}ms timeout)...`);
   const start = Date.now();
