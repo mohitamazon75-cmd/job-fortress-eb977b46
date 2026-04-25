@@ -140,6 +140,20 @@ export async function orchestrateAgents(
   const displayName = linkedinName || agent1?.current_role || "you";
   const displayCompany = linkedinCompany || agent1?.current_company || "your company";
 
+  // ── Tool catalog (live, DB-backed) ─────────────────────────
+  // Fetched once per scan; substituted into agent system prompts via sub().
+  // Failure here is non-fatal: getCurrentToolCatalog() returns an empty
+  // catalog and formatCatalog() emits an "(unavailable)" sentinel; the
+  // post-LLM scrubAll() pass still catches stale tool-name leakage.
+  const catalog = await getCurrentToolCatalog(createAdminClient());
+  const catalogBlock = formatCatalog(catalog);
+  console.log(
+    `[catalog-wiring] catalog has ${catalog.tools.length} tools; ` +
+    `formatted block ${catalogBlock.length} chars; ` +
+    `first 120 chars: ${catalogBlock.slice(0, 120)}`,
+  );
+  const sub = (prompt: string) => prompt.replaceAll("{{TOOL_CATALOG}}", catalogBlock);
+
   const monthlySalary = estimateMonthlySalary(
     profileInput.estimated_monthly_salary_inr, 
     input.primaryJob, profileInput.experience_years, companyTier, scan.metro_tier || null,
