@@ -101,6 +101,10 @@ async function callAgentCore(
       temperature: effectiveTemp,
     };
 
+    if (typeof seed === "number") {
+      requestBody.seed = seed;
+    }
+
     // Use structured JSON output for all models that support it
     if (!isGpt) {
       requestBody.generationConfig = { responseMimeType: "application/json" };
