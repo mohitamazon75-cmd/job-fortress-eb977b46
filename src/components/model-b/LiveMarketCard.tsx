@@ -61,6 +61,11 @@ function titleCaseTag(tag: string): string {
   return tag.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function formatLpa(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return n.toFixed(1);
+}
+
 function relativeTime(iso?: string): string {
   if (!iso) return "just now";
   const t = new Date(iso).getTime();
@@ -335,7 +340,7 @@ function SnapshotView({
                       lineHeight: 1.1,
                     }}
                   >
-                    {salary.median_lpa} <span style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink2)" }}>LPA</span>
+                    {formatLpa(salary.median_lpa)} <span style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink2)" }}>LPA</span>
                   </div>
                   <div
                     style={{
@@ -360,7 +365,7 @@ function SnapshotView({
                       color: "var(--mb-ink)",
                     }}
                   >
-                    {salary.p25_lpa} – {salary.p75_lpa} <span style={{ fontSize: 13, color: "var(--mb-ink2)" }}>LPA</span>
+                    {formatLpa(salary.p25_lpa)} – {formatLpa(salary.p75_lpa)} <span style={{ fontSize: 13, color: "var(--mb-ink2)" }}>LPA</span>
                   </div>
                   <div
                     style={{

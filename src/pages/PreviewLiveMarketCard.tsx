@@ -1,3 +1,4 @@
+import "@/styles/model-b-tokens.css";
 import { useSearchParams } from "react-router-dom";
 import LiveMarketCard from "@/components/model-b/LiveMarketCard";
 import { r1Fixture, r3Fixture, execFixture, errorFixture } from "@/components/model-b/liveMarketFixtures";
