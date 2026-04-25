@@ -38,6 +38,14 @@ export type LiveMarketSnapshot = {
     p75_lpa: number | null;
   };
   recency: { same_day_count: number; within_7d_count: number; older_count: number };
+  // v2: lets the UI honestly downgrade when Naukri's corpus is polluted
+  // for a role (returns adjacent-role listings that would mislead users).
+  corpus_relevance: {
+    score: number;
+    band: "strong" | "partial" | "thin";
+    title_overlap_pct: number;
+    skill_match_in_top_tags: number;
+  };
   source: { name: "Naukri.com"; via: "Apify"; fetched_at: string };
 };
 
@@ -164,6 +172,146 @@ function LoadingSkeleton({ onPrev, onNext }: { onPrev?: () => void; onNext?: () 
   );
 }
 
+/* ── Thin-signal render: corpus is too polluted to show tags honestly.
+   Render salary + recency only, with explicit disclosure. This is the
+   render state that fixes the original "embarrassment" issue — instead
+   of showing irrelevant tags as if they were the user's market, we say
+   so plainly and surface only the corpus-agnostic numbers. ── */
+function ThinSignalView({
+  snapshot,
+  role,
+  displayCity,
+  onPrev,
+  onNext,
+}: {
+  snapshot: LiveMarketSnapshot;
+  role: string;
+  displayCity: string;
+  onPrev?: () => void;
+  onNext?: () => void;
+}) {
+  const { posting_count, salary, recency, source, fetched_at, cached } = snapshot;
+  return (
+    <CardShell>
+      <CardHead
+        badges={<><Badge label="Live market · thin signal" variant="navy" /><LivePill /></>}
+        title="Public boards under-represent this role"
+        sub={`We pulled ${posting_count} Naukri posting${posting_count === 1 ? "" : "s"} for ${role} in ${displayCity}, but most don't actually look like ${role} jobs.`}
+      />
+      <CardBody>
+        <div
+          style={{
+            background: "var(--mb-paper)",
+            border: "1.5px solid var(--mb-rule)",
+            borderRadius: 14,
+            padding: "16px 18px",
+            marginBottom: 22,
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 13.5,
+            lineHeight: 1.7,
+            color: "var(--mb-ink2)",
+            fontWeight: 500,
+          }}
+        >
+          <strong>Why we're hiding the tag list:</strong> Naukri's keyword search returned mostly adjacent-role listings (e.g. sales roles for marketing searches, or junior-tier roles for senior searches). Showing those tags as your market would mislead. Below is the slice of data that holds up regardless: salary disclosures and posting freshness.
+        </div>
+
+        {/* Salary — corpus-agnostic */}
+        {salary.shown && salary.median_lpa != null && (
+          <div style={{ marginBottom: 22 }}>
+            <div
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--mb-ink3)",
+                marginBottom: 10,
+              }}
+            >
+              Salary across the broader corpus
+            </div>
+            <div
+              style={{
+                background: "var(--mb-navy-tint)",
+                border: "1.5px solid var(--mb-navy-tint2)",
+                borderRadius: 14,
+                padding: "16px 18px",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--mb-ink2)", marginBottom: 8, fontFamily: "'DM Sans', sans-serif" }}>
+                {salary.n_disclosed} of {salary.n_total} postings disclosed pay
+              </div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 26, fontWeight: 800, color: "var(--mb-navy)" }}>
+                {formatLpa(salary.median_lpa)} <span style={{ fontSize: 15, fontWeight: 700, color: "var(--mb-ink2)" }}>LPA median</span>
+              </div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: "var(--mb-ink2)", marginTop: 6 }}>
+                Range: {formatLpa(salary.p25_lpa)} – {formatLpa(salary.p75_lpa)} LPA (P25–P75)
+              </div>
+              <div style={{ marginTop: 10, fontSize: 11.5, color: "var(--mb-ink3)", fontStyle: "italic", fontFamily: "'DM Sans', sans-serif" }}>
+                Note: these numbers reflect the broader corpus, not specifically {role}.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recency — corpus-agnostic */}
+        {(recency.same_day_count + recency.within_7d_count + recency.older_count) > 0 && (
+          <div style={{ marginBottom: 18 }}>
+            <div
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--mb-ink3)",
+                marginBottom: 10,
+              }}
+            >
+              Posting freshness
+            </div>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink)", lineHeight: 1.7 }}>
+              <strong>{recency.same_day_count}</strong> posted today · <strong>{recency.within_7d_count}</strong> this week · <strong>{recency.older_count}</strong> older
+            </div>
+          </div>
+        )}
+
+        <div
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12.5,
+            color: "var(--mb-ink3)",
+            lineHeight: 1.65,
+            paddingTop: 14,
+            borderTop: "1px dashed var(--mb-rule)",
+            fontStyle: "italic",
+          }}
+        >
+          For senior, niche, or specialized roles like {role}, the real opportunities live on LinkedIn, executive search firms, and direct company applications — not public job boards. See the next card for your matched companies.
+        </div>
+
+        <div
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 11.5,
+            color: "var(--mb-ink3)",
+            lineHeight: 1.6,
+            paddingTop: 12,
+            marginTop: 10,
+            borderTop: "1px dashed var(--mb-rule)",
+          }}
+        >
+          Source: {source.name} via {source.via} · fetched {relativeTime(fetched_at)}{cached ? " (cached)" : ""}
+        </div>
+
+        <CardNav onBack={onPrev} onNext={onNext} nextLabel="See your action plan →" />
+      </CardBody>
+    </CardShell>
+  );
+}
+
 /* ── Main render for success states ── */
 function SnapshotView({
   snapshot,
@@ -190,6 +338,8 @@ function SnapshotView({
   const tagMatched = (tag: string): boolean =>
     overlapShown && matchedSet.has(tag.toLowerCase());
 
+  const isPartial = snapshot.corpus_relevance?.band === "partial";
+
   return (
     <CardShell>
       <CardHead
@@ -202,6 +352,27 @@ function SnapshotView({
         }
       />
       <CardBody>
+        {/* Partial-band disclaimer — corpus has SOME signal but adjacent
+            roles bleed in. Render before the tag list so users read it
+            before scanning the tags. */}
+        {isPartial && (
+          <div
+            style={{
+              background: "var(--mb-amber-tint, #fef3e7)",
+              border: "1.5px solid rgba(196,125,30,0.25)",
+              borderRadius: 12,
+              padding: "12px 14px",
+              marginBottom: 18,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13,
+              lineHeight: 1.6,
+              color: "var(--mb-ink2)",
+            }}
+          >
+            <strong style={{ color: "var(--mb-amber, #c47d1e)" }}>Mixed market.</strong>{" "}
+            Naukri's results for "{role}" include adjacent roles. Some tags below may not reflect your specific role.
+          </div>
+        )}
         {/* Top tags */}
         {top_tags.length > 0 && (
           <div style={{ marginBottom: 26 }}>
@@ -522,6 +693,24 @@ export default function LiveMarketCard({
         sub="We couldn't pull a live posting set for this role+city right now."
         badgeLabel="Live market · unavailable"
         message="Live market data unavailable for this role+city right now. We'll retry on next scan refresh."
+        onPrev={onPrev}
+        onNext={onNext}
+      />
+    );
+  }
+
+  // v2: route by corpus_relevance band. Thin = the corpus doesn't reflect
+  // the user's role; render salary+recency only with explicit disclosure
+  // instead of misleading tag list. Strong/partial both fall through to
+  // the full SnapshotView (partial adds an inline disclaimer).
+  // Defensive default for any cached v1 payload that lacks the field.
+  const band = snapshot.corpus_relevance?.band ?? "strong";
+  if (band === "thin") {
+    return (
+      <ThinSignalView
+        snapshot={snapshot}
+        role={role}
+        displayCity={displayCity}
         onPrev={onPrev}
         onNext={onNext}
       />

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import "@/styles/model-b-tokens.css";
 import Card1RiskMirror from "@/components/model-b/Card1RiskMirror";
+import LiveMarketCard from "@/components/model-b/LiveMarketCard";
 import Card2MarketRadar from "@/components/model-b/Card2MarketRadar";
 import Card3SkillShield from "@/components/model-b/Card3SkillShield";
 import Card4PivotPaths from "@/components/model-b/Card4PivotPaths";
@@ -67,15 +68,15 @@ function handleCopyFallback(text: string) {
   }
 }
 
-const TAB_LABELS = ["Verdict", "Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
+const TAB_LABELS = ["Verdict", "Risk", "Live Market", "Trends", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
 
 // Tabs where the header "Career Safety" score is hidden.
-// 0 = Verdict (presents its own hero score), 3 = Shield (sub-score conflict),
-// 8 = Tools (utility tab — no score frame needed).
-const HEADER_SCORE_HIDDEN_TABS = new Set([0, 3, 8]);
+// 0 = Verdict, 4 = Shield (sub-score conflict), 9 = Tools.
+// (Indices shifted +1 from index 2 onward after Live Market splice.)
+const HEADER_SCORE_HIDDEN_TABS = new Set([0, 4, 9]);
 // Tabs where the bottom action button grid is hidden — these tabs have their own
 // dedicated CTAs and the grid would clutter the emotional/utility frame.
-const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 8]);
+const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 9]);
 // Total content tabs = single source of truth (avoids drift with TAB_LABELS).
 const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
 
@@ -766,24 +767,37 @@ export default function ResultsModelB() {
         {cardData && !loading && !error && (
           <>
             {currentCard === 0 && <Card0Verdict cardData={cardData} onNext={() => handleTabChange(1)} />}
-            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} />}
-            {currentCard === 2 && <Card2MarketRadar cardData={cardData} onBack={() => handleTabChange(1)} onNext={() => handleTabChange(3)} />}
-            {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} overallScore={baseScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
+            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} />}
+            {currentCard === 2 && (() => {
+              const u = cardData.user || {};
+              const role = u.current_title || cardData.role || "Professional";
+              const city = u.location || u.city || cardData.country || "India";
+              const skills = (cardData.card3_shield?.skills || []).map((s: any) => s.name).filter(Boolean);
+              return (
+                <LiveMarketCard
+                  role={role}
+                  city={city}
+                  all_skills={skills}
+                  onPrev={() => handleTabChange(1)}
+                  onNext={() => handleTabChange(3)}
+                />
+              );
+            })()}
+            {currentCard === 3 && <Card2MarketRadar cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} />}
+            {currentCard === 4 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} overallScore={baseScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
               logEvent("modal_opened", { source: "upgrade_plan" });
               setActionModal({
                 title: "60-Day Skill Upgrade Plan",
                 promptText: `Create a 60-day skill upgrade plan for ${cardData.user?.name} based on their resume.\n\nCurrent skills: ${(cardData.card3_shield?.skills || []).map((s: any) => s.name).join(", ")}\nSkill gaps: ${(cardData.card3_shield?.skills || []).filter((s: any) => s.level === "buildable" || s.level === "critical-gap").map((s: any) => s.name).join(", ")}\n\nFor each week:\n- Specific learning resources (free, India-accessible)\n- Practice exercises with measurable outcomes\n- Portfolio project milestones\n- Time estimates (assume 1hr/day on weekdays)`
               });
             }} />}
-            {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} scanId={analysisId ?? undefined} />}
-            {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
-            {currentCard === 6 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} scanId={analysisId ?? undefined} />}
-            {currentCard === 7 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(6)} onNext={() => handleTabChange(8)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
+            {currentCard === 5 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} scanId={analysisId ?? undefined} />}
+            {currentCard === 6 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} analysisId={analysisId} />}
+            {currentCard === 7 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(6)} onNext={() => handleTabChange(8)} scanId={analysisId ?? undefined} />}
+            {currentCard === 8 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(7)} onNext={() => handleTabChange(9)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
 
-            {/* ── Tools tab (index 8) ─────────────────────────────────
-                Three fully-built features that were unreachable in the old flow.
-                Lazy-loaded — zero bundle cost until the user taps Tools. */}
-            {currentCard === 8 && (() => {
+            {/* ── Tools tab (index 9) ───────────────────────────────── */}
+            {currentCard === 9 && (() => {
               // Build a minimal ScanReport-shaped object from cardData so the
               // existing tool components (built for ScanReport) work without changes.
               // B4 (#24): country and seniority_tier now derived from cardData
