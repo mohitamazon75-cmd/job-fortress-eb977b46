@@ -156,6 +156,8 @@ export interface ScanPipelineResult {
   seniorityTier: string;
   displayName: string;
   displayCompany: string;
+  /** Issue #12: per-agent observability captured during the parallel block. */
+  agentMeta: Awaited<ReturnType<typeof orchestrateAgents>>["agentMeta"];
 }
 
 export interface ScanPipelineError {
