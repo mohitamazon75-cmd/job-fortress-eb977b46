@@ -198,6 +198,8 @@ function SnapshotView({
   const tagMatched = (tag: string): boolean =>
     overlapShown && matchedSet.has(tag.toLowerCase());
 
+  const isPartial = snapshot.corpus_relevance?.band === "partial";
+
   return (
     <CardShell>
       <CardHead
@@ -210,6 +212,27 @@ function SnapshotView({
         }
       />
       <CardBody>
+        {/* Partial-band disclaimer — corpus has SOME signal but adjacent
+            roles bleed in. Render before the tag list so users read it
+            before scanning the tags. */}
+        {isPartial && (
+          <div
+            style={{
+              background: "var(--mb-amber-tint, #fef3e7)",
+              border: "1.5px solid rgba(196,125,30,0.25)",
+              borderRadius: 12,
+              padding: "12px 14px",
+              marginBottom: 18,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13,
+              lineHeight: 1.6,
+              color: "var(--mb-ink2)",
+            }}
+          >
+            <strong style={{ color: "var(--mb-amber, #c47d1e)" }}>Mixed market.</strong>{" "}
+            Naukri's results for "{role}" include adjacent roles. Some tags below may not reflect your specific role.
+          </div>
+        )}
         {/* Top tags */}
         {top_tags.length > 0 && (
           <div style={{ marginBottom: 26 }}>
