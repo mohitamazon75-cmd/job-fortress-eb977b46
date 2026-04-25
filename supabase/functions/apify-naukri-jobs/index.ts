@@ -556,7 +556,7 @@ Deno.serve(async (req) => {
     }
 
     const items = (await apifyResp.json()) as ApifyJob[];
-    const jobs = normalizeJobs(Array.isArray(items) ? items : [], role, city, skills);
+    const jobs = normalizeJobs(Array.isArray(items) ? items : [], role, city, skills, experience);
     const recentCount = jobs.filter((j) => j.posted_days != null && j.posted_days <= 7).length;
     const salaryDisclosedCount = jobs.filter((j) => j.salary_disclosed).length;
 
