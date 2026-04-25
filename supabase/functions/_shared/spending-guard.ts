@@ -163,9 +163,10 @@ export async function checkDailySpending(functionName: string): Promise<Spending
 export function buildSpendingBlockedResponse(cors: Record<string, string>, result: SpendingCheckResult): Response {
   return new Response(
     JSON.stringify({
-      error: "Service temporarily degraded due to high usage. Please try again later.",
+      error: result.message || "Service temporarily degraded due to high usage. Please try again later.",
       estimated_spend: result.estimatedSpendUsd,
       budget: result.budgetUsd,
+      reason: result.reason,
     }),
     { status: 503, headers: { ...cors, "Content-Type": "application/json" } },
   );
