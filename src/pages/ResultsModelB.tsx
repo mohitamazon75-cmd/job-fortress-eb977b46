@@ -32,15 +32,15 @@ interface WeeklyIntelData {
 }
 
 const LOADING_MESSAGES = [
-  "🛰️ Pulling AI disruption signals from the last 24 hours...",
-  "🧠 Cross-checking your profile against Gemini 3 Pro + GPT-5 reasoning...",
-  "📡 Scanning 396 live AI tools for direct overlap with your skills...",
-  "⚡ Computing your AI exposure score — 6 deterministic factors...",
-  "📊 Fetching today's salary benchmarks for your role and city...",
-  "💼 Querying Naukri, LinkedIn, Indeed for fresh matching roles...",
-  "🛡️ Mapping your moat skills — what AI still can't replicate...",
-  "🎯 Building your personalised 90-day defense plan...",
-  "🔄 Final calibration against India 2026 hiring + layoff data...",
+  "🛰️ Ingesting AI disruption signals from the last 24 hours...",
+  "🧠 Routing your profile through a multi-model reasoning ensemble...",
+  "📡 Cross-referencing 396 live AI tools against your skill graph...",
+  "⚡ Computing AI exposure index — 6 deterministic risk factors...",
+  "📊 Calibrating today's compensation benchmarks for your role and city...",
+  "💼 Aggregating live hiring signals across the Indian job market...",
+  "🛡️ Mapping your defensible moat — capabilities AI cannot replicate...",
+  "🎯 Synthesizing your personalised 90-day defense protocol...",
+  "🔄 Final calibration against India 2026 hiring + layoff telemetry...",
 ];
 
 const STREAK_KEY = "jb_streak";
