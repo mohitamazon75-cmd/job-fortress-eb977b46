@@ -299,6 +299,8 @@ Deno.test("emptyShape carries every top-level key with safe defaults", () => {
   assertEquals(s.salary.shown, false);
   assertEquals(s.salary.median_lpa, null);
   assertEquals(s.recency.same_day_count, 0);
+  assertEquals(s.corpus_relevance.band, "thin");
+  assertEquals(s.corpus_relevance.score, 0);
   assertEquals(s.source.name, "Naukri.com");
   assertEquals(s.source.via, "Apify");
 });
