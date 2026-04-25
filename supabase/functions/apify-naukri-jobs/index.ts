@@ -54,6 +54,68 @@ function normalizeText(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Returns true if the user skill is "present" in the haystack.
+ * Tries three strategies in order:
+ *   1. Direct contiguous substring (existing behavior)
+ *   2. All sub-tokens of the skill (≥3 chars each) appear somewhere
+ *      in haystack (handles "Node.js" → "node js" → matches "node"
+ *      and "js" anywhere)
+ *   3. Any synonym from SKILL_SYNONYMS[skill] matches via 1 or 2
+ * Tokens shorter than 3 chars are excluded to avoid false positives
+ * on fragments like "ai", "ml", "go" that smuggle into unrelated tags.
+ *
+ * Inputs are expected pre-normalized via normalizeText (lowercase,
+ * alphanumerics + single spaces). The synonym map key is the user's
+ * raw skill normalized with the SAME function — we re-derive it here
+ * for callers that pass normalized input directly.
+ */
+export function skillPresent(skillNorm: string, haystackNorm: string): boolean {
+  if (!skillNorm || !haystackNorm) return false;
+
+  // Strategy 1: direct contiguous substring (only meaningful if skill
+  // itself is ≥3 chars — shorter skills are noise-prone, fall through).
+  if (skillNorm.length >= 3 && haystackNorm.includes(skillNorm)) return true;
+
+  // Strategy 2: token-aware. Split the skill on whitespace, keep tokens
+  // ≥3 chars, require ALL of them to appear somewhere in haystack.
+  const tokens = skillNorm.split(" ").filter((t) => t.length >= 3);
+  if (tokens.length > 0 && tokens.every((t) => haystackNorm.includes(t))) {
+    return true;
+  }
+
+  // Strategy 3: synonyms. Look up by the normalized skill — but the map
+  // keys may contain punctuation (e.g. "node.js", "a/b testing", "ci/cd"),
+  // so try both the normalized form and a punctuation-preserving lookup.
+  const variants = SKILL_SYNONYMS[skillNorm] ?? lookupSynonymsLoose(skillNorm);
+  if (variants) {
+    for (const variant of variants) {
+      const vNorm = normalizeText(variant);
+      if (vNorm.length >= 3 && haystackNorm.includes(vNorm)) return true;
+      const vTokens = vNorm.split(" ").filter((t) => t.length >= 3);
+      if (vTokens.length > 0 && vTokens.every((t) => haystackNorm.includes(t))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// Map keys may carry punctuation (node.js, a/b testing, ci/cd, go-to-market…).
+// Caller passes a normalized skill, so we also try matching against keys after
+// normalizing the keys themselves. Built once per cold start.
+let _normKeyIndex: Map<string, string[]> | null = null;
+function lookupSynonymsLoose(skillNorm: string): string[] | undefined {
+  if (!_normKeyIndex) {
+    _normKeyIndex = new Map();
+    for (const [k, v] of Object.entries(SKILL_SYNONYMS)) {
+      _normKeyIndex.set(normalizeText(k), v);
+    }
+  }
+  return _normKeyIndex.get(skillNorm);
+}
+
 function normalizeCity(city: string) {
   return city.replace(/\(.*?\)/g, "").split(/,|\//)[0]?.trim() || "India";
 }
