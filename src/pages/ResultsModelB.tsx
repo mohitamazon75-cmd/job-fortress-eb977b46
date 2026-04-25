@@ -69,17 +69,11 @@ function handleCopyFallback(text: string) {
   }
 }
 
-const TAB_LABELS = ["Verdict", "Risk", "Market", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
-
-// Tabs where the header "Career Safety" score is hidden.
-// 0 = Verdict (presents its own hero score), 3 = Shield (sub-score conflict),
-// 8 = Tools (utility tab — no score frame needed).
-const HEADER_SCORE_HIDDEN_TABS = new Set([0, 3, 8]);
-// Tabs where the bottom action button grid is hidden — these tabs have their own
-// dedicated CTAs and the grid would clutter the emotional/utility frame.
-const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 8]);
-// Total content tabs = single source of truth (avoids drift with TAB_LABELS).
-const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
+// Tab labels, header-score visibility, action-button visibility, and total
+// journey-tab count are derived per-render from the `cards` array (Pattern B
+// for the LiveMarketCard splice). The cards array conditionally inserts the
+// LiveMarket entry between Verdict and Risk for non-executive scans only —
+// see the `cards` useMemo inside ResultsModelB.
 
 // C1 #2: Streak now correctly resets to 1 if the user skips a day.
 // Pure logic lives in src/lib/model-b-helpers.ts (BL-013 / INV-F02).
