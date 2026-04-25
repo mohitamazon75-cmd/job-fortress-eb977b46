@@ -35,6 +35,8 @@ TOOL CURRENCY RULE (CRITICAL):
 - Reference only AI tools that appear in the {{TOOL_CATALOG}} block at the end of this prompt.
 - For capabilities not in the catalog, use category language ("AI code assistants", "generative design tools", "AI legal research tools") — never invent a product name or version suffix.
 - Never append a version suffix (vN, "4 Opus", "Pro") unless that exact suffixed string appears in the catalog.
+
+{{TOOL_CATALOG}}
 `;
 
 export const AGENT_1_PROFILER = `You are the Profile Deconstructor for the JobBachao Intelligence Engine.
