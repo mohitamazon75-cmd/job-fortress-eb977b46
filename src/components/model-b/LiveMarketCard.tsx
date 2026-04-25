@@ -467,30 +467,45 @@ function SnapshotView({
           const older = recency?.older_count ?? 0;
           const categorized = sameDay + within7d + older;
           const fresh = sameDay + within7d;
-          // Naukri sometimes returns postings without a parseable "X days ago"
-          // label. Don't fabricate a velocity verdict from a zero-sample bucket.
-          const hasSignal = categorized >= 3;
-          const freshPct = categorized > 0 ? Math.round((fresh / categorized) * 100) : 0;
+          const totalPool = posting_count ?? categorized;
           const uncategorized = Math.max(0, (posting_count ?? 0) - categorized);
+
+          // Accuracy guards:
+          //  • Need a real sample (≥5 dated postings) before claiming a verdict.
+          //    With <5, 2-of-3 fresh = 67% = false "HOT" on noise.
+          //  • Naukri "posted today" is dominated by recruiter REPOSTS — same JD
+          //    bumped to the top, not a new opening. When same-day dominates a
+          //    small pool, downgrade to ACTIVE and label honestly.
+          const hasSignal = categorized >= 5;
+          const freshPct = categorized > 0 ? Math.round((fresh / categorized) * 100) : 0;
+          const sameDayShare = categorized > 0 ? sameDay / categorized : 0;
+          const repostNoiseSuspected =
+            totalPool <= 10 && sameDay >= 3 && sameDayShare >= 0.5;
 
           let velocityLabel = "—";
           let velocityColor = "var(--mb-ink2)";
-          let velocityNote = `Posting dates weren't parseable for enough listings to judge hiring velocity. ${posting_count ?? 0} ${posting_count === 1 ? "posting was" : "postings were"} pulled.`;
+          let velocityNote = `Posting dates weren't parseable for enough listings to judge hiring velocity. ${totalPool} ${totalPool === 1 ? "posting was" : "postings were"} pulled.`;
+
           if (hasSignal) {
-            if (freshPct >= 70) {
+            if (repostNoiseSuspected) {
+              velocityLabel = "ACTIVE";
+              velocityColor = "#8B6F1F";
+              velocityNote = `${sameDay} of ${categorized} dated postings show "today" — on a small pool this usually reflects recruiter reposts of older requisitions, not new openings. Treat as steady, not urgent.`;
+            } else if (freshPct >= 70) {
               velocityLabel = "HOT";
               velocityColor = "#B8341C";
-              velocityNote = `${freshPct}% of dated postings are less than 7 days old — recruiters are actively hiring this week.`;
+              velocityNote = `${freshPct}% of dated postings are <7 days old — recruiters are actively listing this role. Note Naukri can't distinguish new requisitions from reposts.`;
             } else if (freshPct >= 40) {
               velocityLabel = "ACTIVE";
               velocityColor = "#8B6F1F";
-              velocityNote = `${freshPct}% of dated postings are less than 7 days old — a steady, consistent hiring pulse.`;
+              velocityNote = `${freshPct}% of dated postings are <7 days old — a steady, consistent listing pulse.`;
             } else {
               velocityLabel = "COOL";
               velocityColor = "var(--mb-ink2)";
-              velocityNote = `Only ${freshPct}% of dated postings are less than 7 days old — most listings are stale, hiring is not urgent right now.`;
+              velocityNote = `Only ${freshPct}% of dated postings are <7 days old — most listings are stale; hiring is not urgent right now.`;
             }
           }
+
 
 
           return (
