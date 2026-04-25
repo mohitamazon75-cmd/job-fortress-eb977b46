@@ -22,6 +22,7 @@ import {
   computeCorpusRelevance,
   computeUserSkillOverlap,
   emptyShape,
+  filterRelevantJobs,
   isExecutiveTitle,
   roleTokens,
   type ApifyJob,
@@ -180,6 +181,20 @@ Deno.test("roleTokens: strips seniority + generic stopwords", () => {
   assertEquals(roleTokens("Senior Java Developer"), ["java", "developer"]);
   assertEquals(roleTokens("Lead Engineering Manager"), ["engineering"]);
   assertEquals(roleTokens("Marketing Manager"), ["marketing"]);
+});
+
+Deno.test("filterRelevantJobs: removes recruiter/support pollution before aggregation", () => {
+  const jobs: ApifyJob[] = [
+    { title: "Recruiter Manager", tagsAndSkills: "Recruitment,Hiring,Talent Acquisition" },
+    { title: "Customer Support Executive", tagsAndSkills: "Customer Support,Customer Service" },
+    ...Array.from({ length: 6 }, () => ({
+      title: "Java Spring Boot Developer",
+      tagsAndSkills: "Java,Spring Boot,Microservices,Hibernate,REST API",
+    })),
+  ];
+  const relevant = filterRelevantJobs(jobs, "Senior Java Developer", ["Java", "Spring Boot", "Microservices"]);
+  assertEquals(relevant.length, 6);
+  assert(!aggregateTopTags(relevant).some((t) => t.tag.includes("recruitment") || t.tag.includes("customer")));
 });
 
 // ─────────────────────────────────────────────────────────────────────
