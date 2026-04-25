@@ -206,7 +206,7 @@ export async function callAgent(
       settle(null, true);
     }, hardTimeoutMs);
 
-    callAgentCore(apiKey, agentName, systemPrompt, userPrompt, model, temperature, timeoutMs)
+    callAgentCore(apiKey, agentName, systemPrompt, userPrompt, model, temperature, timeoutMs, seed)
       .then((result) => {
         if (settled) return;
         clearTimeout(hardTimer);
