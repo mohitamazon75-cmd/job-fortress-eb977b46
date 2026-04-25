@@ -571,7 +571,14 @@ const Index = () => {
         } catch (cleanupErr) {
           console.warn('Failed to mark orphan scan as error:', cleanupErr);
         }
-        setPhase('input-method');
+        // PR1 (Reliability): Route to the persistent error screen instead of bouncing
+        // silently back to input-method. Clear scanId so the "Try Again" CTA sends the
+        // user back to re-pick their file (the in-memory File blob is gone after upload fail).
+        setScanId('');
+        setAccessToken('');
+        cleanupRef.current?.();
+        cleanupRef.current = null;
+        setPhase('error');
         return false;
       }
     }
