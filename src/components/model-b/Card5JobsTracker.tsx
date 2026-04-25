@@ -188,15 +188,22 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
           const ctaLabel = isGenericLink ? "Search this role ↗" : "Open live listing ↗";
           const matchTone = getMatchTone(job.match_pct);
           return (
-            <div key={`${job.company || "company"}-${job.title || job.role || i}`} style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 16, padding: 20, marginBottom: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
+            <div key={`${job.company || "company"}-${job.title || job.role || i}`} style={{ background: "white", border: job.weak_signal ? "1.5px dashed var(--mb-rule)" : "1.5px solid var(--mb-rule)", borderRadius: 16, padding: 20, marginBottom: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", opacity: job.weak_signal ? 0.78 : 1 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", marginBottom: 8, flexWrap: "wrap" }}>
                 <div>
                   <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.3 }}>{job.title || job.role}</div>
                   <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-ink2)", marginTop: 4 }}>{job.company}</div>
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 800, padding: "5px 10px", borderRadius: 999, background: matchTone.variant === "green" ? "var(--mb-green-tint)" : matchTone.variant === "navy" ? "var(--mb-navy-tint)" : "var(--mb-amber-tint)", color: matchTone.variant === "green" ? "var(--mb-green)" : matchTone.variant === "navy" ? "var(--mb-navy)" : "var(--mb-amber)", border: "1px solid var(--mb-rule)", fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                  {job.match_pct ? `${job.match_pct}% · ${matchTone.label}` : job.match_label || "Live listing"}
-                </span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, padding: "5px 10px", borderRadius: 999, background: matchTone.variant === "green" ? "var(--mb-green-tint)" : matchTone.variant === "navy" ? "var(--mb-navy-tint)" : "var(--mb-amber-tint)", color: matchTone.variant === "green" ? "var(--mb-green)" : matchTone.variant === "navy" ? "var(--mb-navy)" : "var(--mb-amber)", border: "1px solid var(--mb-rule)", fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    {job.match_pct ? `${job.match_pct}% · ${matchTone.label}` : job.match_label || "Live listing"}
+                  </span>
+                  {job.weak_signal && (
+                    <span title={job.weak_signal_reason || "Verify before applying"} style={{ fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 999, background: "var(--mb-amber-tint)", color: "var(--mb-amber)", border: "1px solid rgba(180,120,20,0.25)", fontFamily: "'DM Sans', sans-serif", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      ⚠ Weak signal
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>

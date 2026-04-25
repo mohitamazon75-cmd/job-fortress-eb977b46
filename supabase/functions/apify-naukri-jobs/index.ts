@@ -32,6 +32,82 @@ const RequestSchema = z.object({
   force_refresh: z.boolean().optional().default(false),
 });
 
+// Parse a free-form years-of-experience string into a number.
+// Accepts: "11", "11 years", "11+", "10-12 yrs", "10 to 12". Returns null on failure.
+export function parseUserYears(input: string | undefined | null): number | null {
+  if (!input) return null;
+  const m = String(input).match(/(\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) && n >= 0 && n <= 60 ? n : null;
+}
+
+// Parse a Naukri listing's experience band like "1-3 Yrs", "5+ Yrs", "0-2 yrs".
+// Returns { min, max } in years, or null. Open-ended bands ("5+") get max=null.
+export function parseListingExperienceBand(input: string | undefined | null): { min: number; max: number | null } | null {
+  if (!input) return null;
+  const s = String(input).toLowerCase();
+  // "1-3", "10 - 12"
+  const range = s.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (range) {
+    const min = Number(range[1]);
+    const max = Number(range[2]);
+    if (Number.isFinite(min) && Number.isFinite(max) && min <= max) return { min, max };
+  }
+  // "5+ yrs", "10+ years"
+  const open = s.match(/(\d+)\s*\+/);
+  if (open) {
+    const min = Number(open[1]);
+    if (Number.isFinite(min)) return { min, max: null };
+  }
+  // single number "5 yrs"
+  const single = s.match(/(\d+)/);
+  if (single) {
+    const n = Number(single[1]);
+    if (Number.isFinite(n)) return { min: n, max: n };
+  }
+  return null;
+}
+
+/**
+ * Returns a match-percentage delta in [-30, +6] based on the gap between the
+ * user's years of experience and the listing's required band.
+ *
+ *   - Listing requires roughly the user's level (within ±2 yrs of band): +6 (perfect)
+ *   - User overqualified by 1-2 levels (band max < user but within 4 yrs): 0 (neutral)
+ *   - User wildly overqualified (band max ≤ user/2, e.g. 11yr user vs 1-3yr role): -25 (junior pollution)
+ *   - User underqualified (band min > user + 4): -20 (overshooting senior role)
+ *   - Open-ended "X+" bands: only penalize if X > user + 4
+ *
+ * Returns 0 (neutral) when either side cannot be parsed — never injects noise.
+ */
+export function experienceGapPenalty(userYears: number | null, band: { min: number; max: number | null } | null): number {
+  if (userYears == null || !band) return 0;
+  const { min, max } = band;
+
+  // Underqualified — listing wants more than user has
+  if (min > userYears + 4) return -20;
+
+  // Open-ended "X+" — only neutral or slight negative if X is far above user
+  if (max == null) {
+    if (min <= userYears + 2) return 0; // user qualifies
+    return -10; // marginally underqualified
+  }
+
+  // User is within band (with 1-yr grace either side) — perfect match
+  if (userYears >= min - 1 && userYears <= max + 1) return 6;
+
+  // Wildly overqualified — band tops out at half or less of user's experience.
+  // This is the Farheen-case junior pollution signal.
+  if (max * 2 <= userYears) return -25;
+
+  // Mildly overqualified — band max below user but within 4 yrs
+  if (max < userYears && max + 4 >= userYears) return 0;
+
+  // Heavily overqualified — band max well below user but not extreme
+  return -12;
+}
+
 type ApifyJob = {
   title?: string;
   companyName?: string;
@@ -228,6 +304,7 @@ export function toMatchPct(opts: {
   sharedSkillsCount: number;
   userSkillsCount: number;
   recencyDays: number | null;
+  experiencePenalty?: number; // from experienceGapPenalty(); -25..+6, default 0
 }) {
   // Lower floor: was 60/65, now 40/55. Lets stretch jobs actually
   // read as stretches and creates real spread above them.
@@ -255,6 +332,13 @@ export function toMatchPct(opts: {
     else if (opts.recencyDays <= 7) pct += 2;
   }
 
+  // Experience-gap penalty (Farheen-fix). Catches "11yr senior matched to 1-3yr role"
+  // junior pollution, and "5yr engineer matched to staff/principal" overshooting.
+  // Returns 0 when either side is unparseable, so this never injects spurious noise.
+  if (typeof opts.experiencePenalty === "number") {
+    pct += opts.experiencePenalty;
+  }
+
   // Wider band: was 60-96, now 35-96. Stretch can mean stretch.
   return Math.max(35, Math.min(96, pct));
 }
@@ -272,6 +356,8 @@ function buildWhyFit(opts: {
   postedLabel: string | null;
   anchorTokens: string[];
   anchorInTitle: boolean;
+  userYears?: number | null;
+  listingBand?: { min: number; max: number | null } | null;
 }) {
   const parts: string[] = [];
   if (opts.anchorInTitle) {
@@ -282,29 +368,47 @@ function buildWhyFit(opts: {
   } else if (opts.userSkillsCount > 0) {
     parts.push("None of your declared skills appear in this listing — verify before applying");
   }
-  if (opts.experience) parts.push(`Experience band: ${opts.experience}`);
+  // Surface a seniority gap when both sides are known and the gap is significant.
+  // Specifically called out so the user sees WHY a card is de-emphasised.
+  if (opts.userYears != null && opts.listingBand) {
+    const { min, max } = opts.listingBand;
+    if (max != null && max * 2 <= opts.userYears) {
+      parts.push(`⚠ Listing targets ${min}-${max} yrs · you have ${opts.userYears}`);
+    } else if (min > opts.userYears + 4) {
+      parts.push(`⚠ Listing wants ${min}+ yrs · you have ${opts.userYears}`);
+    } else if (opts.experience) {
+      parts.push(`Experience band: ${opts.experience}`);
+    }
+  } else if (opts.experience) {
+    parts.push(`Experience band: ${opts.experience}`);
+  }
   if (opts.postedLabel) parts.push(`Posted ${opts.postedLabel.toLowerCase()}`);
   return parts.join(" · ");
 }
 
-function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: string[]) {
+function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: string[], userExperienceRaw: string) {
   // Use the COMPRESSED role for anchor extraction. A 7-word job title shouldn't
   // require 7 anchor hits — that's why the gate was over-filtering and users
   // were seeing 0–2 jobs out of 50 scraped.
   const compactRole = compressRoleForSearch(role);
   const anchors = getAnchorTokens(compactRole);
   const userSkillsCount = skills.filter((s) => s && s.trim().length > 1).length;
+  const userYears = parseUserYears(userExperienceRaw);
 
   const scored = items
     .filter((item) => item.jdURL && item.title)
     .map((item) => {
       const s = scoreJobAgainstUser(item, compactRole, skills);
       const days = parseDays(item.footerPlaceholderLabel);
+      const expBand = item.experienceText || item.experience || null;
+      const parsedBand = parseListingExperienceBand(expBand);
+      const expPenalty = experienceGapPenalty(userYears, parsedBand);
       const matchPct = toMatchPct({
         anchorInTitle: s.anchorInTitle,
         sharedSkillsCount: s.sharedSkills.length,
         userSkillsCount,
         recencyDays: days,
+        experiencePenalty: expPenalty,
       });
 
       const tags = (item.tagsAndSkills || "")
@@ -313,7 +417,6 @@ function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: st
         .filter(Boolean)
         .slice(0, 6);
 
-      const expBand = item.experienceText || item.experience || null;
       const postedLabel = item.footerPlaceholderLabel || null;
       const whyFit = buildWhyFit({
         sharedSkills: s.sharedSkills,
@@ -322,6 +425,8 @@ function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: st
         postedLabel,
         anchorTokens: anchors,
         anchorInTitle: s.anchorInTitle,
+        userYears,
+        listingBand: parsedBand,
       });
 
       return {
@@ -344,6 +449,16 @@ function normalizeJobs(items: ApifyJob[], role: string, city: string, skills: st
         anchor_in_body: s.anchorInBody,
         match_pct: matchPct,
         match_label: toMatchLabel(matchPct),
+        // Surface a "weak signal" hint to the UI so the card can be de-emphasised.
+        // Trigger: low score OR significant experience gap. Either reason is enough.
+        weak_signal: matchPct < 60 || expPenalty <= -15,
+        weak_signal_reason: matchPct < 60
+          ? "Low overall match — verify before applying"
+          : expPenalty <= -15
+            ? (parsedBand && userYears != null && parsedBand.max != null && parsedBand.max * 2 <= userYears
+                ? `Listing targets ${parsedBand.min}-${parsedBand.max} yrs — well below your ${userYears} yrs`
+                : `Listing seniority is far from yours — verify before applying`)
+            : null,
         why_fit: whyFit,
         raw_score: s.score,
       };
@@ -381,12 +496,14 @@ Deno.serve(async (req) => {
       return json({ error: parsed.error.flatten().fieldErrors }, 400);
     }
 
-    const { role, city, skills, force_refresh } = parsed.data;
+    const { role, city, skills, experience, force_refresh } = parsed.data;
     const isExecutive = parsed.data.is_executive || isExecutiveTitle(role);
     const searchUrls = buildSearchUrls(role, city);
-    // v4: relaxed relevance gate + compressed search query (2026-04-24).
-    // Bumping the version invalidates v3 cache entries that were over-filtered.
-    const cacheKey = `apify-naukri-jobs:v4:${normalizeText(role)}:${normalizeText(city)}:${skills.slice(0, 5).map(normalizeText).sort().join("-")}:${isExecutive ? "exec" : "core"}`;
+    // v5: experience-gap penalty + weak-signal flagging (2026-04-25, P0-3 Farheen fix).
+    // Bumping the version invalidates v4 cache that was missing the experience axis.
+    const expBucket = parseUserYears(experience);
+    const expBucketKey = expBucket == null ? "exp-none" : `exp-${Math.floor(expBucket / 3) * 3}`; // group every 3yrs
+    const cacheKey = `apify-naukri-jobs:v5:${normalizeText(role)}:${normalizeText(city)}:${skills.slice(0, 5).map(normalizeText).sort().join("-")}:${isExecutive ? "exec" : "core"}:${expBucketKey}`;
     const sb = createAdminClient();
 
     // Executive route: don't waste Apify credits — board search returns junk for C-suite roles.
@@ -439,7 +556,7 @@ Deno.serve(async (req) => {
     }
 
     const items = (await apifyResp.json()) as ApifyJob[];
-    const jobs = normalizeJobs(Array.isArray(items) ? items : [], role, city, skills);
+    const jobs = normalizeJobs(Array.isArray(items) ? items : [], role, city, skills, experience);
     const recentCount = jobs.filter((j) => j.posted_days != null && j.posted_days <= 7).length;
     const salaryDisclosedCount = jobs.filter((j) => j.salary_disclosed).length;
 
