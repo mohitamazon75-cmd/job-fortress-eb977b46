@@ -13,7 +13,7 @@ export default function PreviewLiveMarketCard() {
   const state = (params.get("state") || "r1").toLowerCase();
 
   let role = "Senior Java Developer";
-  let city = "Bangalore, India";
+  const city = "Bangalore, India";
   let snapshot = r1Fixture;
   let force: "loading" | "error" | undefined;
 
