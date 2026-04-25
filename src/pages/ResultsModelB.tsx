@@ -664,11 +664,11 @@ export default function ResultsModelB() {
         {/* Loading state */}
         {loading && (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "var(--mb-ink)", marginBottom: 8 }}>
-              Analysing your resume...
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "var(--mb-ink)", marginBottom: 8, lineHeight: 1.25 }}>
+              Running your career through every model + the last 24 hours of market signals
             </div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 4 }}>
-              {cardData?.resume_filename || "Your Resume"}
+              {cardData?.resume_filename || "Your Resume"} · Gemini 3 Pro · GPT-5 · 396-tool catalog · live India hiring data
             </div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink4)", marginBottom: 24, minHeight: 20 }}>
               {LOADING_MESSAGES[loadingMsg]}
