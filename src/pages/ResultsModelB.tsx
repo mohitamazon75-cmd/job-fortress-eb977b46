@@ -252,13 +252,32 @@ export default function ResultsModelB() {
     setLoading(true);
     setError("");
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: userResp, error: userErr } = await supabase.auth.getUser();
       if (!isMountedRef.current || myGen !== pollGenerationRef.current) return;
+
+      // Stale JWT recovery: if the auth user no longer exists (e.g. account
+      // was deleted server-side) Supabase returns 403 user_not_found. The
+      // local session is unusable — sign out and bounce to /auth instead of
+      // calling the edge function with user_id: null (which 400s).
+      const errMsg = (userErr as any)?.message || (userErr as any)?.code || "";
+      if (userErr && /user_not_found|not.?found|jwt|sub.?claim/i.test(String(errMsg))) {
+        try { await supabase.auth.signOut(); } catch {}
+        navigate("/auth", { replace: true });
+        return;
+      }
+
+      const user = userResp?.user;
       const uid = user?.id || null;
       setUserId(uid);
-      // Detect anonymous users (created by signInAnonymously) to show sign-in prompt
       // Show save prompt if no email (anonymous or not logged in at all)
       setShowSavePrompt(!user?.email);
+
+      if (!uid) {
+        setError("Please sign in to view this analysis.");
+        setShowSavePrompt(true);
+        setLoading(false);
+        return;
+      }
 
       // First call triggers the background job
       const { data, error: fnError } = await supabase.functions.invoke("get-model-b-analysis", {
