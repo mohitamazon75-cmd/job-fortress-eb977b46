@@ -648,7 +648,22 @@ Deno.serve(async (req) => {
     }
 
     if (!agent1) {
-      const profilerResult = await callAgentRace(LOVABLE_API_KEY, "Agent1:Profiler", AGENT_1_PROFILER,
+      // Substitute the live tool catalog into AGENT_1_PROFILER so the profiler
+      // sees the canonical list of currently-relevant AI tools (not a stale
+      // hardcoded snippet). Catalog fetch is non-fatal: failure leaves the
+      // "(catalog unavailable …)" sentinel in place and the post-LLM scrub
+      // still catches stale tool-name leakage.
+      const { getCurrentToolCatalog, formatCatalog } = await import("../_shared/tool-catalog.ts");
+      const profilerCatalog = await getCurrentToolCatalog(supabase);
+      const profilerCatalogBlock = formatCatalog(profilerCatalog);
+      const agent1SystemPrompt = AGENT_1_PROFILER.replaceAll("{{TOOL_CATALOG}}", profilerCatalogBlock);
+      console.log(
+        `[catalog-wiring] agent1 prompt: ` +
+        `placeholder remaining = ${agent1SystemPrompt.includes("{{TOOL_CATALOG}}")}, ` +
+        `length delta = ${agent1SystemPrompt.length - AGENT_1_PROFILER.length}`,
+      );
+
+      const profilerResult = await callAgentRace(LOVABLE_API_KEY, "Agent1:Profiler", agent1SystemPrompt,
         agent1UserPrompt, PRO_MODEL, "google/gemini-3-flash-preview", 0.1, 25_000);
       agent1 = profilerResult.data;
       // Validate and clamp Agent 1 output ranges
