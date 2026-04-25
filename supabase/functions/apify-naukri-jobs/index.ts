@@ -200,7 +200,7 @@ function scoreJobAgainstUser(job: ApifyJob, role: string, skills: string[]) {
 
   // User skills overlap (computed against listing tags + body, not against itself).
   const userSkillsNorm = skills.map((s) => normalizeText(s)).filter((s) => s.length > 1);
-  const sharedSkills = userSkillsNorm.filter((s) => haystack.includes(s));
+  const sharedSkills = userSkillsNorm.filter((s) => skillPresent(s, haystack));
   const skillOverlapPct = userSkillsNorm.length ? sharedSkills.length / userSkillsNorm.length : 0;
 
   // Recency
@@ -223,27 +223,45 @@ function scoreJobAgainstUser(job: ApifyJob, role: string, skills: string[]) {
   };
 }
 
-function toMatchPct(opts: { anchorInTitle: boolean; sharedSkillsCount: number; userSkillsCount: number; recencyDays: number | null }) {
-  // Floor: anchor-in-title = 65, otherwise skill-only match starts at 60.
-  // Returning 0 here was making genuinely-relevant skill-matched jobs render
-  // as "0% · Stretch", which felt broken to users.
-  let pct = opts.anchorInTitle ? 65 : 60;
+export function toMatchPct(opts: {
+  anchorInTitle: boolean;
+  sharedSkillsCount: number;
+  userSkillsCount: number;
+  recencyDays: number | null;
+}) {
+  // Lower floor: was 60/65, now 40/55. Lets stretch jobs actually
+  // read as stretches and creates real spread above them.
+  let pct = opts.anchorInTitle ? 55 : 40;
+
+  // Bigger skill bump: was max +25, now max +40. Skills do more work.
   if (opts.userSkillsCount > 0) {
     const overlap = Math.min(1, opts.sharedSkillsCount / opts.userSkillsCount);
-    pct += Math.round(overlap * 25); // up to +25 from skills
+    pct += Math.round(overlap * 40);
   } else if (opts.anchorInTitle) {
-    pct += 10; // no user skills => modest bump only when title actually anchored
+    pct += 10;
   }
+
+  // NEW penalty: anchor-in-title with ZERO skill overlap is suspicious
+  // (this catches Java jobs in a Node search, marketing jobs in a tele-
+  // marketing search, etc.). Penalty does not apply when user has no
+  // skills declared.
+  if (opts.anchorInTitle && opts.userSkillsCount > 0 && opts.sharedSkillsCount === 0) {
+    pct -= 10;
+  }
+
+  // Recency unchanged
   if (opts.recencyDays != null) {
     if (opts.recencyDays <= 1) pct += 4;
     else if (opts.recencyDays <= 7) pct += 2;
   }
-  return Math.max(60, Math.min(96, pct));
+
+  // Wider band: was 60-96, now 35-96. Stretch can mean stretch.
+  return Math.max(35, Math.min(96, pct));
 }
 
-function toMatchLabel(matchPct: number) {
-  if (matchPct >= 85) return "Strong fit";
-  if (matchPct >= 72) return "Relevant";
+export function toMatchLabel(matchPct: number) {
+  if (matchPct >= 80) return "Strong fit";   // was 85
+  if (matchPct >= 65) return "Relevant";      // was 72
   return "Stretch";
 }
 
