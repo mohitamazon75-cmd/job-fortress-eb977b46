@@ -563,6 +563,14 @@ const Index = () => {
       } catch (err) {
         console.error('Resume upload failed:', err);
         toast.error(err instanceof Error ? err.message : 'Resume upload failed. Please try again.', { id: uploadToastId });
+        // Mark the scan as error so it doesn't sit in "processing" forever and so the
+        // user's next attempt creates a fresh scan instead of colliding with an orphan.
+        try {
+          const { supabase: sb } = await import('@/integrations/supabase/client');
+          await sb.from('scans').update({ scan_status: 'error' } as any).eq('id', id);
+        } catch (cleanupErr) {
+          console.warn('Failed to mark orphan scan as error:', cleanupErr);
+        }
         setPhase('input-method');
         return false;
       }
