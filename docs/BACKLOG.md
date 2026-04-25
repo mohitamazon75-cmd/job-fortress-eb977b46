@@ -198,18 +198,3 @@ Discovered 2026-04-24 during prompt-injection defense work.
 ```
 
 Bump the next ID monotonically. **Never reuse IDs.** Closed entries stay in the file forever — they document what we shipped.
-
-## 2026-04-25 — Card1RiskMirror back button (P2)
-
-After LiveMarketCard shipped at position 1 of the non-exec carousel
-(Phase 2B-iii-b), Card1RiskMirror now sits at position 2 for non-execs
-but lacks an `onBack` prop / Back button. Users can still navigate
-back via the tab-pill row above the card, but in-card "Back" is
-missing.
-
-Fix: Add `onBack?: () => void` to Card1RiskMirror props, render a
-Back button in CardNav, and wire `onBack={() => handleTabChange(currentCard - 1)}`
-in ResultsModelB's "risk" case (already computed as the local `onBack`
-const in the switch, so just stop discarding it).
-
-Owner: TBD. Target: post-LiveMarket production verification.
