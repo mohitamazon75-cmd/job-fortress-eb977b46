@@ -303,17 +303,37 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
             </motion.div>
           )}
 
-          {/* Credibility */}
+          {/* Research basis — links to /methodology where each source is cited in full.
+              We removed MeitY because no MeitY publication is referenced on the methodology
+              page; only sources we actually cite are listed here. This strip is descriptive
+              ("our risk model reads these reports"), not an endorsement claim. */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.1 }}
-            className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mb-8"
+            className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 mb-8"
           >
-            <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/50">Risk model built on</span>
-            {['NASSCOM', 'WEF', 'O*NET', 'LinkedIn Economic Graph', 'MeitY'].map(src => (
-              <span key={src} className="text-[11px] font-bold text-muted-foreground/70 px-2.5 py-1 rounded-full border border-border bg-card/50">{src}</span>
+            <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/50">Research basis</span>
+            {[
+              { name: 'WEF Future of Jobs', label: 'WEF' },
+              { name: 'NASSCOM India Tech Workforce', label: 'NASSCOM' },
+              { name: 'O*NET Task Database', label: 'O*NET' },
+              { name: 'LinkedIn Economic Graph', label: 'LinkedIn' },
+            ].map(src => (
+              <span
+                key={src.label}
+                title={src.name}
+                className="text-[11px] font-bold text-muted-foreground/70 px-2.5 py-1 rounded-full border border-border bg-card/50"
+              >
+                {src.label}
+              </span>
             ))}
+            <a
+              href="/methodology"
+              className="text-[11px] font-bold text-primary hover:text-primary/80 underline underline-offset-2"
+            >
+              See methodology →
+            </a>
           </motion.div>
 
           {/* How it works */}
