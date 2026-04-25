@@ -167,7 +167,7 @@ Return ONLY valid JSON:
       }
     }
 
-    return new Response(JSON.stringify({
+    const obituaryPayload: Record<string, unknown> = {
       headline: parsed.headline || `${roleLabel}: A Career Cut Short`,
       subheadline: parsed.subheadline || "Survived by an outdated LinkedIn profile and 47 unread Jira tickets",
       dateline: parsed.dateline || `${cityLabel.toUpperCase()}, ${dateStr}`,
@@ -176,7 +176,20 @@ Return ONLY valid JSON:
       survived_by: parsed.survived_by || "a half-finished Coursera certificate; 47 unread Jira tickets; a motivational desk quote that read 'Hustle Hard'",
       epitaph: parsed.epitaph || "Here lies a role that could have learned Python.",
       generatedAt: new Date().toISOString(),
-    }), {
+    };
+
+    // Last-mile scrub: replace tool-name leakage outside the live catalog with category language.
+    try {
+      const catalogOpt = catalogTools.length > 0 ? { tools: catalogTools } : undefined;
+      const result = scrubAll(obituaryPayload, { catalog: catalogOpt });
+      if (result.scrubbed > 0) {
+        console.log(`[career-obituary] Scrubber rewrote ${result.scrubbed} phrase(s):`, result.hits);
+      }
+    } catch (e) {
+      console.warn("[career-obituary] Scrubber failed (non-fatal):", e);
+    }
+
+    return new Response(JSON.stringify(obituaryPayload), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (error) {

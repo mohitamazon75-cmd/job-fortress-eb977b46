@@ -129,3 +129,15 @@ Deno.test("(g) formatCatalog: empty sentinel + populated format", () => {
   assertEquals(lines[2], "- design: Figma AI");
   assertStringIncludes(out, "Cursor, Devin");
 });
+
+Deno.test("(h) placeholder substitution sanity — replaceAll fires on '{{TOOL_CATALOG}}'", () => {
+  const original = "Header text\n{{TOOL_CATALOG}}\nFooter text";
+  const block = formatCatalog({
+    tools: ["Cursor", "Figma AI"],
+    categories: { coding: ["Cursor"], design: ["Figma AI"] },
+  });
+  const out = original.replaceAll("{{TOOL_CATALOG}}", block);
+  assertEquals(out.includes("{{TOOL_CATALOG}}"), false);
+  assertStringIncludes(out, "AI TOOL CATALOG (canonical, fetched live):");
+  assertEquals(out.length > original.length, true);
+});
