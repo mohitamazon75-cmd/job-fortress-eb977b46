@@ -26,6 +26,7 @@ const ObituaryPage = lazy(() => import("./pages/Obituary"));
 const ResultsChoose = lazy(() => import("./pages/ResultsChoose"));
 const ResultsModelB = lazy(() => import("./pages/ResultsModelB"));
 const Methodology = lazy(() => import("./pages/Methodology"));
+const PreviewLiveMarketCard = lazy(() => import("./pages/PreviewLiveMarketCard"));
 
 const queryClient = new QueryClient();
 
@@ -129,6 +130,8 @@ const App = () => {
                 <Route path="/obituary" element={<ErrorBoundary scope="obituary"><ObituaryPage /></ErrorBoundary>} />
                 <Route path="/results/choose" element={<ErrorBoundary scope="results-choose"><ResultsChoose /></ErrorBoundary>} />
                 <Route path="/results/model-b" element={<ErrorBoundary scope="results"><ResultsModelB /></ErrorBoundary>} />
+                {/* Phase 2B-iii-a preview route — isolated component verification, no carousel wiring. */}
+                <Route path="/preview/live-market-card" element={<ErrorBoundary scope="preview-live-market"><PreviewLiveMarketCard /></ErrorBoundary>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
