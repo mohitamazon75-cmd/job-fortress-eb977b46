@@ -247,7 +247,7 @@ export async function callAgentWithFallback(
     const result = await callAgent(
       apiKey, `${agentName}[${model.split("/").pop()}]`,
       systemPrompt, userPrompt,
-      model, temperature, effectiveTimeout,
+      model, temperature, effectiveTimeout, seed,
     );
 
     if (result !== null) {
