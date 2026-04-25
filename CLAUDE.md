@@ -12,7 +12,7 @@
 
 - **Live URL**: https://job-fortress.lovable.app (brand is JobBachao; legacy repo name is job-fortress)
 - **Stack**: Vite + React 18 + TypeScript + shadcn/ui + Tailwind + Framer Motion · Supabase (Lovable Cloud) · Deno edge functions · Gemini 3 Pro/Flash via Lovable AI gateway · Tavily + Firecrawl · Razorpay · Vitest
-- **Package manager**: Bun — `bun.lock` is canonical (Bun v1.2+ text format); use `bun install`. `package-lock.json` coexists pending verification of Lovable's build command and will be resolved in a follow-up PR.
+- **Package manager**: Bun — `bun.lock` is canonical (Bun v1.2+ text format); use `bun install`.
 - **Scale**: 79 edge functions, 126 migrations, 52 components, 17 pages, 932 commits
 - **Traffic reality**: single-digit scans per day as of 2026-04-17; this is a pre-PMF product with sophisticated engineering
 - **Revenue model**: ₹499/scan · ₹1,999/yr Pro · Razorpay integration exists but order-creation handed to external consultant
