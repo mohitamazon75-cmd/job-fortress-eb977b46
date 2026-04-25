@@ -28,10 +28,10 @@ import { SKILL_SYNONYMS } from "../_shared/skill-synonyms.ts";
 const APIFY_ACTOR_ID = "alpcnRV9YI9lYVPWk";
 const CACHE_TTL_HOURS = 6;
 const RUN_LIMIT = 50;
-// v2: adds corpus_relevance signal so the card can downgrade to a
-// thin-signal render when Naukri's corpus doesn't reflect the user's role.
-// Bumping invalidates v1 caches that lacked the new field.
-const CACHE_VERSION = "v2";
+// v3: strips seniority modifiers from the Naukri search URL and aggregates
+// only role-relevant listings, preventing polluted corpora from leaking into
+// tags/salary. Bumping invalidates v2 raw caches fetched with noisier URLs.
+const CACHE_VERSION = "v3";
 
 // Same EXECUTIVE_HINTS as src/lib/jobsTab.ts (kept in sync manually —
 // duplicated to avoid cross-tier import).
@@ -55,7 +55,22 @@ const TAG_STOPWORDS = new Set([
   "tamil",          // language tag (Chennai corpora)
   "team",           // generic
   "work",           // generic
+  "recruitment",    // recruiter-board pollution on tech searches
+  "hiring",         // recruiter-board pollution
+  "talent acquisition",
+  "talent sourcing",
+  "customer service",
+  "customer support",
+  "business development",
 ]);
+
+const SEARCH_MODIFIER_STOPWORDS = new Set([
+  "senior", "sr", "junior", "jr", "lead", "principal", "staff",
+  "associate", "assistant", "intern", "remote", "hybrid", "contract",
+  "i", "ii", "iii", "iv",
+]);
+
+const SHORT_ROLE_TOKENS = new Set(["ai", "ml", "hr", "ux", "ui", "qa", "bi", "it"]);
 
 // ─────────────────────────────────────────────────────────────────────
 // Types
@@ -144,6 +159,12 @@ function slugify(text: string): string {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "-") || "jobs";
+}
+
+function compactRoleForSearch(role: string): string {
+  const tokens = normalizeText(role).split(" ").filter(Boolean);
+  const compact = tokens.filter((t) => !SEARCH_MODIFIER_STOPWORDS.has(t)).slice(0, 4);
+  return (compact.length >= 2 ? compact : tokens.slice(0, 4)).join(" ") || role;
 }
 
 // Inline copy of skillPresent from apify-naukri-jobs/index.ts.
@@ -366,7 +387,21 @@ const ROLE_TITLE_STOPWORDS = new Set([
 export function roleTokens(role: string): string[] {
   return normalizeText(role)
     .split(" ")
-    .filter((t) => t.length >= 4 && !ROLE_TITLE_STOPWORDS.has(t));
+    .filter((t) => (t.length >= 4 || SHORT_ROLE_TOKENS.has(t)) && !ROLE_TITLE_STOPWORDS.has(t));
+}
+
+export function filterRelevantJobs(jobs: ApifyJob[], role: string, userSkills: string[]): ApifyJob[] {
+  const tokens = roleTokens(role);
+  const skillNorms = userSkills.map(normalizeText).filter((s) => s.length >= 2);
+  if (tokens.length === 0 && skillNorms.length === 0) return jobs;
+  const relevant = jobs.filter((job) => {
+    const title = normalizeText(job.title || "");
+    const haystack = normalizeText([job.title, job.tagsAndSkills, job.jobDescription].filter(Boolean).join(" "));
+    const titleHit = tokens.some((t) => title.includes(t));
+    const skillHits = skillNorms.filter((s) => skillPresent(s, haystack)).length;
+    return titleHit || skillHits >= 2;
+  });
+  return relevant.length >= 5 ? relevant : jobs;
 }
 
 export function computeCorpusRelevance(
@@ -442,13 +477,14 @@ export function emptyShape(opts: { is_executive: boolean; error?: string }): Sna
 
 export function buildSnapshot(jobs: ApifyJob[], userSkills: string[], cached: boolean, role = ""): SnapshotResult {
   const now = new Date().toISOString();
-  const top = aggregateTopTags(jobs);
+  const relevantJobs = filterRelevantJobs(jobs, role, userSkills);
+  const top = aggregateTopTags(relevantJobs);
   const overlap = computeUserSkillOverlap(top, userSkills);
-  const salary = aggregateSalary(jobs);
-  const recency = aggregateRecency(jobs);
-  const relevance = computeCorpusRelevance(jobs, top, userSkills, role);
+  const salary = aggregateSalary(relevantJobs);
+  const recency = aggregateRecency(relevantJobs);
+  const relevance = computeCorpusRelevance(relevantJobs, top, userSkills, role);
   return {
-    posting_count: jobs.length,
+    posting_count: relevantJobs.length,
     fetched_at: now,
     cached,
     is_executive: false,
@@ -468,7 +504,7 @@ export function buildSnapshot(jobs: ApifyJob[], userSkills: string[], cached: bo
 async function fetchApify(role: string, city: string): Promise<ApifyJob[]> {
   const apiToken = Deno.env.get("APIFY_API_TOKEN");
   if (!apiToken) throw new Error("APIFY_API_TOKEN is not configured");
-  const roleSlug = slugify(role);
+  const roleSlug = slugify(compactRoleForSearch(role));
   const citySlug = slugify(normalizeCity(city));
   const searchUrl = `https://www.naukri.com/${roleSlug}-jobs-in-${citySlug}`;
   const url = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?token=${apiToken}`;
