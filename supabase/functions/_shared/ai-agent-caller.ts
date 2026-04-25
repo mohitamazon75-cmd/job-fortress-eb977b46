@@ -175,8 +175,9 @@ export async function callAgent(
   model = PRO_MODEL,
   temperature = 0.3,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  seed?: number,
 ): Promise<any> {
-  const dedupeKey = hashKey(agentName, userPrompt);
+  const dedupeKey = `${hashKey(agentName, userPrompt)}:${typeof seed === "number" ? seed : "noseed"}`;
 
   // Return existing in-flight promise for identical requests
   const existing = inflightRequests.get(dedupeKey);
