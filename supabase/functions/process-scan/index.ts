@@ -27,6 +27,7 @@ import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spe
 import {
   AGENT_1_PROFILER,
 } from "../_shared/agent-prompts.ts";
+import { getCurrentToolCatalog, formatCatalog } from "../_shared/tool-catalog.ts";
 import {
   resolveIndustry,
   validateAgent1Output,
@@ -653,7 +654,6 @@ Deno.serve(async (req) => {
       // hardcoded snippet). Catalog fetch is non-fatal: failure leaves the
       // "(catalog unavailable …)" sentinel in place and the post-LLM scrub
       // still catches stale tool-name leakage.
-      const { getCurrentToolCatalog, formatCatalog } = await import("../_shared/tool-catalog.ts");
       const profilerCatalog = await getCurrentToolCatalog(supabase);
       const profilerCatalogBlock = formatCatalog(profilerCatalog);
       const agent1SystemPrompt = AGENT_1_PROFILER.replaceAll("{{TOOL_CATALOG}}", profilerCatalogBlock);
