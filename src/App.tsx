@@ -27,6 +27,7 @@ const ResultsChoose = lazy(() => import("./pages/ResultsChoose"));
 const ResultsModelB = lazy(() => import("./pages/ResultsModelB"));
 const Methodology = lazy(() => import("./pages/Methodology"));
 const PreviewLiveMarketCard = lazy(() => import("./pages/PreviewLiveMarketCard"));
+const AdminScanDebug = lazy(() => import("./pages/AdminScanDebug"));
 
 const queryClient = new QueryClient();
 
@@ -124,6 +125,8 @@ const App = () => {
                 <Route path="/share/:scanId" element={<ErrorBoundary scope="share"><ShareScan /></ErrorBoundary>} />
                 <Route path="/share/challenge/:challengeCode" element={<ErrorBoundary scope="challenge"><ChallengeResult /></ErrorBoundary>} />
                 <Route path="/admin/monitor" element={<AuthGuard requiredRole="admin">{() => <ErrorBoundary scope="admin"><AdminDashboard /></ErrorBoundary>}</AuthGuard>} />
+                {/* Issue #12: determinism debug view (admin-only) — see determinism_meta block on a scan. */}
+                <Route path="/admin/scan/:scanId" element={<AuthGuard requiredRole="admin">{() => <ErrorBoundary scope="admin-scan-debug"><AdminScanDebug /></ErrorBoundary>}</AuthGuard>} />
                 {/* Diagnostic feature */}
                 <Route path="/diagnostic" element={<ErrorBoundary scope="diagnostic"><DiagnosticPage /></ErrorBoundary>} />
                 <Route path="/diagnostic/:token" element={<ErrorBoundary scope="diagnostic-share"><DiagnosticShare /></ErrorBoundary>} />

@@ -95,6 +95,21 @@ export interface AgentOrchestrationInput {
   resumeAchievements?: string | null;
 }
 
+// Issue #12: per-agent observability shape persisted into determinism_meta.
+// Pure addition — no changes to agent calls, models, or temperatures.
+export interface AgentRunMeta {
+  /** Agent label as used in logs (e.g. "Agent2A:Risk", "ML:obsolescence"). */
+  name: string;
+  /** Model string passed to the AI gateway (e.g. "google/gemini-3-pro-preview"). */
+  model: string | null;
+  /** Temperature passed to the AI gateway. */
+  temperature: number | null;
+  /** Wall-clock duration in ms (from Promise resolution timing). */
+  duration_ms: number;
+  /** Outcome — mirrors scanDiagnostics buckets. */
+  status: "success" | "timeout" | "failed" | "skipped";
+}
+
 export interface AgentOrchestrationResult {
   mlObsolescence: any;
   mlTimedOut: boolean;
@@ -108,6 +123,13 @@ export interface AgentOrchestrationResult {
   /** Live tool catalog used to substitute {{TOOL_CATALOG}} in agent prompts.
    *  Forwarded to scan-pipeline so the post-LLM scrubAll() pass can match it. */
   toolCatalogTools: string[];
+  /** Issue #12: per-agent observability for the determinism debug view. */
+  agentMeta: {
+    parallel_block_ms: number;
+    parallel_deadline_ms: number;
+    parallel_timed_out: boolean;
+    runs: AgentRunMeta[];
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -306,8 +328,27 @@ ${kgContext}`;
   // ═══════════════════════════════════════════════════════════════
   console.log(`[Orchestrator] Launching Steps 7+8+9 in parallel at ${((Date.now() - globalStart) / 1000).toFixed(1)}s`);
 
-  // ML Gateway promise
-  const mlPromise = (async () => {
+  // Issue #12: per-agent timing instrumentation. Times wall-clock duration of
+  // each promise without altering the agent calls themselves. Each entry below
+  // is recorded in determinism_meta.runs and surfaced on the admin debug view.
+  const parallelStart = Date.now();
+  const agentRuns: AgentRunMeta[] = [];
+  const recordRun = (m: AgentRunMeta) => { agentRuns.push(m); };
+  function timed<T>(
+    name: string,
+    model: string | null,
+    temperature: number | null,
+    p: Promise<T>,
+  ): Promise<T> {
+    const t0 = Date.now();
+    return p.then(
+      (v) => { recordRun({ name, model, temperature, duration_ms: Date.now() - t0, status: "success" }); return v; },
+      (e) => { recordRun({ name, model, temperature, duration_ms: Date.now() - t0, status: e?.name === "AbortError" ? "timeout" : "failed" }); throw e; },
+    );
+  }
+
+  // ML Gateway promise (Issue #12: timed for determinism_meta)
+  const mlPromise = timed("ML:obsolescence", "ml-gateway", null, (async () => {
     try {
       const ML_GATEWAY_URL = `${supabaseUrl}/functions/v1/ml-gateway`;
       const mlController = new AbortController();
@@ -339,38 +380,45 @@ ${kgContext}`;
       console.warn("[ML] Fallback to deterministic:", mlErr?.name || mlErr);
       return { data: null, timedOut: false };
     }
-  })();
+  })());
 
-  // Judo + Diet promise
+  // Judo + Diet promise (Issue #12: each agent timed individually)
   const judoDietPromise = hasTimeBudget(15_000) ? Promise.allSettled([
-    callAgentRace(LOVABLE_API_KEY, "JudoStrategy", sub(JUDO_STRATEGY_SYSTEM_PROMPT),
-      buildSeniorityJudoPrompt(seniorityTier, expYears, displayName, displayCompany,
-        agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry,
-        profileInput.strategic_skills, profileInput.execution_skills, profileInput.all_skills,
-        det.determinism_index, det.survivability.score, scan.metro_tier || "tier1", null,
-        profileInput.executive_impact || null),
-      activeModel, "google/gemini-3-flash-preview", 0.3, 25_000).then(r => r.data),
-    callAgent(LOVABLE_API_KEY, "WeeklyDiet", sub(WEEKLY_DIET_SYSTEM_PROMPT),
-      buildSeniorityDietPrompt(seniorityTier, expYears, displayName,
-        agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry,
-        profileInput.strategic_skills, null),
-      FAST_MODEL, 0.3, 20_000),
-  ]) : Promise.resolve(null);
+    timed("JudoStrategy", activeModel, 0.3,
+      callAgentRace(LOVABLE_API_KEY, "JudoStrategy", sub(JUDO_STRATEGY_SYSTEM_PROMPT),
+        buildSeniorityJudoPrompt(seniorityTier, expYears, displayName, displayCompany,
+          agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry,
+          profileInput.strategic_skills, profileInput.execution_skills, profileInput.all_skills,
+          det.determinism_index, det.survivability.score, scan.metro_tier || "tier1", null,
+          profileInput.executive_impact || null),
+        activeModel, "google/gemini-3-flash-preview", 0.3, 25_000).then(r => r.data)),
+    timed("WeeklyDiet", FAST_MODEL, 0.3,
+      callAgent(LOVABLE_API_KEY, "WeeklyDiet", sub(WEEKLY_DIET_SYSTEM_PROMPT),
+        buildSeniorityDietPrompt(seniorityTier, expYears, displayName,
+          agent1?.current_role || resolvedRoleHint, agent1?.industry || resolvedIndustry,
+          profileInput.strategic_skills, null),
+        FAST_MODEL, 0.3, 20_000)),
+  ]) : (recordRun({ name: "JudoStrategy", model: activeModel, temperature: 0.3, duration_ms: 0, status: "skipped" }),
+        recordRun({ name: "WeeklyDiet", model: FAST_MODEL, temperature: 0.3, duration_ms: 0, status: "skipped" }),
+        Promise.resolve(null));
 
   // Agents 2A+2B+2C promise — timeouts raised from 25s → 40s.
   // Production logs (2026-04-17) showed every model in the fallback chain timing out
   // at 15-25s on long prompts (gpt-5, gemini-3-pro). p50 latency for these prompts
   // is ~22s; 25s left almost no headroom for the first-attempt model.
   const agents2Promise = Promise.allSettled([
-    callAgentRace(LOVABLE_API_KEY, "Agent2A:Risk", sub(AGENT_2A_RISK_ANALYSIS),
-      `Generate risk analysis for:\n${sharedProfileContext}\n\nUse "${displayName}" by name. Reference "${displayCompany}".`,
-      activeModel, "google/gemini-3-flash-preview", 0.3, 25_000).then(r => r.data),
-    callAgentRace(LOVABLE_API_KEY, "Agent2B:Plan", sub(AGENT_2B_ACTION_PLAN),
-      `Generate tier-calibrated action plan for:\n${sharedProfileContext}\nTier: ${seniorityTier}\nCountry: ${locale.label}\nCurrency: ${locale.currency}\nGeo Arbitrage Delta: ${locale.currencySymbol}${geoArb?.probability_adjusted_delta_inr || 0}/month\nJob Boards: ${locale.jobBoards.join(", ")}${rescanContext ? `\n${rescanContext}` : ''}`,
-      activeModel, "google/gemini-3-flash-preview", 0.35, 25_000).then(r => r.data),
-    callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", sub(AGENT_2C_PIVOT_MAPPING),
-      `Map career pivots for:\n${sharedProfileContext}\nMoat Score: ${det.moat_score}/100. Pivots must be realistic for ${seniorityTier} tier.\nCountry: ${locale.label}. Use job titles from ${locale.jobBoards.join("/")}.`,
-      FAST_MODEL, 0.3, 30_000).then(r => r.data),
+    timed("Agent2A:Risk", activeModel, 0.3,
+      callAgentRace(LOVABLE_API_KEY, "Agent2A:Risk", sub(AGENT_2A_RISK_ANALYSIS),
+        `Generate risk analysis for:\n${sharedProfileContext}\n\nUse "${displayName}" by name. Reference "${displayCompany}".`,
+        activeModel, "google/gemini-3-flash-preview", 0.3, 25_000).then(r => r.data)),
+    timed("Agent2B:Plan", activeModel, 0.35,
+      callAgentRace(LOVABLE_API_KEY, "Agent2B:Plan", sub(AGENT_2B_ACTION_PLAN),
+        `Generate tier-calibrated action plan for:\n${sharedProfileContext}\nTier: ${seniorityTier}\nCountry: ${locale.label}\nCurrency: ${locale.currency}\nGeo Arbitrage Delta: ${locale.currencySymbol}${geoArb?.probability_adjusted_delta_inr || 0}/month\nJob Boards: ${locale.jobBoards.join(", ")}${rescanContext ? `\n${rescanContext}` : ''}`,
+        activeModel, "google/gemini-3-flash-preview", 0.35, 25_000).then(r => r.data)),
+    timed("Agent2C:Pivot", FAST_MODEL, 0.3,
+      callAgentWithFallback(LOVABLE_API_KEY, "Agent2C:Pivot", sub(AGENT_2C_PIVOT_MAPPING),
+        `Map career pivots for:\n${sharedProfileContext}\nMoat Score: ${det.moat_score}/100. Pivots must be realistic for ${seniorityTier} tier.\nCountry: ${locale.label}. Use job titles from ${locale.jobBoards.join("/")}.`,
+        FAST_MODEL, 0.3, 30_000).then(r => r.data)),
   ]);
 
   // ── Await all in parallel with defensive timeout ──
@@ -461,6 +509,10 @@ ${kgContext}`;
   const validatedAgent2 = validateOutputForTier(agent2, seniorityTier, displayName);
   console.log(`[Orchestrator] Steps 7+8+9 complete at ${((Date.now() - globalStart) / 1000).toFixed(1)}s`);
 
+  // Issue #12: assemble parallel-block stats for determinism_meta.
+  const parallelBlockMs = Date.now() - parallelStart;
+  const parallelTimedOut = raceResult === 'PARALLEL_TIMEOUT';
+
   return {
     mlObsolescence,
     mlTimedOut,
@@ -472,5 +524,11 @@ ${kgContext}`;
     isRescan,
     previousScoreData,
     toolCatalogTools: catalog.tools,
+    agentMeta: {
+      parallel_block_ms: parallelBlockMs,
+      parallel_deadline_ms: parallelDeadlineMs,
+      parallel_timed_out: parallelTimedOut,
+      runs: agentRuns,
+    },
   };
 }

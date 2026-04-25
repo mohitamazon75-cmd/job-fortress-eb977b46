@@ -1068,7 +1068,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { finalReport, det, detectedSubSector, seniorityTier, displayName, displayCompany } = pipelineResult;
+    const { finalReport, det, detectedSubSector, seniorityTier, displayName, displayCompany, agentMeta } = pipelineResult;
 
 
     // ══════════════════════════════════════════════════════════
@@ -1124,6 +1124,29 @@ Deno.serve(async (req) => {
       agent2a: getPromptVersion("Agent2A:Risk"),
       agent2b: getPromptVersion("Agent2B:Plan"),
       quality_editor: getPromptVersion("QualityEditor"),
+    };
+
+    // Issue #12: persist determinism_meta — model/temperature/duration per agent +
+    // pipeline timing + engine version. Used by /admin/scan/:scanId debug view to
+    // diagnose score variance without trawling logs.
+    finalReport.determinism_meta = {
+      schema_version: 1,
+      captured_at: new Date().toISOString(),
+      pipeline: {
+        active_model: activeModel,
+        fast_model: FAST_MODEL,
+        global_timeout_ms: GLOBAL_TIMEOUT_MS,
+        global_duration_ms: Date.now() - globalStart,
+        global_timed_out: globalTimedOut,
+      },
+      engine: {
+        engine_version: (finalReport as any).engine_version ?? null,
+        determinism_index: (finalReport as any).determinism_index ?? null,
+        kg_skills_matched:
+          (finalReport as any)?.computation_method?.kg_skills_matched ?? null,
+        ml_used: (finalReport as any)?.computation_method?.ml_used ?? false,
+      },
+      agents: agentMeta,
     };
 
     // Diagnostics: record final timing and timeout state, then embed in report.

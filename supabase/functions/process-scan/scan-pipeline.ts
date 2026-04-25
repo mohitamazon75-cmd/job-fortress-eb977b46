@@ -156,6 +156,8 @@ export interface ScanPipelineResult {
   seniorityTier: string;
   displayName: string;
   displayCompany: string;
+  /** Issue #12: per-agent observability captured during the parallel block. */
+  agentMeta: Awaited<ReturnType<typeof orchestrateAgents>>["agentMeta"];
 }
 
 export interface ScanPipelineError {
@@ -273,7 +275,7 @@ Return null if unclear. No explanation, no markdown.`;
     return { success: false, error: String(e), step: "agents" };
   }
 
-  const { mlObsolescence, mlTimedOut, validatedAgent2, seniorityTier, displayName, displayCompany, toolCatalogTools } = agentResults;
+  const { mlObsolescence, mlTimedOut, validatedAgent2, seniorityTier, displayName, displayCompany, toolCatalogTools, agentMeta } = agentResults;
 
   // Diagnostics
   const va2 = validatedAgent2 as any;
@@ -329,5 +331,6 @@ Return null if unclear. No explanation, no markdown.`;
     seniorityTier: seniorityTier as string,
     displayName: displayName as string,
     displayCompany: displayCompany as string,
+    agentMeta,
   };
 }
