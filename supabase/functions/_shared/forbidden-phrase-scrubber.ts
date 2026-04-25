@@ -1,22 +1,13 @@
 // ═══════════════════════════════════════════════════════════════
-// Forbidden-phrase + tool-name scrubber — last-mile safety net
+// Forbidden-phrase scrubber — last-mile safety net
 //
-// Two passes per string leaf:
-//   1. Phrase rules (deterministic doom, absolute predictions, etc.)
-//   2. Tool-name patterns ("TitleCase vN", "TitleCase N.N",
-//      "TitleCase Pro/AI/Workspace") matched against the live
-//      tool catalog. Anything outside the catalog → "AI tools".
+// Why: agent prompts forbid deterministic doom phrases like
+// "by 2027 your employer will fire you", but LLMs occasionally
+// leak them anyway. This is a deterministic post-processing pass
+// that walks the final JSON report, finds string fields, and
+// rewrites known-bad patterns into liability-safe alternatives.
 //
-// Why pass 2: prompts now reference {{TOOL_CATALOG}} (see
-// _shared/tool-catalog.ts), but LLMs still occasionally invent
-// "Midjourney v9" or attach stale version suffixes. The scrubber
-// rewrites those to plausible category prose so we never ship
-// "[redacted]" tokens to users.
-//
-// Public API:
-//   scrubAll(text|report, { catalog })   — combined pass
-//   scrubForbiddenPhrases(text|report)   — back-compat: phrase-only
-//   scrubString / scrubReport            — back-compat: phrase-only
+// Keep patterns conservative — false positives hurt copy quality.
 // ═══════════════════════════════════════════════════════════════
 
 interface ScrubRule {
@@ -25,7 +16,7 @@ interface ScrubRule {
   label: string;
 }
 
-const PHRASE_RULES: ScrubRule[] = [
+const RULES: ScrubRule[] = [
   // "by 2027/2028 your employer/boss/company will [verb]" — deterministic doom
   {
     pattern: /\bby\s+20\d{2}[,]?\s+your\s+(employer|boss|company|manager|team)\s+will\b/gi,
@@ -64,155 +55,41 @@ const PHRASE_RULES: ScrubRule[] = [
   },
 ];
 
-// ── Tool-name patterns ────────────────────────────────────────
-//
-// These are the shapes we want to *consider* — actual replacement
-// happens only if the matched substring is NOT in the catalog.
-// Each pattern captures the full token (e.g. "Midjourney v7").
-//
-// We deliberately require leading TitleCase so we don't grab
-// arbitrary words like "the v2 release" or "iPhone 15 Pro".
-// Curated stems of known LLM/AI-tool families. Bare numeric suffix
-// matching is restricted to these to avoid mauling phrases like
-// "Tier 1", "May 2025", "Top 10". Add stems sparingly.
-const TOOL_STEMS = [
-  "GPT",
-  "Claude",
-  "Gemini",
-  "Llama",
-  "Mistral",
-  "Sora",
-  "Cursor",
-  "Midjourney",
-  "Devin",
-  "Copilot",
-  "Firefly",
-  "DALL-E",
-  "Stable Diffusion",
-  "Runway",
-  "Pika",
-  "Suno",
-];
-const STEM_ALT = TOOL_STEMS.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
-
-const TOOL_NAME_PATTERNS: { pattern: RegExp; label: string }[] = [
-  // "Midjourney v7", "Cursor v3", "Foo v2" — version-suffix style.
-  // Leading TitleCase token bound; "v" + digit suffix.
-  {
-    pattern: /\b([A-Z][a-zA-Z0-9]+(?:[-\s][A-Z][a-zA-Z0-9]+)?)\s+v\d+(?:\.\d+)?\b/g,
-    label: "tool_version_suffix_v",
-  },
-  // "Sora 2", "GPT 5", "Claude 4" — bare numeric suffix, restricted to known stems
-  {
-    pattern: new RegExp(`\\b(${STEM_ALT})\\s+(\\d+(?:\\.\\d+)?)(?!\\s*(?:%|years?|months?|days?|hours?))\\b`, "g"),
-    label: "tool_numeric_suffix",
-  },
-  // "GPT-5", "Gen-4", "Claude-4" — hyphenated numeric (any TitleCase stem)
-  {
-    pattern: /\b(?:GPT|Claude|Gemini|Llama|Mistral|Sora|Gen|Cursor|Midjourney)-(\d+(?:\.\d+)?)\b/g,
-    label: "tool_hyphen_numeric",
-  },
-  // "Notion AI", "Copilot Pro", "Workspace AI" — capability suffix
-  {
-    pattern: /\b([A-Z][a-zA-Z0-9]+(?:\s+[A-Z][a-zA-Z0-9]+)?)\s+(Pro|AI|Workspace|Studio|Plus|Ultra|Max)\b/g,
-    label: "tool_capability_suffix",
-  },
-];
-
-// Standalone product names that we know are real "tools" but go
-// stale fast (kept conservative — only rewrite if the catalog also
-// excludes the bare name).
-const KNOWN_BARE_NAMES = new Set<string>([
-  "Midjourney",
-  "Sora",
-  "Devin",
-  "Cursor",
-  "GPT",
-]);
-
 export interface ScrubResult {
   scrubbed: number;
   hits: { label: string; count: number }[];
 }
 
-export interface ScrubOptions {
-  /** Live tool catalog (canonical names). Pass empty array to force scrub of all version-suffixed tokens. */
-  catalog?: string[];
-}
-
 /**
- * Backward-compat: phrase-only string scrub.
+ * Run all rules against a single string. Returns the scrubbed string
+ * and the count of replacements made (per rule).
  */
 export function scrubString(input: string): { output: string; hits: Map<string, number> } {
-  return runStringScrub(input, undefined);
-}
-
-/**
- * Backward-compat: phrase-only report scrub.
- */
-export function scrubReport(report: unknown): ScrubResult {
-  return runReportScrub(report, undefined);
-}
-
-/**
- * Combined string scrub: phrases + tool-name catalog check.
- */
-export function scrubStringAll(input: string, opts: ScrubOptions = {}): { output: string; hits: Map<string, number> } {
-  return runStringScrub(input, opts.catalog);
-}
-
-/**
- * Combined report scrub: phrases + tool-name catalog check.
- * Mutates the input report in place. Returns aggregate stats.
- */
-export function scrubAll(report: unknown, opts: ScrubOptions = {}): ScrubResult {
-  return runReportScrub(report, opts.catalog);
-}
-
-/**
- * Backward-compat alias for callers that imported scrubReport
- * by a different name in older code.
- */
-export const scrubForbiddenPhrases = scrubReport;
-
-// ── Implementation ───────────────────────────────────────────
-
-function runStringScrub(input: string, catalog: string[] | undefined): { output: string; hits: Map<string, number> } {
   const hits = new Map<string, number>();
   let output = input;
-
-  // Pass 1: phrase rules
-  for (const rule of PHRASE_RULES) {
+  for (const rule of RULES) {
     const before = output;
     output = output.replace(rule.pattern, rule.replacement);
     if (before !== output) {
+      // Count by counting matches in the pre-replacement string
       const matches = before.match(rule.pattern);
       if (matches) hits.set(rule.label, (hits.get(rule.label) ?? 0) + matches.length);
     }
   }
-
-  // Pass 2: tool-name catalog check (skipped only when catalog is undefined → back-compat).
-  if (catalog !== undefined) {
-    const catalogSet = buildCatalogSet(catalog);
-    for (const { pattern, label } of TOOL_NAME_PATTERNS) {
-      output = output.replace(pattern, (match) => {
-        if (isCatalogMatch(match, catalogSet, label)) return match;
-        hits.set(label, (hits.get(label) ?? 0) + 1);
-        return "AI tools";
-      });
-    }
-  }
-
   return { output, hits };
 }
 
-function runReportScrub(report: unknown, catalog: string[] | undefined): ScrubResult {
+/**
+ * Recursively walk a JSON-like value and scrub all string leaves in place.
+ * Mutates objects/arrays. Returns aggregate stats.
+ */
+export function scrubReport(report: unknown): ScrubResult {
   const aggregate = new Map<string, number>();
   let totalScrubbed = 0;
 
   function walk(node: unknown, parent?: Record<string, unknown> | unknown[], key?: string | number): void {
     if (typeof node === "string") {
-      const { output, hits } = runStringScrub(node, catalog);
+      const { output, hits } = scrubString(node);
       if (hits.size > 0) {
         for (const [label, count] of hits) {
           aggregate.set(label, (aggregate.get(label) ?? 0) + count);
@@ -243,30 +120,3 @@ function runReportScrub(report: unknown, catalog: string[] | undefined): ScrubRe
     hits: [...aggregate.entries()].map(([label, count]) => ({ label, count })),
   };
 }
-
-function buildCatalogSet(catalog: string[]): Set<string> {
-  // Case-insensitive set
-  const out = new Set<string>();
-  for (const t of catalog) {
-    if (typeof t === "string" && t.trim()) out.add(t.trim().toLowerCase());
-  }
-  return out;
-}
-
-function isCatalogMatch(match: string, catalogSet: Set<string>, label: string): boolean {
-  const norm = match.trim().toLowerCase();
-  if (catalogSet.has(norm)) return true;
-  // For capability suffixes ("Lovable AI", "Notion AI"), if the bare
-  // leading token is in the catalog we treat the whole match as canonical
-  // — avoids mauling "Lovable AI" when catalog only has "Lovable".
-  if (label === "tool_capability_suffix") {
-    const head = norm.replace(/\s+(pro|ai|workspace|studio|plus|ultra|max)$/i, "");
-    if (head && catalogSet.has(head)) return true;
-  }
-  return false;
-}
-
-// Mark KNOWN_BARE_NAMES as referenced so the linter doesn't strip it.
-// It's kept as documentation of which bare names we'd consider scrubbing
-// in a future stricter pass.
-void KNOWN_BARE_NAMES;

@@ -42,7 +42,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import type { CompanyHealthResult } from "../_shared/company-health.ts";
 import type { SkillDemandResult } from "../_shared/skill-demand-validator.ts";
 import type { JobSkillMapRow, CohortBenchmark } from "../_shared/det-types.ts";
-import { getCurrentToolCatalog } from "../_shared/tool-catalog.ts";
 
 // ── Cohort percentile lookup (real peer benchmarking) ────────────────────────
 // Replaces the sigmoid hallucination in det-lifecycle.ts when DB has data for the role.
@@ -302,12 +301,9 @@ Return null if unclear. No explanation, no markdown.`;
   try {
     deduplicateReportText(finalReport);
     if (hasTimeBudget(5_000)) {
-      const _catalogClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      const _catalog = await getCurrentToolCatalog(_catalogClient);
       await runQualityEditor(
         finalReport, detectedRole, displayName, displayCompany,
         (agent1 as any)?.industry || resolvedIndustry, LOVABLE_API_KEY,
-        _catalog.tools,
       );
       scanDiagnostics.qualityEditor = "ran";
     } else {

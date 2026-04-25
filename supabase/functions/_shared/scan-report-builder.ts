@@ -18,7 +18,7 @@ import {
 import { getLocale } from "./locale-config.ts";
 import { callAgent } from "./ai-agent-caller.ts";
 import { checkAutomationSignalConsistency } from "./zod-schemas.ts";
-import { scrubAll } from "./forbidden-phrase-scrubber.ts";
+import { scrubReport } from "./forbidden-phrase-scrubber.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -223,15 +223,15 @@ export async function runQualityEditor(
   }
 
   // ── Last-mile safety net: deterministic regex scrub ────────
-  // Catches forbidden doom phrases (always) AND non-catalog tool
-  // names (when a catalog is supplied) the LLM may have leaked.
+  // Catches forbidden doom phrases the LLM may have leaked
+  // (e.g. "by 2027 your employer will fire you").
   try {
-    const result = scrubAll(finalReport, { catalog: toolCatalog });
+    const result = scrubReport(finalReport);
     if (result.scrubbed > 0) {
-      console.log(`[Orchestrator] Scrubber rewrote ${result.scrubbed} string(s):`, result.hits);
+      console.log(`[Orchestrator] Phrase scrubber rewrote ${result.scrubbed} forbidden phrase(s):`, result.hits);
     }
   } catch (e) {
-    console.warn("[Orchestrator] Scrubber failed (non-fatal):", e);
+    console.warn("[Orchestrator] Phrase scrubber failed (non-fatal):", e);
   }
 }
 
