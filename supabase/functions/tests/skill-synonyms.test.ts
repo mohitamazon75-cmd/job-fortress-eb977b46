@@ -159,3 +159,19 @@ Deno.test("toMatchLabel: 65 → Relevant (lower bound)", () => {
 Deno.test("toMatchLabel: 64 → Stretch", () => {
   assertEquals(toMatchLabel(64), "Stretch");
 });
+
+// ─────────────────────────────────────────────────────────────────────
+// (k) Synonym variants do NOT match via token-aware fallback
+// (post-2A-iii patch: prevents "team" + "management" co-occurrence
+// false positives on long JDs)
+// ─────────────────────────────────────────────────────────────────────
+Deno.test("synonym variants do NOT match via token-aware: 'team management' synonym does not match 'high-performance team for management consulting'", () => {
+  // The canonical "people management" maps to variants including
+  // "team management". Without token-aware on synonyms, this haystack
+  // — which has "team" and "management" but not as a phrase — must
+  // NOT match.
+  assertStrictEquals(
+    skillPresent("people management", "join our high performance team for management consulting"),
+    false,
+  );
+});
