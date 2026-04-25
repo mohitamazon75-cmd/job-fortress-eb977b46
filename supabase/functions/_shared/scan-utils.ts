@@ -94,3 +94,19 @@ export function isTrustedLinkedinResult(
 
   return title.includes("linkedin") || content.includes("linkedin");
 }
+
+/**
+ * Generate a stable 31-bit positive integer seed from a scanId
+ * string. Same scanId always produces the same seed, so the same
+ * scan run repeatedly yields identical Agent1 output. Different
+ * scans (different scanIds) get different seeds, preserving
+ * legitimate per-scan variation while making each scan internally
+ * reproducible.
+ */
+export function deterministicSeedFromScanId(scanId: string): number {
+  let h = 0;
+  for (let i = 0; i < scanId.length; i++) {
+    h = ((h << 5) - h + scanId.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h) || 1;
+}

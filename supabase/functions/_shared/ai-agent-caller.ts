@@ -81,6 +81,7 @@ async function callAgentCore(
   model = PRO_MODEL,
   temperature = 0.3,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  seed?: number,
 ): Promise<any> {
   console.log(`[${agentName}] Starting on ${model.split("/").pop()} (${timeoutMs}ms timeout)...`);
   const start = Date.now();
@@ -99,6 +100,10 @@ async function callAgentCore(
       ],
       temperature: effectiveTemp,
     };
+
+    if (typeof seed === "number") {
+      requestBody.seed = seed;
+    }
 
     // Use structured JSON output for all models that support it
     if (!isGpt) {
@@ -170,8 +175,9 @@ export async function callAgent(
   model = PRO_MODEL,
   temperature = 0.3,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  seed?: number,
 ): Promise<any> {
-  const dedupeKey = hashKey(agentName, userPrompt);
+  const dedupeKey = `${hashKey(agentName, userPrompt)}:${typeof seed === "number" ? seed : "noseed"}`;
 
   // Return existing in-flight promise for identical requests
   const existing = inflightRequests.get(dedupeKey);
@@ -200,7 +206,7 @@ export async function callAgent(
       settle(null, true);
     }, hardTimeoutMs);
 
-    callAgentCore(apiKey, agentName, systemPrompt, userPrompt, model, temperature, timeoutMs)
+    callAgentCore(apiKey, agentName, systemPrompt, userPrompt, model, temperature, timeoutMs, seed)
       .then((result) => {
         if (settled) return;
         clearTimeout(hardTimer);

@@ -181,7 +181,8 @@ Discovered 2026-04-24 during prompt-injection defense work.
 
 ## Done
 
-*(empty — populate as items close, with PR / commit reference)*
+### BL-Agent1-Determinism — Step 1+2 shipped (2026-04-25)
+Agent1:Profiler (the only score-affecting LLM call in `process-scan`) is now deterministic per-scan: pinned to `PRO_MODEL` via `callAgentWithFallback` (Flash/OpenAI remain as fallback if Pro fails or times out), `temperature = 0`, and a per-scan `seed` derived from `scanId` via `deterministicSeedFromScanId`. The `seed` parameter is threaded through `callAgent` / `callAgentCore` / `callAgentWithFallback` and included in the in-flight dedupe key. Narrative agents (Judo, WeeklyDiet, Agent2A/B/C, QualityEditor) intentionally remain non-deterministic. Operator ground rule: accuracy over speed.
 
 ---
 

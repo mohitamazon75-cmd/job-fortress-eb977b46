@@ -194,6 +194,7 @@ export async function callAgentWithFallback(
   preferredModel = TIER1,
   temperature = 0.3,
   timeoutMs = 50_000,
+  seed?: number,
 ): Promise<FallbackResult> {
   const start = Date.now();
   const chain: string[] = [];
@@ -246,7 +247,7 @@ export async function callAgentWithFallback(
     const result = await callAgent(
       apiKey, `${agentName}[${model.split("/").pop()}]`,
       systemPrompt, userPrompt,
-      model, temperature, effectiveTimeout,
+      model, temperature, effectiveTimeout, seed,
     );
 
     if (result !== null) {
