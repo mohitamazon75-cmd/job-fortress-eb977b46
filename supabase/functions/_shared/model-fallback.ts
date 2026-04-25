@@ -194,6 +194,7 @@ export async function callAgentWithFallback(
   preferredModel = TIER1,
   temperature = 0.3,
   timeoutMs = 50_000,
+  seed?: number,
 ): Promise<FallbackResult> {
   const start = Date.now();
   const chain: string[] = [];
