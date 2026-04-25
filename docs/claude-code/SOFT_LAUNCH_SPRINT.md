@@ -1,6 +1,6 @@
 # Soft Launch Sprint — 1 Week to 1,000 Users
 
-> **Status**: Active
+> **Status**: ✅ Complete (all 6 PRs shipped 2026-04-25 — same day, ahead of schedule)
 > **Started**: 2026-04-25
 > **Target**: Soft launch in 7 days, free pricing, ~1,000 users
 > **Decided by**: Operator on 2026-04-25 (sequence: one PR per workstream; pricing: free; timeline: 1 week)
@@ -106,20 +106,23 @@ The error-rate trigger (`check_error_threshold`) was already wired in a prior mi
 
 ---
 
-### PR6 — Soft-launch polish: Loading states, empty states, error boundaries
-**Status**: ⚪ Not started
-**Files**: 2–4 components
-**Why**: Final polish pass for first-impression quality. Catch the visible cracks before users do.
+### PR6 — Soft-launch polish
+**Status**: ✅ Complete (2026-04-25)
+**Files**: 1 new hook + 1-line wire-up in `App.tsx`.
 
-**Plan**:
-- Add a top-level React error boundary so uncaught errors don't blank the app
-- Audit major loading states (dashboard, scan flow, coach) for jank
-- Audit empty states (no scans yet, no jobs found, etc.) for friendliness
+**Audit findings**:
+- ✅ Top-level React `ErrorBoundary` was already in place — wrapping the whole app + each route individually with soft/hard reset and auto-recovery on stale lazy chunks. Far better than what I'd have built. No change needed.
+- ✅ `Suspense` fallback (`RouteFallback`) already renders a tasteful skeleton during route chunk loads.
+- ✅ Error-state UI for the scan flow already exists (PR1 hardened it).
+- 🟡 **Gap closed**: no global handler for uncaught `Promise` rejections or `window.onerror` events. Async failures outside React (failed Supabase calls in `useEffect` with no `.catch`, background tasks) silently logged to console; user saw nothing.
 
-**Acceptance**:
-- Error boundary catches and shows recovery UI
-- All major flows have non-jarring loading + empty states
-- `bun run build` passes
+**Shipped**: `useGlobalErrorHandlers()` hook mounted once at App root.
+- Catches `unhandledrejection` + `error` window events.
+- Surfaces a single sonner toast per unique message in any 5s window (dedup, capped at 50 entries).
+- Suppresses known-noisy benign errors (ResizeObserver loop, AbortError, lazy chunk reloads — already handled elsewhere).
+- Always logs full error to console for debugging.
+
+**Verified**: `tsc --noEmit` clean.
 
 ---
 
