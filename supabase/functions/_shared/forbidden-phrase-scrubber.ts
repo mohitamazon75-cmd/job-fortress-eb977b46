@@ -196,8 +196,7 @@ function runStringScrub(input: string, catalog: string[] | undefined): { output:
     const catalogSet = buildCatalogSet(catalog);
     for (const { pattern, label } of TOOL_NAME_PATTERNS) {
       output = output.replace(pattern, (match) => {
-        if (isCatalogMatch(match, catalogSet)) return match; // exact match in catalog → preserve
-        // Increment hit
+        if (isCatalogMatch(match, catalogSet, label)) return match;
         hits.set(label, (hits.get(label) ?? 0) + 1);
         return "AI tools";
       });
@@ -254,12 +253,16 @@ function buildCatalogSet(catalog: string[]): Set<string> {
   return out;
 }
 
-function isCatalogMatch(match: string, catalogSet: Set<string>): boolean {
+function isCatalogMatch(match: string, catalogSet: Set<string>, label: string): boolean {
   const norm = match.trim().toLowerCase();
   if (catalogSet.has(norm)) return true;
-  // Also accept when the catalog contains the bare name AND the match is
-  // a known bare-name plus suffix that's actually in the catalog as one
-  // token (e.g. catalog has "Cursor v3", match is "Cursor v3").
+  // For capability suffixes ("Lovable AI", "Notion AI"), if the bare
+  // leading token is in the catalog we treat the whole match as canonical
+  // — avoids mauling "Lovable AI" when catalog only has "Lovable".
+  if (label === "tool_capability_suffix") {
+    const head = norm.replace(/\s+(pro|ai|workspace|studio|plus|ultra|max)$/i, "");
+    if (head && catalogSet.has(head)) return true;
+  }
   return false;
 }
 
