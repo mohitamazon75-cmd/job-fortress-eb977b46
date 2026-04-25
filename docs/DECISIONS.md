@@ -43,3 +43,31 @@ External audit flagged USING (true) on assessments (migration
 the scans-join policy in migration 20260304054450 ~12h later. No
 action taken. Reconsider adding a direct user_id column if any
 frontend starts querying assessments directly.
+
+---
+
+## Per-user AI spending cap — deferred 2026-04-25
+
+External audit (2026-04-24) flagged the absence of a per-user AI
+spending cap as a scalability/scalability issue. Investigation found:
+
+- Neither daily_usage_stats nor token_usage_log has a user_id column.
+  Building a per-user spend check would require a new migration.
+- An existing USER_DAILY_LIMIT=25 call-count check in spending-guard.ts
+  was dead code (filtered on a non-existent column; silently no-op'd).
+- The existing scan-rate-limiter (50 scans/user/day) bounds
+  process-scan spend at ~$25/user/day (~1% of $2500 global cap).
+
+Decision: do NOT build a per-user spending cap in this pass. Remove
+the dead code in spending-guard.ts to eliminate confusion. Revisit
+when (a) traffic grows meaningfully OR (b) we observe a single-user
+spike exceeding $50/day.
+
+Future work if revisited:
+
+- Add nullable user_id uuid to token_usage_log.
+- Update token-tracker to populate it from the request context.
+- Add checkUserDailySpending() that sums estimated_cost_usd for a
+  user over last 24h against a configurable cap (default ~$5/user/day).
+- Return 429 with code USER_SPENDING_CAP (distinct from the global
+  503 SERVICE_DEGRADED).
