@@ -514,7 +514,7 @@ export default function OnboardingFlow({
                 </motion.button>
                 <button
                   onClick={() => onSubmitCTC(null)}
-                  className="w-full py-3 rounded-xl font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="w-full py-3 rounded-xl font-bold text-foreground border-2 border-border hover:border-foreground/40 hover:bg-muted/30 transition-colors"
                 >
                   Skip — show salary as a range
                 </button>
