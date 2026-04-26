@@ -117,13 +117,17 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
               transition={{ delay: 0.3 }}
               className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3"
             >
-              {/* RESUME */}
+              {/* RESUME — recommended path */}
               <motion.button
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setMethod('resume')}
                 className="group relative p-5 sm:p-8 rounded-2xl border-2 border-prophet-cyan/40 bg-card hover:border-prophet-cyan transition-all duration-300 text-center overflow-hidden"
               >
+                {/* Recommended ribbon */}
+                <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-prophet-cyan text-[9px] font-extrabold tracking-wider uppercase text-background shadow-sm">
+                  ★ Recommended
+                </span>
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'hsl(var(--prophet-cyan) / 0.04)' }} />
                 <div className="relative">
                   <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'hsl(var(--prophet-cyan) / 0.1)' }}>
@@ -131,7 +135,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                   </div>
                   <h3 className="font-bold text-foreground text-lg mb-1">Upload Resume</h3>
                   <p className="text-sm text-muted-foreground">PDF · full work history</p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-1">Best if you have one ready</p>
+                  <p className="text-[11px] text-prophet-cyan font-semibold mt-1">Most accurate analysis</p>
                   <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-prophet-cyan bg-prophet-cyan/10 px-3 py-1 rounded-full border border-prophet-cyan/20">
                     <Lock className="w-3 h-3" /> Stays private
                   </span>
