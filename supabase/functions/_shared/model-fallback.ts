@@ -219,10 +219,12 @@ export async function callAgentWithFallback(
   // earlier (cheaper); for critical agents it's the last real attempt
   // before the slow EMERGENCY tier (which is itself skipped for critical).
   if (preferredModel !== TIER3) models.push(TIER3);
-  // Quality-critical paths skip the slow gemini-2.5-pro emergency tier.
-  if (!(isQualityCritical && QUALITY_CRITICAL_SKIPS_EMERGENCY)) {
-    models.push(EMERGENCY);
-  }
+  // EMERGENCY tier (gemini-2.5-pro) removed from the chain entirely.
+  // Production logs (2026-04) show it consistently aborts at 24s while every
+  // other tier completes in 5-8s — it has never produced a successful response
+  // in the fallback path. Keeping the constant defined for telemetry/cost-table
+  // backwards-compat, but no longer attempted at runtime.
+  // (Previous gate: QUALITY_CRITICAL_SKIPS_EMERGENCY for critical agents only.)
   const uniqueModels = [...new Set(models)];
 
   if (isQualityCritical) {
