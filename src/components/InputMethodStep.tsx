@@ -108,15 +108,14 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
             </p>
           </div>
 
-          {/* Method selector — both paths are first-class.
-              Resume = direct PDF parsing. LinkedIn = paid structured scraper
-              (harvestapi via Apify, no cookies, no blocks). Equal hierarchy. */}
+          {/* Method selector — Resume is preferred for accuracy; LinkedIn works but
+              can be incomplete when LinkedIn rate-limits our scraper. */}
           {!method && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3"
             >
               {/* RESUME */}
               <motion.button
