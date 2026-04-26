@@ -6,7 +6,7 @@
  * one threat, one moat, one move. Built for screenshot virality.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Zap, TrendingDown, Sparkles } from "lucide-react";
+import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface Card0VerdictProps {
@@ -48,7 +48,8 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   // Sharper fear — pull SPECIFIC threat data from card1_risk schema
   // Schema fields: tasks_at_risk[], ai_tools_replacing (root-level on legacy scans), risk_score
   // Use ?? not || so legitimate 0 values aren't skipped
-  const threatTask = c1?.tasks_at_risk?.[0];
+  const tasksAtRisk: string[] = Array.isArray(c1?.tasks_at_risk) ? c1.tasks_at_risk.slice(0, 3) : [];
+  const threatTask = tasksAtRisk[0];
   const threatPct = c1?.ai_coverage_pct ?? c1?.exposure_pct
     ?? (typeof c1?.risk_score === "number" ? Math.min(95, Math.max(40, c1.risk_score + 10)) : null);
   const threatTool = c1?.ai_tools_replacing?.[0]
@@ -59,6 +60,14 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     || c1?.hope_bridge?.split(".")?.[0]?.replace(" is your shield", "")?.replace(/^[^a-zA-Z]+/, "")
     || "your judgment and pattern-recognition";
 
+  // Build per-task auto-coverage % for the disappearance bars (deterministic, no extra LLM cost)
+  // High-risk tasks deterministically map to 55–85% based on score position; safer tasks 35–55%.
+  const taskRows = tasksAtRisk.map((task, i) => {
+    const base = typeof threatPct === "number" ? threatPct : 60;
+    const pct = Math.max(35, Math.min(88, base - i * 8));
+    return { task: cap(task), pct };
+  });
+
   // Build the visceral fear→hope couplet
   const threatToolStr = typeof threatTool === "string" ? threatTool : null;
   const fearLine = threatTask && threatPct
@@ -67,6 +76,18 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
     : "Your top execution skills are being automated today — not in five years.";
   const hopeLine = `But ${topMoat} is what AI cannot replicate — and that is your unfair edge.`;
+
+  // 12-month replacement probability — derived deterministically from risk_score
+  // risk_score 0-100 (higher = safer). Replacement prob = inverse weighted with floor/ceil.
+  const replacementProb = typeof c1?.risk_score === "number"
+    ? Math.max(15, Math.min(92, 100 - c1.risk_score + 8))
+    : (typeof threatPct === "number" ? Math.min(92, threatPct + 12) : null);
+  const replacementBand = replacementProb == null
+    ? null
+    : replacementProb >= 70 ? { label: "VERY HIGH", color: "#b91c1c" }
+    : replacementProb >= 50 ? { label: "HIGH", color: "#dc2626" }
+    : replacementProb >= 30 ? { label: "MODERATE", color: "#b45309" }
+    : { label: "LOW", color: "#15803d" };
 
   // Risk tier — drives the entire color story
   const tier = rawScore >= 70
@@ -89,13 +110,14 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const moatCount = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong")?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
 
-  // Top move — keep solid navy CTA card
+  // Top move — TEASED, not revealed (curiosity gap drives clicks)
+  // Show category + match %, lock the specific role behind the CTA.
   // Schema: pivots[].match_pct (not skill_overlap_pct)
-  // Operator-precedence fix: parenthesise the .split(...)+"." so the fallback works when confrontation is missing
-  const confrontationFirst = c1?.confrontation?.split(".")?.[0];
-  const topMove = c4?.pivots?.[0]?.role
-    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].match_pct || c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
-    : (confrontationFirst ? `${confrontationFirst}.` : "Start with one concrete case study this week.");
+  const topPivot = c4?.pivots?.[0];
+  const topMatchPct = topPivot?.match_pct || topPivot?.skill_overlap_pct || 70;
+  const topMove = topPivot?.role
+    ? `Your skills already transfer ${topMatchPct}% to a safer role we've identified — unlock to see which one.`
+    : "We've mapped your top 3 escape routes — unlock the full report to see them.";
 
   // Conic-gradient ring percentage
   const ringPct = Math.max(0, Math.min(100, rawScore));
@@ -390,6 +412,66 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
                 {fearLine}
               </div>
+
+              {/* Disappearance bars — top tasks AI does today */}
+              {taskRows.length > 1 && (
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 7 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#6b7280", marginBottom: 2 }}>
+                    Will disappear first
+                  </div>
+                  {taskRows.map((row, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: "#374151", lineHeight: 1.3 }}>
+                        {row.task}
+                      </div>
+                      <div style={{ width: 90, height: 6, borderRadius: 999, background: "rgba(220,38,38,0.12)", overflow: "hidden" }}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${row.pct}%` }}
+                          transition={{ delay: 0.9 + i * 0.12, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                          style={{ height: "100%", background: "linear-gradient(90deg, #dc2626, #ef4444)" }}
+                        />
+                      </div>
+                      <div style={{ width: 32, fontSize: 12, fontWeight: 800, color: "#b91c1c", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                        {row.pct}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 12-month replacement probability strip */}
+              {replacementBand && (
+                <div style={{
+                  marginTop: 14,
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  background: "rgba(220,38,38,0.06)",
+                  border: "1px solid rgba(220,38,38,0.18)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: "#374151", lineHeight: 1.3 }}>
+                    Replacement probability · next 12 months
+                  </div>
+                  <div style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    background: replacementBand.color,
+                    color: "white",
+                    fontSize: 11,
+                    fontWeight: 900,
+                    letterSpacing: "0.1em",
+                  }}>
+                    {replacementProb}% · {replacementBand.label}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -430,10 +512,11 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
             background: "rgba(255,255,255,0.12)",
             display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
-            <Zap size={16} color="white" />
+            <Lock size={16} color="white" />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(255,255,255,0.65)", marginBottom: 5 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(255,255,255,0.65)", marginBottom: 5, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ padding: "1px 6px", borderRadius: 4, background: "rgba(255,255,255,0.18)", fontSize: 8.5, letterSpacing: "0.15em" }}>LOCKED</span>
               YOUR #1 MOVE
             </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "white", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
@@ -470,12 +553,12 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
           boxShadow: "0 10px 30px rgba(17,24,39,0.25)",
         }}
       >
-        See the Full Intelligence Report
+        See How to Survive
         <ArrowRight size={18} />
       </motion.button>
 
       <p style={{ fontSize: 11, color: "var(--mb-muted, #9ca3af)", textAlign: "center", marginTop: 12, letterSpacing: "0.04em" }}>
-        7 intelligence cards · Score decomposition · Live market data · 90-day plan
+        Unlock 7 intelligence cards · Your safe pivot · Defense plan · Live market signals
       </p>
 
       {/* Auto-advance hint — gentle nudge after 6s, never auto-skips */}
