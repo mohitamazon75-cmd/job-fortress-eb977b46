@@ -431,10 +431,16 @@ export default function OnboardingFlow({
           {showCTCStep && (
             <div>
               <div className="text-center mb-8">
+                {/* Big, bold OPTIONAL chip — founder ask: salary must read as clearly skippable */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-prophet-green/10 border-2 border-prophet-green/30 mb-4">
+                  <Lock className="w-4 h-4 text-prophet-green" />
+                  <span className="text-sm font-extrabold tracking-wide uppercase text-prophet-green">
+                    Optional · Never shared
+                  </span>
+                </div>
                 <h2 className="text-3xl font-bold text-foreground mb-2">Your {currencyConfig.label}</h2>
                 <p className="text-muted-foreground">
-                  Lets us calculate exactly how much salary AI puts at risk for <span className="font-medium text-foreground">your</span> package.
-                  Skip if you'd rather not — we'll show ranges instead.
+                  Adding this <span className="font-semibold text-foreground">personalises your salary-at-risk number</span> instead of showing a range. Your number stays on your device-linked record only — <span className="font-semibold text-foreground">never sold, never shared, never sent to employers</span>.
                 </p>
               </div>
 
