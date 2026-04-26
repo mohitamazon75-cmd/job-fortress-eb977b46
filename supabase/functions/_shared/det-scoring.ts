@@ -298,9 +298,16 @@ export function calculateDeterminismIndex(
     }
     relationshipMoatReduction = Math.min(13, relationshipMoatReduction);
 
-    if (isExec) { index = Math.round(index * 0.4); }
-    else if (isManager) { index = Math.round(index * 0.7); }
-    index = Math.round(index - scaleMoatReduction - regulatoryMoatReduction - relationshipMoatReduction);
+    // AUDIT P1 fix: Apply moat reductions BEFORE the seniority multiplier so the
+    // multiplier compounds an already-reduced base instead of producing negative
+    // pre-clamp scores that hide the marginal value of executive moats.
+    // Old order: index = round(index * 0.4) - reductions  (could go negative)
+    // New order: index = round((index - reductions) * 0.4)  (always >= 0 when index >= reductions)
+    const totalMoatReduction = scaleMoatReduction + regulatoryMoatReduction + relationshipMoatReduction;
+    const reducedBase = Math.max(0, index - totalMoatReduction);
+    if (isExec) { index = Math.round(reducedBase * 0.4); }
+    else if (isManager) { index = Math.round(reducedBase * 0.7); }
+    else { index = reducedBase; }
   }
 
   // ENTRY-tier amplification
