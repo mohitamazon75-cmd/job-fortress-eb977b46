@@ -139,6 +139,28 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
   users, or a structural matcher rewrite.
 - **Status**: open (deferred).
 
+### BL-033 — Share-card "Digital Passport" redesign
+- Discovered 2026-04-26 from user feedback ("Suggested_changes" doc).
+- Current `src/components/cards/ShareableScoreCard.tsx` (783 lines) uses the "Classified Document" aesthetic (mem://ux/share-card-rendering-logic). Feedback proposes a Gold/Black/Holographic "Digital Passport" treatment with percentile scarcity ("Top 5% in Bengaluru") to drive viral loops.
+- Why parked: file is 783 lines (over the 300-line guardrail in CLAUDE.md Rule 9), purely visual rewrite, viral asset has highest blast radius for regression. Pre-PMF the existing card is shipping; redesign is upside, not a fix.
+- Pre-condition: lock the percentile data source (cohort percentile per city × role) before redesigning visuals.
+- Priority: P2 — meaningful upside, not a stability blocker.
+- **Status**: open (deferred).
+
+### BL-034 — Archetype rename to India-first labels
+- Discovered 2026-04-26 from user feedback.
+- Rename profile archetypes ("The Outlier" → "The Architect", plus "Frontier Leader", "Rare Hybrid", "Rising Star") to better fit the Indian competitive job-market vernacular.
+- Why parked: copy-only change, but spans `AIDossierReveal`, `MoatsSection`, share-card overlays, edge-function prompts in `_shared/agent-prompts.ts` (touch-with-approval per Rule 3), and any cohort-tier strings in the KG. Needs a single coordinated grep-and-replace plus prompt re-calibration check, not a piecemeal edit.
+- Priority: P2 — pure positioning win once Phase 1 stabilization is signed off.
+- **Status**: open (deferred).
+
+### BL-035 — PromptModal "Email this to me" + retry hardening
+- Discovered 2026-04-26 from user feedback (today's-action reminders).
+- `src/components/model-b/PromptModal.tsx` already has: empty-stream → non-stream fallback, manual "Try again" on error, "↻ Regenerate". Remaining gap is purely *additive*: "Email this to me" button so the generated content lands in the user's inbox for later action.
+- Why parked: requires a new edge function (`email-action-content`) that composes + sends via the existing email infra. New edge function is explicitly disallowed pre-Phase-1 per CLAUDE.md (§5).
+- Priority: P2 — retention nudge, not a fix. Existing modal is functional.
+- **Status**: open (deferred).
+
 ## Open — P3
 
 ### Known prompt/schema mismatches
