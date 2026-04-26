@@ -419,6 +419,11 @@ export default function Card6BlindSpots({ cardData, onBack, onNext, scanId }: { 
           ))}
         </div>
 
+        {/* Methodology stamp — trust footer */}
+        <div style={{ marginTop: 18, padding: "10px 14px", background: "var(--mb-paper)", border: "1px dashed var(--mb-rule)", borderRadius: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", lineHeight: 1.6, fontWeight: 500 }}>
+          <strong style={{ color: "var(--mb-ink2)", fontWeight: 800, letterSpacing: "0.04em" }}>HOW WE CALCULATED THIS:</strong> Blind spots identified by comparing your resume against role-specific peer benchmarks and current India JD requirements. Interview questions and STAR answers are generated from your actual resume evidence using JobBachao's grounded LLM layer — no hallucinated experience.
+        </div>
+
         <CardNav onBack={onBack} onNext={onNext} nextLabel="See human advantage →" />
       </CardBody>
     </CardShell>
