@@ -159,14 +159,30 @@ export function buildKGSkillIndex(skillRiskData: SkillRiskRow[]): KGSkillIndex {
 // India launch fix: false skill matches were inflating/deflating risk scores.
 const MIN_CONTAINMENT_LEN = 5;
 
+// AUDIT P1 fix: Short technical skills are real concepts, not fragments.
+// These are exact-match-only (the safeContainment guard is bypassed for them
+// when they appear as the shorter string), but they still pass through the
+// length-ratio cap so "sql" never matches "postgresqldba".
+const SHORT_TECH_SKILL_ALLOWLIST = new Set<string>([
+  "sql", "aws", "gcp", "jvm", "k8s", "ci", "cd", "ml", "nlp", "iot",
+  "qa", "ux", "ui", "ar", "vr", "go", "c", "r", "js", "ts",
+  "php", "css", "xml", "api", "ssr", "ssh", "tcp", "udp", "tls", "ssl",
+  "git", "npm", "pip", "rpc", "rdb", "etl", "kpi", "saas", "paas", "iaas",
+]);
+
 function safeContainment(a: string, b: string): boolean {
   // Require the SHORTER string to be at least MIN_CONTAINMENT_LEN chars,
-  // and require the longer string to not be massively longer (prevents
-  // "sql" -> "postgresqldba" type false positives).
+  // OR be a recognised short-tech-skill token. Either way, require the longer
+  // string to not be massively longer (prevents "sql" -> "postgresqldba" type
+  // false positives — the length-ratio cap is the real guard).
   const shorter = a.length <= b.length ? a : b;
   const longer = a.length <= b.length ? b : a;
-  if (shorter.length < MIN_CONTAINMENT_LEN) return false;
-  if (longer.length > shorter.length * 2.5) return false;
+  const isShortTech = SHORT_TECH_SKILL_ALLOWLIST.has(shorter);
+  if (shorter.length < MIN_CONTAINMENT_LEN && !isShortTech) return false;
+  // Tighter ratio cap when the shorter side is below MIN_CONTAINMENT_LEN
+  // (allowlisted short-tech skill) — prevents catastrophic false matches.
+  const ratioCap = isShortTech && shorter.length < MIN_CONTAINMENT_LEN ? 1.6 : 2.5;
+  if (longer.length > shorter.length * ratioCap) return false;
   return longer.includes(shorter);
 }
 
