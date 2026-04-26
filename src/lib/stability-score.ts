@@ -237,7 +237,8 @@ export function computeScoreBreakdown(report: ScanReport): ScoreDecomposition {
 
   const kgBaseline = getKGBaseline(
     report.role,
-    report.matched_job_family ?? (report as any).matchedJobFamily
+    report.matched_job_family ?? (report as any).matchedJobFamily,
+    report.kg_disruption_baseline ?? null,
   );
   
   if (kgBaseline !== null) {
