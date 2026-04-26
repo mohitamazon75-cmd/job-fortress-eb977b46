@@ -110,7 +110,12 @@ Deno.serve(async (req) => {
 function computeResumeRating(
   report: Record<string, unknown>,
 ): { value: number | null; label: string | null } {
-  const score = numOrNull(report.jobbachao_score) ?? numOrNull(report.risk_score);
+  const sb = (report.score_breakdown ?? {}) as Record<string, unknown>;
+  const score = numOrNull(report.jobbachao_score)
+    ?? numOrNull(report.risk_score)
+    ?? numOrNull(sb.final_clamped)
+    ?? numOrNull(report.survivability)
+    ?? numOrNull(report.automation_risk);
   const dq = (report.data_quality ?? {}) as Record<string, unknown>;
   const completenessRaw = numOrNull(dq.profile_completeness_pct) ?? numOrNull(dq.profile_completeness);
   const completeness = completenessRaw == null
