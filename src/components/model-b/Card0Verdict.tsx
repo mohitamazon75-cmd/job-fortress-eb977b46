@@ -553,12 +553,12 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
           boxShadow: "0 10px 30px rgba(17,24,39,0.25)",
         }}
       >
-        See the Full Intelligence Report
+        See How to Survive
         <ArrowRight size={18} />
       </motion.button>
 
       <p style={{ fontSize: 11, color: "var(--mb-muted, #9ca3af)", textAlign: "center", marginTop: 12, letterSpacing: "0.04em" }}>
-        7 intelligence cards · Score decomposition · Live market data · 90-day plan
+        Unlock 7 intelligence cards · Your safe pivot · Defense plan · Live market signals
       </p>
 
       {/* Auto-advance hint — gentle nudge after 6s, never auto-skips */}
