@@ -9,39 +9,42 @@ const iconMap: Record<string, { emoji: string; bg: string; badgeBg: string; badg
   shield: { emoji: "🛡️", bg: "var(--mb-navy-tint)", badgeBg: "var(--mb-navy-tint)", badgeColor: "var(--mb-navy)" },
 };
 
-// ── WhatsApp Weekly Alert Opt-in ──────────────────────────────────────────
+// ── WhatsApp Score Snapshot — honest one-time send ───────────────────────
+// Trust note: we don't yet operate a weekly-alert pipeline keyed off phone
+// numbers, so we don't promise one. This block opens a pre-filled WhatsApp
+// message the user can send to themselves (or a friend) as a snapshot of
+// their score — useful, shareable, and truthful about what it does.
 function WhatsAppCaptureBlock({ score }: { score: number }) {
   const [phone, setPhone] = useState("");
-  const [submitted, setSubmitted] = useState(() => {
-    try { return !!localStorage.getItem("jb_wa_subscribed"); } catch { return false; }
-  });
+  const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!phone || phone.length < 10) return;
     setLoading(true);
     try {
-      const msg = `Hi, I just scanned my career on JobBachao and got a score of ${score}/100. Please send me my weekly AI risk updates on WhatsApp. My number: +91${phone.replace(/\D/g,"")}`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-      localStorage.setItem("jb_wa_subscribed", "1");
-      setSubmitted(true);
+      const cleaned = phone.replace(/\D/g, "");
+      const msg = `My JobBachao career score: ${score}/100. AI is reshaping my role — this is where I stand today. Check yours: https://jobbachao.com`;
+      // wa.me/<number> opens chat with that specific number, pre-filled.
+      window.open(`https://wa.me/91${cleaned}?text=${encodeURIComponent(msg)}`, "_blank");
+      setSent(true);
     } finally { setLoading(false); }
   };
 
-  if (submitted) {
+  if (sent) {
     return (
       <div style={{ margin: "16px 0", padding: "14px 18px", borderRadius: 14, background: "rgba(37,211,102,0.08)", border: "1.5px solid rgba(37,211,102,0.25)", textAlign: "center" }}>
-        <div style={{ fontSize: 20, marginBottom: 6 }}>✅</div>
-        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, color: "#16a34a" }}>Weekly alerts activated</div>
-        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginTop: 4 }}>We'll WhatsApp you when your score shifts or the market changes for your role.</div>
+        <div style={{ fontSize: 20, marginBottom: 6 }}>📲</div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, color: "#16a34a" }}>WhatsApp opened</div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginTop: 4 }}>Hit send in WhatsApp to save your score snapshot. Re-scan in 30 days to track how it shifts.</div>
       </div>
     );
   }
 
   return (
     <div style={{ margin: "16px 0", padding: "16px 18px", borderRadius: 14, background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)" }}>
-      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 4 }}>📲 Get weekly score alerts on WhatsApp</div>
-      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginBottom: 12 }}>We'll notify you when your AI risk score shifts or a better job match appears. No spam — max 1 message/week.</div>
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 4 }}>📲 Send your score to your WhatsApp</div>
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginBottom: 12 }}>One-tap snapshot — saves your number {score}/100 to your own chat so you can re-scan later and compare. We don't store your number.</div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 10, overflow: "hidden", flex: 1 }}>
           <span style={{ padding: "0 10px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-ink3)", borderRight: "1.5px solid var(--mb-rule)", lineHeight: "44px" }}>+91</span>
