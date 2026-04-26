@@ -91,6 +91,14 @@ Deno.serve(async (req) => {
     const { count: missing_ai_tools_count, sample: missing_ai_tools_sample } =
       await computeMissingAiTools(supabase, report);
 
+    // ─── 6 & 7. Live personalised role matches (from existing pivot output) ─
+    const { count: live_jobs_count, top_fit_pct: live_jobs_top_fit_pct } =
+      computeLiveJobMatches(report);
+
+    // ─── 8 & 9. Curated learning resources (real DB count) ─────────
+    const { count: learning_resources_count, breakdown: learning_resources_breakdown } =
+      await computeLearningResources(supabase, report);
+
     const enrichment: EnrichmentResponse = {
       resume_rating: rating.value,
       resume_rating_label: rating.label,
@@ -98,6 +106,10 @@ Deno.serve(async (req) => {
       action_playbook_count,
       missing_ai_tools_count,
       missing_ai_tools_sample,
+      live_jobs_count,
+      live_jobs_top_fit_pct,
+      learning_resources_count,
+      learning_resources_breakdown,
     };
 
     return okResponse(req, { enrichment });
