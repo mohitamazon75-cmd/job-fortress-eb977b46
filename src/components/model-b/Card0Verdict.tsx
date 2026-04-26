@@ -412,6 +412,66 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
                 {fearLine}
               </div>
+
+              {/* Disappearance bars — top tasks AI does today */}
+              {taskRows.length > 1 && (
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 7 }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#6b7280", marginBottom: 2 }}>
+                    Will disappear first
+                  </div>
+                  {taskRows.map((row, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: "#374151", lineHeight: 1.3 }}>
+                        {row.task}
+                      </div>
+                      <div style={{ width: 90, height: 6, borderRadius: 999, background: "rgba(220,38,38,0.12)", overflow: "hidden" }}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${row.pct}%` }}
+                          transition={{ delay: 0.9 + i * 0.12, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                          style={{ height: "100%", background: "linear-gradient(90deg, #dc2626, #ef4444)" }}
+                        />
+                      </div>
+                      <div style={{ width: 32, fontSize: 12, fontWeight: 800, color: "#b91c1c", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                        {row.pct}%
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 12-month replacement probability strip */}
+              {replacementBand && (
+                <div style={{
+                  marginTop: 14,
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  background: "rgba(220,38,38,0.06)",
+                  border: "1px solid rgba(220,38,38,0.18)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: "#374151", lineHeight: 1.3 }}>
+                    Replacement probability · next 12 months
+                  </div>
+                  <div style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    background: replacementBand.color,
+                    color: "white",
+                    fontSize: 11,
+                    fontWeight: 900,
+                    letterSpacing: "0.1em",
+                  }}>
+                    {replacementProb}% · {replacementBand.label}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
