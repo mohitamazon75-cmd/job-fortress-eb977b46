@@ -57,7 +57,7 @@ const baseReport = (overrides: Partial<ScanReport>): ScanReport => ({
     talent_density: "moderate", demand_trend: "Stable",
   },
   career_shock_simulator: { salary_drop_percentage: 25 } as any,
-  years_experience: 5,
+  years_experience: 5 as any,
   ...overrides,
 } as ScanReport);
 
@@ -81,7 +81,7 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
         talent_density: "abundant", demand_trend: "Declining",
       },
       career_shock_simulator: { salary_drop_percentage: 55 } as any,
-      years_experience: 2,
+      years_experience: 2 as any,
     });
     const score = computeStabilityScore(report);
     const band = getPlainEnglishVerdictBands(score);
@@ -114,7 +114,7 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
         talent_density: "abundant", demand_trend: "Stable",
       },
       career_shock_simulator: { salary_drop_percentage: 30 } as any,
-      years_experience: 6,
+      years_experience: 6 as any,
     });
     const score = computeStabilityScore(report);
     const band = getPlainEnglishVerdictBands(score);
@@ -142,7 +142,7 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
         talent_density: "scarce", demand_trend: "Strong",
       },
       career_shock_simulator: { salary_drop_percentage: 10 } as any,
-      years_experience: 12,
+      years_experience: 12 as any,
       survivability: { peer_percentile_estimate: "Top 12th percentile" } as any,
     });
     const score = computeStabilityScore(report);
@@ -177,7 +177,7 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
         talent_density: "scarce", demand_trend: "Strong",
       },
       career_shock_simulator: { salary_drop_percentage: 8 } as any,
-      years_experience: 15,
+      years_experience: 15 as any,
       survivability: { peer_percentile_estimate: "Top 5th percentile" } as any,
     });
     const score = computeStabilityScore(report);
