@@ -6,15 +6,26 @@
  * one threat, one moat, one move. Built for screenshot virality.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock } from "lucide-react";
+import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Card0VerdictProps {
   cardData: any;
+  scanId?: string;
   onNext: () => void;
 }
 
-export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
+interface VerdictEnrichment {
+  resume_rating: number | null;
+  resume_rating_label: string | null;
+  resume_improvements_count: number | null;
+  action_playbook_count: number | null;
+  missing_ai_tools_count: number | null;
+  missing_ai_tools_sample: string[];
+}
+
+export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictProps) {
   const c1 = cardData?.card1_risk;
   const c3 = cardData?.card3_shield;
   const c4 = cardData?.card4_pivot;
@@ -44,6 +55,36 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     const t = setTimeout(() => setHintVisible(true), 6000);
     return () => clearTimeout(t);
   }, []);
+
+  // ─── Verdict enrichment (real backend numbers, never fabricated) ──
+  // Pulls deterministic resume rating, improvement count, action
+  // playbook count, and missing-AI-tools count from the verdict-
+  // enrichment edge function. Any null field is hidden from the UI.
+  // Failures are silent — we never break the verdict screen.
+  const [enrichment, setEnrichment] = useState<VerdictEnrichment | null>(null);
+  useEffect(() => {
+    if (!scanId) return;
+    let cancelled = false;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000); // 8s safety timeout
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("verdict-enrichment", {
+          body: { scan_id: scanId },
+        });
+        if (cancelled || error) return;
+        const e = (data as { enrichment?: VerdictEnrichment } | null)?.enrichment;
+        if (e) setEnrichment(e);
+      } catch (err) {
+        // Silent — verdict screen must never break on enrichment failure.
+        console.warn("[Card0] enrichment fetch failed", err);
+      } finally {
+        clearTimeout(timer);
+      }
+    })();
+    return () => { cancelled = true; clearTimeout(timer); ctrl.abort(); };
+  }, [scanId]);
+
 
   // Sharper fear — pull SPECIFIC threat data from card1_risk schema
   // Schema fields: tasks_at_risk[], ai_tools_replacing (root-level on legacy scans), risk_score
@@ -535,6 +576,124 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
           </div>
         </motion.div>
       </div>
+
+      {/* WHAT'S INSIDE — real backend numbers, hide rows where data is null.
+          Three honest signals: resume rating, action playbooks, missing tools.
+          Every value here comes from verdict-enrichment (deterministic, no LLM). */}
+      {enrichment && (
+        enrichment.resume_rating != null ||
+        enrichment.action_playbook_count != null ||
+        enrichment.missing_ai_tools_count != null
+      ) && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.0, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            background: "white",
+            border: "1.5px solid var(--mb-rule, #e5e7eb)",
+            borderRadius: 16,
+            padding: "18px 20px",
+            marginBottom: 16,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--mb-muted, #6b7280)" }}>
+              What's inside the full report
+            </span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "var(--mb-muted, #9ca3af)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              <Lock size={10} /> Locked
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+            {enrichment.resume_rating != null && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(30,58,95,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <FileCheck2 size={16} color="#1e3a5f" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#1e3a5f", marginBottom: 3 }}>
+                    Resume Weaponizer
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.4 }}>
+                    Your resume scores{" "}
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: "#1e3a5f", fontVariantNumeric: "tabular-nums" }}>
+                      {enrichment.resume_rating.toFixed(1)}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--mb-muted, #6b7280)" }}>/10</span>
+                    {enrichment.resume_rating_label && (
+                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(30,58,95,0.08)", color: "#1e3a5f", letterSpacing: "0.04em" }}>
+                        {enrichment.resume_rating_label}
+                      </span>
+                    )}
+                  </div>
+                  {enrichment.resume_improvements_count != null && enrichment.resume_improvements_count > 0 && (
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--mb-muted, #6b7280)", marginTop: 3, lineHeight: 1.4 }}>
+                      We found <span style={{ color: "var(--mb-ink, #111827)", fontWeight: 800 }}>{enrichment.resume_improvements_count} concrete improvements</span> graded against peer resumes & live job postings.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {enrichment.action_playbook_count != null && enrichment.action_playbook_count > 0 && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(21,128,61,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <BookOpen size={16} color="#15803d" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#15803d", marginBottom: 3 }}>
+                    Hyper-personalised plan
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.4 }}>
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: "#15803d", fontVariantNumeric: "tabular-nums" }}>
+                      {enrichment.action_playbook_count}
+                    </span>{" "}
+                    week-by-week playbooks built for your role, seniority & skills.
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--mb-muted, #6b7280)", marginTop: 3, lineHeight: 1.4 }}>
+                    Each one names the deliverable, effort, and a fallback if you can't ship that week.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {enrichment.missing_ai_tools_count != null && enrichment.missing_ai_tools_count > 0 && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(180,83,9,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Wrench size={16} color="#b45309" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#b45309", marginBottom: 3 }}>
+                    AI tools missing from your resume
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.4 }}>
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: "#b45309", fontVariantNumeric: "tabular-nums" }}>
+                      {enrichment.missing_ai_tools_count}
+                    </span>{" "}
+                    AI tools peers in your skill domains list — your resume mentions none.
+                  </div>
+                  {enrichment.missing_ai_tools_sample.length > 0 && (
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--mb-muted, #6b7280)", marginTop: 4, lineHeight: 1.4 }}>
+                      Including: <span style={{ color: "var(--mb-ink, #111827)", fontWeight: 700 }}>
+                        {enrichment.missing_ai_tools_sample.join(" · ")}
+                      </span>
+                      {enrichment.missing_ai_tools_count > enrichment.missing_ai_tools_sample.length && " + more"}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop: 14, fontSize: 10, fontWeight: 600, color: "var(--mb-muted, #9ca3af)", textAlign: "center", letterSpacing: "0.04em" }}>
+            Numbers derived from your scan — no estimates, no fillers.
+          </div>
+        </motion.div>
+      )}
 
       {/* CTA */}
       <motion.button
