@@ -573,6 +573,9 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
       <p style={{ fontSize: 10.5, color: "#b45309", textAlign: "center", marginTop: 6, fontWeight: 700, letterSpacing: "0.05em" }}>
         ⏱ Anonymous scans auto-delete in 24 hours (DPDP compliant)
       </p>
+      <p style={{ fontSize: 10, color: "var(--mb-muted, #9ca3af)", textAlign: "center", marginTop: 8, letterSpacing: "0.06em" }}>
+        Score derived from AIRMM™ framework · Powered by Gemini 3 Pro · Cross-validated with live market signals
+      </p>
 
       {/* Auto-advance hint — gentle nudge after 6s, never auto-skips */}
       {hintVisible && (
