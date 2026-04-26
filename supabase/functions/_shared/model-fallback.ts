@@ -17,11 +17,11 @@ const OPENAI_SECONDARY = "openai/gpt-5-mini";
 // gemini-2.5-pro consistently times out on quality-critical agents
 // (every prod log line shows it aborting at 24s while gemini-3-pro completes
 // in 5–8s). Keep it as a last-resort emergency only.
-const EMERGENCY = "google/gemini-2.5-pro";
+const _EMERGENCY_DEPRECATED = "google/gemini-2.5-pro";
 
 // Quality-critical agents skip the EMERGENCY tier entirely — better to fail
 // loudly than ship a low-fidelity 2.5-pro response.
-const QUALITY_CRITICAL_SKIPS_EMERGENCY = true;
+const _QUALITY_CRITICAL_SKIPS_EMERGENCY = true;
 
 // Agents where Flash produces unacceptably degraded output
 const QUALITY_CRITICAL_AGENTS = ["Agent1", "Agent2A", "Agent2B", "Agent2C", "JudoStrategy"];
