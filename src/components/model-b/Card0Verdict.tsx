@@ -454,7 +454,7 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
               {taskRows.length > 1 && (
                 <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 7 }}>
                   <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#6b7280", marginBottom: 2 }}>
-                    Will disappear first
+                    What you do daily — AI now does in seconds
                   </div>
                   {taskRows.map((row, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
