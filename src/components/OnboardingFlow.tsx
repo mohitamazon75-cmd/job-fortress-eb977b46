@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { INDUSTRIES, EXPERIENCE_LEVELS, METRO_TIERS_BY_COUNTRY, COUNTRIES } from '@/lib/types';
 import { sanitizePromptInput } from '@/lib/prompt-safety';
-import { Briefcase, Clock, MapPin, Check, Globe, ArrowLeft, Sparkles, Monitor, Landmark, Megaphone, Heart, Factory, Palette, BookOpen, Building2, Truck, ShoppingCart, Utensils, Plane, Scale } from 'lucide-react';
+import { Briefcase, Clock, MapPin, Check, Globe, ArrowLeft, Sparkles, Monitor, Landmark, Megaphone, Heart, Factory, Palette, BookOpen, Building2, Truck, ShoppingCart, Utensils, Plane, Scale, Lock } from 'lucide-react';
 
 interface OnboardingFlowProps {
   step: number;
