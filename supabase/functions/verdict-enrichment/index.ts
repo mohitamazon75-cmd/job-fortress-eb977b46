@@ -29,6 +29,12 @@ interface EnrichmentResponse {
   action_playbook_count: number | null;
   missing_ai_tools_count: number | null;
   missing_ai_tools_sample: string[];     // up to 3 names, for teaser
+  // Personalised live role matches (from card4_pivot.pivots — real engine output)
+  live_jobs_count: number | null;
+  live_jobs_top_fit_pct: number | null;  // best match_pct across pivots (0-100)
+  // Curated learning resources (deterministic count from learning_resources table)
+  learning_resources_count: number | null;
+  learning_resources_breakdown: { courses: number; videos: number; books: number } | null;
 }
 
 const EMPTY: EnrichmentResponse = {
@@ -38,6 +44,10 @@ const EMPTY: EnrichmentResponse = {
   action_playbook_count: null,
   missing_ai_tools_count: null,
   missing_ai_tools_sample: [],
+  live_jobs_count: null,
+  live_jobs_top_fit_pct: null,
+  learning_resources_count: null,
+  learning_resources_breakdown: null,
 };
 
 Deno.serve(async (req) => {
