@@ -1,0 +1,20 @@
+name: Guards
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  guards:
+    name: Bypass + God-file freeze guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bypass guard (no TESTING_BYPASS / DEV MODE re-introduction)
+        run: bash scripts/guard-no-bypass.sh
+
+      - name: God-file freeze guard
+        run: bash scripts/guard-god-files.sh
