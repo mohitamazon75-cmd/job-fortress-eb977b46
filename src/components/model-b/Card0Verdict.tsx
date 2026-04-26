@@ -56,6 +56,36 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
     return () => clearTimeout(t);
   }, []);
 
+  // ─── Verdict enrichment (real backend numbers, never fabricated) ──
+  // Pulls deterministic resume rating, improvement count, action
+  // playbook count, and missing-AI-tools count from the verdict-
+  // enrichment edge function. Any null field is hidden from the UI.
+  // Failures are silent — we never break the verdict screen.
+  const [enrichment, setEnrichment] = useState<VerdictEnrichment | null>(null);
+  useEffect(() => {
+    if (!scanId) return;
+    let cancelled = false;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000); // 8s safety timeout
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("verdict-enrichment", {
+          body: { scan_id: scanId },
+        });
+        if (cancelled || error) return;
+        const e = (data as { enrichment?: VerdictEnrichment } | null)?.enrichment;
+        if (e) setEnrichment(e);
+      } catch (err) {
+        // Silent — verdict screen must never break on enrichment failure.
+        console.warn("[Card0] enrichment fetch failed", err);
+      } finally {
+        clearTimeout(timer);
+      }
+    })();
+    return () => { cancelled = true; clearTimeout(timer); ctrl.abort(); };
+  }, [scanId]);
+
+
   // Sharper fear — pull SPECIFIC threat data from card1_risk schema
   // Schema fields: tasks_at_risk[], ai_tools_replacing (root-level on legacy scans), risk_score
   // Use ?? not || so legitimate 0 values aren't skipped
