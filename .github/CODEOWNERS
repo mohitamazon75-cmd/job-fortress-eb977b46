@@ -1,0 +1,35 @@
+# CODEOWNERS — protected core IP per CLAUDE.md §3 Rule 3
+#
+# Any PR touching these paths requires explicit operator review.
+# These represent the deterministic scoring engine, payment path,
+# auth boundary contracts, and append-only database migrations —
+# the four highest-blast-radius zones in the codebase.
+
+# Deterministic scoring engine (core IP)
+/supabase/functions/_shared/det-*.ts                @kuldeep-jb
+
+# LLM prompt calibration (every change is behavior-breaking)
+/supabase/functions/_shared/agent-prompts.ts        @kuldeep-jb
+
+# Boundary contracts
+/supabase/functions/_shared/zod-schemas.ts          @kuldeep-jb
+
+# Subscription / Pro gating switch (Hazard D)
+/supabase/functions/_shared/subscription-guard.ts   @kuldeep-jb
+
+# Payment path (consultant scope)
+/supabase/functions/activate-subscription/          @kuldeep-jb
+/supabase/functions/razorpay-webhook/               @kuldeep-jb
+
+# Database migrations (append-only)
+/supabase/migrations/                               @kuldeep-jb
+
+# CI + guards (do not weaken without approval)
+/.github/                                           @kuldeep-jb
+/scripts/guard-*.sh                                 @kuldeep-jb
+
+# Frozen god-files (Hazard F)
+/supabase/functions/process-scan/index.ts           @kuldeep-jb
+/src/lib/scan-engine.ts                             @kuldeep-jb
+/src/components/SideHustleGenerator.tsx             @kuldeep-jb
+/src/components/VerdictReveal.tsx                   @kuldeep-jb
