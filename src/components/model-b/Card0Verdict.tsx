@@ -337,8 +337,11 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
         </div>
       </motion.div>
 
-      {/* QUICK STATS — three pill-cards */}
-      {(aiCoverage != null || moatCount > 0 || pivotCount > 0) && (
+      {/* QUICK STATS — three pill-cards.
+          AI exposure is the canonical fear number.
+          Decaying-skills replaces the old green moat pill (no reassurance during fear phase).
+          Safe-pivots count is locked teaser (count visible, names behind paywall via #1 move card). */}
+      {(aiCoverage != null || decayingSkillsCount > 0 || pivotCount > 0) && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -351,7 +354,7 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
           }}
         >
           <StatPill icon={<TrendingDown size={14} />} value={aiCoverage != null ? `${aiCoverage}%` : "—"} label="AI exposure" tone="threat" />
-          <StatPill icon={<Shield size={14} />} value={moatCount > 0 ? String(moatCount) : "—"} label="Moat skills" tone="moat" />
+          <StatPill icon={<TrendingDown size={14} />} value={decayingSkillsCount > 0 ? String(decayingSkillsCount) : "—"} label="Skills decaying" tone="threat" />
           <StatPill icon={<Sparkles size={14} />} value={pivotCount > 0 ? String(pivotCount) : "—"} label="Safe pivots" tone="hope" />
         </motion.div>
       )}
