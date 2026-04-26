@@ -33,6 +33,8 @@ function getPlainEnglishVerdictBands(score: number) {
 const baseReport = (overrides: Partial<ScanReport>): ScanReport => ({
   role: "Generic",
   determinism_index: 50,
+  automation_risk: 50,
+  moat_score: 30,
   months_remaining: 24,
   salary_bleed_monthly: 5000,
   execution_skills_dead: [],
@@ -50,6 +52,12 @@ const baseReport = (overrides: Partial<ScanReport>): ScanReport => ({
   execution_skills: [],
   strategic_skills: [],
   seniority_tier: "PROFESSIONAL",
+  market_position_model: {
+    market_percentile: 50, competitive_tier: "mid", leverage_status: "moderate",
+    talent_density: "moderate", demand_trend: "Stable",
+  },
+  career_shock_simulator: { salary_drop_percentage: 25 } as any,
+  years_experience: 5,
   ...overrides,
 } as ScanReport);
 
