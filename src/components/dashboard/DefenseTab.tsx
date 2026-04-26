@@ -81,7 +81,7 @@ export default function DefenseTab({ props }: { props: DashboardSharedProps }) {
         {/* What If Simulator */}
         <WhatIfSimulator scanId={scanId} />
 
-        {/* 4-Week Action Plan */}
+        {/* Weekly Action Plan (quick-win, surfaces first so users see actionable tasks before async tools) */}
         {report.weekly_action_plan && report.weekly_action_plan.length > 0 && (
           <WeeklyActionPlan actions={report.weekly_action_plan} role={report.role} industry={report.industry} enrichment={enrichment.data} enrichmentLoading={enrichment.loading} />
         )}
@@ -92,7 +92,7 @@ export default function DefenseTab({ props }: { props: DashboardSharedProps }) {
         {/* Skill Arbitrage Engine */}
         <SkillArbitrageWidget report={report} scanId={scanId} />
 
-        {/* Resume Weaponizer */}
+        {/* Resume Weaponizer — heavy async LLM tool, intentionally placed after quick-win sections per user feedback (long latency at top of screen creates "broken" perception) */}
         <ResumeWeaponizerWidget report={report} scanId={scanId} />
 
         {/* Collapsed Deep Dive */}
