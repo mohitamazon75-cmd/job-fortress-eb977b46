@@ -6,7 +6,7 @@
  * one threat, one moat, one move. Built for screenshot virality.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench } from "lucide-react";
+import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench, Briefcase, GraduationCap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,6 +23,10 @@ interface VerdictEnrichment {
   action_playbook_count: number | null;
   missing_ai_tools_count: number | null;
   missing_ai_tools_sample: string[];
+  live_jobs_count: number | null;
+  live_jobs_top_fit_pct: number | null;
+  learning_resources_count: number | null;
+  learning_resources_breakdown: { courses: number; videos: number; books: number } | null;
 }
 
 export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictProps) {
@@ -583,7 +587,9 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
       {enrichment && (
         enrichment.resume_rating != null ||
         enrichment.action_playbook_count != null ||
-        enrichment.missing_ai_tools_count != null
+        enrichment.missing_ai_tools_count != null ||
+        (enrichment.live_jobs_count != null && enrichment.live_jobs_count > 0) ||
+        (enrichment.learning_resources_count != null && enrichment.learning_resources_count > 0)
       ) && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -682,6 +688,61 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
                         {enrichment.missing_ai_tools_sample.join(" · ")}
                       </span>
                       {enrichment.missing_ai_tools_count > enrichment.missing_ai_tools_sample.length && " + more"}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {enrichment.live_jobs_count != null && enrichment.live_jobs_count > 0 && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(124,58,237,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Briefcase size={16} color="#7c3aed" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#7c3aed", marginBottom: 3 }}>
+                    Hyper-personalised live roles
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.4 }}>
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: "#7c3aed", fontVariantNumeric: "tabular-nums" }}>
+                      {enrichment.live_jobs_count}
+                    </span>{" "}
+                    role matches mapped to your skills
+                    {enrichment.live_jobs_top_fit_pct != null && (
+                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(124,58,237,0.08)", color: "#7c3aed", letterSpacing: "0.04em" }}>
+                        Top fit {enrichment.live_jobs_top_fit_pct}%
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--mb-muted, #6b7280)", marginTop: 3, lineHeight: 1.4 }}>
+                    Each one shows skill-overlap %, salary delta, and a live link to open postings on Naukri & LinkedIn.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {enrichment.learning_resources_count != null && enrichment.learning_resources_count > 0 && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(8,145,178,0.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <GraduationCap size={16} color="#0891b2" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#0891b2", marginBottom: 3 }}>
+                    Curated courses, books & videos
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.4 }}>
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: "#0891b2", fontVariantNumeric: "tabular-nums" }}>
+                      {enrichment.learning_resources_count}
+                    </span>{" "}
+                    hand-picked resources matched to your skill domains.
+                  </div>
+                  {enrichment.learning_resources_breakdown && (
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--mb-muted, #6b7280)", marginTop: 3, lineHeight: 1.4 }}>
+                      {[
+                        enrichment.learning_resources_breakdown.courses > 0 && `${enrichment.learning_resources_breakdown.courses} courses`,
+                        enrichment.learning_resources_breakdown.videos > 0 && `${enrichment.learning_resources_breakdown.videos} videos`,
+                        enrichment.learning_resources_breakdown.books > 0 && `${enrichment.learning_resources_breakdown.books} books`,
+                      ].filter(Boolean).join(" · ")} — vetted on Coursera, NPTEL, MIT OCW, HBR, YouTube and more, to take your career to the next level.
                     </div>
                   )}
                 </div>

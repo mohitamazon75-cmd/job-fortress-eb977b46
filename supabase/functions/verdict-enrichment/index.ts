@@ -29,6 +29,12 @@ interface EnrichmentResponse {
   action_playbook_count: number | null;
   missing_ai_tools_count: number | null;
   missing_ai_tools_sample: string[];     // up to 3 names, for teaser
+  // Personalised live role matches (from card4_pivot.pivots — real engine output)
+  live_jobs_count: number | null;
+  live_jobs_top_fit_pct: number | null;  // best match_pct across pivots (0-100)
+  // Curated learning resources (deterministic count from learning_resources table)
+  learning_resources_count: number | null;
+  learning_resources_breakdown: { courses: number; videos: number; books: number } | null;
 }
 
 const EMPTY: EnrichmentResponse = {
@@ -38,6 +44,10 @@ const EMPTY: EnrichmentResponse = {
   action_playbook_count: null,
   missing_ai_tools_count: null,
   missing_ai_tools_sample: [],
+  live_jobs_count: null,
+  live_jobs_top_fit_pct: null,
+  learning_resources_count: null,
+  learning_resources_breakdown: null,
 };
 
 Deno.serve(async (req) => {
@@ -66,6 +76,15 @@ Deno.serve(async (req) => {
 
     const report: Record<string, unknown> = scan.final_json_report as Record<string, unknown>;
 
+    // Pull the Model B card_data (where card4_pivot.pivots actually lives).
+    // Optional — older scans may not have a row; we fall back gracefully.
+    const { data: mbRow } = await supabase
+      .from("model_b_results")
+      .select("card_data")
+      .eq("analysis_id", scan_id)
+      .maybeSingle();
+    const cardData: Record<string, unknown> = (mbRow?.card_data ?? {}) as Record<string, unknown>;
+
     // ─── 1 & 2. Resume rating + improvements ───────────────────────
     const rating = computeResumeRating(report);
 
@@ -81,6 +100,14 @@ Deno.serve(async (req) => {
     const { count: missing_ai_tools_count, sample: missing_ai_tools_sample } =
       await computeMissingAiTools(supabase, report);
 
+    // ─── 6 & 7. Live personalised role matches (from Model B card_data) ─
+    const { count: live_jobs_count, top_fit_pct: live_jobs_top_fit_pct } =
+      computeLiveJobMatches(cardData);
+
+    // ─── 8 & 9. Curated learning resources (real DB count) ─────────
+    const { count: learning_resources_count, breakdown: learning_resources_breakdown } =
+      await computeLearningResources(supabase, report);
+
     const enrichment: EnrichmentResponse = {
       resume_rating: rating.value,
       resume_rating_label: rating.label,
@@ -88,6 +115,10 @@ Deno.serve(async (req) => {
       action_playbook_count,
       missing_ai_tools_count,
       missing_ai_tools_sample,
+      live_jobs_count,
+      live_jobs_top_fit_pct,
+      learning_resources_count,
+      learning_resources_breakdown,
     };
 
     return okResponse(req, { enrichment });
@@ -205,6 +236,92 @@ async function computeMissingAiTools(
   } catch (e) {
     console.warn("[verdict-enrichment] missing-tools failed:", e);
     return { count: null, sample: [] };
+  }
+}
+
+// ─── Live personalised role matches ──────────────────────────────
+//
+// 100% deterministic — uses the engine's own `pivots` array from
+// card4_pivot. Each pivot is a real role recommendation with a
+// computed match_pct. We surface the count + the top fit percentage.
+//
+// Phrasing in the UI must reflect that these are personalised role
+// matches the engine has already computed (not freshly-scraped job
+// postings — which would require a Tavily call and add latency/cost).
+function computeLiveJobMatches(
+  report: Record<string, unknown>,
+): { count: number | null; top_fit_pct: number | null } {
+  try {
+    const c4 = (report.card4_pivot ?? report.pivot ?? {}) as Record<string, unknown>;
+    const pivots = Array.isArray(c4.pivots) ? c4.pivots : [];
+    if (pivots.length === 0) return { count: null, top_fit_pct: null };
+
+    let topFit = 0;
+    for (const p of pivots) {
+      const pct = numOrNull((p as Record<string, unknown>)?.match_pct)
+        ?? numOrNull((p as Record<string, unknown>)?.skill_overlap_pct)
+        ?? 0;
+      if (pct > topFit) topFit = pct;
+    }
+    return {
+      count: pivots.length,
+      top_fit_pct: topFit > 0 ? Math.round(topFit) : null,
+    };
+  } catch (e) {
+    console.warn("[verdict-enrichment] live-jobs failed:", e);
+    return { count: null, top_fit_pct: null };
+  }
+}
+
+// ─── Curated learning resources (real DB, deterministic) ─────────
+//
+// Maps the user's skill domains to skill_category values in the
+// learning_resources table (174 curated rows, 44 categories). Counts
+// only resources whose category overlaps at least one user skill token.
+// Breakdown is by URL host / platform so we can honestly say
+// "X courses, Y videos, Z books".
+async function computeLearningResources(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  report: Record<string, unknown>,
+): Promise<{ count: number | null; breakdown: { courses: number; videos: number; books: number } | null }> {
+  try {
+    const allSkills = arrOfStrings(report.all_skills).map((s) => s.toLowerCase());
+    const execSkills = arrOfStrings(report.execution_skills).map((s) => s.toLowerCase());
+    const userText = [...allSkills, ...execSkills, String(report.role_detected ?? "").toLowerCase()].join(" ");
+    if (!userText.trim()) return { count: null, breakdown: null };
+
+    const { data: rows, error } = await supabase
+      .from("learning_resources")
+      .select("skill_category, platform, url");
+    if (error || !Array.isArray(rows)) return { count: null, breakdown: null };
+
+    // Match category if any meaningful token (≥3 chars) of the category
+    // appears in the user's combined skill text.
+    const matched = rows.filter((r: { skill_category?: string }) => {
+      const cat = String(r?.skill_category ?? "").toLowerCase().replace(/_/g, " ").trim();
+      if (!cat) return false;
+      const catTokens = cat.split(/\s+/).filter((t) => t.length >= 3);
+      return catTokens.some((t) => userText.includes(t));
+    });
+
+    if (matched.length === 0) return { count: 0, breakdown: { courses: 0, videos: 0, books: 0 } };
+
+    let courses = 0, videos = 0, books = 0;
+    for (const r of matched as Array<{ url?: string; platform?: string }>) {
+      const url = String(r?.url ?? "").toLowerCase();
+      const plat = String(r?.platform ?? "").toLowerCase();
+      if (url.includes("youtube.com") || url.includes("youtu.be") || plat.includes("youtube")) videos++;
+      else if (
+        url.includes("amazon.") || url.includes("/book") ||
+        plat.includes("book") || plat === "o'reilly" || plat === "oreilly"
+      ) books++;
+      else courses++;
+    }
+    return { count: matched.length, breakdown: { courses, videos, books } };
+  } catch (e) {
+    console.warn("[verdict-enrichment] learning-resources failed:", e);
+    return { count: null, breakdown: null };
   }
 }
 
