@@ -76,6 +76,15 @@ Deno.serve(async (req) => {
 
     const report: Record<string, unknown> = scan.final_json_report as Record<string, unknown>;
 
+    // Pull the Model B card_data (where card4_pivot.pivots actually lives).
+    // Optional — older scans may not have a row; we fall back gracefully.
+    const { data: mbRow } = await supabase
+      .from("model_b_results")
+      .select("card_data")
+      .eq("analysis_id", scan_id)
+      .maybeSingle();
+    const cardData: Record<string, unknown> = (mbRow?.card_data ?? {}) as Record<string, unknown>;
+
     // ─── 1 & 2. Resume rating + improvements ───────────────────────
     const rating = computeResumeRating(report);
 
@@ -91,9 +100,9 @@ Deno.serve(async (req) => {
     const { count: missing_ai_tools_count, sample: missing_ai_tools_sample } =
       await computeMissingAiTools(supabase, report);
 
-    // ─── 6 & 7. Live personalised role matches (from existing pivot output) ─
+    // ─── 6 & 7. Live personalised role matches (from Model B card_data) ─
     const { count: live_jobs_count, top_fit_pct: live_jobs_top_fit_pct } =
-      computeLiveJobMatches(report);
+      computeLiveJobMatches(cardData);
 
     // ─── 8 & 9. Curated learning resources (real DB count) ─────────
     const { count: learning_resources_count, breakdown: learning_resources_breakdown } =
