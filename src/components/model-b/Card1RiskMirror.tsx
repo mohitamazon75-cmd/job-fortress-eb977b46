@@ -231,6 +231,12 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         )}
 
         <InfoBox variant="amber" title={`India market signal — ${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`} body={c1.india_data_insight || ""} />
+
+        {/* Methodology stamp — trust footer */}
+        <div style={{ marginTop: 14, padding: "10px 14px", background: "var(--mb-paper)", border: "1px dashed var(--mb-rule)", borderRadius: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", lineHeight: 1.6, fontWeight: 500 }}>
+          <strong style={{ color: "var(--mb-ink2)", fontWeight: 800, letterSpacing: "0.04em" }}>HOW WE CALCULATED THIS:</strong> AI Exposure derived from O*NET task-automation indices, McKinsey & Goldman Sachs occupational AI-impact studies, and your resume's task profile. Disruption year is a directional estimate based on current adoption velocity in your sector — not a guarantee.
+        </div>
+
         <CardNav onBack={onBack} onNext={onNext} nextLabel="See your live market →" />
       </CardBody>
     </CardShell>
