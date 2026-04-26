@@ -433,38 +433,6 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
                 </div>
               )}
 
-              {/* 12-month replacement probability strip */}
-              {replacementBand && (
-                <div style={{
-                  marginTop: 14,
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  background: "rgba(220,38,38,0.06)",
-                  border: "1px solid rgba(220,38,38,0.18)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: "#374151", lineHeight: 1.3 }}>
-                    Replacement probability · next 12 months
-                  </div>
-                  <div style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "4px 10px",
-                    borderRadius: 999,
-                    background: replacementBand.color,
-                    color: "white",
-                    fontSize: 11,
-                    fontWeight: 900,
-                    letterSpacing: "0.1em",
-                  }}>
-                    {replacementProb}% · {replacementBand.label}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
