@@ -55,10 +55,8 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const threatTool = c1?.ai_tools_replacing?.[0]
     || cardData?.ai_tools_replacing?.[0]?.tool_name
     || cardData?.ai_tools_replacing?.[0];
-  const topMoatSkill = c3?.skills?.find((s: any) => s.level === "best-in-class" || s.level === "strong");
-  const topMoat = topMoatSkill?.name
-    || c1?.hope_bridge?.split(".")?.[0]?.replace(" is your shield", "")?.replace(/^[^a-zA-Z]+/, "")
-    || "your judgment and pattern-recognition";
+  // (Moat skill names intentionally NOT extracted here — they're locked behind the paywall.
+  // moatCount is computed below for the teased "X unfair edges" hope line.)
 
   // Build per-task auto-coverage % for the disappearance bars (deterministic, no extra LLM cost)
   // High-risk tasks deterministically map to 55–85% based on score position; safer tasks 35–55%.
