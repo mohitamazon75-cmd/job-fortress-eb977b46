@@ -165,6 +165,21 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
             </motion.div>
           )}
 
+          {/* Heads-up note when both methods visible — sets accuracy expectations honestly */}
+          {!method && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.45 }}
+              className="mb-6 mx-auto max-w-md text-center"
+            >
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <span className="font-semibold text-foreground">Resume gives the sharpest signal.</span>{' '}
+                LinkedIn works in one click, but profiles are sometimes incomplete or rate-limited — if that happens we'll fall back to industry benchmarks for you.
+              </p>
+            </motion.div>
+          )}
+
           {/* Skip option removed — users must provide LinkedIn or resume */}
 
           {/* LinkedIn input */}
