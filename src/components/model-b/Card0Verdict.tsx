@@ -48,7 +48,8 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   // Sharper fear — pull SPECIFIC threat data from card1_risk schema
   // Schema fields: tasks_at_risk[], ai_tools_replacing (root-level on legacy scans), risk_score
   // Use ?? not || so legitimate 0 values aren't skipped
-  const threatTask = c1?.tasks_at_risk?.[0];
+  const tasksAtRisk: string[] = Array.isArray(c1?.tasks_at_risk) ? c1.tasks_at_risk.slice(0, 3) : [];
+  const threatTask = tasksAtRisk[0];
   const threatPct = c1?.ai_coverage_pct ?? c1?.exposure_pct
     ?? (typeof c1?.risk_score === "number" ? Math.min(95, Math.max(40, c1.risk_score + 10)) : null);
   const threatTool = c1?.ai_tools_replacing?.[0]
@@ -59,6 +60,14 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     || c1?.hope_bridge?.split(".")?.[0]?.replace(" is your shield", "")?.replace(/^[^a-zA-Z]+/, "")
     || "your judgment and pattern-recognition";
 
+  // Build per-task auto-coverage % for the disappearance bars (deterministic, no extra LLM cost)
+  // High-risk tasks deterministically map to 55–85% based on score position; safer tasks 35–55%.
+  const taskRows = tasksAtRisk.map((task, i) => {
+    const base = typeof threatPct === "number" ? threatPct : 60;
+    const pct = Math.max(35, Math.min(88, base - i * 8));
+    return { task: cap(task), pct };
+  });
+
   // Build the visceral fear→hope couplet
   const threatToolStr = typeof threatTool === "string" ? threatTool : null;
   const fearLine = threatTask && threatPct
@@ -67,6 +76,18 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
     : "Your top execution skills are being automated today — not in five years.";
   const hopeLine = `But ${topMoat} is what AI cannot replicate — and that is your unfair edge.`;
+
+  // 12-month replacement probability — derived deterministically from risk_score
+  // risk_score 0-100 (higher = safer). Replacement prob = inverse weighted with floor/ceil.
+  const replacementProb = typeof c1?.risk_score === "number"
+    ? Math.max(15, Math.min(92, 100 - c1.risk_score + 8))
+    : (typeof threatPct === "number" ? Math.min(92, threatPct + 12) : null);
+  const replacementBand = replacementProb == null
+    ? null
+    : replacementProb >= 70 ? { label: "VERY HIGH", color: "#b91c1c" }
+    : replacementProb >= 50 ? { label: "HIGH", color: "#dc2626" }
+    : replacementProb >= 30 ? { label: "MODERATE", color: "#b45309" }
+    : { label: "LOW", color: "#15803d" };
 
   // Risk tier — drives the entire color story
   const tier = rawScore >= 70
