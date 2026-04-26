@@ -87,14 +87,18 @@ function computeCareerCapital(report: ScanReport, tier: string): number {
     : Math.round(moatBreadth * 0.7 + moatQuality * 0.3);
 
   // Component 2: Experience (0–25, log-scaled so 30yr != 3× better than 10yr)
-  const experienceYears = report.score_breakdown?.survivability_breakdown?.experience_bonus
-    ? (report.score_breakdown.survivability_breakdown.experience_bonus / 1.5)  // reverse-engineer approx years
-    : 0;
-  // Fallback: infer from seniority tier
+  // AUDIT P0 fix: use real years_experience from the report instead of
+  // reverse-engineering from experience_bonus / 1.5, which understated seniority
+  // for veterans by 30-60% (the bonus is capped, so dividing back never recovers
+  // the true years). Falls back to seniority-tier defaults only when truly absent.
+  const rawYears = report.years_experience;
+  const parsedYears = typeof rawYears === 'string' ? parseFloat(rawYears) : (typeof rawYears === 'number' ? rawYears : NaN);
   const fallbackYears: Record<string, number> = {
     EXECUTIVE: 20, SENIOR_LEADER: 14, MANAGER: 8, PROFESSIONAL: 4, ENTRY: 1,
   };
-  const years = experienceYears > 0 ? experienceYears : (fallbackYears[tier] ?? 4);
+  const years = Number.isFinite(parsedYears) && parsedYears > 0
+    ? parsedYears
+    : (fallbackYears[tier] ?? 4);
   const experienceComponent = Math.min(25, Math.round(Math.log(years + 1) * 9));
 
   // Component 3: Adaptability (0–20)
@@ -139,12 +143,23 @@ const KG_DISRUPTION_BASELINES: Record<string, number> = {
 };
 
 /**
- * Look up the KG disruption baseline for a role by fuzzy matching
- * against known role families.
+ * Look up the KG disruption baseline for a role.
+ * AUDIT P0 fix: PREFER the server-side authoritative `kg_disruption_baseline`
+ * (sourced from job_taxonomy.disruption_baseline during the scan). Only fall
+ * back to the local regex table when the server didn't expose one — for legacy
+ * scans, ML-only paths, or when the matched_job_family is unknown.
  */
-function getKGBaseline(role?: string | null, matchedFamily?: string | null): number | null {
+function getKGBaseline(
+  role?: string | null,
+  matchedFamily?: string | null,
+  serverBaseline?: number | null,
+): number | null {
+  // Server baseline is authoritative when present (>= 5 to filter out 0/garbage).
+  if (typeof serverBaseline === 'number' && serverBaseline >= 5 && serverBaseline <= 100) {
+    return serverBaseline;
+  }
   const candidates = [matchedFamily, role].filter(Boolean).map(s => s!.toLowerCase().replace(/[^a-z]/g, '_'));
-  
+
   for (const candidate of candidates) {
     for (const [pattern, baseline] of Object.entries(KG_DISRUPTION_BASELINES)) {
       if (candidate.includes(pattern)) return baseline;
