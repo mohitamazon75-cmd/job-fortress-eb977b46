@@ -110,13 +110,14 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const moatCount = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong")?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
 
-  // Top move — keep solid navy CTA card
+  // Top move — TEASED, not revealed (curiosity gap drives clicks)
+  // Show category + match %, lock the specific role behind the CTA.
   // Schema: pivots[].match_pct (not skill_overlap_pct)
-  // Operator-precedence fix: parenthesise the .split(...)+"." so the fallback works when confrontation is missing
-  const confrontationFirst = c1?.confrontation?.split(".")?.[0];
-  const topMove = c4?.pivots?.[0]?.role
-    ? `Pivot toward ${c4.pivots[0].role} — ${c4.pivots[0].match_pct || c4.pivots[0].skill_overlap_pct || 70}% of your skills transfer.`
-    : (confrontationFirst ? `${confrontationFirst}.` : "Start with one concrete case study this week.");
+  const topPivot = c4?.pivots?.[0];
+  const topMatchPct = topPivot?.match_pct || topPivot?.skill_overlap_pct || 70;
+  const topMove = topPivot?.role
+    ? `Your skills already transfer ${topMatchPct}% to a safer role we've identified — unlock to see which one.`
+    : "We've mapped your top 3 escape routes — unlock the full report to see them.";
 
   // Conic-gradient ring percentage
   const ringPct = Math.max(0, Math.min(100, rawScore));
