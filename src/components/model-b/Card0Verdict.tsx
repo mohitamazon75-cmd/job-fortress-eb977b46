@@ -512,10 +512,11 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
             background: "rgba(255,255,255,0.12)",
             display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
-            <Zap size={16} color="white" />
+            <Lock size={16} color="white" />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(255,255,255,0.65)", marginBottom: 5 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(255,255,255,0.65)", marginBottom: 5, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ padding: "1px 6px", borderRadius: 4, background: "rgba(255,255,255,0.18)", fontSize: 8.5, letterSpacing: "0.15em" }}>LOCKED</span>
               YOUR #1 MOVE
             </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "white", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
