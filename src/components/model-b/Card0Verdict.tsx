@@ -156,6 +156,40 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
         </span>
       </motion.div>
 
+      {/* TRUST BAND — methodology authority (no fabricated user counts).
+          Psychology: removes "is this legit?" objection before fear lands. */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.08 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          flexWrap: "wrap",
+          padding: "8px 12px",
+          marginBottom: 22,
+          background: "rgba(15,31,58,0.03)",
+          border: "1px solid rgba(15,31,58,0.08)",
+          borderRadius: 8,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "var(--mb-muted, #6b7280)",
+        }}
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#15803d" }} />
+          {displaySignals} signals analyzed
+        </span>
+        <span style={{ opacity: 0.4 }}>·</span>
+        <span>AIRMM™ framework</span>
+        <span style={{ opacity: 0.4 }}>·</span>
+        <span>Live market data</span>
+      </motion.div>
+
       {/* NAME + ROLE — Newspaper masthead */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
