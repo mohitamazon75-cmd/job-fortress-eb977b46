@@ -6,7 +6,7 @@
  * one threat, one moat, one move. Built for screenshot virality.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench } from "lucide-react";
+import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench, Briefcase, GraduationCap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,6 +23,10 @@ interface VerdictEnrichment {
   action_playbook_count: number | null;
   missing_ai_tools_count: number | null;
   missing_ai_tools_sample: string[];
+  live_jobs_count: number | null;
+  live_jobs_top_fit_pct: number | null;
+  learning_resources_count: number | null;
+  learning_resources_breakdown: { courses: number; videos: number; books: number } | null;
 }
 
 export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictProps) {
