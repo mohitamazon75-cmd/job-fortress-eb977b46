@@ -281,6 +281,11 @@ export interface ScanReport {
   // Graph/peer analysis fields
   matched_job_family?: string;
   peer_percentile_estimate?: number;
+  /** AUDIT P0 fix: server-side authoritative KG baseline (job_taxonomy.disruption_baseline)
+   *  for this user's matched job family. Client engines must prefer this over local regex baselines. */
+  kg_disruption_baseline?: number;
+  /** Server-side structural floor used in scoring (max(jobBaseline, industryFloor)). */
+  structural_floor?: number;
   // Defense plan & gating fields
   // NOTE: threat_timeline from Agent 2A has a different shape than the array below.
   // Agent 2A outputs: { partial_displacement_year, significant_displacement_year, critical_displacement_year, primary_threat_tool, at_risk_task }

@@ -224,14 +224,24 @@ export function calculateDeterminismIndex(
     index = Math.max(jobBaseline, industryFloor);
     confidence = "LOW";
 
+    // AUDIT P0 fix: Replaced (skillName.length % 10) pseudo-variance with deterministic,
+    // defensible defaults anchored on the structural floor and skill *category*
+    // (execution vs strategic vs general). Variance is no longer fabricated from
+    // string length — every skill in the same category gets the same risk, which is
+    // the correct behaviour when we have zero KG evidence about the individual skill.
+    // Risk derivation:
+    //   - execution skills: structural index + small premium (more automatable than role avg)
+    //   - strategic skills: structural index minus a moat discount (capped at 35)
+    //   - other skills: anchor on the structural index itself
+    const execEstimatedRisk = Math.min(95, index + 5);
     for (const execSkill of profile.execution_skills) {
-      const estimatedRisk = Math.min(95, index + 5 + (normalize(execSkill).length % 10));
-      skillAdjustments.push({ skill_name: execSkill, automation_risk: estimatedRisk, weight: 7, contribution: estimatedRisk * 0.1 });
+      skillAdjustments.push({ skill_name: execSkill, automation_risk: execEstimatedRisk, weight: 7, contribution: execEstimatedRisk * 0.1 });
     }
+    const stratEstimatedRisk = Math.max(5, Math.min(35, jobBaseline - 30));
     for (const stratSkill of profile.strategic_skills) {
-      const estimatedRisk = Math.max(5, Math.min(35, jobBaseline - 30 + (normalize(stratSkill).length % 10)));
-      skillAdjustments.push({ skill_name: stratSkill, automation_risk: estimatedRisk, weight: 5, contribution: estimatedRisk * 0.05 });
+      skillAdjustments.push({ skill_name: stratSkill, automation_risk: stratEstimatedRisk, weight: 5, contribution: stratEstimatedRisk * 0.05 });
     }
+    const otherEstimatedRisk = Math.min(85, Math.max(15, jobBaseline - 5));
     const coveredSkills = new Set([
       ...profile.execution_skills.map(s => normalize(s)),
       ...profile.strategic_skills.map(s => normalize(s)),
@@ -240,8 +250,7 @@ export function calculateDeterminismIndex(
       const n = normalize(skill);
       if (coveredSkills.has(n) || !n) continue;
       coveredSkills.add(n);
-      const estimatedRisk = Math.min(85, Math.max(15, jobBaseline - 5 + (n.length % 15)));
-      skillAdjustments.push({ skill_name: skill, automation_risk: estimatedRisk, weight: 4, contribution: estimatedRisk * 0.04 });
+      skillAdjustments.push({ skill_name: skill, automation_risk: otherEstimatedRisk, weight: 4, contribution: otherEstimatedRisk * 0.04 });
     }
   } else {
     const totalWeight = matchedRisks.reduce((sum, m) => sum + m.weight, 0);
@@ -289,9 +298,16 @@ export function calculateDeterminismIndex(
     }
     relationshipMoatReduction = Math.min(13, relationshipMoatReduction);
 
-    if (isExec) { index = Math.round(index * 0.4); }
-    else if (isManager) { index = Math.round(index * 0.7); }
-    index = Math.round(index - scaleMoatReduction - regulatoryMoatReduction - relationshipMoatReduction);
+    // AUDIT P1 fix: Apply moat reductions BEFORE the seniority multiplier so the
+    // multiplier compounds an already-reduced base instead of producing negative
+    // pre-clamp scores that hide the marginal value of executive moats.
+    // Old order: index = round(index * 0.4) - reductions  (could go negative)
+    // New order: index = round((index - reductions) * 0.4)  (always >= 0 when index >= reductions)
+    const totalMoatReduction = scaleMoatReduction + regulatoryMoatReduction + relationshipMoatReduction;
+    const reducedBase = Math.max(0, index - totalMoatReduction);
+    if (isExec) { index = Math.round(reducedBase * 0.4); }
+    else if (isManager) { index = Math.round(reducedBase * 0.7); }
+    else { index = reducedBase; }
   }
 
   // ENTRY-tier amplification

@@ -216,6 +216,11 @@ export interface DeterministicResult {
   salary_bleed_grounded: boolean;
   /** AUDIT (#1, #8, #9): true if engine forced headline tone down due to contradictions (warning, majority dead, etc.). */
   headline_capped: boolean;
+  /** AUDIT P0 fix: server-side KG disruption baseline (job_taxonomy.disruption_baseline) used as the structural anchor.
+   *  Exposed so the client stability-score engine can prefer this authoritative value over its local regex fallback. */
+  kg_disruption_baseline: number;
+  /** Industry/sub-sector floor used during scoring (max(jobBaseline, industryFloor)). */
+  structural_floor: number;
 }
 
 /** Pre-built hashmap index for O(1) KG skill lookups. */

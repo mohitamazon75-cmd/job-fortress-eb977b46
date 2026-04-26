@@ -429,5 +429,9 @@ export function computeAll(
     moat_score, urgency_score,
     salary_bleed_grounded,
     headline_capped,
+    // AUDIT P0 fix: surface the server-side KG anchor so the client doesn't
+    // silently override server scoring with its regex baseline table.
+    kg_disruption_baseline: jobBaseline,
+    structural_floor: structuralFloor,
   };
 }
