@@ -17,11 +17,11 @@ const OPENAI_SECONDARY = "openai/gpt-5-mini";
 // gemini-2.5-pro consistently times out on quality-critical agents
 // (every prod log line shows it aborting at 24s while gemini-3-pro completes
 // in 5–8s). Keep it as a last-resort emergency only.
-const EMERGENCY = "google/gemini-2.5-pro";
+const _EMERGENCY_DEPRECATED = "google/gemini-2.5-pro";
 
 // Quality-critical agents skip the EMERGENCY tier entirely — better to fail
 // loudly than ship a low-fidelity 2.5-pro response.
-const QUALITY_CRITICAL_SKIPS_EMERGENCY = true;
+const _QUALITY_CRITICAL_SKIPS_EMERGENCY = true;
 
 // Agents where Flash produces unacceptably degraded output
 const QUALITY_CRITICAL_AGENTS = ["Agent1", "Agent2A", "Agent2B", "Agent2C", "JudoStrategy"];
@@ -219,10 +219,12 @@ export async function callAgentWithFallback(
   // earlier (cheaper); for critical agents it's the last real attempt
   // before the slow EMERGENCY tier (which is itself skipped for critical).
   if (preferredModel !== TIER3) models.push(TIER3);
-  // Quality-critical paths skip the slow gemini-2.5-pro emergency tier.
-  if (!(isQualityCritical && QUALITY_CRITICAL_SKIPS_EMERGENCY)) {
-    models.push(EMERGENCY);
-  }
+  // EMERGENCY tier (gemini-2.5-pro) removed from the chain entirely.
+  // Production logs (2026-04) show it consistently aborts at 24s while every
+  // other tier completes in 5-8s — it has never produced a successful response
+  // in the fallback path. Keeping the constant defined for telemetry/cost-table
+  // backwards-compat, but no longer attempted at runtime.
+  // (Previous gate: QUALITY_CRITICAL_SKIPS_EMERGENCY for critical agents only.)
   const uniqueModels = [...new Set(models)];
 
   if (isQualityCritical) {
