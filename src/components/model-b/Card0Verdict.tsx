@@ -55,10 +55,8 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const threatTool = c1?.ai_tools_replacing?.[0]
     || cardData?.ai_tools_replacing?.[0]?.tool_name
     || cardData?.ai_tools_replacing?.[0];
-  const topMoatSkill = c3?.skills?.find((s: any) => s.level === "best-in-class" || s.level === "strong");
-  const topMoat = topMoatSkill?.name
-    || c1?.hope_bridge?.split(".")?.[0]?.replace(" is your shield", "")?.replace(/^[^a-zA-Z]+/, "")
-    || "your judgment and pattern-recognition";
+  // (Moat skill names intentionally NOT extracted here — they're locked behind the paywall.
+  // moatCount is computed below for the teased "X unfair edges" hope line.)
 
   // Build per-task auto-coverage % for the disappearance bars (deterministic, no extra LLM cost)
   // High-risk tasks deterministically map to 55–85% based on score position; safer tasks 35–55%.
@@ -68,26 +66,19 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     return { task: cap(task), pct };
   });
 
-  // Build the visceral fear→hope couplet
+  // Build the visceral fear→hope couplet — the threat is named, the edge is TEASED
   const threatToolStr = typeof threatTool === "string" ? threatTool : null;
   const fearLine = threatTask && threatPct
     ? `${cap(threatTask)} — ${threatPct}% of it${threatToolStr ? ` is already done by ${threatToolStr}` : " can be automated"} today.`
     : threatTask
     ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
     : "Your top execution skills are being automated today — not in five years.";
-  const hopeLine = `But ${topMoat} is what AI cannot replicate — and that is your unfair edge.`;
-
-  // 12-month replacement probability — derived deterministically from risk_score
-  // risk_score 0-100 (higher = safer). Replacement prob = inverse weighted with floor/ceil.
-  const replacementProb = typeof c1?.risk_score === "number"
-    ? Math.max(15, Math.min(92, 100 - c1.risk_score + 8))
-    : (typeof threatPct === "number" ? Math.min(92, threatPct + 12) : null);
-  const replacementBand = replacementProb == null
-    ? null
-    : replacementProb >= 70 ? { label: "VERY HIGH", color: "#b91c1c" }
-    : replacementProb >= 50 ? { label: "HIGH", color: "#dc2626" }
-    : replacementProb >= 30 ? { label: "MODERATE", color: "#b45309" }
-    : { label: "LOW", color: "#15803d" };
+  // Curiosity gap: show how many edges they have, lock the names.
+  const moatSkillsList = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong") || [];
+  const moatCount = moatSkillsList.length;
+  const hopeLine = moatCount > 0
+    ? `You have ${moatCount === 1 ? "1 unfair edge" : `${moatCount} unfair edges`} AI cannot replicate — unlock to see ${moatCount === 1 ? "what it is" : "what they are"}.`
+    : `You have edges AI cannot replicate — unlock to see them.`;
 
   // Risk tier — drives the entire color story
   const tier = rawScore >= 70
@@ -103,11 +94,11 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const confidenceLabel = dataDepth >= 3 ? "High" : dataDepth >= 2 ? "Medium" : "Building";
   const confidenceColor = dataDepth >= 3 ? "#15803d" : dataDepth >= 2 ? "#b45309" : "#6b7280";
 
-  // Stats below the score — pulls real intelligence (with safe derivations)
-  // ?? preserves legitimate 0 (a profile fully safe from AI is meaningful)
+  // Stats below the score — ONE canonical fear number (AI exposure), then concrete threat counts.
+  // Replaces the green "moat skills" reassurance pill with a red "skills decaying" threat metric.
   const aiCoverage = c1?.ai_coverage_pct ?? c1?.exposure_pct
     ?? (typeof c1?.risk_score === "number" ? c1.risk_score : null);
-  const moatCount = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong")?.length || 0;
+  const decayingSkillsCount = c3?.skills?.filter((s: any) => s.level === "decaying" || s.level === "weak" || s.level === "obsolete")?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
 
   // Top move — TEASED, not revealed (curiosity gap drives clicks)
@@ -344,8 +335,11 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
         </div>
       </motion.div>
 
-      {/* QUICK STATS — three pill-cards */}
-      {(aiCoverage != null || moatCount > 0 || pivotCount > 0) && (
+      {/* QUICK STATS — three pill-cards.
+          AI exposure is the canonical fear number.
+          Decaying-skills replaces the old green moat pill (no reassurance during fear phase).
+          Safe-pivots count is locked teaser (count visible, names behind paywall via #1 move card). */}
+      {(aiCoverage != null || decayingSkillsCount > 0 || pivotCount > 0) && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -358,7 +352,7 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
           }}
         >
           <StatPill icon={<TrendingDown size={14} />} value={aiCoverage != null ? `${aiCoverage}%` : "—"} label="AI exposure" tone="threat" />
-          <StatPill icon={<Shield size={14} />} value={moatCount > 0 ? String(moatCount) : "—"} label="Moat skills" tone="moat" />
+          <StatPill icon={<TrendingDown size={14} />} value={decayingSkillsCount > 0 ? String(decayingSkillsCount) : "—"} label="Skills decaying" tone="threat" />
           <StatPill icon={<Sparkles size={14} />} value={pivotCount > 0 ? String(pivotCount) : "—"} label="Safe pivots" tone="hope" />
         </motion.div>
       )}
@@ -440,38 +434,6 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
                 </div>
               )}
 
-              {/* 12-month replacement probability strip */}
-              {replacementBand && (
-                <div style={{
-                  marginTop: 14,
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  background: "rgba(220,38,38,0.06)",
-                  border: "1px solid rgba(220,38,38,0.18)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: "#374151", lineHeight: 1.3 }}>
-                    Replacement probability · next 12 months
-                  </div>
-                  <div style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "4px 10px",
-                    borderRadius: 999,
-                    background: replacementBand.color,
-                    color: "white",
-                    fontSize: 11,
-                    fontWeight: 900,
-                    letterSpacing: "0.1em",
-                  }}>
-                    {replacementProb}% · {replacementBand.label}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -559,6 +521,9 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
 
       <p style={{ fontSize: 11, color: "var(--mb-muted, #9ca3af)", textAlign: "center", marginTop: 12, letterSpacing: "0.04em" }}>
         Unlock 7 intelligence cards · Your safe pivot · Defense plan · Live market signals
+      </p>
+      <p style={{ fontSize: 10.5, color: "#b45309", textAlign: "center", marginTop: 6, fontWeight: 700, letterSpacing: "0.05em" }}>
+        ⏱ Anonymous scans auto-delete in 24 hours (DPDP compliant)
       </p>
 
       {/* Auto-advance hint — gentle nudge after 6s, never auto-skips */}
