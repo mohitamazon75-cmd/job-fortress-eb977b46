@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { INDUSTRIES, EXPERIENCE_LEVELS, METRO_TIERS_BY_COUNTRY, COUNTRIES } from '@/lib/types';
 import { sanitizePromptInput } from '@/lib/prompt-safety';
-import { Briefcase, Clock, MapPin, Check, Globe, ArrowLeft, Sparkles, Monitor, Landmark, Megaphone, Heart, Factory, Palette, BookOpen, Building2, Truck, ShoppingCart, Utensils, Plane, Scale } from 'lucide-react';
+import { Briefcase, Clock, MapPin, Check, Globe, ArrowLeft, Sparkles, Monitor, Landmark, Megaphone, Heart, Factory, Palette, BookOpen, Building2, Truck, ShoppingCart, Utensils, Plane, Scale, Lock } from 'lucide-react';
 
 interface OnboardingFlowProps {
   step: number;
@@ -431,10 +431,16 @@ export default function OnboardingFlow({
           {showCTCStep && (
             <div>
               <div className="text-center mb-8">
+                {/* Big, bold OPTIONAL chip — founder ask: salary must read as clearly skippable */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-prophet-green/10 border-2 border-prophet-green/30 mb-4">
+                  <Lock className="w-4 h-4 text-prophet-green" />
+                  <span className="text-sm font-extrabold tracking-wide uppercase text-prophet-green">
+                    Optional · Never shared
+                  </span>
+                </div>
                 <h2 className="text-3xl font-bold text-foreground mb-2">Your {currencyConfig.label}</h2>
                 <p className="text-muted-foreground">
-                  Lets us calculate exactly how much salary AI puts at risk for <span className="font-medium text-foreground">your</span> package.
-                  Skip if you'd rather not — we'll show ranges instead.
+                  Adding this <span className="font-semibold text-foreground">personalises your salary-at-risk number</span> instead of showing a range. Your number stays on your device-linked record only — <span className="font-semibold text-foreground">never sold, never shared, never sent to employers</span>.
                 </p>
               </div>
 
@@ -508,7 +514,7 @@ export default function OnboardingFlow({
                 </motion.button>
                 <button
                   onClick={() => onSubmitCTC(null)}
-                  className="w-full py-3 rounded-xl font-medium text-muted-foreground hover:text-foreground transition-colors"
+                  className="w-full py-3 rounded-xl font-bold text-foreground border-2 border-border hover:border-foreground/40 hover:bg-muted/30 transition-colors"
                 >
                   Skip — show salary as a range
                 </button>
