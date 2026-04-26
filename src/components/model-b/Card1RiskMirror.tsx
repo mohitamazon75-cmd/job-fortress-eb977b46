@@ -1,5 +1,5 @@
 // useState and useEffect removed — scan count is now a prop from ResultsModelB
-import { CardShell, CardHead, CardBody, Badge, LivePill, EmotionStrip, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
+import { CardShell, CardHead, CardBody, Badge, EmotionStrip, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import BossPerceptionSimulator from "./BossPerceptionSimulator";
 
 interface Props {
