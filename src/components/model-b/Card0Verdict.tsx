@@ -6,15 +6,26 @@
  * one threat, one moat, one move. Built for screenshot virality.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock } from "lucide-react";
+import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Card0VerdictProps {
   cardData: any;
+  scanId?: string;
   onNext: () => void;
 }
 
-export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
+interface VerdictEnrichment {
+  resume_rating: number | null;
+  resume_rating_label: string | null;
+  resume_improvements_count: number | null;
+  action_playbook_count: number | null;
+  missing_ai_tools_count: number | null;
+  missing_ai_tools_sample: string[];
+}
+
+export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictProps) {
   const c1 = cardData?.card1_risk;
   const c3 = cardData?.card3_shield;
   const c4 = cardData?.card4_pivot;
