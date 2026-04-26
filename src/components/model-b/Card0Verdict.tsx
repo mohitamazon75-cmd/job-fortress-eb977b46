@@ -514,19 +514,24 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
         >
           <div style={{
             width: 36, height: 36, borderRadius: 10,
-            background: "rgba(255,255,255,0.12)",
+            background: "rgba(34,197,94,0.18)",
             display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
-            <Lock size={16} color="white" />
+            <Shield size={16} color="#4ade80" />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(255,255,255,0.65)", marginBottom: 5, display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ padding: "1px 6px", borderRadius: 4, background: "rgba(255,255,255,0.18)", fontSize: 8.5, letterSpacing: "0.15em" }}>LOCKED</span>
-              YOUR #1 MOVE
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(255,255,255,0.7)", marginBottom: 5 }}>
+              YOUR SAFE PIVOT
             </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "white", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
               {topMove}
             </div>
+            {topPivotRole && (
+              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>
+                <Lock size={11} color="rgba(255,255,255,0.55)" />
+                <span>{topMoveSub}</span>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
