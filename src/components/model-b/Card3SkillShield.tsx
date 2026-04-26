@@ -313,6 +313,11 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
           );
         })()}
 
+        {/* Methodology stamp — trust footer */}
+        <div style={{ marginTop: 4, padding: "10px 14px", background: "var(--mb-paper)", border: "1px dashed var(--mb-rule)", borderRadius: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", lineHeight: 1.6, fontWeight: 500 }}>
+          <strong style={{ color: "var(--mb-ink2)", fontWeight: 800, letterSpacing: "0.04em" }}>HOW WE CALCULATED THIS:</strong> Skills extracted from your resume and classified against JobBachao's Skill Threat Intelligence matrix (v2.2) — a live knowledge graph of 800+ skills mapped to automation risk, demand velocity, and salary uplift across India's 2025–26 job market. Months-bought via AI Judo is a directional estimate, not a guarantee.
+        </div>
+
         <CardNav onBack={onBack} onNext={onNext} />
       </CardBody>
     </CardShell>
