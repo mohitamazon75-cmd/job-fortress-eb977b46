@@ -68,26 +68,19 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
     return { task: cap(task), pct };
   });
 
-  // Build the visceral fear→hope couplet
+  // Build the visceral fear→hope couplet — the threat is named, the edge is TEASED
   const threatToolStr = typeof threatTool === "string" ? threatTool : null;
   const fearLine = threatTask && threatPct
     ? `${cap(threatTask)} — ${threatPct}% of it${threatToolStr ? ` is already done by ${threatToolStr}` : " can be automated"} today.`
     : threatTask
     ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
     : "Your top execution skills are being automated today — not in five years.";
-  const hopeLine = `But ${topMoat} is what AI cannot replicate — and that is your unfair edge.`;
-
-  // 12-month replacement probability — derived deterministically from risk_score
-  // risk_score 0-100 (higher = safer). Replacement prob = inverse weighted with floor/ceil.
-  const replacementProb = typeof c1?.risk_score === "number"
-    ? Math.max(15, Math.min(92, 100 - c1.risk_score + 8))
-    : (typeof threatPct === "number" ? Math.min(92, threatPct + 12) : null);
-  const replacementBand = replacementProb == null
-    ? null
-    : replacementProb >= 70 ? { label: "VERY HIGH", color: "#b91c1c" }
-    : replacementProb >= 50 ? { label: "HIGH", color: "#dc2626" }
-    : replacementProb >= 30 ? { label: "MODERATE", color: "#b45309" }
-    : { label: "LOW", color: "#15803d" };
+  // Curiosity gap: show how many edges they have, lock the names.
+  const moatSkillsList = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong") || [];
+  const moatCount = moatSkillsList.length;
+  const hopeLine = moatCount > 0
+    ? `You have ${moatCount === 1 ? "1 unfair edge" : `${moatCount} unfair edges`} AI cannot replicate — unlock to see ${moatCount === 1 ? "what it is" : "what they are"}.`
+    : `You have edges AI cannot replicate — unlock to see them.`;
 
   // Risk tier — drives the entire color story
   const tier = rawScore >= 70
@@ -103,11 +96,11 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const confidenceLabel = dataDepth >= 3 ? "High" : dataDepth >= 2 ? "Medium" : "Building";
   const confidenceColor = dataDepth >= 3 ? "#15803d" : dataDepth >= 2 ? "#b45309" : "#6b7280";
 
-  // Stats below the score — pulls real intelligence (with safe derivations)
-  // ?? preserves legitimate 0 (a profile fully safe from AI is meaningful)
+  // Stats below the score — ONE canonical fear number (AI exposure), then concrete threat counts.
+  // Replaces the green "moat skills" reassurance pill with a red "skills decaying" threat metric.
   const aiCoverage = c1?.ai_coverage_pct ?? c1?.exposure_pct
     ?? (typeof c1?.risk_score === "number" ? c1.risk_score : null);
-  const moatCount = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong")?.length || 0;
+  const decayingSkillsCount = c3?.skills?.filter((s: any) => s.level === "decaying" || s.level === "weak" || s.level === "obsolete")?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
 
   // Top move — TEASED, not revealed (curiosity gap drives clicks)
