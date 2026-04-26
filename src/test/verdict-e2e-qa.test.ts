@@ -67,6 +67,8 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
       role: "Data Entry Operator",
       industry: "BPO",
       determinism_index: 22,
+      automation_risk: 88,
+      moat_score: 8,
       execution_skills: ["Data Entry", "Typing", "MS Excel"],
       strategic_skills: [],
       moat_skills: [],
@@ -74,6 +76,12 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
       seniority_tier: "ENTRY",
       ai_tools_replacing: ["ChatGPT", "Excel Copilot", "Power Automate"],
       tone_tag: "CRITICAL",
+      market_position_model: {
+        market_percentile: 18, competitive_tier: "low", leverage_status: "weak",
+        talent_density: "abundant", demand_trend: "Declining",
+      },
+      career_shock_simulator: { salary_drop_percentage: 55 } as any,
+      years_experience: 2,
     });
     const score = computeStabilityScore(report);
     const band = getPlainEnglishVerdictBands(score);
@@ -92,6 +100,8 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
       role: "Marketing Copywriter",
       industry: "Marketing",
       determinism_index: 45,
+      automation_risk: 65,
+      moat_score: 28,
       execution_skills: ["Copywriting", "Content Writing", "SEO"],
       strategic_skills: ["Brand Strategy"],
       moat_skills: ["Brand Strategy"],
@@ -99,6 +109,12 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
       seniority_tier: "PROFESSIONAL",
       ai_tools_replacing: ["ChatGPT", "Jasper", "Copy.ai"],
       tone_tag: "WARNING",
+      market_position_model: {
+        market_percentile: 45, competitive_tier: "mid", leverage_status: "moderate",
+        talent_density: "abundant", demand_trend: "Stable",
+      },
+      career_shock_simulator: { salary_drop_percentage: 30 } as any,
+      years_experience: 6,
     });
     const score = computeStabilityScore(report);
     const band = getPlainEnglishVerdictBands(score);
@@ -113,6 +129,8 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
       role: "Senior Software Engineer",
       industry: "Big Tech",
       determinism_index: 78,
+      automation_risk: 22,
+      moat_score: 75,
       execution_skills: ["Python", "Distributed Systems", "Kubernetes"],
       strategic_skills: ["System Design", "Tech Strategy", "Architecture"],
       moat_skills: ["System Design", "Distributed Systems", "Tech Strategy", "Architecture"],
@@ -123,6 +141,9 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
         market_percentile: 88, competitive_tier: "top", leverage_status: "high",
         talent_density: "scarce", demand_trend: "Strong",
       },
+      career_shock_simulator: { salary_drop_percentage: 10 } as any,
+      years_experience: 12,
+      survivability: { peer_percentile_estimate: "Top 12th percentile" } as any,
     });
     const score = computeStabilityScore(report);
     const band = getPlainEnglishVerdictBands(score);
@@ -139,6 +160,8 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
       role: "Founder & CEO",
       industry: "SaaS",
       determinism_index: 82,
+      automation_risk: 15,
+      moat_score: 85,
       execution_skills: [],
       strategic_skills: ["Fundraising", "Vision Setting", "Board Management", "Hiring"],
       moat_skills: ["Fundraising", "Vision Setting", "Board Management", "Investor Relations"],
@@ -149,6 +172,13 @@ describe("E2E QA — Verdict layer for fixed cases", () => {
         board_exposure: true, investor_facing: true, domain_tenure_years: 8, cross_industry_pivots: 1,
       } as any,
       tone_tag: "STABLE",
+      market_position_model: {
+        market_percentile: 92, competitive_tier: "top", leverage_status: "high",
+        talent_density: "scarce", demand_trend: "Strong",
+      },
+      career_shock_simulator: { salary_drop_percentage: 8 } as any,
+      years_experience: 15,
+      survivability: { peer_percentile_estimate: "Top 5th percentile" } as any,
     });
     const score = computeStabilityScore(report);
     const band = getPlainEnglishVerdictBands(score);
