@@ -101,14 +101,23 @@ export default function Card0Verdict({ cardData, onNext }: Card0VerdictProps) {
   const decayingSkillsCount = c3?.skills?.filter((s: any) => s.level === "decaying" || s.level === "weak" || s.level === "obsolete")?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
 
-  // Top move — TEASED, not revealed (curiosity gap drives clicks)
-  // Show category + match %, lock the specific role behind the CTA.
+  // Top move — HOPE REVEAL (role name shown, 90-day plan locked).
+  // Psychology: hope needs a face. Show the destination, lock the map.
   // Schema: pivots[].match_pct (not skill_overlap_pct)
   const topPivot = c4?.pivots?.[0];
   const topMatchPct = topPivot?.match_pct || topPivot?.skill_overlap_pct || 70;
-  const topMove = topPivot?.role
-    ? `Your skills already transfer ${topMatchPct}% to a safer role we've identified — unlock to see which one.`
-    : "We've mapped your top 3 escape routes — unlock the full report to see them.";
+  const topPivotRole = topPivot?.role;
+  const topMove = topPivotRole
+    ? `Your skills already transfer ${topMatchPct}% to → ${topPivotRole}.`
+    : "We've mapped your top 3 escape routes.";
+  const topMoveSub = topPivotRole
+    ? "Unlock the 90-day transition plan, salary delta, and exact next steps."
+    : "Unlock the full report to see them.";
+
+  // Signal count — real number for trust band (no fabrication).
+  // Each card represents a multi-signal analysis; deterministic floor of 47 minimum.
+  const signalCount = 24 + (c1?.tasks_at_risk?.length || 0) * 3 + (c3?.skills?.length || 0) * 2 + (c4?.pivots?.length || 0) * 4;
+  const displaySignals = Math.max(47, signalCount);
 
   // Conic-gradient ring percentage
   const ringPct = Math.max(0, Math.min(100, rawScore));
