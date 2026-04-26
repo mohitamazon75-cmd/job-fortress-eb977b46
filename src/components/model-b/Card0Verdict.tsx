@@ -587,7 +587,9 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
       {enrichment && (
         enrichment.resume_rating != null ||
         enrichment.action_playbook_count != null ||
-        enrichment.missing_ai_tools_count != null
+        enrichment.missing_ai_tools_count != null ||
+        (enrichment.live_jobs_count != null && enrichment.live_jobs_count > 0) ||
+        (enrichment.learning_resources_count != null && enrichment.learning_resources_count > 0)
       ) && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
