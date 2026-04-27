@@ -276,8 +276,8 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
     <CardShell>
       <CardHead
         badges={<><Badge label="01 · Awareness" variant="amber" /><Badge label="Resume analysed" variant="navy" /></>}
-        title={c1.headline || "Risk Mirror"}
-        sub={c1.subline || ""}
+        title={displayHeadline}
+        sub={displaySubline}
       />
       <CardBody>
         {/* Batch F (final): Stake-amplifier strip under LLM headline */}
