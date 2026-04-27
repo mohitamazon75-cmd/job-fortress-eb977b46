@@ -769,13 +769,18 @@ function SnapshotView({
           Source: {source.name} via {source.via} · fetched {relativeTime(fetched_at)}{cached ? " (cached)" : ""} · cached for 6h
         </div>
 
-        <CardNav onBack={onPrev} onNext={onNext} nextLabel="See your action plan →" />
-      </CardBody>
-    </CardShell>
-  );
-}
-
-/* ── Public component ── */
+        {(() => {
+          // Layer D: verdict-aware CTA. Match the next action to what the
+          // card just told the user, instead of a generic "action plan" label.
+          // Suppressed/thin → next card is higher-signal; partial → defense plan;
+          // strong → turn the live signal into action.
+          const ctaLabel = suppressTags || isThin
+            ? "See your matched companies →"
+            : isPartial
+              ? "See your defense plan →"
+              : "Turn this into your action plan →";
+          return <CardNav onBack={onPrev} onNext={onNext} nextLabel={ctaLabel} />;
+        })()}
 export default function LiveMarketCard({
   role,
   city,
