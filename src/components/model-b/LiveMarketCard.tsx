@@ -419,8 +419,8 @@ function SnapshotView({
           </div>
         )}
 
-        {/* Top tags */}
-        {top_tags.length > 0 && (
+        {/* Top tags — suppressed when the table carries no signal (see suppressTags above). */}
+        {!suppressTags && top_tags.length > 0 && (
           <div style={{ marginBottom: 26 }}>
             <div
               style={{
