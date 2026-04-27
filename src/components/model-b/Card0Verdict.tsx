@@ -824,9 +824,33 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
             )}
           </div>
 
+          {/* Cost-of-waiting anchor — role-family-specific loss-aversion frame.
+              Renders only when family overlay is non-generic so we don't fabricate a number. */}
+          {roleFamily !== "GENERIC" && fam.inactionCost && (
+            <div style={{
+              marginTop: 14,
+              padding: "10px 14px",
+              background: "rgba(220,38,38,0.05)",
+              border: "1px solid rgba(220,38,38,0.18)",
+              borderRadius: 10,
+              display: "flex", alignItems: "flex-start", gap: 8,
+            }}>
+              <AlertTriangle size={14} color="#dc2626" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#dc2626", marginBottom: 2 }}>
+                  Cost of waiting
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--mb-ink2, #374151)", lineHeight: 1.45 }}>
+                  {fam.inactionCost}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div style={{ marginTop: 14, fontSize: 10, fontWeight: 600, color: "var(--mb-muted, #9ca3af)", textAlign: "center", letterSpacing: "0.04em" }}>
             Numbers derived from your scan — no estimates, no fillers.
           </div>
+
         </motion.div>
       )}
 
