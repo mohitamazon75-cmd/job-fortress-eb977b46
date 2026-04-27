@@ -133,20 +133,29 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
 
   const cost = c1.cost_of_inaction;
 
-  // Build the rupee-anchored cost sentence. We prefer the LLM's percentage range
-  // (annual_gap_pct) and convert via the user's actual monthly salary. If salary
-  // isn't available, we fall back to the LLM's raw monthly_loss_lpa string so the
-  // section never shows blank.
+  // Build the rupee-anchored cost sentence.
+  // Source-of-truth priority for monthly salary, in order:
+  //   1. monthlySalaryInr prop (from scans.estimated_monthly_salary_inr) — best.
+  //   2. Median of LLM's card2_market.salary_bands matched to user.current_title.
+  //      This is the same band the user sees on Card 2 → consistent narrative.
+  //   3. Raw monthly_loss_lpa string from LLM (legacy free-form).
+  // We never fabricate; if all three fail the line is suppressed cleanly.
+  const derivedMonthly = deriveMonthlyFromBands(
+    cardData?.card2_market?.salary_bands,
+    u.current_title || u.role,
+  );
+  const monthlyForCalc = (monthlySalaryInr && monthlySalaryInr > 0) ? monthlySalaryInr : derivedMonthly;
+
   let rupeeCostLine: string | null = null;
   if (cost) {
     const range = parsePctRange(cost.annual_gap_pct);
-    if (range && monthlySalaryInr && monthlySalaryInr > 0) {
-      const annualSalary = monthlySalaryInr * 12;
+    if (range && monthlyForCalc && monthlyForCalc > 0) {
+      const annualSalary = monthlyForCalc * 12;
       const lo = formatAnnualLakhs((annualSalary * range[0]) / 12);
       const hi = formatAnnualLakhs((annualSalary * range[1]) / 12);
       rupeeCostLine = lo === hi
-        ? `At your salary, that's roughly ${lo}/year you don't get back.`
-        : `At your salary, that's roughly ${lo}–${hi}/year you don't get back.`;
+        ? `At your level, that's roughly ${lo}/year you don't get back.`
+        : `At your level, that's roughly ${lo}–${hi}/year you don't get back.`;
     } else if (cost.monthly_loss_lpa) {
       rupeeCostLine = `At your level, that's roughly ${cost.monthly_loss_lpa} of earning power slipping past you each year.`;
     }
