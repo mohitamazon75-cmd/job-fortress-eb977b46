@@ -601,23 +601,30 @@ function SnapshotView({
           let velocityLabel = "—";
           let velocityColor = "var(--mb-ink2)";
           let velocityNote = `Posting dates weren't parseable for enough listings to judge hiring velocity. ${totalPool} ${totalPool === 1 ? "posting was" : "postings were"} pulled.`;
+          // Layer C: one-sentence "so-what" verdict that sits above the
+          // big label. Empty string = render nothing (no-signal case).
+          let velocityVerdict = "";
 
           if (hasSignal) {
             if (repostNoiseSuspected) {
               velocityLabel = "ACTIVE";
               velocityColor = "#8B6F1F";
+              velocityVerdict = `Looks busy on the surface, but most "today" postings on a pool this small are recruiter reposts of older requisitions. Treat as steady, not urgent.`;
               velocityNote = `${sameDay} of ${categorized} dated postings show "today" — on a small pool this usually reflects recruiter reposts of older requisitions, not new openings. Treat as steady, not urgent.`;
             } else if (freshPct >= 70) {
               velocityLabel = "HOT";
               velocityColor = "#B8341C";
+              velocityVerdict = `${role} is in active hiring right now — move this week, not next month.`;
               velocityNote = `${freshPct}% of dated postings are <7 days old — recruiters are actively listing this role. Note Naukri can't distinguish new requisitions from reposts.`;
             } else if (freshPct >= 40) {
               velocityLabel = "ACTIVE";
               velocityColor = "#8B6F1F";
+              velocityVerdict = `Steady hiring pulse for ${role} — no urgency, but the door is open. Apply where you fit; don't wait for a flood.`;
               velocityNote = `${freshPct}% of dated postings are <7 days old — a steady, consistent listing pulse.`;
             } else {
               velocityLabel = "COOL";
               velocityColor = "var(--mb-ink2)";
+              velocityVerdict = `Hiring is quiet for ${role} this week — focus on direct applications and warm intros, not job-board scrolling.`;
               velocityNote = `Only ${freshPct}% of dated postings are <7 days old — most listings are stale; hiring is not urgent right now.`;
             }
           }
