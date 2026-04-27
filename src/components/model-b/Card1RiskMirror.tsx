@@ -163,41 +163,44 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
 
   const roleForSim = u.current_title || u.role || c1.role || "your role";
 
-  // ─── Batch F: personalized verdict hook ────────────────────────────────
-  // Lead with a band-aware, role-named one-liner BEFORE the gauge so the
-  // user reads a verdict, not a clinical metric label. Uses only fields
-  // the LLM already returns (no schema change). "Indicative not absolute"
-  // tone preserved per mem://style/tone-and-liability-calibration —
-  // we never claim "you WILL be replaced", only what's already shifting.
+  // ─── Batch F (revised): personalized verdict hook ─────────────────────
+  // Lead with a band-aware, role-named one-liner BEFORE the gauge.
+  // Audit fixes vs initial draft:
+  //   • No naive `${title}s` pluralization — breaks on "VP of Sales",
+  //     "Head of X", and the "your role" fallback. Use "As a {title},…".
+  //   • Verdict no longer names the #1 task — that lives in the pills
+  //     section directly below; saying it twice reads redundant.
+  //   • c1.headline / c1.subline are suppressed when this hook renders
+  //     (verdict replaces them — single hero, no triple-stacked verdicts).
+  //   • Amber line de-duped ("machine-native" → "automated" on 2nd ref).
+  //   • Tone stays "indicative not absolute" per
+  //     mem://style/tone-and-liability-calibration.
   const score = c1.risk_score || 0;
   const titleRaw = (u.current_title || u.role || c1.role || "").trim();
-  const titleClean = titleRaw && titleRaw.toLowerCase() !== "your role" ? titleRaw : "your role";
-  const topTask = Array.isArray(c1.tasks_at_risk) && c1.tasks_at_risk[0]
-    ? String(c1.tasks_at_risk[0]).replace(/\.$/, "").toLowerCase()
-    : null;
+  // Strip trailing punctuation; if missing or generic, fall back to a phrase
+  // that reads naturally in "As a {x}," construction.
+  const titleClean = titleRaw && titleRaw.toLowerCase() !== "your role"
+    ? titleRaw.replace(/[.,;:]+$/, "")
+    : "professional in your role";
 
-  let verdictHook: { kicker: string; line: string; tone: "red" | "amber" | "green" } | null = null;
+  let verdictHook: { kicker: string; line: string; tone: "red" | "amber" | "green" };
   if (score >= 70) {
     verdictHook = {
       kicker: "The verdict",
       tone: "red",
-      line: topTask
-        ? `${titleClean}s are losing ${topTask} to AI right now. ${score}% of your daily execution is already machine-native — and the window to reposition is closing.`
-        : `${score}% of what a ${titleClean} does daily is already machine-native. The window to reposition is closing.`,
+      line: `As a ${titleClean}, ${score}% of what you do daily is already machine-native. The window to reposition is closing — and the pills below show exactly where it's bleeding first.`,
     };
   } else if (score >= 40) {
     verdictHook = {
       kicker: "The verdict",
       tone: "amber",
-      line: topTask
-        ? `AI isn't taking your ${titleClean} seat — yet. But ${score}% of what you do daily is now machine-native, starting with ${topTask}. The strategy layer is still yours; the execution layer is borrowed time.`
-        : `AI isn't taking your ${titleClean} seat — yet. But ${score}% of what you do daily is now machine-native. The strategy layer is still yours; the execution layer is borrowed time.`,
+      line: `AI isn't taking your seat as a ${titleClean} — yet. But ${score}% of your daily work is already automated or assisted by tools your peers are using. The strategy layer is still yours; the execution layer is borrowed time.`,
     };
   } else {
     verdictHook = {
       kicker: "The verdict",
       tone: "green",
-      line: `Your ${titleClean} role sits in AI's blind spot — only ${score}% of your daily work is automatable today. The moat holds. Your job is to keep it that way.`,
+      line: `Your work as a ${titleClean} sits in AI's blind spot — only ${score}% of your daily output is automatable today. The moat holds. Your job is to keep it that way.`,
     };
   }
 
