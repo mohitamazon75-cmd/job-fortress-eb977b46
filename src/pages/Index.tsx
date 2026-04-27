@@ -365,6 +365,9 @@ const Index = () => {
     else if (phase === 'error') track('error_view');
   }, [phase, track]);
 
+  // Landing-page scroll depth tracking — fires landing_scroll_depth at 25/50/75/100%
+  // buckets while the user is on the hero phase. Captures bouncers via pagehide.
+  useLandingScrollDepth({ track, active: phase === 'hero' });
 
 
   // Global session expiry listener — shows re-auth modal instead of losing state
