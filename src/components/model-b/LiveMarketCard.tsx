@@ -545,6 +545,9 @@ function SnapshotView({
           </div>
         )}
 
+        {/* Layer E: Sector Pulse — dated, cited hiring/layoff/funding news. */}
+        <SectorPulse role={role} city={displayCity} />
+
         {/* Hiring Velocity — replaces salary block (Naukri salary data is unfiltered
             by seniority and misleads senior roles, so we surface posting freshness
             instead, which IS reliable from the same dataset). */}
