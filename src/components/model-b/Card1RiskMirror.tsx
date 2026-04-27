@@ -19,7 +19,7 @@ interface Props {
  * Used to convert abstract percentage gaps into concrete loss-aversion anchors
  * for the Indian middle-class reader.
  */
-function formatAnnualLakhs(monthlyInr: number): string {
+export function formatAnnualLakhs(monthlyInr: number): string {
   const annual = monthlyInr * 12;
   if (annual >= 10000000) return `₹${(annual / 10000000).toFixed(1)}Cr`;
   if (annual >= 100000) {
@@ -32,8 +32,9 @@ function formatAnnualLakhs(monthlyInr: number): string {
 /**
  * Parse a string like "15-20%" or "15%" into [low, high] decimals (0.15, 0.20).
  * Returns null if the string can't be confidently parsed.
+ * Exported for unit testing — see src/test/card1-risk-helpers.test.ts.
  */
-function parsePctRange(s: string | undefined | null): [number, number] | null {
+export function parsePctRange(s: string | undefined | null): [number, number] | null {
   if (!s) return null;
   const matches = s.match(/(\d+(?:\.\d+)?)\s*[-–to]+\s*(\d+(?:\.\d+)?)\s*%/i);
   if (matches) return [parseFloat(matches[1]) / 100, parseFloat(matches[2]) / 100];
@@ -153,7 +154,7 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         {c1.tough_love && (
           <div style={{ marginTop: -6, marginBottom: 18, paddingLeft: 4 }}>
             <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700, color: "var(--mb-ink2)", lineHeight: 1.6, margin: 0, fontStyle: "italic", whiteSpace: "pre-line" }}>
-              💡 {c1.tough_love}
+              {c1.tough_love}
             </p>
           </div>
         )}
@@ -161,7 +162,7 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         {/* ─────────────── 4. Cost of standing still — single rupee-anchored line ─────────────── */}
         {(rupeeCostLine || cost?.decay_narrative) && (
           <>
-            <SectionLabel label="💸 The cost of standing still" />
+            <SectionLabel label="The cost of standing still" />
             <div style={{ borderLeft: "4px solid var(--mb-red)", background: "linear-gradient(90deg, var(--mb-red-tint), transparent)", padding: "14px 18px", borderRadius: "0 12px 12px 0", marginBottom: 8 }}>
               {rupeeCostLine && (
                 <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0 }}>
@@ -247,12 +248,9 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         {/* India market signal — promoted, no longer buried under stat-grid noise */}
         <InfoBox variant="amber" title={`India market signal — ${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`} body={c1.india_data_insight || ""} />
 
-        {/* Hope bridge — closes the fear→relief arc on the same card */}
-        {c1.hope_bridge && (
-          <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px", marginTop: 14, marginBottom: 14 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}>✅ {c1.hope_bridge}</p>
-          </div>
-        )}
+        {/* hope_bridge intentionally NOT rendered here — Card 1 ends on pressure.
+            Card 2 (Market Radar) opens with its own hope_bridge to land the relief beat
+            after the user has fully processed the risk. Avoids duplicate green panels. */}
 
         {/* Social proof */}
         {scanCount && (
