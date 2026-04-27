@@ -144,19 +144,21 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `This is the danger zone where careers quietly die.`,
     warmIntro: `This is the trickiest score range. You feel secure, your manager hasn't flagged anything — but this is exactly where silent displacement happens.`,
 
-    body: `${riskSource} Right now, a 25-year-old with ChatGPT, Claude, and a weekend course can deliver what took you years to master — in half the time. That's not an insult. That's the new math your boss is doing quietly.`,
+    body: `${riskSource} Right now, a 25-year-old with ChatGPT, Claude, and a weekend course can deliver what took you years to master — in half the time. That's not an insult. That's the new math your boss is doing quietly.` + familyBodySuffix,
 
-    hope: `${moatSkills > 0 ? `You have ${moatSkills} skills that are genuinely hard to replicate — these are your lifeline. ` : ''}The gap between "valued" and "irreplaceable" is usually just 1-2 skills. You're not far from the safe zone — but you need to move deliberately.`,
+    hope: `${moatSkills > 0 ? `You have ${moatSkills} skills that are genuinely hard to replicate — these are your lifeline. ` : ''}The gap between "valued" and "irreplaceable" is usually just 1-2 skills. You're not far from the safe zone — but you need to move deliberately.` + familyHopeSuffix,
 
     plan: `Your defense plan identifies the exact 1-2 moves that shift you from 'replaceable' to 'essential'. Most people in your score range only need 90 days of focused action to cross the line.`,
 
-    replaceability: `You're valued — but "valued" and "irreplaceable" are very different words when budgets get cut. A younger professional with AI tools is your real competition now.`,
+    replaceability: `You're valued — but "valued" and "irreplaceable" are very different words when budgets get cut. A younger professional with AI tools is your real competition now.` + familyReplaceabilitySuffix,
 
     bullets: [
       `Market demand is ${demand} — but companies are hiring fewer people for more output. AI-augmented teams are the new baseline.`,
       moatSkills > 0 ? `${moatSkills} of your strengths are hard to replicate — but without active investment, that drops to zero within 2 years` : `You don't have a clear "only-I-can-do-this" skill yet — that's the single biggest risk we flag`,
       `The parts of your work that are routine? AI is already doing them better and cheaper. Focus on the messy, human-judgment stuff.`,
     ],
+    proofLine,
+    inactionCost: fam.inactionCost,
   };
 
   // ── TIER 3: HEADS UP (30–49) ─────────────────────────────
