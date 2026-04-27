@@ -134,11 +134,12 @@ export function useAnalytics() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Add to queue
+      // Add to queue — session context first so per-event payload can override
       queueRef.current.push({
         event_type: eventType,
         user_id: user?.id || null,
         payload: {
+          ...(sessionCtxRef.current ?? {}),
           ...payload,
           timestamp: new Date().toISOString(),
           url: window.location.pathname,
