@@ -72,6 +72,43 @@ function titleCaseTag(tag: string): string {
   return tag.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Mirror of edge-function extractCoreRole — strips verbose specialisation
+// suffixes ("Digital Marketing Manager | Growth & Demand Generation Leader"
+// → "Digital Marketing Manager") so the UI doesn't *display* the noise we
+// already strip from the search query.
+function extractCoreRoleClient(role: string): string {
+  const r = String(role || "").trim();
+  if (!r) return "";
+  const parts = r.split(/\s*(?:\||\/|,|—|–| - | and | & )\s*/i).map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return r;
+  const first = parts[0];
+  if (first.split(/\s+/).filter(Boolean).length >= 2) return first;
+  return parts.reduce((a, b) => (b.split(/\s+/).length > a.split(/\s+/).length ? b : a), first);
+}
+
+// Build a token set from the (cleaned) role so we can filter tautological
+// tags — e.g. don't show "Digital Marketing" as a top required skill for a
+// "Digital Marketing Manager".
+const TAG_FILTER_STOPWORDS = new Set([
+  "the", "and", "for", "with", "of", "in", "to", "a", "an", "or",
+  "manager", "lead", "head", "senior", "sr", "principal", "director",
+  "executive", "officer", "specialist", "associate", "analyst",
+]);
+function roleTokenSet(coreRole: string): Set<string> {
+  return new Set(
+    coreRole
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((t) => t.length >= 3 && !TAG_FILTER_STOPWORDS.has(t)),
+  );
+}
+function tagIsTautological(tag: string, roleTokens: Set<string>): boolean {
+  const tagTokens = tag.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length >= 3);
+  if (tagTokens.length === 0) return false;
+  // Tag is tautological if every meaningful token is already in the role name.
+  return tagTokens.every((t) => roleTokens.has(t));
+}
+
 function formatLpa(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "—";
   return n.toFixed(1);
@@ -338,7 +375,21 @@ function SnapshotView({
   onPrev?: () => void;
   onNext?: () => void;
 }) {
-  const { posting_count, top_tags, user_skill_overlap, salary, recency, source, fetched_at, cached } = snapshot;
+  const { posting_count, top_tags: rawTopTags, user_skill_overlap, salary, recency, source, fetched_at, cached } = snapshot;
+
+  // #1 Clean title for display — show the core role, not the verbose headline.
+  const displayRole = useMemo(() => extractCoreRoleClient(role) || role, [role]);
+
+  // #3 Filter tautological tags. If "Digital Marketing" is the role, don't
+  // surface "Digital Marketing" as a top required skill — it carries zero
+  // signal. Keep the filtered list, but if filtering wipes out everything,
+  // fall back to the raw list (better to show something than empty).
+  const top_tags = useMemo(() => {
+    const roleTokens = roleTokenSet(displayRole);
+    const filtered = rawTopTags.filter((t) => !tagIsTautological(t.tag, roleTokens));
+    return filtered.length >= 2 ? filtered : rawTopTags;
+  }, [rawTopTags, displayRole]);
+
   const matchedSet = useMemo(
     () => new Set(user_skill_overlap.matched_skills.map((s) => s.toLowerCase())),
     [user_skill_overlap.matched_skills]
@@ -373,9 +424,9 @@ function SnapshotView({
   // Returns null for families where Naukri isn't the right corpus
   // (founder/exec/creator/generic) — the line is then simply omitted.
   const family: Family = useMemo(() => {
-    const f = detectFamily(role.toLowerCase());
+    const f = detectFamily(displayRole.toLowerCase());
     return applySectorTieBreaker(f, "");
-  }, [role]);
+  }, [displayRole]);
   const velocityBenchmark = useMemo(
     () => getVelocityBenchmark(family, displayCity),
     [family, displayCity],
@@ -396,10 +447,10 @@ function SnapshotView({
     : isPartial
       ? `Your role's market is mixed — here's the signal that holds up.`
       : isThin
-        ? `Live demand for ${role} is sparse this week.`
-        : `Live demand for ${role} is real — here's what employers are asking for.`;
+        ? `Live demand for ${displayRole} is sparse this week.`
+        : `Live demand for ${displayRole} is real — here's what employers are asking for.`;
   const verdictSub = posting_count > 0
-    ? `${posting_count} posting${posting_count === 1 ? "" : "s"} analysed for ${role} in ${displayCity}, in the last 7 days.`
+    ? `${posting_count} posting${posting_count === 1 ? "" : "s"} analysed for ${displayRole} in ${displayCity}, in the last 7 days.`
     : `We couldn't pull a live posting set for this role+city right now.`;
 
   return (
@@ -428,7 +479,7 @@ function SnapshotView({
             }}
           >
             <strong style={{ color: "var(--mb-amber, #c47d1e)" }}>Mixed market.</strong>{" "}
-            Naukri's results for "{role}" include adjacent roles. Some tags below may not reflect your specific role.
+            Naukri's results for "{displayRole}" include adjacent roles. Some tags below may not reflect your specific role.
           </div>
         )}
 
@@ -449,7 +500,7 @@ function SnapshotView({
               fontWeight: 500,
             }}
           >
-            <strong>Why we're hiding the tag list:</strong> Naukri returned {posting_count} posting{posting_count === 1 ? "" : "s"} for {role} in 7 days, and no tag appears in more than {maxTagCount} of them — not enough to call a pattern. On a sample this small, the table would invent precision that isn't there. The numbers below are the slice of this dataset that holds up: hiring velocity and posting freshness.
+            <strong>Why we're hiding the tag list:</strong> Naukri returned {posting_count} posting{posting_count === 1 ? "" : "s"} for {displayRole} in 7 days, and no tag appears in more than {maxTagCount} of them — not enough to call a pattern. On a sample this small, the table would invent precision that isn't there. The numbers below are the slice of this dataset that holds up: hiring velocity and posting freshness.
           </div>
         )}
 
@@ -470,7 +521,7 @@ function SnapshotView({
               paddingLeft: 4,
             }}
           >
-            On a sample this thin, the higher-signal channel for {role} is the
+            On a sample this thin, the higher-signal channel for {displayRole} is the
             <strong style={{ color: "var(--mb-ink2)", fontStyle: "normal" }}> Best-Fit Companies </strong>
             card next — direct targets beat keyword scrapes for senior or specialised roles.
           </div>
@@ -578,14 +629,14 @@ function SnapshotView({
                   fontStyle: "italic",
                 }}
               >
-                Skill-match not shown — this market's top tags don't cleanly reflect {role} skills. We hide the column rather than show misleading matches.
+                Skill-match not shown — this market's top tags don't cleanly reflect {displayRole} skills. We hide the column rather than show misleading matches.
               </div>
             )}
           </div>
         )}
 
         {/* Layer E: Sector Pulse — dated, cited hiring/layoff/funding news. */}
-        <SectorPulse role={role} city={displayCity} />
+        <SectorPulse role={displayRole} city={displayCity} />
 
         {/* Hiring Velocity — replaces salary block (Naukri salary data is unfiltered
             by seniority and misleads senior roles, so we surface posting freshness
@@ -608,8 +659,14 @@ function SnapshotView({
           const hasSignal = categorized >= 5;
           const freshPct = categorized > 0 ? Math.round((fresh / categorized) * 100) : 0;
           const sameDayShare = categorized > 0 ? sameDay / categorized : 0;
+          // #2 Loosen guard: flag obvious recruiter spam regardless of pool size.
+          //   - Original: only when totalPool ≤10 and sameDay ≥3 and share ≥50%.
+          //   - New: ALSO flag when sameDay/categorized ≥85% (e.g. 28 today / 0
+          //     this week — clear repost wave). Catches the loud cases the
+          //     small-pool branch missed.
           const repostNoiseSuspected =
-            totalPool <= 10 && sameDay >= 3 && sameDayShare >= 0.5;
+            (totalPool <= 10 && sameDay >= 3 && sameDayShare >= 0.5) ||
+            (categorized >= 5 && sameDayShare >= 0.85 && within7d === 0);
 
           let velocityLabel = "—";
           let velocityColor = "var(--mb-ink2)";
@@ -627,17 +684,17 @@ function SnapshotView({
             } else if (freshPct >= 70) {
               velocityLabel = "HOT";
               velocityColor = "#B8341C";
-              velocityVerdict = `${role} is in active hiring right now — move this week, not next month.`;
+              velocityVerdict = `${displayRole} is in active hiring right now — move this week, not next month.`;
               velocityNote = `${freshPct}% of dated postings are <7 days old — recruiters are actively listing this role. Note Naukri can't distinguish new requisitions from reposts.`;
             } else if (freshPct >= 40) {
               velocityLabel = "ACTIVE";
               velocityColor = "#8B6F1F";
-              velocityVerdict = `Steady hiring pulse for ${role} — no urgency, but the door is open. Apply where you fit; don't wait for a flood.`;
+              velocityVerdict = `Steady hiring pulse for ${displayRole} — no urgency, but the door is open. Apply where you fit; don't wait for a flood.`;
               velocityNote = `${freshPct}% of dated postings are <7 days old — a steady, consistent listing pulse.`;
             } else {
               velocityLabel = "COOL";
               velocityColor = "var(--mb-ink2)";
-              velocityVerdict = `Hiring is quiet for ${role} this week — focus on direct applications and warm intros, not job-board scrolling.`;
+              velocityVerdict = `Hiring is quiet for ${displayRole} this week — focus on direct applications and warm intros, not job-board scrolling.`;
               velocityNote = `Only ${freshPct}% of dated postings are <7 days old — most listings are stale; hiring is not urgent right now.`;
             }
           }
