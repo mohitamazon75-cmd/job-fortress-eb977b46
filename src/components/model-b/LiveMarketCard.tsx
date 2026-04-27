@@ -72,6 +72,43 @@ function titleCaseTag(tag: string): string {
   return tag.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Mirror of edge-function extractCoreRole — strips verbose specialisation
+// suffixes ("Digital Marketing Manager | Growth & Demand Generation Leader"
+// → "Digital Marketing Manager") so the UI doesn't *display* the noise we
+// already strip from the search query.
+function extractCoreRoleClient(role: string): string {
+  const r = String(role || "").trim();
+  if (!r) return "";
+  const parts = r.split(/\s*(?:\||\/|,|—|–| - | and | & )\s*/i).map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return r;
+  const first = parts[0];
+  if (first.split(/\s+/).filter(Boolean).length >= 2) return first;
+  return parts.reduce((a, b) => (b.split(/\s+/).length > a.split(/\s+/).length ? b : a), first);
+}
+
+// Build a token set from the (cleaned) role so we can filter tautological
+// tags — e.g. don't show "Digital Marketing" as a top required skill for a
+// "Digital Marketing Manager".
+const TAG_FILTER_STOPWORDS = new Set([
+  "the", "and", "for", "with", "of", "in", "to", "a", "an", "or",
+  "manager", "lead", "head", "senior", "sr", "principal", "director",
+  "executive", "officer", "specialist", "associate", "analyst",
+]);
+function roleTokenSet(coreRole: string): Set<string> {
+  return new Set(
+    coreRole
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((t) => t.length >= 3 && !TAG_FILTER_STOPWORDS.has(t)),
+  );
+}
+function tagIsTautological(tag: string, roleTokens: Set<string>): boolean {
+  const tagTokens = tag.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length >= 3);
+  if (tagTokens.length === 0) return false;
+  // Tag is tautological if every meaningful token is already in the role name.
+  return tagTokens.every((t) => roleTokens.has(t));
+}
+
 function formatLpa(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "—";
   return n.toFixed(1);
