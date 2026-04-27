@@ -430,7 +430,11 @@ const ROLE_TITLE_STOPWORDS = new Set([
 ]);
 
 export function roleTokens(role: string): string[] {
-  return normalizeText(role)
+  // Score against the core role (pre-separator) so verbose titles like
+  // "Digital Marketing Manager | Growth & Demand Generation Leader" don't
+  // require every Naukri posting to mention "growth" AND "demand" AND "leader".
+  const core = extractCoreRole(role) || role;
+  return normalizeText(core)
     .split(" ")
     .filter((t) => (t.length >= 4 || SHORT_ROLE_TOKENS.has(t)) && !ROLE_TITLE_STOPWORDS.has(t));
 }
