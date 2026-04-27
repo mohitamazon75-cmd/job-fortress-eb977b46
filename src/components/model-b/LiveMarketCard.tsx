@@ -351,6 +351,7 @@ function SnapshotView({
   const tagPctSpread = top_tags.length > 0
     ? Math.max(...top_tags.map(t => t.pct)) - Math.min(...top_tags.map(t => t.pct))
     : 0;
+  const maxTagCount = top_tags.length > 0 ? Math.max(...top_tags.map(t => t.count)) : 0;
   const tagsAreFlat = top_tags.length >= 4 && tagPctSpread <= 5;
   const suppressTags = (isPartial || isThin) && posting_count <= 8 && tagsAreFlat;
 
