@@ -3,6 +3,7 @@ import { guardRequest } from "../_shared/abuse-guard.ts";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
 import { fetchHNSignals } from "../_shared/community-signals.ts";
+import { firecrawlSearch } from "../_shared/firecrawl.ts";
 
 // DB-backed cache key and TTL
 const CACHE_KEY = "live-news-headlines";
@@ -38,6 +39,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Env presence check (firecrawlSearch reads the key from env internally,
+    // but we still want to short-circuit to fallback if either is missing
+    // before doing any cache writes / Gemini calls).
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
@@ -57,29 +61,26 @@ Deno.serve(async (req) => {
       "artificial intelligence impact Indian IT industry",
     ];
 
-    const searchPromises = searchQueries.map((query) =>
-      fetch("https://api.firecrawl.dev/v1/search", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+    // 2026-04-27: migrated from raw fetch to firecrawlSearch helper —
+    // adds per-host circuit breaker (fast-fails during Firecrawl outages)
+    // and structured JSON logs. Behavior preserved: 4 parallel searches,
+    // null on individual failure, same string format for downstream synthesis.
+    const searchResults = await Promise.all(
+      searchQueries.map((query) =>
+        firecrawlSearch({
           query,
           limit: 5,
           lang: "en",
           country: "in",
           tbs: "qdr:w",
         }),
-      }).then((r) => r.ok ? r.json() : null).catch(() => null)
+      ),
     );
 
-    const searchResults = await Promise.all(searchPromises);
-
     const rawArticles: string[] = [];
-    for (const result of searchResults) {
-      if (!result?.data) continue;
-      for (const item of result.data) {
+    for (const results of searchResults) {
+      if (!results) continue; // helper returns null on failure
+      for (const item of results) {
         if (item.title || item.description) {
           rawArticles.push(`${item.title || ""} — ${item.description || ""} (${item.url || ""})`);
         }
