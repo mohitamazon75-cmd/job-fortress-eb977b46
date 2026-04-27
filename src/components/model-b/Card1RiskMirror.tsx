@@ -252,16 +252,26 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
           </div>
         </div>
         <div style={{ display: "flex", gap: 20, alignItems: "center", padding: 20, background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 16, marginBottom: 8, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
-          <svg width={100} height={100} viewBox="0 0 100 100">
+          {/* Gauge ring - score is small/secondary now (the big number lives in the stake strip above) */}
+          <svg width={88} height={88} viewBox="0 0 100 100">
             <circle cx={50} cy={50} r={r} fill="none" stroke="var(--mb-rule)" strokeWidth={9} />
             <circle cx={50} cy={50} r={r} fill="none" stroke={gaugeColor} strokeWidth={9} strokeLinecap="round" transform="rotate(-90 50 50)" strokeDasharray={circumference} strokeDashoffset={offset} style={{ transition: "stroke-dashoffset 0.8s ease" }} />
-            <text x={50} y={44} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: "'DM Mono', monospace", fontSize: 26, fontWeight: 800, fill: gaugeColor }}>{c1.risk_score}<tspan style={{ fontSize: 13, fontWeight: 700 }}>%</tspan></text>
-            <text x={50} y={66} textAnchor="middle" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 800, fill: "var(--mb-ink3)", textTransform: "uppercase", letterSpacing: "0.14em" }}>AI EXPOSURE</text>
+            <text x={50} y={48} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: "'DM Mono', monospace", fontSize: 18, fontWeight: 800, fill: gaugeColor }}>{c1.risk_score}<tspan style={{ fontSize: 10, fontWeight: 700 }}>%</tspan></text>
+            <text x={50} y={68} textAnchor="middle" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 8, fontWeight: 800, fill: "var(--mb-ink3)", textTransform: "uppercase", letterSpacing: "0.14em" }}>YOU</text>
           </svg>
-          <div>
-            {c1.india_average != null && (
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, fontWeight: 500 }}>
-                India average for this role: <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{c1.india_average}%</strong>. You're <strong style={{ fontWeight: 800, color: (c1.risk_score || 0) > c1.india_average ? "var(--mb-red)" : "var(--mb-green)" }}>{(c1.risk_score || 0) > c1.india_average ? "above" : "below"}</strong> it.
+          <div style={{ flex: 1 }}>
+            {c1.india_average != null ? (
+              <>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.6, fontWeight: 500, marginBottom: 6 }}>
+                  India average for this role: <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{c1.india_average}%</strong>
+                </div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.6, fontWeight: 500 }}>
+                  You're <strong style={{ fontWeight: 800, color: (c1.risk_score || 0) > c1.india_average ? "var(--mb-red)" : "var(--mb-green)" }}>{Math.abs((c1.risk_score || 0) - c1.india_average)} points {(c1.risk_score || 0) > c1.india_average ? "above" : "below"}</strong> the average.
+                </div>
+              </>
+            ) : (
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", lineHeight: 1.6, fontStyle: "italic" }}>
+                Peer benchmark unavailable for this role.
               </div>
             )}
           </div>
