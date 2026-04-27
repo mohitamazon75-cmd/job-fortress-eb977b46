@@ -1,6 +1,40 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// ─── Session-scoped context auto-attached to every event ─────────────────────
+// Why: at 4 scans/week the funnel data is only useful if we can answer "WHO
+// dropped off and where did they come from?". Capturing referrer + returning
+// flag at the call site is impossible (Index.tsx is 950 LOC, off-limits).
+// Computing it once per session here means every event gets the context for
+// free with zero changes at call sites.
+
+const RETURNING_KEY = 'jb_returning_visitor';
+
+function readSessionContext(): Record<string, unknown> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const isReturning = localStorage.getItem(RETURNING_KEY) === '1';
+    // Mark returning AFTER read so the very first visit reports as new.
+    if (!isReturning) {
+      try { localStorage.setItem(RETURNING_KEY, '1'); } catch { /* private mode */ }
+    }
+    const ref = document.referrer || '';
+    let referrer_host: string | null = null;
+    try { if (ref) referrer_host = new URL(ref).host; } catch { /* malformed */ }
+    const params = new URLSearchParams(window.location.search);
+    return {
+      is_returning: isReturning,
+      referrer_host,
+      utm_source: params.get('utm_source') || null,
+      utm_medium: params.get('utm_medium') || null,
+      utm_campaign: params.get('utm_campaign') || null,
+      ref_code: params.get('ref') || null,
+    };
+  } catch {
+    return {};
+  }
+}
+
 export type FunnelEvent =
   | 'landing_view'
   | 'cta_click'
