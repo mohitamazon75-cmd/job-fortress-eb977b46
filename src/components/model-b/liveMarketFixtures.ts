@@ -129,6 +129,7 @@ export const tinyFlatPartialFixture: LiveMarketSnapshot = {
   source: { name: "Naukri.com", via: "Apify", fetched_at: now },
 };
 
+export const errorFixture: LiveMarketSnapshot = {
   posting_count: 0,
   fetched_at: now,
   cached: false,
