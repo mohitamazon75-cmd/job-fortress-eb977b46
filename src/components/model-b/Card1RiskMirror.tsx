@@ -359,9 +359,24 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
           Different from your overall JobBachao score (top of page) — this measures only automation risk for your role, not your full career safety.
         </div>
 
-        {/* ─────────────── 2. Single fear hook (consolidated) ─────────────── */}
+        {/* ─────────────── 2. Fear → Anxiety → Hope → Plan narration arc ──────────
+            Restored 2026-04-27 after audit found the trio (tough_love /
+            hope_bridge / confrontation) had been silently dropped from
+            Card1, weakening the emotional impact users explicitly missed.
+            Data has always flowed from the LLM (see prompt at
+            get-model-b-analysis/index.ts:968-972) — only the rendering
+            was missing. Rendered in the exact emotional-arc order from
+            mem://ux/emotional-arc:
+              fear_hook   → Fear   (the dated threat)
+              tough_love  → Anxiety (the cold reframe)
+              hope_bridge → Hope    (the named asset)
+              confrontation → Plan  (this week's action)
+            All blocks render only when the LLM provides them — no
+            fabrication, no fallbacks. Tone respects mem://style/
+            tone-and-liability-calibration: indicative, not absolute.
+        ─────────────────────────────────────────────────────────────────────── */}
         {c1.fear_hook && (
-          <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.2)", borderRadius: 14, padding: "16px 18px", marginBottom: 18 }}>
+          <div style={{ background: "var(--mb-red-tint)", border: "2px solid rgba(174,40,40,0.2)", borderRadius: 14, padding: "16px 18px", marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <span style={{ fontSize: 18 }}>🚨</span>
               <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--mb-red)" }}>
@@ -369,6 +384,45 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
               </span>
             </div>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.7, margin: 0, whiteSpace: "pre-line" }}>{c1.fear_hook}</p>
+          </div>
+        )}
+
+        {/* tough_love — the cold reframe (Playfair italic, amber) */}
+        {c1.tough_love && (
+          <div style={{ background: "var(--mb-amber-tint)", border: "1.5px solid rgba(139,90,0,0.22)", borderRadius: 12, padding: "14px 18px", marginBottom: 12 }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--mb-amber)", marginBottom: 6 }}>
+              The honest reframe
+            </div>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.55, margin: 0, fontStyle: "italic" }}>
+              {c1.tough_love}
+            </p>
+          </div>
+        )}
+
+        {/* hope_bridge — the named, defensible asset (green) */}
+        {c1.hope_bridge && (
+          <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.22)", borderRadius: 12, padding: "14px 18px", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 14 }}>🛡️</span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--mb-green)" }}>
+                What still belongs to you
+              </span>
+            </div>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0 }}>
+              {c1.hope_bridge}
+            </p>
+          </div>
+        )}
+
+        {/* confrontation — the plan (left-accent banner, calmer than old "DIRECT CHALLENGE") */}
+        {c1.confrontation && (
+          <div style={{ borderLeft: "4px solid var(--mb-ink)", background: "linear-gradient(90deg, rgba(0,0,0,0.04), transparent)", borderRadius: "0 12px 12px 0", padding: "14px 18px", marginBottom: 18 }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--mb-ink)", marginBottom: 6 }}>
+              Your move this week
+            </div>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0 }}>
+              {c1.confrontation}
+            </p>
           </div>
         )}
 

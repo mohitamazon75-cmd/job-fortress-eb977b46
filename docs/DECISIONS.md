@@ -31,6 +31,36 @@
 
 ---
 
+## 2026-04-27 — Risk tab narration trio restored (Card1RiskMirror)
+
+**User-reported regression**: "The risk tab earlier had nice text narration on top that has now become much less impactful."
+
+**Investigation** (git diff against `2c9bc14f`, 3 weeks ago):
+- The Risk tab originally rendered a 4-block emotional sequence under the headline: `fear_hook` → `tough_love` → `hope_bridge` → `confrontation`.
+- Somewhere in the last ~50 commits to `Card1RiskMirror.tsx`, three of those blocks (tough_love, hope_bridge, confrontation) were silently dropped — only fear_hook remained.
+- Critically: **the data still flows from the LLM** (verified at `get-model-b-analysis/index.ts:968-972, 1093-1095`; validator at line 699 even errors when confrontation is missing). This was a pure rendering omission, not a backend gap.
+
+**Action**: Re-rendered the three missing blocks under fear_hook, in the canonical Fear → Anxiety → Hope → Plan order from `mem://ux/emotional-arc`. Calmer framing than the old militarized "⚔️ DIRECT CHALLENGE" copy:
+- `tough_love` → "The honest reframe" (Playfair italic, amber)
+- `hope_bridge` → "🛡️ What still belongs to you" (green)
+- `confrontation` → "Your move this week" (left-accent banner, ink-on-ink — neutral, not aggressive)
+
+All blocks render only when the LLM provides them — no fabrication, no fallback strings (respects `mem://style/tone-and-liability-calibration`).
+
+**Scope discipline**: Pure presentation change. Zero backend, zero prompt, zero schema, zero type changes. The existing stake-amplifier strip (audit-validated current scaffolding) is preserved untouched.
+
+**What I have proof of**:
+- ✅ `npx tsc --noEmit` clean
+- ✅ 302/302 vitest passing
+- ✅ Field access (`c1.tough_love` etc.) safe — `cardData: any`, no type plumbing needed
+
+**What I do NOT have proof of**:
+- The visual result on a live scan (next user scan will surface). If any of the three new blocks renders empty in production, that means the LLM omitted that field — not a code bug — and the conditional `&&` guards prevent empty divs from rendering.
+
+**Files**: `src/components/model-b/Card1RiskMirror.tsx` (~60 lines added in one block, append-only relative to existing fear_hook).
+
+---
+
 
 
 **Pattern committed**: Saved deep-reasoning loop (state riskiest unknown → Karpathy filter → pilot-before-scale → in-context bug fixes → honest "have proof / do NOT have proof" status) as a Core rule in `mem://index.md` + detailed file at `mem://process/cto-operating-pattern.md`. This now applies to every engineering loop.
