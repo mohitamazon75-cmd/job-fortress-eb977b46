@@ -12,6 +12,7 @@ import Card5JobsTracker from "@/components/model-b/Card5JobsTracker";
 import Card6BlindSpots from "@/components/model-b/Card6BlindSpots";
 import Card7HumanAdvantage from "@/components/model-b/Card7HumanAdvantage";
 import Card0Verdict from "@/components/model-b/Card0Verdict";
+import MondayMoveCard from "@/components/model-b/MondayMoveCard";
 import PromptModal from "@/components/model-b/PromptModal";
 import { useScanFunnelTracking } from "@/hooks/use-scan-funnel-tracking";
 
@@ -814,6 +815,7 @@ export default function ResultsModelB() {
         {/* Main content */}
         {cardData && !loading && !error && (
           <>
+            <MondayMoveCard cardData={cardData} />
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
             {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} />}
             {currentCard === 2 && (() => {

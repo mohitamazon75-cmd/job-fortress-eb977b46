@@ -498,3 +498,13 @@ Why this matters: the Fear → Reframe → Hope → Plan arc is the platform's e
 **Why:** Closes the narration-audit loop across all 7 Model B tabs. The "honest reframe" beat (`tough_love`) is the load-bearing element of the emotional contract — without it the cards read as either purely alarmist or purely promotional.
 
 **Verification:** `npx tsc --noEmit` clean. Visual QA pending user click-through on Jobs and Human tabs.
+
+## 2026-04-27 — Sticky "Your Monday Move" hero card on Model B dashboard
+
+**Context:** Indian career counsellor critique flagged that anxious 40+ users land on the dashboard and don't know which ONE thing to do tomorrow morning. Identified as the single highest-impact pre-launch UX gap.
+
+**Change:** Added `src/components/model-b/MondayMoveCard.tsx` — a sticky deterministic card above all 9 Model B tabs. Picks ONE concrete action from scan data using a 5-step priority chain (card1 confrontation → survival diet → shield gap → pivot role → safe default). Ships English + Hinglish sub-line. Zero LLM calls, zero new latency. Wired into `src/pages/ResultsModelB.tsx` right after the `<>` fragment so it persists across all card switches.
+
+**Why:** Converts dashboard fear into Monday-morning action. Hinglish line unlocks tier-2 cities. Deterministic so no risk of hallucination at scale.
+
+**Verification:** `npx tsc --noEmit` clean. Vitest: 308/308 passing (added 6 new tests for `pickMondayMove`).
