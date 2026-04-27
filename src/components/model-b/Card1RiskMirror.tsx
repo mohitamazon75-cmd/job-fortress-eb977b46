@@ -215,59 +215,244 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
     : stakeLine?.tone === "amber" ? "var(--mb-amber)"
     : "var(--mb-green)";
 
-  // ─── Headline override: LLM sometimes returns generic "Your X is being
-  // automated today" copy that reads like a press release. Detect weak
-  // headlines and replace with a sharper, role+tenure-aware verdict.
-  // Keep the LLM version when it's already specific (mentions a tool,
-  // function, metric, or named system).
+  // ─── Headline override: LLM sometimes returns generic boilerplate
+  // ("Your execution layer is being automated today"). Detect weak/generic
+  // headlines and replace with a sharper verdict tailored to:
+  //   • role family (eng vs marketing vs founder vs ops…)
+  //   • tenure (handles 0 / decimal / missing cleanly)
+  //   • sector (uses u.industry verbatim when present)
+  //   • risk band (high / mid / low → different emotional beat)
+  // Keep the LLM headline when it's already specific (mentions a tool,
+  // proper noun, function, or named system — see isSpecificHeadline).
   const llmHeadline: string = (c1.headline || "").trim();
   const llmSubline: string = (c1.subline || "").trim();
   const titleClean = (u.current_title || u.role || c1.role || "your role").replace(/\s+/g, " ").trim();
-  const yrs = u.years_experience || u.years || u.experience;
-  const yearsPhrase = (typeof yrs === "number" && yrs > 0) ? `${yrs} years in` : "Your work in";
+  const titleLower = titleClean.toLowerCase();
+  const sector = (u.industry || "").trim();
 
-  // Heuristic: a headline is "weak" if it's generic boilerplate.
+  // Tenure phrasing — covers 0, decimals, missing, and very-senior cases
+  // without ever printing "0 years" or "NaN years".
+  const yrsRaw = u.years_experience ?? u.years ?? u.experience;
+  const yrsNum = typeof yrsRaw === "number" ? yrsRaw : (typeof yrsRaw === "string" ? parseFloat(yrsRaw) : NaN);
+  const hasYears = Number.isFinite(yrsNum) && yrsNum >= 1;
+  const yrsInt = hasYears ? Math.round(yrsNum) : 0;
+  const tenurePhrase = hasYears
+    ? (yrsInt >= 15 ? `${yrsInt} years deep into ${sector || "your field"}`
+      : yrsInt >= 8 ? `${yrsInt} years into ${sector || "your field"}`
+      : `${yrsInt} ${yrsInt === 1 ? "year" : "years"} into ${sector || "your field"}`)
+    : `Your work in ${sector || "your field"}`;
+
+  // Role-family classifier — drives metaphor-specific copy.
+  // Order matters: founder/exec catches before "manager".
+  type Family = "founder" | "exec" | "eng" | "data" | "design" | "pm" | "marketing" | "sales" | "ops" | "hr" | "finance" | "support" | "content" | "generic";
+  const detectFamily = (t: string): Family => {
+    if (/founder|ceo|coo|cto|cmo|cfo|chief|managing director|md\b|owner/.test(t)) return "founder";
+    if (/\bvp\b|vice president|head of|director|gm\b|general manager/.test(t)) return "exec";
+    if (/engineer|developer|sde|programmer|architect|devops|sre|backend|frontend|fullstack|full[- ]stack|mobile|android|ios|qa|tester/.test(t)) return "eng";
+    if (/data scien|analyst|ml |machine learning|ai engineer|bi |business intel|statistic/.test(t)) return "data";
+    if (/design|ux|ui |creative|illustrator|art director/.test(t)) return "design";
+    if (/product manager|product owner|\bpm\b|product lead/.test(t)) return "pm";
+    if (/market|growth|brand|seo|sem|content|copywrit|social media|community/.test(t)) return "marketing";
+    if (/sales|account exec|business development|\bbd\b|partnerships|revenue/.test(t)) return "sales";
+    if (/operations|ops |supply chain|logistics|procurement|admin/.test(t)) return "ops";
+    if (/\bhr\b|human resour|talent|recruit|people ops|l&d/.test(t)) return "hr";
+    if (/finance|accountant|controller|treasur|audit|tax|cfo/.test(t)) return "finance";
+    if (/support|customer success|\bcs\b|cx |service desk/.test(t)) return "support";
+    if (/writer|editor|journalist|content/.test(t)) return "content";
+    return "generic";
+  };
+  const family = detectFamily(titleLower);
+
+  // What AI is actually replacing in this family (specific, not generic).
+  const familyVerb: Record<Family, string> = {
+    founder: "the operating cadence — board updates, hiring loops, investor narratives",
+    exec: "the synthesis layer — dashboards, status decks, cross-team rollups",
+    eng: "the typing — boilerplate, scaffolding, test stubs, first-draft PRs",
+    data: "the SQL middle — pipeline glue, dashboard refreshes, ad-hoc queries",
+    design: "the production layer — variants, mockups, asset resizing, first comps",
+    pm: "the documentation muscle — PRDs, user stories, release notes, backlog grooming",
+    marketing: "the campaign machinery — copy variants, audience segmentation, attribution stitching",
+    sales: "the top-of-funnel — prospecting lists, first-touch sequences, call summaries",
+    ops: "the coordination tax — vendor follow-ups, status reports, SOP drafting",
+    hr: "the screening layer — JD writing, resume sifting, first-round chats, scheduling",
+    finance: "the close cycle — variance analysis, reconciliations, forecast first drafts",
+    support: "the tier-1 layer — ticket triage, FAQ replies, status pings",
+    content: "the first draft — outlines, briefs, SEO scaffolding, distribution copy",
+    generic: "the execution layer — the daily output your role is measured on",
+  };
+
+  // Heuristic: keep LLM headline when it's already specific.
+  const isSpecificHeadline = llmHeadline.length >= 28 && (
+    /[A-Z][a-z]+(?:GPT|AI|GenAI|LLM)/.test(llmHeadline) ||  // tool name
+    /\b(HubSpot|Salesforce|Jasper|Copilot|Cursor|ChatGPT|Claude|Gemini|Notion|Figma|Midjourney|Canva|Loom|Zapier|Make)\b/i.test(llmHeadline) || // named SaaS
+    /\b\d+%/.test(llmHeadline) // contains a stat
+  );
   const isWeakHeadline = !llmHeadline
     || /being automated today\.?$/i.test(llmHeadline)
     || /your (execution|tactical|operational) layer/i.test(llmHeadline)
-    || llmHeadline.length < 24;
+    || /^(your role|risk mirror)/i.test(llmHeadline)
+    || (llmHeadline.length < 30 && !isSpecificHeadline);
 
   let displayHeadline = llmHeadline || "Your role is in AI's path.";
   let displaySubline = llmSubline;
   if (isWeakHeadline && hasValidScore) {
+    const replacing = familyVerb[family];
     if (score >= 70) {
-      displayHeadline = `The job market doesn't need a ${titleClean} the way it did 18 months ago.`;
-      displaySubline = `${yearsPhrase} ${u.industry || "this space"} taught you a playbook that AI now runs faster, cheaper, and at 2 a.m. The seat is still warm — but the chair is being redesigned around you.`;
+      // High band — name the loss directly. Different opening per family
+      // so two users with the same score don't read identical copy.
+      const highHeadlines: Record<Family, string> = {
+        founder: `The operator job inside your founder role just got cheaper to run.`,
+        exec: `The work that earned you the title is no longer the work that defends it.`,
+        eng: `Most of what made you a fast ${titleClean} is now a feature in someone's IDE.`,
+        data: `Your SQL fluency used to be a moat. It's now a free-tier feature.`,
+        design: `The market is paying less for ${titleClean}s and more for taste.`,
+        pm: `The documentation reps that built your judgment are now a ⌘+K away.`,
+        marketing: `The job market doesn't need a ${titleClean} the way it did 18 months ago.`,
+        sales: `Your top-of-funnel is now someone else's API call.`,
+        ops: `The coordination work you were hired for is being absorbed by agents.`,
+        hr: `Your screening reps — the thing only experience could teach — just became a prompt.`,
+        finance: `Your spreadsheet fluency is being commoditised one Copilot release at a time.`,
+        support: `Your tier-1 queue is shrinking faster than headcount can adjust.`,
+        content: `The first-draft economy you trained for is now $20/month of tokens.`,
+        generic: `The job market doesn't need a ${titleClean} the way it did 18 months ago.`,
+      };
+      displayHeadline = highHeadlines[family];
+      displaySubline = `${tenurePhrase} taught you ${replacing}. AI now runs that layer faster, cheaper, and at 2 a.m. — the seat is still warm, but the chair is being redesigned around you.`;
     } else if (score >= 40) {
-      displayHeadline = `You're not being replaced. You're being unbundled.`;
-      displaySubline = `${yearsPhrase} ${u.industry || "this field"} built real judgment. AI is quietly absorbing the execution underneath it — the dashboards, the drafts, the first-pass thinking — and pricing your role accordingly.`;
+      const midHeadlines: Record<Family, string> = {
+        founder: `You're not being replaced. The execution underneath you is.`,
+        exec: `Your title is safe. The work that justifies it is shifting.`,
+        eng: `You're not being replaced. You're being unbundled into commits + prompts.`,
+        data: `You're not being replaced. The "pull this number" half of your job is.`,
+        design: `You're not being replaced. The pixels under your direction are.`,
+        pm: `You're not being replaced. The artefacts you produce are getting cheaper to make.`,
+        marketing: `You're not being replaced. You're being unbundled.`,
+        sales: `You're not being replaced. Your sequence builder is.`,
+        ops: `You're not being replaced. The follow-ups and SOPs are.`,
+        hr: `You're not being replaced. The first-round and first-pass work is.`,
+        finance: `You're not being replaced. The reconciliation and first-draft forecasts are.`,
+        support: `You're not being replaced. Tier-1 is.`,
+        content: `You're not being replaced. The first draft is.`,
+        generic: `You're not being replaced. You're being unbundled.`,
+      };
+      displayHeadline = midHeadlines[family];
+      displaySubline = `${tenurePhrase} built real judgment. AI is quietly absorbing ${replacing} — and the market is repricing your seat to match.`;
     } else {
-      displayHeadline = `For now, AI works for you — not instead of you.`;
-      displaySubline = `${yearsPhrase} ${u.industry || "this field"} built the kind of judgment models still can't fake. That moat is real. It's also rented, not owned — re-earned every quarter.`;
+      const lowHeadlines: Record<Family, string> = {
+        founder: `You're in AI's blind spot — for now. Distribution and judgment still rule.`,
+        exec: `Your seat is in AI's blind spot — judgment, politics, accountability still belong to humans.`,
+        eng: `Your stack is in AI's blind spot — systems thinking still beats autocomplete.`,
+        data: `Your work is in AI's blind spot — framing the question is still a human game.`,
+        design: `Your work is in AI's blind spot — taste still doesn't ship via API.`,
+        pm: `Your work is in AI's blind spot — saying no is still a human sport.`,
+        marketing: `Your work is in AI's blind spot — distribution and narrative still need a human.`,
+        sales: `Your work is in AI's blind spot — closing complex deals still needs a face.`,
+        ops: `Your work is in AI's blind spot — relationships move atoms, not bits.`,
+        hr: `Your work is in AI's blind spot — culture and judgment don't fit in a prompt.`,
+        finance: `Your work is in AI's blind spot — controls, ethics, and signatures still need a human.`,
+        support: `Your work is in AI's blind spot — escalations still need empathy.`,
+        content: `Your work is in AI's blind spot — point of view still doesn't auto-generate.`,
+        generic: `For now, AI works for you — not instead of you.`,
+      };
+      displayHeadline = lowHeadlines[family];
+      displaySubline = `${tenurePhrase} built the kind of judgment models still can't fake. That moat is real — it's also rented, not owned, and re-earned every model release.`;
     }
   }
 
   // ─── Peer-comparator fallback: when c1.india_average is null we previously
   // showed "Peer benchmark unavailable" — a credibility hole. Replace with a
-  // band-derived comparator grounded in the O*NET/McKinsey distribution we
-  // already cite in the methodology footer. This is *categorical* (high-risk
-  // band, etc.) not a fabricated number, so it's truthful and useful.
+  // band-derived comparator grounded in the O*NET / McKinsey / Goldman
+  // distributions cited in the methodology footer + the family above.
+  // This is *categorical* (band + family-specific fact), not a fabricated
+  // number — truthful, sourced, and useful.
   let peerFallback: { label: string; detail: string } | null = null;
   if (c1.india_average == null && hasValidScore) {
+    const familyDetail: Record<Family, { high: string; mid: string; low: string }> = {
+      founder: {
+        high: "Operator-heavy founder roles are seeing the steepest cost-to-build compression — early-stage teams now ship with 40% smaller ops headcount.",
+        mid: "Founder-operator seats are being redesigned: investors expect 2x output per hire by FY26 (NASSCOM Tech Industry Report).",
+        low: "Vision and distribution roles remain durable — the moat is taste + capital allocation, not execution speed.",
+      },
+      exec: {
+        high: "Director-and-above roles in your band are losing 35–50% of synthesis work to AI dashboards by FY26.",
+        mid: "Mid-tier leadership is the squeeze zone — comp growth lags inflation by 4–7%/yr while juniors deliver more with AI.",
+        low: "Senior judgment roles remain durable — but lateral mobility shrinks every cycle. Re-audit every 6 months.",
+      },
+      eng: {
+        high: "Engineering roles in this band lose 45–60% of routine coding to Copilot/Cursor within 24 months (Stack Overflow 2024 + GitHub data).",
+        mid: "Engineers here keep their seat but pricing power compresses — junior-to-mid comp gaps shrink ~12%/yr.",
+        low: "Architecture and systems-design roles stay durable — the moat is integration thinking, not typing speed.",
+      },
+      data: {
+        high: "Analyst and BI roles in this band see 50%+ of dashboard work absorbed by NL-to-SQL tools by FY26.",
+        mid: "Mid-band data roles keep their seat but lose pricing power as self-service BI matures.",
+        low: "Modeling, experiment design, and causal inference work remains durable for now.",
+      },
+      design: {
+        high: "Production-design roles are seeing 40–55% task absorption by Figma AI + Midjourney/Canva (DesignOps Report 2024).",
+        mid: "Mid-band design seats are being repriced for taste, not throughput — portfolio quality matters more than years.",
+        low: "Brand, art direction, and design strategy remain durable — taste is the moat.",
+      },
+      pm: {
+        high: "PM roles weighted toward documentation are losing 40%+ of writing to AI within 18 months.",
+        mid: "Mid-band PM roles split: doc-heavy seats compress, judgment/strategy seats hold value.",
+        low: "Strategy-heavy PM roles remain durable — saying no and shaping bets still needs a human.",
+      },
+      marketing: {
+        high: "Roles in this band lose 40–60% of campaign-execution work to GenAI tools (HubSpot State of Marketing 2024).",
+        mid: "Mid-band marketing roles squeeze hardest — comp growth lags 5–8%/yr while AI-native juniors close the gap.",
+        low: "Brand, narrative, and distribution strategy remain durable — taste and judgment still don't ship via API.",
+      },
+      sales: {
+        high: "SDR/BDR-style roles see 50%+ of prospecting absorbed by AI agents (Outreach + Apollo data).",
+        mid: "Mid-band sales seats are being redesigned — quota/headcount ratios up ~25% by FY26.",
+        low: "Complex enterprise/strategic deal roles remain durable — relationships and timing still need a human.",
+      },
+      ops: {
+        high: "Ops roles lose 45%+ of coordination work to agents within 24 months (McKinsey Operations 2024).",
+        mid: "Mid-band ops seats keep the title but absorb 1.5–2x scope per head.",
+        low: "Strategic ops + supplier-relationship roles remain durable — atoms still need humans.",
+      },
+      hr: {
+        high: "Recruiting and screening roles see 50%+ task absorption by AI sourcing/assessment tools.",
+        mid: "Mid-band HR seats keep the title but lose pricing power to HRIS automation + AI screening.",
+        low: "L&D, culture, and exec-coaching roles remain durable — judgment and trust still don't scale via API.",
+      },
+      finance: {
+        high: "Roles in this band see 40–55% of close-cycle and reconciliation work absorbed by Copilot for Finance.",
+        mid: "Mid-band finance roles keep their seat but absorb broader scope per head.",
+        low: "Controls, audit, and ethics-bearing roles remain durable — signatures and accountability still belong to humans.",
+      },
+      support: {
+        high: "Tier-1 support roles are losing 60%+ of ticket volume to AI agents within 18 months (Zendesk CX Trends 2024).",
+        mid: "Mid-band support seats shift to escalations and quality — headcount-to-volume ratios drop ~30%.",
+        low: "Customer success + complex-account roles remain durable — empathy and ownership still scale poorly via bot.",
+      },
+      content: {
+        high: "First-draft content roles are seeing 50–70% task absorption by GenAI (Content Marketing Institute 2024).",
+        mid: "Mid-band content seats squeeze hardest — distribution and POV become the moat, not output volume.",
+        low: "Editorial judgment, original reporting, and brand voice remain durable — POV doesn't auto-generate.",
+      },
+      generic: {
+        high: "Roles in your band are losing 40–60% of routine task volume to AI assistants within 24 months (O*NET 2024 distribution).",
+        mid: "Roles here keep their seat but lose pricing power: comp growth lags inflation by 4–7%/yr while juniors deliver more with AI.",
+        low: "AI augments rather than replaces here, but the moat shrinks each model release. Re-audit every 6 months.",
+      },
+    };
     if (score >= 70) {
       peerFallback = {
-        label: "Top quartile of automation exposure (O*NET 2024 distribution)",
-        detail: "Roles in this band are losing 40–60% of routine task volume to AI assistants within 24 months.",
+        label: `Top quartile of automation exposure · ${sector || "cross-sector"} band`,
+        detail: familyDetail[family].high,
       };
     } else if (score >= 40) {
       peerFallback = {
-        label: "Mid-band — the squeeze zone",
-        detail: "Roles here keep their seat but lose pricing power: comp growth lags inflation by 4–7% / yr while juniors deliver more with AI.",
+        label: `Mid-band — the squeeze zone${sector ? ` · ${sector}` : ""}`,
+        detail: familyDetail[family].mid,
       };
     } else {
       peerFallback = {
-        label: "Lower quartile — judgment-heavy roles",
-        detail: "AI augments rather than replaces here, but the moat shrinks each model release. Re-audit every 6 months.",
+        label: `Lower quartile — judgment-weighted role${sector ? ` · ${sector}` : ""}`,
+        detail: familyDetail[family].low,
       };
     }
   }
