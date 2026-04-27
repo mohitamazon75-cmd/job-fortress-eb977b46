@@ -169,19 +169,21 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `Your career is bleeding — and you might not feel it yet.`,
     warmIntro: `We know this is uncomfortable. But the people who recover from this score range are always the ones who saw it clearly first.`,
 
-    body: `${riskSource} Hiring demand is ${demand}. That means more people competing for fewer seats, while machines quietly take over the routine work. If you do nothing for the next 6 months, this score drops further — and the options narrow.`,
+    body: `${riskSource} Hiring demand is ${demand}. That means more people competing for fewer seats, while machines quietly take over the routine work. If you do nothing for the next 6 months, this score drops further — and the options narrow.` + familyBodySuffix,
 
-    hope: `${moatSkills > 0 ? `You have ${moatSkills} unique strengths that still separate you from the crowd — that's your foundation to build on. ` : ''}You're seeing this before 90% of people in your role even think about it. That awareness gap is worth more than any single skill — if you act on it now.`,
+    hope: `${moatSkills > 0 ? `You have ${moatSkills} unique strengths that still separate you from the crowd — that's your foundation to build on. ` : ''}You're seeing this before 90% of people in your role even think about it. That awareness gap is worth more than any single skill — if you act on it now.` + familyHopeSuffix,
 
     plan: `This weekend: pick ONE skill that requires human creativity or deep relationships, and go all-in. Your defense plan shows the fastest path — most people in your range can meaningfully shift their score in 60-90 days.`,
 
-    replaceability: `Honestly? This role could be backfilled faster than you'd like. But that's precisely why seeing this now — before your boss does — changes everything.`,
+    replaceability: `Honestly? This role could be backfilled faster than you'd like. But that's precisely why seeing this now — before your boss does — changes everything.` + familyReplaceabilitySuffix,
 
     bullets: [
       `A big chunk of your daily work follows patterns AI can learn — that's the core vulnerability`,
       moatSkills > 0 ? `You have ${moatSkills} skills keeping you differentiated — lean into these hard, they're your margin of survival` : `Right now, it's hard to point to one thing that makes you irreplaceable — let's fix that before someone else notices`,
       `Your defense plan maps the fastest escape route from this risk zone — the window is open, but it's not open forever`,
     ],
+    proofLine,
+    inactionCost: fam.inactionCost,
   };
 
   // ── TIER 4: ACT NOW (<30) ────────────────────────────────
