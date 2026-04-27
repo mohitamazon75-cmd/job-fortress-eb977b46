@@ -34,9 +34,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "API key not configured" }), { status: 500, headers: jsonHeaders });
     }
 
-    const parsed = await validateBody(req, TranslateSchema, corsHeaders);
-    if (parsed.kind === "invalid") return parsed.response;
-    const { texts, target_language } = parsed.data;
+    const validated = await validateBody(req, TranslateSchema, corsHeaders);
+    if (validated.kind === "invalid") return validated.response;
+    const { texts, target_language } = validated.data;
 
     const lang = target_language || "hindi";
     const isHinglish = lang === "hinglish";

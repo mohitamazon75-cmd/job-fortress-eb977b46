@@ -27,9 +27,9 @@ Deno.serve(async (req) => {
     const auth = await requireAuth(req, corsHeaders);
     if (auth.kind === "unauthorized") return auth.response;
 
-    const parsed = await validateBody(req, ParseLinkedInSchema, corsHeaders);
-    if (parsed.kind === "invalid") return parsed.response;
-    const { linkedinUrl } = parsed.data;
+    const validated = await validateBody(req, ParseLinkedInSchema, corsHeaders);
+    if (validated.kind === "invalid") return validated.response;
+    const { linkedinUrl } = validated.data;
 
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

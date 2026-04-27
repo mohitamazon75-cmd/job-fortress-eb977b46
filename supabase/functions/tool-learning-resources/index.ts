@@ -20,9 +20,9 @@ serve(async (req) => {
   if (auth.kind === "unauthorized") return auth.response;
 
   try {
-    const parsed = await validateBody(req, ToolLearningSchema, getCorsHeaders(req));
-    if (parsed.kind === "invalid") return parsed.response;
-    const { tool_name, skill_name } = parsed.data;
+    const validated = await validateBody(req, ToolLearningSchema, getCorsHeaders(req));
+    if (validated.kind === "invalid") return validated.response;
+    const { tool_name, skill_name } = validated.data;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

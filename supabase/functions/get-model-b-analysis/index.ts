@@ -37,9 +37,9 @@ Deno.serve(async (req) => {
   if (auth.kind === "unauthorized") return auth.response;
 
   try {
-    const parsed = await validateBody(req, ModelBSchema, getCorsHeaders(req));
-    if (parsed.kind === "invalid") return parsed.response;
-    const { analysis_id, user_id, resume_filename, poll } = parsed.data;
+    const validated = await validateBody(req, ModelBSchema, getCorsHeaders(req));
+    if (validated.kind === "invalid") return validated.response;
+    const { analysis_id, user_id, resume_filename, poll } = validated.data;
 
     const supabase = createAdminClient();
 
