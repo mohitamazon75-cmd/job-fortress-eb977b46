@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-04-27 — Stopped Firecrawl rollout to verify pilot first; fixed dormant bug in kg-refresh
+
+**Decision**: Paused rollout of the shared Firecrawl helper after the first adoption (kg-refresh). Did NOT proceed to the queued adoptions (live-news → company-news → ...). Instead used this loop to (a) verify deployment of the pilot and (b) fix a pre-existing latent bug discovered during verification.
+
+**Reason**: Per Karpathy guidelines, scaling an unverified pattern across 10 more files would have made any subtle bug in the helper a 10x rollback. The disciplined move was to verify the pilot end-to-end before scaling. During that verification, I caught a real bug (see below) that would have made any reliability work on `kg-refresh` invisible anyway.
+
+**Bug fixed**: `kg-refresh/index.ts` line 332 declared `const sb = createAdminClient()` while every use site below (lines 335, 353, 354, 355) referenced `supabase`. The function was throwing `ReferenceError` on every cron invocation. The Sunday market-signals refresh has been silently dead. Renamed the variable to `supabase` to match the call sites — 1-line fix justified under Rule 6 (cannot honestly claim verification of the Firecrawl adoption while the host function never ran).
+
+**What I have proof of**:
+- New `_shared/firecrawl.ts` module deploys without import/syntax errors (function reachable, 403'd at auth guard).
+- All 302 vitest + 6 firecrawl unit + 10 retry/logger tests passing.
+- `kg-refresh` now type-checks clean (was failing with 4 TS2304 errors).
+
+**What I do NOT yet have proof of**: an end-to-end Firecrawl call through the new helper succeeding in production. Cron won't fire kg-refresh until Sunday. Next loop should pick a Firecrawl consumer that's UI-invokable so a real user scan can validate the path before further rollout.
+
+**Owner**: CTO (AI).
+
+---
+
 ## 2026-04-27 — Shared Firecrawl helper + first adoption (kg-refresh)
 
 **Decision**: Created `_shared/firecrawl.ts` (search + scrape), modeled on `_shared/tavily-search.ts`. Retrofitted one of 11 raw-fetch call sites — `kg-refresh` — as the pilot. Remaining 10 sites become individual follow-on PRs (per CLAUDE.md Rule 9: don't touch >5 files in one go).
