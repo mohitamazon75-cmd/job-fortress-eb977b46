@@ -2,6 +2,7 @@ import { type ScanReport, normalizeTools } from '@/lib/scan-engine';
 import { inferSeniorityTier } from '@/lib/seniority-utils';
 import { getVerbatimRole } from '@/lib/role-guard';
 import { computeScoreBreakdown } from '@/lib/stability-score';
+import { detectRoleFamily, getFamilyNarrative } from '@/lib/role-family';
 
 // ═══════════════════════════════════════════════════════════════
 // CENTRALIZED VIBE ENGINE — Fear → Anxiety → Hope → Plan arc
