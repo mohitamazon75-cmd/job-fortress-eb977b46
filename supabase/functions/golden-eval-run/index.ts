@@ -347,10 +347,10 @@ Deno.serve(async (req) => {
         kg = await loadKG(supabase, fixture.industry);
         kgCache.set(fixture.industry, kg);
       }
-      const profile = buildProfile(fixture, kg.allSkillRiskRows);
+      const built = buildProfile(fixture, kg.allSkillRiskRows);
       const result = computeAll(
-        profile, kg.allSkillRiskRows, kg.skillMapRows, kg.primaryJob, kg.marketSignal,
-        false, null, "tier1", null, fixture.industry, fixture.country, null, null,
+        built.profile, kg.allSkillRiskRows, kg.skillMapRows, kg.primaryJob, kg.marketSignal,
+        false, built.companyTier, built.metroTier, null, fixture.industry, fixture.country, null, null,
       );
       const careerScore = Math.max(0, Math.min(100, 100 - result.determinism_index));
       results.push(evaluateFixture(fixture, careerScore, result.tone_tag));
