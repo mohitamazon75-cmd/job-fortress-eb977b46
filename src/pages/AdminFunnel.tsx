@@ -32,6 +32,13 @@ interface FunnelData {
     unique_scans_reaching_result: number;
     unique_scans_completing_journey: number;
   };
+  landing?: {
+    views_total: number;
+    views_returning: number;
+    views_new: number;
+    scroll_depth_buckets: Record<string, number>;
+    top_referrers: { host: string; count: number }[];
+  };
   totals: Record<string, number>;
 }
 
