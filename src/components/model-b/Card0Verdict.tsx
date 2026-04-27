@@ -114,7 +114,7 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
 
   // Build the visceral fear→hope couplet — the threat is named, the edge is TEASED
   const threatToolStr = typeof threatTool === "string" ? threatTool : null;
-  const fearLine = threatTask && threatPct
+  const baseFearLine = threatTask && threatPct
     ? `${cap(threatTask)} — ${threatPct}% of it${threatToolStr ? ` is already done by ${threatToolStr}` : " can be automated"} today.`
     : threatTask
     ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
@@ -122,9 +122,42 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
   // Curiosity gap: show how many edges they have, lock the names.
   const moatSkillsList = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong") || [];
   const moatCount = moatSkillsList.length;
-  const hopeLine = moatCount > 0
+  const baseHopeLine = moatCount > 0
     ? `You have ${moatCount === 1 ? "1 unfair edge" : `${moatCount} unfair edges`} AI cannot replicate — unlock to see ${moatCount === 1 ? "what it is" : "what they are"}.`
     : `You have edges AI cannot replicate — unlock to see them.`;
+
+  // ── Role-family overlay — same score reads differently for marketer vs dev vs analyst.
+  // Reuses the deterministic IP from src/lib/role-family.ts (already in the bundle).
+  // Synthesize a minimal ScanReport-shaped object from cardData so we can call detectRoleFamily.
+  const roleFamilyInput = {
+    role: u?.current_title || u?.role || c1?.role || "",
+    role_detected: u?.role_detected || u?.current_title || "",
+  } as any;
+  const roleFamily = detectRoleFamily(roleFamilyInput);
+  const fam = getFamilyNarrative(roleFamily);
+  // Splice family-specific framing into the threat + edge lines.
+  // Falls back to base copy if family is GENERIC (suffix is just appended cleanly).
+  const fearLine = roleFamily === "GENERIC" ? baseFearLine : `${baseFearLine} ${fam.threatFrame}`;
+  const hopeLine = roleFamily === "GENERIC" ? baseHopeLine : `${baseHopeLine} ${fam.edgeFrame}`;
+
+  // ── "We read your resume" proof strip — shown under the masthead.
+  // Built from grounded extraction signals: years, top skills, geo.
+  // Goal: within 1 second of seeing the verdict, the user knows we parsed their actual file.
+  const yearsExp = u?.years_experience || u?.years || u?.experience;
+  const topStack: string[] = (() => {
+    const all: string[] = Array.isArray(cardData?.all_skills) ? cardData.all_skills : [];
+    const moats: string[] = Array.isArray(cardData?.moat_skills) ? cardData.moat_skills : [];
+    const picks = moats.length ? moats : all;
+    return picks.slice(0, 2).filter(Boolean);
+  })();
+  const geoRaw = u?.location || u?.city || u?.country;
+  const geo = typeof geoRaw === "string" && geoRaw.length > 0 && geoRaw.length < 30 ? geoRaw : null;
+  const proofParts: string[] = [];
+  if (yearsExp && Number(yearsExp) > 0) proofParts.push(`${yearsExp}y`);
+  if (topStack.length) proofParts.push(topStack.join(" · "));
+  if (geo) proofParts.push(geo);
+  const proofLine = proofParts.length >= 2 ? proofParts.join("  •  ") : null;
+
 
   // Risk tier — drives the entire color story
   const tier = rawScore >= 70
