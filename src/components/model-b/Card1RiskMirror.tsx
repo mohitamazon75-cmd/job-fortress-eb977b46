@@ -163,55 +163,56 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
 
   const roleForSim = u.current_title || u.role || c1.role || "your role";
 
-  // ─── Batch F (revised): personalized verdict hook ─────────────────────
-  // Lead with a band-aware, role-named one-liner BEFORE the gauge.
-  // Audit fixes vs initial draft:
-  //   • No naive `${title}s` pluralization — breaks on "VP of Sales",
-  //     "Head of X", and the "your role" fallback. Use "As a {title},…".
-  //   • Verdict no longer names the #1 task — that lives in the pills
-  //     section directly below; saying it twice reads redundant.
-  //   • c1.headline / c1.subline are suppressed when this hook renders
-  //     (verdict replaces them — single hero, no triple-stacked verdicts).
-  //   • Amber line de-duped ("machine-native" → "automated" on 2nd ref).
-  //   • Tone stays "indicative not absolute" per
+  // ─── Batch F (final): stake-amplifier strip under LLM headline ────────
+  // The LLM-generated headline (rendered in CardHead) is already a strong
+  // personalized verdict like "Your GTM architecture is safe; your
+  // execution isn't." We don't replace it — we *amplify* it with a short
+  // stake line that fuses the score + band into a single emotional beat,
+  // sitting immediately under the headline and BEFORE the clinical gauge.
+  //
+  // Audit guardrails:
+  //   • No naive plural ({title}s) — broken on "VP of Sales", "Head of X".
+  //   • No task name from tasks_at_risk — pills below already render those.
+  //   • Tone "indicative not absolute" per
   //     mem://style/tone-and-liability-calibration.
-  const score = c1.risk_score || 0;
-  const titleRaw = (u.current_title || u.role || c1.role || "").trim();
-  // Strip trailing punctuation; if missing or generic, fall back to a phrase
-  // that reads naturally in "As a {x}," construction.
-  const titleClean = titleRaw && titleRaw.toLowerCase() !== "your role"
-    ? titleRaw.replace(/[.,;:]+$/, "")
-    : "professional in your role";
+  //   • Renders only when score is a real number — otherwise suppressed.
+  const score = c1.risk_score;
+  const hasValidScore = typeof score === "number" && Number.isFinite(score) && score >= 0 && score <= 100;
 
-  let verdictHook: { kicker: string; line: string; tone: "red" | "amber" | "green" };
-  if (score >= 70) {
-    verdictHook = {
-      kicker: "The verdict",
-      tone: "red",
-      line: `As a ${titleClean}, ${score}% of what you do daily is already machine-native. The window to reposition is closing — and the pills below show exactly where it's bleeding first.`,
-    };
-  } else if (score >= 40) {
-    verdictHook = {
-      kicker: "The verdict",
-      tone: "amber",
-      line: `AI isn't taking your seat as a ${titleClean} — yet. But ${score}% of your daily work is already automated or assisted by tools your peers are using. The strategy layer is still yours; the execution layer is borrowed time.`,
-    };
-  } else {
-    verdictHook = {
-      kicker: "The verdict",
-      tone: "green",
-      line: `Your work as a ${titleClean} sits in AI's blind spot — only ${score}% of your daily output is automatable today. The moat holds. Your job is to keep it that way.`,
-    };
+  let stakeLine: { kicker: string; bigNumber: string; line: string; tone: "red" | "amber" | "green" } | null = null;
+  if (hasValidScore) {
+    if (score >= 70) {
+      stakeLine = {
+        kicker: "What this actually means",
+        bigNumber: `${score}%`,
+        tone: "red",
+        line: `of your daily execution is already machine-native. The window to reposition is closing — fast. The pills below show where it's bleeding first.`,
+      };
+    } else if (score >= 40) {
+      stakeLine = {
+        kicker: "What this actually means",
+        bigNumber: `${score}%`,
+        tone: "amber",
+        line: `of your daily work is already automated or assisted by tools your peers are using. The strategy layer is still yours; the execution layer is borrowed time.`,
+      };
+    } else {
+      stakeLine = {
+        kicker: "What this actually means",
+        bigNumber: `${score}%`,
+        tone: "green",
+        line: `of your daily output is automatable today — you sit in AI's blind spot. The moat holds. Your job is to keep it that way.`,
+      };
+    }
   }
 
-  const verdictBg = verdictHook.tone === "red" ? "var(--mb-red-tint)"
-    : verdictHook.tone === "amber" ? "var(--mb-amber-tint)"
+  const stakeBg = stakeLine?.tone === "red" ? "var(--mb-red-tint)"
+    : stakeLine?.tone === "amber" ? "var(--mb-amber-tint)"
     : "var(--mb-green-tint)";
-  const verdictBorder = verdictHook.tone === "red" ? "rgba(174,40,40,0.28)"
-    : verdictHook.tone === "amber" ? "rgba(196,142,30,0.30)"
+  const stakeBorder = stakeLine?.tone === "red" ? "rgba(174,40,40,0.28)"
+    : stakeLine?.tone === "amber" ? "rgba(196,142,30,0.30)"
     : "rgba(26,107,60,0.28)";
-  const verdictAccent = verdictHook.tone === "red" ? "var(--mb-red)"
-    : verdictHook.tone === "amber" ? "var(--mb-amber)"
+  const stakeAccent = stakeLine?.tone === "red" ? "var(--mb-red)"
+    : stakeLine?.tone === "amber" ? "var(--mb-amber)"
     : "var(--mb-green)";
 
   return (
