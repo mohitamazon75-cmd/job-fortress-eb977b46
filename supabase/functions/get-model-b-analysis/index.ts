@@ -969,8 +969,9 @@ Replace generic "emotion_message" with this 3-part structure (GUIDANCE, not fixe
 - hope_bridge: 1-2 sentences, max 25 words total. Point to ONE specific asset from the user's resume (named skill, named pattern of decisions, named domain). Explain defensibility in evidence-based terms — NEVER "AI cannot replicate" absolutes. Prefer: "AI can't synthesize [specific thing the user has done repeatedly]." Voice Guide Rule 7.
 
 Also include:
-- confrontation: Directly challenge them. End with a specific action, not a question.
-  Example: "You've managed ₹2Cr budgets but never owned a P&L. Fix that this week. One case study. One number. One outcome you own."
+- confrontation: Directly challenge them. End with a CONCRETE, CALENDARABLE action — must contain (a) a verb the user can actually do (open, send, write, draft, post, publish, finish, build, ship, record, message, apply, review, schedule), (b) a number or named tool/company/skill, (c) a time anchor (this week / by Friday / Monday morning / tonight). NEVER end with abstractions like "one outcome you own", "a skill you actually use", "the future you choose" — those read as koans, not actions. NEVER end with a question.
+  Good example: "You've managed ₹2Cr budgets but never owned a P&L. Pick one product line. Email the VP this Friday with a 2-page case study and one number you'll own next quarter."
+  Bad example (do NOT do this): "You've managed ₹2Cr budgets but never owned a P&L. Fix that this week. One outcome you own."
 
 ═══ SCORING FRAMEWORK ═══
 - risk_score: Automation exposure (40%) + market demand trajectory (25%) + skill moat depth (20%) + seniority protection (15%)
@@ -1092,7 +1093,7 @@ card1_risk: {
   fear_hook: string (2 SHORT sentences, max 35 words total. First sentence names 2-3 specific tools or market movements CURRENTLY doing the user's billable work — present-tense observation only. No absolute-date predictions. No "your employer will know" phrasing. No jargon from the MBA-speak ban list above. See VOICE GUIDE Rule 2 + the guidance block above.),
   tough_love: string (2 SHORT sentences, max 30 words total. First: acknowledge what the user built over their years in the field. Second: name the current shift and how their billable work relates. NEVER assume a specific duration of future career (no "the next X years will reward…"). Match tone to risk_score. See VOICE GUIDE Rule 4 + Rule 8.),
   hope_bridge: string (1-2 sentences, max 25 words total. Point to ONE specific asset from the user's resume. Explain why it's defensible with evidence-based reasoning — NOT "AI cannot replicate" absolutes. Prefer: "AI can't synthesize [specific thing they have done repeatedly across years]." See VOICE GUIDE Rule 7.),
-  confrontation: string (3 short sentences. End with a specific action: "Fix that this week. One case study. One number. One outcome you own." — never end with a question),
+  confrontation: string (3 short sentences. The LAST sentence MUST be a calendarable action — verb + number-or-named-thing + time anchor. Good: "Email the demand-gen VP at Razorpay by Friday with a 2-page Growth Plan." Bad: "One outcome you own." / "A skill you actually use." / "The future you choose." Never end with a question or an abstract noun phrase.),
   emotion_message: string (combine fear_hook + hope_bridge for backward compatibility),
   risk_score: integer,
   india_average: integer OR null (ONLY populate if a real role-level benchmark value is provided in the INDIA MARKET FACTS context above; otherwise null. Do NOT invent or estimate.),
