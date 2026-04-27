@@ -79,7 +79,7 @@ export default function PreviewLiveMarketCard() {
             color: "var(--mb-ink3, #6b6b6b)",
           }}
         >
-          Switch state via query string: <code>?state=r1</code> · <code>?state=r3</code> · <code>?state=thin</code> · <code>?state=exec</code> · <code>?state=error</code> · <code>?state=loading</code>
+          Switch state via query string: <code>?state=r1</code> · <code>?state=r3</code> · <code>?state=thin</code> · <code>?state=tiny</code> · <code>?state=exec</code> · <code>?state=error</code> · <code>?state=loading</code>
         </div>
       </div>
     </div>
