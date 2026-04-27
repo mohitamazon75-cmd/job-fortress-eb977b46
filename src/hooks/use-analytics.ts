@@ -37,6 +37,7 @@ function readSessionContext(): Record<string, unknown> {
 
 export type FunnelEvent =
   | 'landing_view'
+  | 'landing_scroll_depth'
   | 'cta_click'
   | 'input_method_selected'
   | 'auth_complete'
