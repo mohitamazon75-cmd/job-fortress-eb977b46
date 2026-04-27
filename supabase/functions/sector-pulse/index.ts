@@ -25,21 +25,32 @@ const corsHeaders = {
 // Kept in lock-step manually; the UI re-validates on render.
 const TRUSTED_DOMAINS: ReadonlyArray<string> = [
   "economictimes.indiatimes.com",
+  "economictimes.com",
+  "indiatimes.com",
   "livemint.com",
+  "mint.com",
   "moneycontrol.com",
   "business-standard.com",
+  "businesstoday.in",
+  "business-today.in",
   "inc42.com",
   "yourstory.com",
   "entrackr.com",
   "the-ken.com",
   "thehindubusinessline.com",
+  "thehindu.com",
   "financialexpress.com",
+  "cnbctv18.com",
+  "ndtvprofit.com",
+  "theprint.in",
+  "fortuneindia.com",
+  "forbesindia.com",
   "bloomberg.com",
   "reuters.com",
   "techcrunch.com",
-  "forbesindia.com",
   "ft.com",
   "wsj.com",
+  "cnbc.com",
 ];
 
 const CACHE_TTL_HOURS_OK = 24;
