@@ -23,6 +23,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, timingSafeEqual, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { logEdgeError, trackUsage } from "../_shared/edge-logger.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
+import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
 import {
   AGENT_1_PROFILER,
