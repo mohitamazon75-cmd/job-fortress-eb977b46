@@ -114,6 +114,8 @@ async function readStaleCache(supabase: ReturnType<typeof createClient>, sector:
     .maybeSingle();
   if (!data) return null;
   if (!Array.isArray(data.beats) || (data.beats as Beat[]).length === 0) return null;
+  // Don't resurrect rows that were themselves a "we tried and got nothing" marker.
+  if (data.reason === "low_confidence" || data.reason === "no_signal" || data.reason === "fetch_failed" || data.reason === "timeout") return null;
   // Cap at 7 days — anything older than that is too stale to show as "live".
   if (ageHours(data.fetched_at as string) > 24 * 7) return null;
   return data;
