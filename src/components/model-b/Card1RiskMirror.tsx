@@ -125,8 +125,20 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
 
   // ─── Hooks MUST run before any early return (rules-of-hooks). The effect
   // body itself guards against missing data so we don't fire telemetry for
-  // empty cards.
+  // empty cards. We use a ref so the effect re-reads the latest computed
+  // payload without re-firing on every render.
   const { track } = useTrack(cardData?.scan_id);
+  const headlineTelemetryRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    const sid = cardData?.scan_id;
+    if (!sid) return;
+    if (firedHeadlineEvents.has(sid)) return;
+    const fire = headlineTelemetryRef.current;
+    if (!fire) return;
+    firedHeadlineEvents.add(sid);
+    fire();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardData?.scan_id]);
 
   if (!c1) return null;
 
