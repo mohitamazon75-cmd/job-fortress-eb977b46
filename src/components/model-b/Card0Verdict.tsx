@@ -998,6 +998,14 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           Share on LinkedIn
         </button>
       </motion.div>
+
+      {/* Paywall — uses existing Razorpay flow (₹300/mo, ₹1999/yr). No payment-path edits. */}
+      <ProUpgradeModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSuccess={() => { setShowPaywall(false); onNext(); }}
+        defaultTier="month"
+      />
     </motion.div>
   );
 }
