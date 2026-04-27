@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-04-27 — CTO operating pattern saved as Core memory; live-news adopts Firecrawl helper
+
+**Pattern committed**: Saved deep-reasoning loop (state riskiest unknown → Karpathy filter → pilot-before-scale → in-context bug fixes → honest "have proof / do NOT have proof" status) as a Core rule in `mem://index.md` + detailed file at `mem://process/cto-operating-pattern.md`. This now applies to every engineering loop.
+
+**Adoption**: `live-news/index.ts` migrated from 4 raw `fetch("api.firecrawl.dev/...")` calls to `firecrawlSearch()` from the shared helper. 1 file changed, behavior preserved (same parallel fan-out, same null-on-failure semantics, same string format for downstream synthesis).
+
+**Discovery during reasoning**: `live-news` has zero frontend consumers (`rg -l live-news src/` → empty). Function deploys fine but no production traffic flows through it. So end-to-end production verification is NOT achievable via this adoption — same status as `kg-refresh` (cron-only, no immediate run).
+
+**Why I stopped here instead of also adopting `live-market`**: `live-market` IS user-facing (called from `Card2MarketRadar` on every Model B scan), but adopting it in the same loop as live-news would compound risk — if a regression appears in tomorrow's scan logs, I'd have to bisect across two adoptions instead of one. Pattern says: ship one, observe, then continue.
+
+**What I have proof of**:
+- 302/302 vitest passing
+- live-news type-checks clean and deploys successfully
+- Helper has been smoke-tested at module-load level (deploys cleanly when imported)
+
+**What I do NOT yet have proof of**:
+- A real Firecrawl response flowing through `firecrawlSearch` in production. None of the 2 adopted functions (kg-refresh, live-news) have user traffic. Next adoption (`live-market`) will give us this.
+
+**Owner**: CTO (AI).
+
+---
+
 ## 2026-04-27 — Stopped Firecrawl rollout to verify pilot first; fixed dormant bug in kg-refresh
 
 **Decision**: Paused rollout of the shared Firecrawl helper after the first adoption (kg-refresh). Did NOT proceed to the queued adoptions (live-news → company-news → ...). Instead used this loop to (a) verify deployment of the pilot and (b) fix a pre-existing latent bug discovered during verification.
