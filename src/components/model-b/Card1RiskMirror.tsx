@@ -1,6 +1,8 @@
-// useState and useEffect removed — scan count is now a prop from ResultsModelB
+// useState removed — scan count is now a prop from ResultsModelB
+import { useEffect, useRef } from "react";
 import { CardShell, CardHead, CardBody, Badge, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import BossPerceptionSimulator from "./BossPerceptionSimulator";
+import { useTrack } from "@/hooks/use-track";
 
 interface Props {
   cardData: any;
@@ -358,6 +360,31 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
       displaySubline = `${tenurePhrase} built the kind of judgment models still can't fake. That moat is real — it's also rented, not owned, and re-earned every model release.`;
     }
   }
+
+  // ─── Observability: track which copy path won (LLM vs template).
+  // Operator uses this to decide when prompt quality is good enough to
+  // retire the templates entirely. Fires once per scan_id (ref-guarded
+  // to survive React strict-mode double-mount + re-renders). Silent on
+  // failure — never blocks the UI.
+  const { track } = useTrack(cardData?.scan_id);
+  const trackedRef = useRef(false);
+  useEffect(() => {
+    if (trackedRef.current) return;
+    if (!hasValidScore) return;
+    trackedRef.current = true;
+    const source: "llm" | "template" = isWeakHeadline ? "template" : "llm";
+    const band: "high" | "mid" | "low" = score >= 70 ? "high" : score >= 40 ? "mid" : "low";
+    track("card1_headline_source", {
+      source,
+      family,
+      band,
+      score,
+      llm_headline_len: llmHeadline.length,
+      llm_was_specific: isSpecificHeadline,
+      peer_fallback_used: c1.india_average == null,
+      sector: sector || null,
+    });
+  }, [track, hasValidScore, isWeakHeadline, isSpecificHeadline, family, score, llmHeadline.length, c1.india_average, sector]);
 
   // ─── Peer-comparator fallback: when c1.india_average is null we previously
   // showed "Peer benchmark unavailable" — a credibility hole. Replace with a
