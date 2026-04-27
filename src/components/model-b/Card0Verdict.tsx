@@ -130,8 +130,8 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
   // Reuses the deterministic IP from src/lib/role-family.ts (already in the bundle).
   // Synthesize a minimal ScanReport-shaped object from cardData so we can call detectRoleFamily.
   const roleFamilyInput = {
-    role: u?.current_title || u?.role || c1?.role || "",
-    role_detected: u?.role_detected || u?.current_title || "",
+    role: user?.current_title || user?.role || c1?.role || "",
+    role_detected: user?.role_detected || user?.current_title || "",
   } as any;
   const roleFamily = detectRoleFamily(roleFamilyInput);
   const fam = getFamilyNarrative(roleFamily);
@@ -143,14 +143,14 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
   // ── "We read your resume" proof strip — shown under the masthead.
   // Built from grounded extraction signals: years, top skills, geo.
   // Goal: within 1 second of seeing the verdict, the user knows we parsed their actual file.
-  const yearsExp = u?.years_experience || u?.years || u?.experience;
+  const yearsExp = user?.years_experience || user?.years || user?.experience;
   const topStack: string[] = (() => {
     const all: string[] = Array.isArray(cardData?.all_skills) ? cardData.all_skills : [];
     const moats: string[] = Array.isArray(cardData?.moat_skills) ? cardData.moat_skills : [];
     const picks = moats.length ? moats : all;
     return picks.slice(0, 2).filter(Boolean);
   })();
-  const geoRaw = u?.location || u?.city || u?.country;
+  const geoRaw = user?.location || user?.city || user?.country;
   const geo = typeof geoRaw === "string" && geoRaw.length > 0 && geoRaw.length < 30 ? geoRaw : null;
   const proofParts: string[] = [];
   if (yearsExp && Number(yearsExp) > 0) proofParts.push(`${yearsExp}y`);
