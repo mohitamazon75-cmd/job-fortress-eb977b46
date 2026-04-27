@@ -128,15 +128,14 @@ async function fetchPerplexity(sectorQuery: string, sectorLabel: string, city: s
   const apiKey = Deno.env.get("PERPLEXITY_API_KEY");
   if (!apiKey) return { beats: [], reason: "fetch_failed" };
 
-  const prompt = `Find 2 to 4 news items from the LAST 30 DAYS about ${sectorQuery} in India${city ? ` (focus on ${city} where possible)` : ""}.
+  const prompt = `Find 2 to 4 recent news items (LAST 30 DAYS preferred, up to 45 days acceptable) about ${sectorQuery} in India${city ? ` (${city} relevance is a bonus, not required)` : ""}.
 
-STRICT RULES:
-- Every item MUST be from a real, verifiable news article published by an established Indian or global business publication (Economic Times, Mint, Business Standard, Inc42, Moneycontrol, Reuters, Bloomberg, etc.).
-- Each item MUST classify as exactly one of: "hiring" (expansion, new hires, new offices), "layoff" (cuts, downsizing, hiring freeze), or "funding" (raises, IPO, major M&A, strategic shifts that affect headcount).
-- Skip items where you cannot confidently identify the company name and the article URL.
-- Skip opinion pieces, listicles, and "top 10" content.
-- Return FACTS ONLY — no interpretation, no advice, no commentary on what it means for job seekers.
-- If you cannot find at least 2 confident items, return an empty array.`;
+RULES:
+- Each item must be from a real, verifiable news article published by an established Indian or global business publication (Economic Times, Mint, Business Standard, Inc42, Moneycontrol, Reuters, Bloomberg, YourStory, Times of India business, Forbes India, etc.).
+- Classify each item as exactly one of: "hiring" (expansion, new hires, new offices, fresh recruitment drives), "layoff" (cuts, downsizing, hiring freeze, restructuring), or "funding" (raises, IPO, M&A, major business shifts that affect headcount).
+- Include the article URL and publication date (ISO format).
+- Skip pure opinion pieces and listicles.
+- It is OK to return just 1 item if that's all you can find with confidence — do NOT return an empty array unless you genuinely have nothing.`;
 
   const schema = {
     name: "sector_pulse",
