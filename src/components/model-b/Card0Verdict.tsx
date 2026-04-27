@@ -463,6 +463,24 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           {tier.sub}
         </div>
 
+        {/* Disambiguation caption — clarifies this composite score vs the
+            standalone "AI Exposure %" gauge surfaced in Card 1. Placed below
+            the tier badge (not inside the ring) so it's actually legible. */}
+        <div style={{
+          marginTop: 10,
+          maxWidth: 320,
+          textAlign: "center",
+          fontSize: 11.5,
+          fontWeight: 500,
+          lineHeight: 1.5,
+          color: "var(--mb-muted, #6b7280)",
+          letterSpacing: "0.01em",
+          zIndex: 1,
+        }}>
+          Composite of resume strength, market demand &amp; AI risk —
+          <span style={{ color: "var(--mb-ink2, #374151)", fontWeight: 600 }}> not the same as AI Exposure %</span> shown in Card 1.
+        </div>
+
         {/* Confidence + freshness micro-line */}
         <div style={{
           marginTop: 10,
