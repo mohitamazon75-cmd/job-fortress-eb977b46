@@ -466,6 +466,18 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
     firedHeadlineEvents.add(sid);
     const source: "llm" | "template" = isWeakHeadline ? "template" : "llm";
     const band: "high" | "mid" | "low" = score >= 70 ? "high" : score >= 40 ? "mid" : "low";
+    // Confidence flag — operator triages weak families fastest by filtering
+    // on copy_confidence='low'. "high" = stat-cited families (eng, marketing,
+    // sales, support, etc.). "medium" = directional-only families (healthcare,
+    // legal, edu, mfg, hospitality, creator, research, consulting). "low" =
+    // routed to generic OR fresher path (least personalized).
+    const highConfFamilies: Family[] = ["founder", "exec", "eng", "data", "design", "pm", "marketing", "sales", "ops", "hr", "finance", "support", "content"];
+    const mediumConfFamilies: Family[] = ["healthcare", "legal", "education", "consulting", "manufacturing", "hospitality", "creator", "research"];
+    const copy_confidence: "high" | "medium" | "low" =
+      isFresher || family === "generic" ? "low"
+      : highConfFamilies.includes(family) ? "high"
+      : mediumConfFamilies.includes(family) ? "medium"
+      : "low";
     track("card1_headline_source", {
       source,
       family,
@@ -475,6 +487,8 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
       llm_was_specific: isSpecificHeadline,
       peer_fallback_used: c1.india_average == null,
       sector: sector || null,
+      is_fresher: isFresher,
+      copy_confidence,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardData?.scan_id]);
