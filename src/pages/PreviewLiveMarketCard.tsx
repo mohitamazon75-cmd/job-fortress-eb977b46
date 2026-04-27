@@ -1,7 +1,7 @@
 import "@/styles/model-b-tokens.css";
 import { useSearchParams } from "react-router-dom";
 import LiveMarketCard from "@/components/model-b/LiveMarketCard";
-import { r1Fixture, r3Fixture, r2ThinFixture, execFixture, errorFixture } from "@/components/model-b/liveMarketFixtures";
+import { r1Fixture, r3Fixture, r2ThinFixture, execFixture, errorFixture, tinyFlatPartialFixture } from "@/components/model-b/liveMarketFixtures";
 
 /**
  * Isolated preview route for LiveMarketCard.
