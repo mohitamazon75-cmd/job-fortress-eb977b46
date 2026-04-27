@@ -52,6 +52,8 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
   // Free users never reach it, so prefetching for them burns API budget with zero return.
   const [obituaryData, setObituaryData] = useState<ObituaryData | null>(null);
   const [obituaryLoading, setObituaryLoading] = useState(true);
+  // Hoisted above the bounds-check early return (line 247) to honour rules-of-hooks.
+  const [dragDir, setDragDir] = useState(0);
 
   useEffect(() => {
     // Cost gate: skip the LLM call entirely for free users
@@ -259,7 +261,7 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
     setCardIndex(i => i + 1);
   };
 
-  const [dragDir, setDragDir] = useState(0);
+  // (`dragDir` declared at top of component to honour rules-of-hooks.)
 
   const swipeConfidenceThreshold = 50;
   const handleDragEnd = (_: any, info: { offset: { x: number }; velocity: { x: number } }) => {

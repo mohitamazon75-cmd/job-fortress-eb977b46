@@ -1,5 +1,5 @@
 // useState removed — scan count is now a prop from ResultsModelB
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { CardShell, CardHead, CardBody, Badge, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import BossPerceptionSimulator from "./BossPerceptionSimulator";
 import { useTrack } from "@/hooks/use-track";
@@ -122,6 +122,23 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   // P-3-B: scan count is now fetched once by ResultsModelB and passed as a prop,
   // avoiding a redundant DB query every time this card renders.
   const scanCount = monthlyScanCount ?? null;
+
+  // ─── Hooks MUST run before any early return (rules-of-hooks). The effect
+  // body itself guards against missing data so we don't fire telemetry for
+  // empty cards. We use a ref so the effect re-reads the latest computed
+  // payload without re-firing on every render.
+  const { track } = useTrack(cardData?.scan_id);
+  const headlineTelemetryRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    const sid = cardData?.scan_id;
+    if (!sid) return;
+    if (firedHeadlineEvents.has(sid)) return;
+    const fire = headlineTelemetryRef.current;
+    if (!fire) return;
+    firedHeadlineEvents.add(sid);
+    fire();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardData?.scan_id]);
 
   if (!c1) return null;
 
@@ -249,12 +266,10 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   // unmounts/remounts on every nav. A useRef would re-fire on each
   // remount and over-count by 3-5x. Set survives remounts; resets on
   // full page reload, which IS a new "view" of the report.
-  const { track } = useTrack(cardData?.scan_id);
-  useEffect(() => {
-    const sid = cardData?.scan_id;
-    if (!sid || !hasValidScore) return;
-    if (firedHeadlineEvents.has(sid)) return;
-    firedHeadlineEvents.add(sid);
+  // Effect lives at top of component (before early-return) for rules-of-hooks
+  // — we just provide the closure here once values are computed.
+  headlineTelemetryRef.current = () => {
+    if (!hasValidScore) return;
     track("card1_headline_source", {
       source: isWeak ? "template" : "llm",
       family,
@@ -267,8 +282,7 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
       is_fresher: isFresher,
       copy_confidence: copyConfidence,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cardData?.scan_id]);
+  };
 
   return (
     <CardShell>

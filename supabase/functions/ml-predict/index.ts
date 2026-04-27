@@ -5,6 +5,7 @@
 
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
+import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
 const ML_BASE_URL = "https://dcce6740-52eb-4861-9ab4-1c6ffbf0a3fc-00-17r35n9rdd8su.kirk.replit.dev";
 
@@ -27,8 +28,9 @@ Deno.serve(async (req) => {
 
     console.log(`[ML-Predict] Calling ${endpoint} with ${JSON.stringify(payload).length} bytes`);
 
-    const mlResp = await fetch(`${ML_BASE_URL}/${endpoint}`, {
+    const mlResp = await fetchWithTimeout(`${ML_BASE_URL}/${endpoint}`, {
       method: "POST",
+      timeoutMs: 25000, // Replit can cold-start; cap below default function wall-clock
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });

@@ -3,6 +3,7 @@ import { createTokenTrackingTransform } from "../_shared/token-tracker.ts";
 // Pro gate disabled during beta/waitlist phase — all users get full access
 // import { requirePro } from "../_shared/subscription-guard.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
 
 
@@ -32,9 +33,9 @@ Deno.serve(async (req) => {
     const systemPrompt = buildDossierPrompt();
     const profileContext = buildProfileContext(report);
 
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
+      { timeoutMs: 45000, // streaming dossier; allow more for slow tokens
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,

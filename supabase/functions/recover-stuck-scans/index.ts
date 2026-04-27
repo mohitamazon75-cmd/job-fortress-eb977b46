@@ -6,6 +6,7 @@
 
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { logEdgeError } from "../_shared/edge-logger.ts";
+import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
 const PENDING_TIMEOUT_MIN = 1;     // pending > 1 min → re-trigger (was 2)
 const PROCESSING_TIMEOUT_MIN = 8;  // processing > 8 min → mark error (was 10; tighter w/ raised agent timeouts)
@@ -44,8 +45,11 @@ Deno.serve(async (req) => {
     // request alive via EdgeRuntime.waitUntil inside process-scan itself.
     const triggers = (pendingScans ?? []).map(async (scan: { id: string; created_at: string }) => {
       try {
-        const resp = await fetch(`${supabaseUrl}/functions/v1/process-scan`, {
+        const resp = await fetchWithTimeout(`${supabaseUrl}/functions/v1/process-scan`, {
           method: "POST",
+          // process-scan itself uses EdgeRuntime.waitUntil; we just need the HTTP
+          // ack. 30s is plenty for the trigger to be accepted and queued.
+          timeoutMs: 30000,
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${serviceKey}`,

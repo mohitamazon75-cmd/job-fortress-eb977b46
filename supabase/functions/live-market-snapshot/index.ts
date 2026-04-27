@@ -24,6 +24,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { SKILL_SYNONYMS } from "../_shared/skill-synonyms.ts";
+import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
 const APIFY_ACTOR_ID = "alpcnRV9YI9lYVPWk";
 const CACHE_TTL_HOURS = 6;
@@ -508,8 +509,9 @@ async function fetchApify(role: string, city: string): Promise<ApifyJob[]> {
   const citySlug = slugify(normalizeCity(city));
   const searchUrl = `https://www.naukri.com/${roleSlug}-jobs-in-${citySlug}`;
   const url = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?token=${apiToken}`;
-  const resp = await fetch(url, {
+  const resp = await fetchWithTimeout(url, {
     method: "POST",
+    timeoutMs: 30000, // Apify run-sync, can be slow on cold actor
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       searchUrl,

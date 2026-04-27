@@ -23,6 +23,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, timingSafeEqual, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { logEdgeError, trackUsage } from "../_shared/edge-logger.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
+import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
 import {
   AGENT_1_PROFILER,
@@ -1179,8 +1180,9 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     Promise.all([
-      fetch(`${supabaseUrl}/functions/v1/cohort-match`, {
+      fetchWithTimeout(`${supabaseUrl}/functions/v1/cohort-match`, {
         method: "POST",
+        timeoutMs: 30000,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${serviceKey}`,
@@ -1202,8 +1204,9 @@ Deno.serve(async (req) => {
             risk_score: Math.round(Math.max(0, Math.min(100, Number(s.risk_score || s.automation_risk || 50)))),
             half_life_months: Math.round(Math.max(1, Number(s.estimated_months || s.half_life_months || 24))),
           }));
-          return fetch(`${supabaseUrl}/functions/v1/store-prediction`, {
+          return fetchWithTimeout(`${supabaseUrl}/functions/v1/store-prediction`, {
             method: "POST",
+            timeoutMs: 20000,
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${serviceKey}`,
@@ -1235,8 +1238,9 @@ Deno.serve(async (req) => {
             risk_score: Math.round(Math.max(0, Math.min(100, Number(s.risk_score || s.automation_risk || 50)))),
             half_life_months: Math.round(Math.max(1, Number(s.estimated_months || s.half_life_months || 24))),
           }));
-          return fetch(`${supabaseUrl}/functions/v1/validate-prediction`, {
+          return fetchWithTimeout(`${supabaseUrl}/functions/v1/validate-prediction`, {
             method: "POST",
+            timeoutMs: 20000,
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${serviceKey}`,
