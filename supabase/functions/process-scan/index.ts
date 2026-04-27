@@ -1182,6 +1182,7 @@ Deno.serve(async (req) => {
     Promise.all([
       fetchWithTimeout(`${supabaseUrl}/functions/v1/cohort-match`, {
         method: "POST",
+        timeoutMs: 30000,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${serviceKey}`,
