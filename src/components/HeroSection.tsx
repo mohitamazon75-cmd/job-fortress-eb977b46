@@ -174,20 +174,22 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
             In 4 minutes — know your risk, and exactly what to fix this Sunday.
           </motion.p>
 
-          {/* Sub */}
+          {/* Sub — v2 (2026-04-27): tightened from 47-word feature list to a
+              benefit-led, friction-killing line. Old copy preserved in git
+              history. Funnel will measure the lift via landing_scroll_depth +
+              cta_click in /admin/funnel. To revert, restore the previous
+              <motion.p> block from git. */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
             className="text-lg sm:text-2xl md:text-3xl text-muted-foreground max-w-3xl mx-auto mb-8 sm:mb-12 leading-relaxed font-medium"
           >
-            We analyze your career through{' '}
-            <span className="text-foreground font-bold">7 intelligence cards</span> — risk diagnosis,{' '}
-            skill threats, pivot paths, market data — covering{' '}
-            <span className="text-foreground font-bold">98+ role archetypes</span>,{' '}
-            <span className="text-foreground font-bold">50+ AI tools</span>, and{' '}
-            <span className="text-foreground font-bold">live India market data</span>.{' '}
-            <span className="text-primary font-black">Know your risk. Own your future.</span>
+            Get a personalised{' '}
+            <span className="text-foreground font-bold">AI risk score</span> in{' '}
+            <span className="text-foreground font-bold">4 minutes</span> — based on your real role, skills, and{' '}
+            <span className="text-foreground font-bold">India 2026 hiring data</span>.{' '}
+            <span className="text-primary font-black">Free. No signup to start.</span>
           </motion.p>
 
           {/* Role selector — lets users self-identify before scanning */}
