@@ -44,7 +44,7 @@ const TRUSTED_DOMAINS: ReadonlyArray<string> = [
 
 const CACHE_TTL_HOURS_OK = 24;
 const CACHE_TTL_HOURS_EMPTY = 0.17; // ~10 min — short retry window on empty results
-const PERPLEXITY_TIMEOUT_MS = 5000;
+const PERPLEXITY_TIMEOUT_MS = 22000; // sonar + domain filter typically needs 8–15s; give headroom
 const MAX_BEATS = 4;
 
 interface Beat {
