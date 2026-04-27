@@ -600,7 +600,7 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
                   Your Edge
                 </div>
                 <button
-                  onClick={onNext}
+                  onClick={() => setShowPaywall(true)}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 4,
                     background: "transparent", border: "none", cursor: "pointer",
@@ -608,7 +608,7 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
                     color: "#15803d", padding: 0,
                     fontFamily: "'DM Sans', sans-serif",
                   }}
-                  aria-label="Reveal all unfair edges"
+                  aria-label="Unlock all unfair edges"
                 >
                   Reveal all <ArrowRight size={11} />
                 </button>
