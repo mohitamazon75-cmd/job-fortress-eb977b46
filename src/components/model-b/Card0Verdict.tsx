@@ -864,14 +864,14 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
         </motion.div>
       )}
 
-      {/* CTA */}
+      {/* CTA — primary opens paywall, small skip-link preserves the free Cards 1-7 path */}
       <motion.button
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.05 }}
         whileHover={{ scale: 1.015, y: -1 }}
         whileTap={{ scale: 0.98 }}
-        onClick={onNext}
+        onClick={() => setShowPaywall(true)}
         style={{
           width: "100%",
           padding: "18px 24px",
@@ -883,17 +883,43 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           fontWeight: 800,
           cursor: "pointer",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 10,
+          gap: 4,
           fontFamily: "'DM Sans', sans-serif",
           letterSpacing: "0.01em",
           boxShadow: "0 10px 30px rgba(17,24,39,0.25)",
         }}
       >
-        See How to Survive
-        <ArrowRight size={18} />
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+          Unlock my full defense plan <ArrowRight size={18} />
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 600, opacity: 0.75, letterSpacing: "0.02em" }}>
+          ₹10/day · less than one Swiggy order · cancel anytime
+        </span>
       </motion.button>
+
+      <button
+        onClick={onNext}
+        style={{
+          display: "block",
+          margin: "10px auto 0",
+          background: "transparent",
+          border: "none",
+          fontSize: 11.5,
+          fontWeight: 600,
+          color: "var(--mb-muted, #9ca3af)",
+          cursor: "pointer",
+          textDecoration: "underline",
+          textUnderlineOffset: 3,
+          fontFamily: "'DM Sans', sans-serif",
+          letterSpacing: "0.02em",
+        }}
+        aria-label="Skip the upgrade and explore the free dashboard"
+      >
+        Skip — show me the free dashboard
+      </button>
 
       <p style={{ fontSize: 11, color: "var(--mb-muted, #9ca3af)", textAlign: "center", marginTop: 12, letterSpacing: "0.04em" }}>
         Unlock 7 intelligence cards · Your safe pivot · Defense plan · Live market signals
