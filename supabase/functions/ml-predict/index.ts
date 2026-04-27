@@ -28,8 +28,9 @@ Deno.serve(async (req) => {
 
     console.log(`[ML-Predict] Calling ${endpoint} with ${JSON.stringify(payload).length} bytes`);
 
-    const mlResp = await fetch(`${ML_BASE_URL}/${endpoint}`, {
+    const mlResp = await fetchWithTimeout(`${ML_BASE_URL}/${endpoint}`, {
       method: "POST",
+      timeoutMs: 25000, // Replit can cold-start; cap below default function wall-clock
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
