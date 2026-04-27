@@ -39,6 +39,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Env presence check (firecrawlSearch reads the key from env internally,
+    // but we still want to short-circuit to fallback if either is missing
+    // before doing any cache writes / Gemini calls).
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
