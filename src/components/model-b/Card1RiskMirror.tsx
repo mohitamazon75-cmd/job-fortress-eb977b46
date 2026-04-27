@@ -1,6 +1,8 @@
-// useState and useEffect removed — scan count is now a prop from ResultsModelB
+// useState removed — scan count is now a prop from ResultsModelB
+import { useEffect, useRef } from "react";
 import { CardShell, CardHead, CardBody, Badge, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import BossPerceptionSimulator from "./BossPerceptionSimulator";
+import { useTrack } from "@/hooks/use-track";
 
 interface Props {
   cardData: any;
