@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { formatAnnualLakhs, parsePctRange } from "@/components/model-b/Card1RiskMirror";
+import {
+  formatAnnualLakhs,
+  parsePctRange,
+  parseBandToAnnualInr,
+  deriveMonthlyFromBands,
+} from "@/components/model-b/Card1RiskMirror";
 
 /**
  * Unit tests for the rupee-anchoring helpers used by Card 1 (Risk Mirror).
