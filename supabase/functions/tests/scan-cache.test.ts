@@ -26,7 +26,8 @@ Deno.test("Cache — missing skill signal returns false", () => {
 Deno.test("Cache — valid report with all_skills passes", () => {
   const report = {
     weekly_survival_diet: { items: [] },
-    all_skills: ["Python", "SQL"],
+    role: "Software Engineer",
+    all_skills: ["Python", "SQL", "TypeScript"],
     moat_score: 50,
     _engine_version: 5,
   };
@@ -36,7 +37,9 @@ Deno.test("Cache — valid report with all_skills passes", () => {
 Deno.test("Cache — valid report with execution_skills_dead passes", () => {
   const report = {
     weekly_survival_diet: {},
-    execution_skills_dead: ["Data Entry"],
+    role: "Software Engineer",
+    execution_skills_dead: ["Data Entry", "Form Filling", "Manual QA"],
+    all_skills: ["Python", "SQL", "TypeScript"],
     moat_score: 60,
     _engine_version: 5,
   };
@@ -46,7 +49,9 @@ Deno.test("Cache — valid report with execution_skills_dead passes", () => {
 Deno.test("Cache — valid report with score_breakdown.skill_adjustments passes", () => {
   const report = {
     weekly_survival_diet: {},
-    score_breakdown: { skill_adjustments: [{ skill: "Excel", delta: -5 }] },
+    role: "Software Engineer",
+    score_breakdown: { skill_adjustments: [{ skill: "Excel", delta: -5 }, { skill: "VBA", delta: -3 }, { skill: "PowerBI", delta: 2 }] },
+    all_skills: ["Python", "SQL", "TypeScript"],
     moat_score: 40,
     _engine_version: 5,
   };
@@ -56,7 +61,8 @@ Deno.test("Cache — valid report with score_breakdown.skill_adjustments passes"
 Deno.test("Cache — incompatible market_position_model fails", () => {
   const report = {
     weekly_survival_diet: {},
-    all_skills: ["Python"],
+    role: "Software Engineer",
+    all_skills: ["Python", "SQL", "TypeScript"],
     moat_score: 50,
     _engine_version: 5,
     market_position_model: { wrong_field: true },
@@ -67,7 +73,8 @@ Deno.test("Cache — incompatible market_position_model fails", () => {
 Deno.test("Cache — compatible market_position_model with gaussian_fit_percentile passes", () => {
   const report = {
     weekly_survival_diet: {},
-    all_skills: ["Python"],
+    role: "Software Engineer",
+    all_skills: ["Python", "SQL", "TypeScript"],
     moat_score: 50,
     _engine_version: 5,
     market_position_model: { gaussian_fit_percentile: 45 },
@@ -78,7 +85,8 @@ Deno.test("Cache — compatible market_position_model with gaussian_fit_percenti
 Deno.test("Cache — incompatible career_shock_simulator fails", () => {
   const report = {
     weekly_survival_diet: {},
-    all_skills: ["Python"],
+    role: "Software Engineer",
+    all_skills: ["Python", "SQL", "TypeScript"],
     moat_score: 50,
     _engine_version: 5,
     career_shock_simulator: { wrong_field: true },
@@ -89,7 +97,8 @@ Deno.test("Cache — incompatible career_shock_simulator fails", () => {
 Deno.test("Cache — career_shock_simulator with estimated_job_search_months passes", () => {
   const report = {
     weekly_survival_diet: {},
-    all_skills: ["Python"],
+    role: "Software Engineer",
+    all_skills: ["Python", "SQL", "TypeScript"],
     moat_score: 50,
     _engine_version: 5,
     career_shock_simulator: { estimated_job_search_months: 6 },
@@ -100,7 +109,8 @@ Deno.test("Cache — career_shock_simulator with estimated_job_search_months pas
 Deno.test("Cache — engine_version < 5 fails hasTier", () => {
   const report = {
     weekly_survival_diet: {},
-    all_skills: ["Python"],
+    role: "Software Engineer",
+    all_skills: ["Python", "SQL", "TypeScript"],
     moat_score: 50,
     _engine_version: 4,
   };
@@ -110,7 +120,8 @@ Deno.test("Cache — engine_version < 5 fails hasTier", () => {
 Deno.test("Cache — null moat_score fails hasTier", () => {
   const report = {
     weekly_survival_diet: {},
-    all_skills: ["Python"],
+    role: "Software Engineer",
+    all_skills: ["Python", "SQL", "TypeScript"],
     moat_score: null,
     _engine_version: 5,
   };
@@ -120,7 +131,8 @@ Deno.test("Cache — null moat_score fails hasTier", () => {
 Deno.test("Cache — missing moat_score fails hasTier", () => {
   const report = {
     weekly_survival_diet: {},
-    all_skills: ["Python"],
+    role: "Software Engineer",
+    all_skills: ["Python", "SQL", "TypeScript"],
     _engine_version: 5,
   };
   assertEquals(isCacheCompatible(report), false);
