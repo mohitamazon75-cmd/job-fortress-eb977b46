@@ -329,7 +329,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    const sb = createAdminClient();
+    // Was previously named `sb` while every use-site below referenced
+    // `supabase` — meaning this function ReferenceError'd on every run.
+    // Renamed to match the call sites (one-line fix, scope-justified per
+    // Rule 6: cannot verify the Firecrawl adoption if the function never ran).
+    const supabase = createAdminClient();
 
     // Get all job families
     const { data: jobRows } = await supabase
