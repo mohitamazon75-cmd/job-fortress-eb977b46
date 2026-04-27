@@ -63,16 +63,16 @@ describe("LiveMarketCard — Layer A: tag-table suppression", () => {
   });
 
   it("promotes Hiring Velocity above the (now absent) tag block", () => {
-    renderCard(tinyFlatPartialFixture);
-    const suppressionLine = screen.getByText(/Why we're hiding the tag list/i);
-    // Velocity has multiple matches (the section header + the inline note),
-    // both of which are AFTER the suppression line. Pick the first one.
-    const velocityLabel = screen.getAllByText(/Hiring Velocity/i)[0];
-    // Velocity must come AFTER the suppression line (suppression is the
-    // replacement for the table; velocity follows it). And critically it
-    // must come BEFORE any tag-row text would have rendered.
-    const order = suppressionLine.compareDocumentPosition(velocityLabel);
-    expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const { container } = renderCard(tinyFlatPartialFixture);
+    const html = container.innerHTML;
+    const suppressionIdx = html.indexOf("Why we&#x27;re hiding the tag list");
+    const velocityIdx = html.indexOf("Hiring Velocity");
+    expect(suppressionIdx).toBeGreaterThanOrEqual(0);
+    expect(velocityIdx).toBeGreaterThanOrEqual(0);
+    // Suppression line replaces the tag table; Velocity must follow it.
+    expect(velocityIdx).toBeGreaterThan(suppressionIdx);
+    // And critically, no tag-row text from the screenshot must appear at all.
+    expect(html).not.toContain("Team Handling");
   });
 
   it("does NOT suppress when corpus is strong-band (R1 Java, 50 postings)", () => {
