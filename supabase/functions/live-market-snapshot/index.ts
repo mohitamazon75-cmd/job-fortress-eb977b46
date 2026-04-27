@@ -597,7 +597,35 @@ Deno.serve(async (req) => {
         });
     }
 
-    return json(buildSnapshot(rawJobs, all_skills, cached, role));
+    let snapshot = buildSnapshot(rawJobs, all_skills, cached, role);
+
+    // ── Thin-signal retry (added 2026-04-27) ─────────────────────────────────
+    // For senior roles, Naukri's keyword search returns mostly junior/adjacent
+    // listings. Retry once with a seniority-elevated query and union the
+    // results. Pure additive — never makes the original snapshot worse.
+    if (!cached && snapshot.corpus_relevance?.band === "thin" && !isExecutiveTitle(role)) {
+      const elevated = elevateRoleQuery(role);
+      if (elevated && elevated !== role) {
+        try {
+          console.log(`[live-market-snapshot] Thin signal for "${role}" — retrying with "${elevated}"`);
+          const moreJobs = await fetchApify(elevated, city);
+          const merged = dedupeJobs([...(rawJobs || []), ...moreJobs]);
+          const retrySnapshot = buildSnapshot(merged, all_skills, false, role);
+          // Only swap in if the retry materially improved relevance.
+          if (
+            (retrySnapshot.corpus_relevance?.score ?? 0) >
+            (snapshot.corpus_relevance?.score ?? 0)
+          ) {
+            snapshot = retrySnapshot;
+            console.log(`[live-market-snapshot] Retry improved relevance: ${snapshot.corpus_relevance?.band}`);
+          }
+        } catch (e) {
+          console.warn("[live-market-snapshot] Retry failed (non-fatal):", e instanceof Error ? e.message : e);
+        }
+      }
+    }
+
+    return json(snapshot);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[live-market-snapshot] unhandled:", message);
