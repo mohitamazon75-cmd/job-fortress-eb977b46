@@ -28,6 +28,9 @@ export default function PreviewLiveMarketCard() {
   } else if (state === "thin") {
     role = "Digital Marketing Manager";
     snapshot = r2ThinFixture;
+  } else if (state === "tiny") {
+    role = "Digital Marketing Manager | Growth & Demand Generation Leader";
+    snapshot = tinyFlatPartialFixture;
   } else if (state === "exec") {
     role = "Chief Executive Officer";
     snapshot = execFixture;
