@@ -1240,6 +1240,7 @@ Deno.serve(async (req) => {
           }));
           return fetchWithTimeout(`${supabaseUrl}/functions/v1/validate-prediction`, {
             method: "POST",
+            timeoutMs: 20000,
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${serviceKey}`,
