@@ -192,7 +192,7 @@ function ThinSignalView({
   onPrev?: () => void;
   onNext?: () => void;
 }) {
-  const { posting_count, salary, recency, source, fetched_at, cached } = snapshot;
+  const { posting_count, recency, source, fetched_at, cached } = snapshot;
   return (
     <CardShell>
       <CardHead
