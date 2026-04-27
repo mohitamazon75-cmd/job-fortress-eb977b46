@@ -65,7 +65,9 @@ describe("LiveMarketCard — Layer A: tag-table suppression", () => {
   it("promotes Hiring Velocity above the (now absent) tag block", () => {
     renderCard(tinyFlatPartialFixture);
     const suppressionLine = screen.getByText(/Why we're hiding the tag list/i);
-    const velocityLabel = screen.getByText(/Hiring Velocity/i);
+    // Velocity has multiple matches (the section header + the inline note),
+    // both of which are AFTER the suppression line. Pick the first one.
+    const velocityLabel = screen.getAllByText(/Hiring Velocity/i)[0];
     // Velocity must come AFTER the suppression line (suppression is the
     // replacement for the table; velocity follows it). And critically it
     // must come BEFORE any tag-row text would have rendered.
