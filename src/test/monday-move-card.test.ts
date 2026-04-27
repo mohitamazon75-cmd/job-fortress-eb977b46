@@ -20,6 +20,32 @@ describe("MondayMoveCard.isActionable", () => {
 });
 
 describe("MondayMoveCard.pickMondayMove", () => {
+  it("prefers server-computed monday_move over any other source", () => {
+    const cd = {
+      monday_move: { action: "Send 3 cold emails by Friday.", hinglish: "Test hinglish.", source: "Server", why: "Test why" },
+      card4_pivot: { adjacent_roles: [{ role: "AI Product Manager" }] },
+    };
+    const m = pickMondayMove(cd);
+    expect(m.action).toBe("Send 3 cold emails by Friday.");
+    expect(m.source).toBe("Server");
+    expect(m.why).toBe("Test why");
+  });
+
+  it("falls back to client picker when server monday_move is missing", () => {
+    const cd = { card4_pivot: { adjacent_roles: [{ role: "AI Product Manager" }] } };
+    const m = pickMondayMove(cd);
+    expect(m.action).toContain("AI Product Manager");
+  });
+
+  it("ignores empty server monday_move and falls through", () => {
+    const cd = {
+      monday_move: { action: "" },
+      card4_pivot: { adjacent_roles: [{ role: "Growth PM" }] },
+    };
+    const m = pickMondayMove(cd);
+    expect(m.action).toContain("Growth PM");
+  });
+
   it("prefers a pivot role over the verdict closer", () => {
     const cd = {
       card1_risk: { confrontation: "You are exposed. One revenue outcome you own." },

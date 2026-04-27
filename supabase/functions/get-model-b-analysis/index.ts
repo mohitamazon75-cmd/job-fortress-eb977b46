@@ -289,7 +289,7 @@ Deno.serve(async (req) => {
     // ─── Launch background AI processing ───
     const processPromise = processAnalysis(
       supabase, LOVABLE_API_KEY, analysis_id, user_id,
-      resume_filename, resumeText, userCity,
+      resume_filename ?? "Your Resume", resumeText, userCity,
       scan.role_detected || "", scan.industry || "",
       scan.years_experience || "",
       typeof scan.determinism_index === "number" ? scan.determinism_index : null,
@@ -565,6 +565,19 @@ async function processAnalysis(
     console.warn("[model-b] Trust guardrails failed (non-fatal, keeping LLM output):", gErr);
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DETERMINISTIC MONDAY MOVE (added 2026-04-27)
+  // The LLM sometimes still ends `confrontation` with abstract phrasing.
+  // We compute a guaranteed-actionable Monday Move from the structured payload
+  // and ship it as a top-level field. The frontend prefers this if present.
+  // Pure function, no LLM call, no latency.
+  // ═══════════════════════════════════════════════════════════════════════════
+  try {
+    (cardData as Record<string, unknown>).monday_move = computeMondayMove(cardData);
+  } catch (mErr) {
+    console.warn("[model-b] Monday-move computation failed (non-fatal):", mErr);
+  }
+
   const insertPayload = {
     analysis_id: analysisId,
     user_id: userId,
@@ -769,6 +782,104 @@ function clampNum(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
+// ═══════════════════════════════════════════════════════════════
+// DETERMINISTIC MONDAY MOVE (added 2026-04-27)
+// One concrete, calendarable action picked from the structured payload.
+// Priority: pivot role → critical-gap shield skill → survival diet day-1 →
+//   verdict closer (only if it passes actionability filter) → role-aware
+//   default. Pure function, exported for tests.
+// ═══════════════════════════════════════════════════════════════
+const MM_CONCRETE_VERBS = /\b(open|search|read|write|draft|send|email|call|post|publish|finish|complete|build|ship|record|message|dm|apply|review|list|map|sketch|outline|prepare|book|schedule|pick)\b/i;
+const MM_HAS_NUMBER = /\b\d+\b/;
+const MM_HAS_PROPER_NOUN = /\b[A-Z][a-zA-Z]{2,}/;
+const MM_VAGUE_OPENERS = /^(one|a|an|the)\s+\w+\s+(you|to)\b/i;
+
+export function isMondayActionable(sentence: string): boolean {
+  const s = String(sentence || "").trim();
+  if (s.length < 12 || s.length > 200) return false;
+  if (MM_VAGUE_OPENERS.test(s)) return false;
+  if (!MM_CONCRETE_VERBS.test(s)) return false;
+  return MM_HAS_NUMBER.test(s) || MM_HAS_PROPER_NOUN.test(s);
+}
+
+export function computeMondayMove(cardData: Record<string, unknown>): {
+  action: string;
+  why: string;
+  hinglish: string;
+  source: string;
+} {
+  const cd = cardData || {};
+  const c4 = (cd as any).card4_pivot || {};
+  const c3 = (cd as any).card3_shield || {};
+  const c1 = (cd as any).card1_risk || {};
+  const diet = (cd as any).scan_weekly_diet || (cd as any).weekly_survival_diet;
+
+  const pivots = c4.adjacent_roles || c4.pivots || c4.paths;
+  if (Array.isArray(pivots) && pivots.length > 0) {
+    const role = pivots[0]?.role || pivots[0]?.title;
+    if (role && typeof role === "string") {
+      return {
+        action: `Open Naukri Monday morning. Search "${role}". Read 3 listings end-to-end and copy 5 repeated keywords into a doc.`,
+        why: "Those 5 keywords go straight into your resume this week.",
+        hinglish: `Monday subah Naukri kholo. "${role}" search karo. 3 listings padho, 5 keywords note karo.`,
+        source: "From your pivot paths",
+      };
+    }
+  }
+
+  const skills = c3.skills;
+  if (Array.isArray(skills)) {
+    const gap = skills.find((s: any) => s?.tier === "critical-gap")
+             || skills.find((s: any) => s?.tier === "buildable");
+    if (gap?.name) {
+      return {
+        action: `Open one ${gap.name} tutorial Monday morning. Just one. Watch end-to-end and ship one tiny output by Friday.`,
+        why: `${gap.name} is your highest-leverage skill gap right now.`,
+        hinglish: `Monday ko ek ${gap.name} ka tutorial dekho. Sirf ek. Friday tak ek chhota output ship karo.`,
+        source: "From your skill shield",
+      };
+    }
+  }
+
+  const dietItems = (diet as any)?.items || (diet as any)?.days;
+  if (Array.isArray(dietItems) && dietItems.length > 0) {
+    const first = dietItems[0];
+    const skill = first?.skill || first?.action || first?.title || first?.task;
+    if (skill && typeof skill === "string") {
+      return {
+        action: `Spend 30 minutes on ${skill} Monday morning. Open one tutorial. Finish it.`,
+        why: "Day 1 of the 7-day plan you already have below.",
+        hinglish: `Monday subah 30 minute ${skill} pe lagao. Ek tutorial. Khatam karo.`,
+        source: "From your survival diet",
+      };
+    }
+  }
+
+  const conf = c1.confrontation;
+  if (typeof conf === "string" && conf.trim().length > 0) {
+    const sentences = conf.split(/(?<=[.!?])\s+/).map((s: string) => s.trim()).filter(Boolean);
+    const candidates = [sentences[sentences.length - 1], sentences[sentences.length - 2]].filter(Boolean) as string[];
+    const good = candidates.find(isMondayActionable);
+    if (good) {
+      return {
+        action: good,
+        why: "From your risk verdict — pulled because it names a concrete next step.",
+        hinglish: "Yeh ek kaam Monday subah karo. Bas yahi.",
+        source: "From your risk verdict",
+      };
+    }
+  }
+
+  const role = (cd as any)?.user?.current_title || (cd as any)?.role || "your role";
+  const search = typeof role === "string" && role.trim().length > 2 ? role : "your role";
+  return {
+    action: `Open Naukri Monday morning. Search "${search}". Read 3 listings end-to-end and copy 5 repeated keywords.`,
+    why: "Even 20 minutes here beats another anxious doom-scroll.",
+    hinglish: `Monday subah Naukri kholo. "${search}" search karo. 3 listings padho, 5 keywords note karo.`,
+    source: "Default action",
+  };
+}
+
 export function applyTrustGuardrails(
   cardData: Record<string, unknown>,
   detScoreAnchor: number | null,
@@ -969,8 +1080,9 @@ Replace generic "emotion_message" with this 3-part structure (GUIDANCE, not fixe
 - hope_bridge: 1-2 sentences, max 25 words total. Point to ONE specific asset from the user's resume (named skill, named pattern of decisions, named domain). Explain defensibility in evidence-based terms — NEVER "AI cannot replicate" absolutes. Prefer: "AI can't synthesize [specific thing the user has done repeatedly]." Voice Guide Rule 7.
 
 Also include:
-- confrontation: Directly challenge them. End with a specific action, not a question.
-  Example: "You've managed ₹2Cr budgets but never owned a P&L. Fix that this week. One case study. One number. One outcome you own."
+- confrontation: Directly challenge them. End with a CONCRETE, CALENDARABLE action — must contain (a) a verb the user can actually do (open, send, write, draft, post, publish, finish, build, ship, record, message, apply, review, schedule), (b) a number or named tool/company/skill, (c) a time anchor (this week / by Friday / Monday morning / tonight). NEVER end with abstractions like "one outcome you own", "a skill you actually use", "the future you choose" — those read as koans, not actions. NEVER end with a question.
+  Good example: "You've managed ₹2Cr budgets but never owned a P&L. Pick one product line. Email the VP this Friday with a 2-page case study and one number you'll own next quarter."
+  Bad example (do NOT do this): "You've managed ₹2Cr budgets but never owned a P&L. Fix that this week. One outcome you own."
 
 ═══ SCORING FRAMEWORK ═══
 - risk_score: Automation exposure (40%) + market demand trajectory (25%) + skill moat depth (20%) + seniority protection (15%)
@@ -1092,7 +1204,7 @@ card1_risk: {
   fear_hook: string (2 SHORT sentences, max 35 words total. First sentence names 2-3 specific tools or market movements CURRENTLY doing the user's billable work — present-tense observation only. No absolute-date predictions. No "your employer will know" phrasing. No jargon from the MBA-speak ban list above. See VOICE GUIDE Rule 2 + the guidance block above.),
   tough_love: string (2 SHORT sentences, max 30 words total. First: acknowledge what the user built over their years in the field. Second: name the current shift and how their billable work relates. NEVER assume a specific duration of future career (no "the next X years will reward…"). Match tone to risk_score. See VOICE GUIDE Rule 4 + Rule 8.),
   hope_bridge: string (1-2 sentences, max 25 words total. Point to ONE specific asset from the user's resume. Explain why it's defensible with evidence-based reasoning — NOT "AI cannot replicate" absolutes. Prefer: "AI can't synthesize [specific thing they have done repeatedly across years]." See VOICE GUIDE Rule 7.),
-  confrontation: string (3 short sentences. End with a specific action: "Fix that this week. One case study. One number. One outcome you own." — never end with a question),
+  confrontation: string (3 short sentences. The LAST sentence MUST be a calendarable action — verb + number-or-named-thing + time anchor. Good: "Email the demand-gen VP at Razorpay by Friday with a 2-page Growth Plan." Bad: "One outcome you own." / "A skill you actually use." / "The future you choose." Never end with a question or an abstract noun phrase.),
   emotion_message: string (combine fear_hook + hope_bridge for backward compatibility),
   risk_score: integer,
   india_average: integer OR null (ONLY populate if a real role-level benchmark value is provided in the INDIA MARKET FACTS context above; otherwise null. Do NOT invent or estimate.),

@@ -168,6 +168,31 @@ function compactRoleForSearch(role: string): string {
   return (compact.length >= 2 ? compact : tokens.slice(0, 4)).join(" ") || role;
 }
 
+// ── Thin-signal retry helpers (added 2026-04-27) ────────────────────────────
+const SENIORITY_PREFIXES = ["senior", "sr", "lead", "principal", "head", "director", "vp", "chief"];
+export function elevateRoleQuery(role: string): string | null {
+  const r = String(role || "").trim();
+  if (!r) return null;
+  const lower = r.toLowerCase();
+  if (SENIORITY_PREFIXES.some((p) => lower.startsWith(p + " ") || lower.startsWith(p + "."))) {
+    if (/^(senior|sr\.?)\s/i.test(r)) return r.replace(/^(senior|sr\.?)\s/i, "Head of ");
+    if (/^lead\s/i.test(r)) return r.replace(/^lead\s/i, "Director of ");
+    if (/^principal\s/i.test(r)) return r.replace(/^principal\s/i, "Head of ");
+    return null;
+  }
+  return `Senior ${r}`;
+}
+
+export function dedupeJobs<T extends { jobLink?: string; jobTitle?: string; companyName?: string }>(jobs: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const j of jobs) {
+    const key = (j.jobLink || `${(j.jobTitle || "").toLowerCase()}|${(j.companyName || "").toLowerCase()}`).trim();
+    if (key && !seen.has(key)) { seen.add(key); out.push(j); }
+  }
+  return out;
+}
+
 // Inline copy of skillPresent from apify-naukri-jobs/index.ts.
 // Kept verbatim so the matcher behaviour is identical to the existing
 // production matcher. If that helper changes, mirror the change here.
@@ -597,7 +622,35 @@ Deno.serve(async (req) => {
         });
     }
 
-    return json(buildSnapshot(rawJobs, all_skills, cached, role));
+    let snapshot = buildSnapshot(rawJobs, all_skills, cached, role);
+
+    // ── Thin-signal retry (added 2026-04-27) ─────────────────────────────────
+    // For senior roles, Naukri's keyword search returns mostly junior/adjacent
+    // listings. Retry once with a seniority-elevated query and union the
+    // results. Pure additive — never makes the original snapshot worse.
+    if (!cached && snapshot.corpus_relevance?.band === "thin" && !isExecutiveTitle(role)) {
+      const elevated = elevateRoleQuery(role);
+      if (elevated && elevated !== role) {
+        try {
+          console.log(`[live-market-snapshot] Thin signal for "${role}" — retrying with "${elevated}"`);
+          const moreJobs = await fetchApify(elevated, city);
+          const merged = dedupeJobs([...(rawJobs || []), ...moreJobs]);
+          const retrySnapshot = buildSnapshot(merged, all_skills, false, role);
+          // Only swap in if the retry materially improved relevance.
+          if (
+            (retrySnapshot.corpus_relevance?.score ?? 0) >
+            (snapshot.corpus_relevance?.score ?? 0)
+          ) {
+            snapshot = retrySnapshot;
+            console.log(`[live-market-snapshot] Retry improved relevance: ${snapshot.corpus_relevance?.band}`);
+          }
+        } catch (e) {
+          console.warn("[live-market-snapshot] Retry failed (non-fatal):", e instanceof Error ? e.message : e);
+        }
+      }
+    }
+
+    return json(snapshot);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[live-market-snapshot] unhandled:", message);

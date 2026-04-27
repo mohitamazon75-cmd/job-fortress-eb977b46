@@ -33,6 +33,17 @@ function isActionable(sentence: string): boolean {
 
 /** Pick the single highest-leverage action for this user's Monday morning. */
 function pickMondayMove(cardData: CardData): Move {
+  // ── Priority 0: server-computed monday_move (deterministic, from get-model-b-analysis) ──
+  const server = cardData?.monday_move;
+  if (server && typeof server === "object" && typeof server.action === "string" && server.action.trim().length > 0) {
+    return {
+      action: String(server.action),
+      hinglish: String(server.hinglish || "Yeh ek kaam Monday subah karo. Bas yahi."),
+      source: String(server.source || "Your Monday move"),
+      why: typeof server.why === "string" ? server.why : undefined,
+    };
+  }
+
   // ── Priority 1: a target role from pivot paths (most concrete: search + read) ──
   const pivots = cardData?.card4_pivot?.adjacent_roles || cardData?.card4_pivot?.paths;
   if (Array.isArray(pivots) && pivots.length > 0) {
