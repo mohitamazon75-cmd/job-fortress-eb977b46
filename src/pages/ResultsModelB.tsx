@@ -171,6 +171,10 @@ export default function ResultsModelB() {
   const [journeyDone, setJourneyDone] = useState(initialJourney.done);
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
+  // Risk-card rupee anchoring: pull the user's estimated monthly salary from the
+  // scan record so Card1 can convert percentage gaps into absolute ₹ values.
+  // (Component layer — does not change LLM contract.)
+  const [monthlySalaryInr, setMonthlySalaryInr] = useState<number | null>(null);
   // Feature 3: Weekly intel for the Tools tab Judo section — fetched lazily when Tools tab opens.
   const [weeklyIntel, setWeeklyIntel] = useState<WeeklyIntelData | null>(null);
   const [weeklyIntelLoading, setWeeklyIntelLoading] = useState(false);
@@ -455,6 +459,20 @@ export default function ResultsModelB() {
           setMonthlyScanCount(Math.floor(count / 10) * 10);
         }
       }, () => { /* P0 #3: swallow RLS/network errors silently */ });
+
+    // Pull monthly salary for this scan so Card1 can render rupee-anchored cost lines.
+    if (analysisId) {
+      supabase
+        .from("scans")
+        .select("estimated_monthly_salary_inr")
+        .eq("id", analysisId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!isMountedRef.current) return;
+          const v = (data as any)?.estimated_monthly_salary_inr;
+          if (typeof v === "number" && v > 0) setMonthlySalaryInr(v);
+        }, () => { /* swallow silently — card has graceful fallback */ });
+    }
   }, [analysisId, navigate, fetchAnalysis]);
 
   // Loading message cycling
@@ -786,7 +804,7 @@ export default function ResultsModelB() {
         {cardData && !loading && !error && (
           <>
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
-            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} />}
+            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} />}
             {currentCard === 2 && (() => {
               const u = cardData.user || {};
               const role = u.current_title || cardData.role || "Professional";
