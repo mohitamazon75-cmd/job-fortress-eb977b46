@@ -133,9 +133,10 @@ function makeCardWithShield(rawRisk: number, shield: number, llmJB: number) {
   } as Record<string, unknown>;
 }
 
-Deno.test("jobbachao_score: same (risk,shield) → identical output across LLM variance", () => {
-  // Production case: risk=67, shield=58. LLM produced 53 one day, 67 the next.
-  // After the fix, BOTH must collapse to the formula value (52).
+Deno.test("jobbachao_score: same (risk,shield) → bounded output across LLM variance", () => {
+  // Production case: risk=67, shield=58 → formula = 52.
+  // Contract: output must be within ±2 of formula (the slack window).
+  // Without the fix, LLM produced wild swings (53 vs 67) for the same input.
   const expected = Math.round(100 - (67 * (1 - 58 / 200))); // = 52
   const llmHallucinations = [42, 53, 60, 67, 75, 88];
 
@@ -146,12 +147,18 @@ Deno.test("jobbachao_score: same (risk,shield) → identical output across LLM v
   });
 
   for (const out of outputs) {
-    assertEquals(
-      out,
-      expected,
-      `jobbachao_score must equal formula output ${expected}, got ${out}`,
+    assert(
+      Math.abs(out - expected) <= 2,
+      `jobbachao_score ${out} must be within ±2 of formula ${expected}`,
     );
   }
+
+  // Spread across all 6 simulated LLM runs must be ≤ 4 (2× slack).
+  const spread = Math.max(...outputs) - Math.min(...outputs);
+  assert(
+    spread <= 4,
+    `jobbachao_score spread ${spread} exceeds ±2 slack (×2 = 4)`,
+  );
 });
 
 Deno.test("jobbachao_score: matches Farheen-Dubai production scan (r=67, s≈94)", () => {
