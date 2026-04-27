@@ -19,6 +19,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { sendScoreAlertWhatsApp, normaliseIndiaPhone } from "../_shared/whatsapp-sender.ts";
+import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
 const SITE_URL = "https://jobbachao.com";
 const MIN_DRIFT_TO_NOTIFY = 3;       // points — below this is noise
