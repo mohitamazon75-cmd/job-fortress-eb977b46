@@ -123,9 +123,10 @@ serve(async (req) => {
   if (auth.kind === "unauthorized") return auth.response;
 
   try {
-    const body = (await req.json().catch(() => ({}))) as ResolverInput;
-    const gapTitle = (body.gap_title || "").trim();
-    if (!gapTitle) return errResponse(req, "gap_title is required", 400);
+    const parsedBody = await validateBody(req, LearningPathSchema, getCorsHeaders(req));
+    if (parsedBody.kind === "invalid") return parsedBody.response;
+    const body = parsedBody.data;
+    const gapTitle = body.gap_title.trim();
     const role = (body.role || "").trim();
     const cacheKey = await buildCacheKey(gapTitle, role);
 

@@ -4,6 +4,11 @@ import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
+
+const ParseResumeSchema = z.object({
+  resumeFilePath: z.string().min(1).max(512),
+});
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
@@ -17,14 +22,9 @@ Deno.serve(async (req) => {
     const auth = await requireAuth(req, corsHeaders);
     if (auth.kind === "unauthorized") return auth.response;
 
-    const { resumeFilePath } = await req.json();
-
-    if (!resumeFilePath) {
-      return new Response(
-        JSON.stringify({ error: "resumeFilePath is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const parsed = await validateBody(req, ParseResumeSchema, corsHeaders);
+    if (parsed.kind === "invalid") return parsed.response;
+    const { resumeFilePath } = parsed.data;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

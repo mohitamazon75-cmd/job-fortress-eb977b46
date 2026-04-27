@@ -329,15 +329,15 @@ serve(async (req) => {
   if (auth.kind === "unauthorized") return auth.response;
 
   try {
-    const body = (await req.json().catch(() => ({}))) as ResolverInput;
-    const scanId = (body.scan_id || "").trim();
-    const role = (body.role || "").trim();
+    const parsedBody = await validateBody(req, HumanEdgeSchema, getCorsHeaders(req));
+    if (parsedBody.kind === "invalid") return parsedBody.response;
+    const body = parsedBody.data;
+    const scanId = body.scan_id.trim();
+    const role = body.role.trim();
     const topAdv = (body.top_advantage || "").trim();
     const city = (body.city || "").trim();
-    const skills = Array.isArray(body.skills) ? body.skills.filter(Boolean) : [];
+    const skills = (body.skills || []).filter(Boolean);
     const expBand = (body.years_experience || "").trim();
-
-    if (!scanId || !role) return errResponse(req, "scan_id and role are required", 400);
 
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

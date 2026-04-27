@@ -9,6 +9,20 @@ import { guardRequest } from "../_shared/abuse-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
 import { scoreProfile, type ProfileInput, type RiskReport } from "../_shared/riskiq-scoring.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
+
+const RiskIQSchema = z.object({
+  profile: z.object({
+    role: z.string().min(1).max(200),
+    industry: z.string().min(1).max(200),
+    experience: z.string().min(1).max(50),
+    city: z.string().min(1).max(120),
+    education: z.string().min(1).max(200),
+    skills: z.array(z.string().max(100)).max(50).optional(),
+  }).passthrough(),
+  raw_text: z.string().max(50_000).optional(),
+  stream: z.boolean().optional(),
+});
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const PERPLEXITY_URL = "https://api.perplexity.ai/chat/completions";
@@ -28,11 +42,9 @@ Deno.serve(async (req) => {
     const auth = await requireAuth(req, corsHeaders);
     if (auth.kind === "unauthorized") return auth.response;
 
-    const { profile, raw_text, stream } = await req.json() as { profile: ProfileInput; raw_text?: string; stream?: boolean };
-
-    if (!profile?.role || !profile?.industry || !profile?.experience || !profile?.city || !profile?.education) {
-      return new Response(JSON.stringify({ error: "All 5 profile fields required" }), { status: 400, headers: jsonHeaders });
-    }
+    const parsedBody = await validateBody(req, RiskIQSchema, corsHeaders);
+    if (parsedBody.kind === "invalid") return parsedBody.response;
+    const { profile, raw_text, stream } = parsedBody.data as { profile: ProfileInput; raw_text?: string; stream?: boolean };
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {

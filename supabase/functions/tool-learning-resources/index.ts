@@ -1,8 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
 
-
+const ToolLearningSchema = z.object({
+  tool_name: z.string().min(1).max(200),
+  skill_name: z.string().min(1).max(200),
+});
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -16,14 +20,9 @@ serve(async (req) => {
   if (auth.kind === "unauthorized") return auth.response;
 
   try {
-    const { tool_name, skill_name } = await req.json();
-
-    if (!tool_name || !skill_name) {
-      return new Response(
-        JSON.stringify({ error: "tool_name and skill_name are required" }),
-        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-      );
-    }
+    const parsed = await validateBody(req, ToolLearningSchema, getCorsHeaders(req));
+    if (parsed.kind === "invalid") return parsed.response;
+    const { tool_name, skill_name } = parsed.data;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

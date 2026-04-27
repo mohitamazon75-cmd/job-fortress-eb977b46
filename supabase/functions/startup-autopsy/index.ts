@@ -245,12 +245,9 @@ Deno.serve(async (req: Request) => {
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { idea, background, founderProfile } = await req.json();
-    if (!idea || idea.trim().length < 10) {
-      return new Response(JSON.stringify({ error: "Please describe your startup idea (at least 10 characters)" }), {
-        status: 400, headers: { ...cors, "Content-Type": "application/json" },
-      });
-    }
+    const parsedBody = await validateBody(req, AutopsySchema, cors);
+    if (parsedBody.kind === "invalid") return parsedBody.response;
+    const { idea, background, founderProfile } = parsedBody.data;
 
     const startMs = Date.now();
 

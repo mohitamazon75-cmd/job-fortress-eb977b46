@@ -1,8 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
 
-
+const ActionContentSchema = z.object({
+  // Prompts can be long but must be bounded — protects LLM cost.
+  prompt: z.string().min(1).max(20_000),
+  title: z.string().max(300).optional(),
+  stream: z.boolean().optional(),
+});
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
@@ -19,14 +25,9 @@ serve(async (req) => {
   if (auth.kind === "unauthorized") return auth.response;
 
   try {
-    const { prompt, title, stream: clientWantsStream = true } = await req.json();
-
-    if (!prompt || typeof prompt !== "string") {
-      return new Response(
-        JSON.stringify({ error: "prompt is required" }),
-        { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-      );
-    }
+    const parsed = await validateBody(req, ActionContentSchema, corsHeaders);
+    if (parsed.kind === "invalid") return parsed.response;
+    const { prompt, title, stream: clientWantsStream = true } = { stream: true, ...parsed.data };
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

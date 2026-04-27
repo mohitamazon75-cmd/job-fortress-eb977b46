@@ -56,11 +56,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { scan_id, user_id } = await req.json();
-    if (!scan_id) {
-      return new Response(JSON.stringify({ error: "scan_id required" }), 
-        { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
-    }
+    const parsedBody = await validateBody(req, TrajectorySchema, cors);
+    if (parsedBody.kind === "invalid") return parsedBody.response;
+    const { scan_id, user_id } = parsedBody.data;
 
     const supabase = createAdminClient();
 
