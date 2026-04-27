@@ -41,7 +41,7 @@ function renderCard(snapshot: typeof tinyFlatPartialFixture) {
 
 describe("LiveMarketCard — Layer A: tag-table suppression", () => {
   it("suppresses the tag table when partial + tiny + flat (screenshot scenario)", () => {
-    render(<LiveMarketCard {...baseProps} snapshotOverride={tinyFlatPartialFixture} />);
+    renderCard(tinyFlatPartialFixture);
     // The "Top tags employers are asking for" header must NOT appear.
     expect(screen.queryByText(/Top tags employers are asking for/i)).toBeNull();
     // Suppression copy MUST appear.
@@ -52,7 +52,7 @@ describe("LiveMarketCard — Layer A: tag-table suppression", () => {
   });
 
   it("renders the verdict headline when suppression fires", () => {
-    render(<LiveMarketCard {...baseProps} snapshotOverride={tinyFlatPartialFixture} />);
+    renderCard(tinyFlatPartialFixture);
     expect(
       screen.getByRole("heading", { name: /too thin to read/i })
     ).toBeInTheDocument();
@@ -63,7 +63,7 @@ describe("LiveMarketCard — Layer A: tag-table suppression", () => {
   });
 
   it("promotes Hiring Velocity above the (now absent) tag block", () => {
-    render(<LiveMarketCard {...baseProps} snapshotOverride={tinyFlatPartialFixture} />);
+    renderCard(tinyFlatPartialFixture);
     const suppressionLine = screen.getByText(/Why we're hiding the tag list/i);
     const velocityLabel = screen.getByText(/Hiring Velocity/i);
     // Velocity must come AFTER the suppression line (suppression is the
@@ -74,7 +74,7 @@ describe("LiveMarketCard — Layer A: tag-table suppression", () => {
   });
 
   it("does NOT suppress when corpus is strong-band (R1 Java, 50 postings)", () => {
-    render(<LiveMarketCard {...baseProps} snapshotOverride={r1Fixture} />);
+    renderCard(r1Fixture);
     expect(
       screen.getByText(/Top tags employers are asking for/i)
     ).toBeInTheDocument();
@@ -86,7 +86,7 @@ describe("LiveMarketCard — Layer A: tag-table suppression", () => {
   });
 
   it("does NOT suppress when partial-band but the sample is healthy (R3, 50 postings, varied pcts)", () => {
-    render(<LiveMarketCard {...baseProps} snapshotOverride={r3Fixture} />);
+    renderCard(r3Fixture);
     // R3 is partial but with 50 postings and a wide tag-pct spread (44→18),
     // the tag table is still informative — keep it, keep the disclaimer.
     expect(
