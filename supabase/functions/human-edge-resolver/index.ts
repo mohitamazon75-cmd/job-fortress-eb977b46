@@ -28,6 +28,17 @@
 // ════════════════════════════════════════════════════════════════
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
+
+const HumanEdgeSchema = z.object({
+  scan_id: z.string().trim().min(1, "scan_id is required").max(64),
+  role: z.string().trim().min(1, "role is required").max(200),
+  top_advantage: z.string().max(300).optional(),
+  city: z.string().max(120).optional(),
+  skills: z.array(z.string().max(120)).max(50).optional(),
+  years_experience: z.string().max(50).optional(),
+  current_score: z.number().optional(),
+});
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders, handleCorsPreFlight, okResponse, errResponse } from "../_shared/cors.ts";
 import { fetchAdzunaSalaryForRole } from "../_shared/adzuna-salary.ts";
