@@ -2,6 +2,7 @@ import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { detectExecutiveTier, buildExecutiveModeBlock } from "../_shared/executive-mode.ts";
 import { CircuitBreaker } from "../_shared/circuit-breaker.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 // Module-level breaker — shared across invocations on the same isolate.
 // 3 consecutive india-jobs failures → 60s cooldown using LLM fallback.
@@ -22,6 +23,10 @@ Deno.serve(async (req) => {
   }
 
   const jsonHeaders = { ...getCorsHeaders(req), "Content-Type": "application/json" };
+
+  // P0 hardening: require valid JWT — this is the heaviest LLM path in the product.
+  const auth = await requireAuth(req, getCorsHeaders(req));
+  if (auth.kind === "unauthorized") return auth.response;
 
   try {
     const body = await req.json();

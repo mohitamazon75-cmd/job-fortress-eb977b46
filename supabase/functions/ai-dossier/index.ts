@@ -4,6 +4,7 @@ import { createTokenTrackingTransform } from "../_shared/token-tracker.ts";
 // import { requirePro } from "../_shared/subscription-guard.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 
 
@@ -11,6 +12,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: getCorsHeaders(req) });
   }
+
+  // P0 hardening: require valid JWT — this function calls paid LLM (Gemini Pro).
+  const auth = await requireAuth(req, getCorsHeaders(req));
+  if (auth.kind === "unauthorized") return auth.response;
 
   // Pro gate disabled during beta/waitlist phase
   // const subGuard = await requirePro(req);

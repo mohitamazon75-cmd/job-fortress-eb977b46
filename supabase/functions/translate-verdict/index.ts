@@ -5,6 +5,7 @@
 
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
@@ -13,6 +14,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
   const corsHeaders = getCorsHeaders(req);
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+
+  // P0 hardening: require valid JWT — paid LLM call.
+  const auth = await requireAuth(req, corsHeaders);
+  if (auth.kind === "unauthorized") return auth.response;
 
   try {
     const apiKey = Deno.env.get("LOVABLE_API_KEY");

@@ -1,5 +1,6 @@
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { callAgent, PRO_MODEL, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // STARTUP AUTOPSY ENGINE v2 — 4-STAGE FORENSIC ANALYSIS
@@ -235,6 +236,10 @@ Return ONLY valid JSON:
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
   const cors = getCorsHeaders(req);
+
+  // P0 hardening: require valid JWT — multi-stage LLM pipeline (4 calls).
+  const auth = await requireAuth(req, cors);
+  if (auth.kind === "unauthorized") return auth.response;
 
   try {
     const apiKey = Deno.env.get("LOVABLE_API_KEY");

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 
 
@@ -12,6 +13,10 @@ serve(async (req) => {
   }
 
   const corsHeaders = getCorsHeaders(req);
+
+  // P0 hardening: require valid JWT — this function streams paid LLM tokens.
+  const auth = await requireAuth(req, corsHeaders);
+  if (auth.kind === "unauthorized") return auth.response;
 
   try {
     const { prompt, title, stream: clientWantsStream = true } = await req.json();
