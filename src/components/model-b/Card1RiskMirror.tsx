@@ -163,6 +163,54 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
 
   const roleForSim = u.current_title || u.role || c1.role || "your role";
 
+  // ─── Batch F: personalized verdict hook ────────────────────────────────
+  // Lead with a band-aware, role-named one-liner BEFORE the gauge so the
+  // user reads a verdict, not a clinical metric label. Uses only fields
+  // the LLM already returns (no schema change). "Indicative not absolute"
+  // tone preserved per mem://style/tone-and-liability-calibration —
+  // we never claim "you WILL be replaced", only what's already shifting.
+  const score = c1.risk_score || 0;
+  const titleRaw = (u.current_title || u.role || c1.role || "").trim();
+  const titleClean = titleRaw && titleRaw.toLowerCase() !== "your role" ? titleRaw : "your role";
+  const topTask = Array.isArray(c1.tasks_at_risk) && c1.tasks_at_risk[0]
+    ? String(c1.tasks_at_risk[0]).replace(/\.$/, "").toLowerCase()
+    : null;
+
+  let verdictHook: { kicker: string; line: string; tone: "red" | "amber" | "green" } | null = null;
+  if (score >= 70) {
+    verdictHook = {
+      kicker: "The verdict",
+      tone: "red",
+      line: topTask
+        ? `${titleClean}s are losing ${topTask} to AI right now. ${score}% of your daily execution is already machine-native — and the window to reposition is closing.`
+        : `${score}% of what a ${titleClean} does daily is already machine-native. The window to reposition is closing.`,
+    };
+  } else if (score >= 40) {
+    verdictHook = {
+      kicker: "The verdict",
+      tone: "amber",
+      line: topTask
+        ? `AI isn't taking your ${titleClean} seat — yet. But ${score}% of what you do daily is now machine-native, starting with ${topTask}. The strategy layer is still yours; the execution layer is borrowed time.`
+        : `AI isn't taking your ${titleClean} seat — yet. But ${score}% of what you do daily is now machine-native. The strategy layer is still yours; the execution layer is borrowed time.`,
+    };
+  } else {
+    verdictHook = {
+      kicker: "The verdict",
+      tone: "green",
+      line: `Your ${titleClean} role sits in AI's blind spot — only ${score}% of your daily work is automatable today. The moat holds. Your job is to keep it that way.`,
+    };
+  }
+
+  const verdictBg = verdictHook.tone === "red" ? "var(--mb-red-tint)"
+    : verdictHook.tone === "amber" ? "var(--mb-amber-tint)"
+    : "var(--mb-green-tint)";
+  const verdictBorder = verdictHook.tone === "red" ? "rgba(174,40,40,0.28)"
+    : verdictHook.tone === "amber" ? "rgba(196,142,30,0.30)"
+    : "rgba(26,107,60,0.28)";
+  const verdictAccent = verdictHook.tone === "red" ? "var(--mb-red)"
+    : verdictHook.tone === "amber" ? "var(--mb-amber)"
+    : "var(--mb-green)";
+
   return (
     <CardShell>
       <CardHead
@@ -171,16 +219,23 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         sub={c1.subline || ""}
       />
       <CardBody>
-        {/* ─────────────── 1. AI Exposure gauge — promoted to top ─────────────── */}
-        <div style={{ padding: "10px 14px 6px" }}>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--mb-ink3)" }}>
-            AI Exposure for this role
+        {/* ─────────────── Batch F: Personalized verdict hook (above gauge) ─────────────── */}
+        <div style={{ background: verdictBg, border: `2px solid ${verdictBorder}`, borderLeft: `5px solid ${verdictAccent}`, borderRadius: 14, padding: "16px 18px 18px", marginBottom: 14 }}>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: verdictAccent, marginBottom: 8 }}>
+            {verdictHook.kicker}
           </div>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginTop: 2 }}>
-            Different from your overall JobBachao score (top of page) — this measures only automation risk.
+          <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 19, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.45, margin: 0, letterSpacing: "-0.01em" }}>
+            {verdictHook.line}
+          </p>
+        </div>
+
+        {/* ─────────────── 1. AI Exposure gauge — now evidence, not headline ─────────────── */}
+        <div style={{ padding: "4px 14px 6px" }}>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--mb-ink3)" }}>
+            The evidence · AI exposure for this role
           </div>
         </div>
-        <div style={{ display: "flex", gap: 20, alignItems: "center", padding: 20, background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 16, marginBottom: 18, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
+        <div style={{ display: "flex", gap: 20, alignItems: "center", padding: 20, background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 16, marginBottom: 8, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
           <svg width={100} height={100} viewBox="0 0 100 100">
             <circle cx={50} cy={50} r={r} fill="none" stroke="var(--mb-rule)" strokeWidth={9} />
             <circle cx={50} cy={50} r={r} fill="none" stroke={gaugeColor} strokeWidth={9} strokeLinecap="round" transform="rotate(-90 50 50)" strokeDasharray={circumference} strokeDashoffset={offset} style={{ transition: "stroke-dashoffset 0.8s ease" }} />
@@ -188,15 +243,16 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
             <text x={50} y={66} textAnchor="middle" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 800, fill: "var(--mb-ink3)", textTransform: "uppercase", letterSpacing: "0.14em" }}>AI EXPOSURE</text>
           </svg>
           <div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8, lineHeight: 1.3 }}>
-              {c1.risk_score >= 70 ? "🔴 High exposure — act now" : c1.risk_score >= 40 ? "🟡 Moderate exposure — your framing costs you" : "🟢 Low exposure — strong position"}
-            </div>
             {c1.india_average != null && (
               <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.7, fontWeight: 500 }}>
-                India average for this role: <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{c1.india_average}%</strong>. You're {(c1.risk_score || 0) > c1.india_average ? "above" : "below"} it.
+                India average for this role: <strong style={{ fontWeight: 800, color: "var(--mb-ink)" }}>{c1.india_average}%</strong>. You're <strong style={{ fontWeight: 800, color: (c1.risk_score || 0) > c1.india_average ? "var(--mb-red)" : "var(--mb-green)" }}>{(c1.risk_score || 0) > c1.india_average ? "above" : "below"}</strong> it.
               </div>
             )}
           </div>
+        </div>
+        {/* Demoted disambiguation footnote — below gauge, small, no longer blocks the punch */}
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginBottom: 18, paddingLeft: 4, fontStyle: "italic" }}>
+          Different from your overall JobBachao score (top of page) — this measures only automation risk for your role, not your full career safety.
         </div>
 
         {/* ─────────────── 2. Single fear hook (consolidated) ─────────────── */}
