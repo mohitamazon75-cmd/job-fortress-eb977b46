@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CardShell, CardHead, CardBody, CardNav, Badge, LivePill } from "./SharedUI";
+import SectorPulse from "./SectorPulse";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeCity, detectExecutive } from "@/lib/jobsTab";
 import { detectFamily, applySectorTieBreaker, type Family } from "@/lib/card1-personalization";
