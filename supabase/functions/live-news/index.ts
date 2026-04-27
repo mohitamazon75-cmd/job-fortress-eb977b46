@@ -3,6 +3,7 @@ import { guardRequest } from "../_shared/abuse-guard.ts";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
 import { fetchHNSignals } from "../_shared/community-signals.ts";
+import { firecrawlSearch } from "../_shared/firecrawl.ts";
 
 // DB-backed cache key and TTL
 const CACHE_KEY = "live-news-headlines";
