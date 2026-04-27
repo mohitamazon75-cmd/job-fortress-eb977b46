@@ -205,6 +205,25 @@ export default function Card7HumanAdvantage({ cardData, onBack, onNext, copyFall
         sub={d?.subline || "AI does execution. You hold what cannot be replicated — for now."}
       />
       <CardBody>
+        {(d?.fear_hook || d?.tough_love || d?.hope_bridge) && (
+          <div style={{ marginBottom: 22, display: "grid", gap: 12 }}>
+            {d?.fear_hook && (
+              <div style={{ background: "var(--mb-red-tint)", borderLeft: "3px solid var(--mb-red)", borderRadius: 8, padding: "12px 14px" }}>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14.5, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.65, margin: 0 }}>⏱ {d.fear_hook}</p>
+              </div>
+            )}
+            {d?.tough_love && (
+              <div style={{ borderLeft: "3px solid var(--mb-amber)", padding: "10px 14px", background: "var(--mb-amber-tint)", borderRadius: 8 }}>
+                <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 14.5, fontWeight: 600, color: "var(--mb-ink2)", fontStyle: "italic", lineHeight: 1.65, margin: 0 }}>{d.tough_love}</p>
+              </div>
+            )}
+            {d?.hope_bridge && (
+              <div style={{ background: "var(--mb-green-tint)", borderLeft: "3px solid var(--mb-green)", borderRadius: 8, padding: "12px 14px" }}>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6, margin: 0 }}>✅ {d.hope_bridge}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Scarcity — what makes you hard to replace ───────────────── */}
         {sc && (
