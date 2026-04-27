@@ -248,14 +248,30 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
               </motion.button>
             </div>
 
+            {/* Friction-killers — 3 explicit objection-removers, replacing the
+                old single-line "intelligence cards" feature recap. Per
+                mem://style/social-proof-credibility we do NOT claim user counts
+                we can't back up — only 5 real scans in last 30d as of today. */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9 }}
-              className="flex items-center justify-center gap-2 mt-5"
+              className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-5"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
-              <span className="text-xs text-muted-foreground"><span className="text-prophet-green font-bold">7 intelligence cards</span> · Risk + Skills + Market + Pivot + Mission · Under 4 min</span>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
+                <span className="text-xs text-muted-foreground"><span className="text-foreground font-bold">No signup</span> until you see your score</span>
+              </div>
+              <span className="text-muted-foreground/40 hidden sm:inline">·</span>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
+                <span className="text-xs text-muted-foreground"><span className="text-foreground font-bold">Under 4 minutes</span></span>
+              </div>
+              <span className="text-muted-foreground/40 hidden sm:inline">·</span>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
+                <span className="text-xs text-muted-foreground">Methodology from <span className="text-foreground font-bold">WEF, NASSCOM, O*NET</span></span>
+              </div>
             </motion.div>
           </motion.div>
 
