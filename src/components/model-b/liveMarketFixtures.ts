@@ -103,7 +103,32 @@ export const execFixture: LiveMarketSnapshot = {
   source: { name: "Naukri.com", via: "Apify", fetched_at: now },
 };
 
-export const errorFixture: LiveMarketSnapshot = {
+// ── Tiny + flat: 6 postings, every tag appears in 1 posting (17%).
+// Mirrors the production case shown in the screenshot review (Digital
+// Marketing Manager | Growth & Demand Generation Leader). The tag table
+// here would be wallpaper — the suppression branch should fire.
+export const tinyFlatPartialFixture: LiveMarketSnapshot = {
+  posting_count: 6,
+  fetched_at: now,
+  cached: true,
+  is_executive: false,
+  top_tags: [
+    { tag: "team handling", count: 1, pct: 17 },
+    { tag: "team management", count: 1, pct: 17 },
+    { tag: "team leading", count: 1, pct: 17 },
+    { tag: "b2c", count: 1, pct: 17 },
+    { tag: "handling", count: 1, pct: 17 },
+    { tag: "leadership", count: 1, pct: 17 },
+    { tag: "linkedin", count: 1, pct: 17 },
+    { tag: "linkedin marketing", count: 1, pct: 17 },
+  ],
+  user_skill_overlap: { shown: false, matched_count: 0, matched_skills: [], missing_top_tags: [] },
+  salary: { shown: false, n_disclosed: 0, n_total: 6, median_lpa: null, p25_lpa: null, p75_lpa: null },
+  recency: { same_day_count: 6, within_7d_count: 0, older_count: 0 },
+  corpus_relevance: { score: 28, band: "partial", title_overlap_pct: 22, skill_match_in_top_tags: 0 },
+  source: { name: "Naukri.com", via: "Apify", fetched_at: now },
+};
+
   posting_count: 0,
   fetched_at: now,
   cached: false,
