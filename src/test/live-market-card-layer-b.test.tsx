@@ -64,10 +64,12 @@ describe("LiveMarketCard — Layer B#6: hiring-velocity benchmark", () => {
     expect(bench.textContent).toMatch(/typical daily band/i);
   });
 
-  it("does NOT render the benchmark when the tag table is suppressed (low-signal corpus)", () => {
-    // tinyFlatPartialFixture has only ~6 postings → suppression fires AND
-    // dated-posting count < 5 → hasSignal=false → benchmark omitted.
+  it("still renders the benchmark on suppressed-tag corpora when freshness is real (puts '6 today' in context)", () => {
+    // tinyFlatPartialFixture: 6 same-day postings → hasSignal=true.
+    // Tag table is suppressed but velocity strip is intact, so the
+    // benchmark line is exactly the place that adds value.
     renderCard(tinyFlatPartialFixture);
-    expect(screen.queryByTestId("velocity-benchmark")).toBeNull();
+    const bench = screen.getByTestId("velocity-benchmark");
+    expect(bench.textContent).toMatch(/well below the typical daily band/i);
   });
 });
