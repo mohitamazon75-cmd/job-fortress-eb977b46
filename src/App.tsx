@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 // Eager: Index (landing), Auth (entry), NotFound (catch-all).
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminFunnel = lazy(() => import("./pages/AdminFunnel"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const AdvancedBeta = lazy(() => import("./pages/AdvancedBeta"));
