@@ -572,7 +572,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
               style={{ background: 'var(--gradient-primary)', boxShadow: 'var(--shadow-primary)' }}
             >
               <Lock className="w-4 h-4" />
-              Unlock full verdict — ₹300/mo
+              Unlock full report — ₹300/mo
             </button>
             <p className="text-[10px] text-muted-foreground text-center">
               ₹10/day · cancel anytime · or scroll down to see the 5 factors driving your score ↓
