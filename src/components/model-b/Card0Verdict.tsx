@@ -585,18 +585,35 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           {/* Soft separator */}
           <div style={{ height: 1, background: "var(--mb-rule, #e5e7eb)", marginBottom: 14 }} />
 
-          {/* Hope half */}
+          {/* Hope half — clickable affordance: header row shows "→ Reveal all" so the strip
+              looks intentional and tap-able. The whole card is the CTA via onNext below. */}
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
             <div style={{ fontSize: 18, lineHeight: 1, marginTop: 2 }}>🛡️</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#15803d", marginBottom: 4 }}>
-                Your Edge
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#15803d" }}>
+                  Your Edge
+                </div>
+                <button
+                  onClick={onNext}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    background: "transparent", border: "none", cursor: "pointer",
+                    fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase",
+                    color: "#15803d", padding: 0,
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                  aria-label="Reveal all unfair edges"
+                >
+                  Reveal all <ArrowRight size={11} />
+                </button>
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
                 {hopeLine}
               </div>
             </div>
           </div>
+
         </motion.div>
 
         {/* Move — solid navy */}
