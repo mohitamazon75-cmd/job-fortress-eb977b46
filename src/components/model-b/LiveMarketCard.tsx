@@ -659,8 +659,14 @@ function SnapshotView({
           const hasSignal = categorized >= 5;
           const freshPct = categorized > 0 ? Math.round((fresh / categorized) * 100) : 0;
           const sameDayShare = categorized > 0 ? sameDay / categorized : 0;
+          // #2 Loosen guard: flag obvious recruiter spam regardless of pool size.
+          //   - Original: only when totalPool ≤10 and sameDay ≥3 and share ≥50%.
+          //   - New: ALSO flag when sameDay/categorized ≥85% (e.g. 28 today / 0
+          //     this week — clear repost wave). Catches the loud cases the
+          //     small-pool branch missed.
           const repostNoiseSuspected =
-            totalPool <= 10 && sameDay >= 3 && sameDayShare >= 0.5;
+            (totalPool <= 10 && sameDay >= 3 && sameDayShare >= 0.5) ||
+            (categorized >= 5 && sameDayShare >= 0.85 && within7d === 0);
 
           let velocityLabel = "—";
           let velocityColor = "var(--mb-ink2)";
