@@ -815,6 +815,7 @@ export default function ResultsModelB() {
         {/* Main content */}
         {cardData && !loading && !error && (
           <>
+            <MondayMoveCard cardData={cardData} />
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
             {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} />}
             {currentCard === 2 && (() => {
