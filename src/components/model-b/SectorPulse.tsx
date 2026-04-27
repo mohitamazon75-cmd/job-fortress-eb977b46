@@ -79,12 +79,45 @@ export default function SectorPulse({ role, city, pulseOverride }: SectorPulsePr
   if (!sector) return null;
 
   const pulse = pulseOverride ?? query.data;
+
+  // Loading state — show a slim skeleton so users know something is coming.
+  if (!pulse && query.isLoading) {
+    return (
+      <div data-testid="sector-pulse-loading" style={{ marginBottom: 22 }}>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--mb-ink3)", marginBottom: 10 }}>
+          Sector Pulse · {sector.label} · scanning…
+        </div>
+        <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 16 }}>
+          {[0, 1].map(i => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "8px 0", opacity: 0.5 }}>
+              <div style={{ width: 70, height: 12, background: "var(--mb-rule)", borderRadius: 3 }} />
+              <div style={{ flex: 1, height: 12, background: "var(--mb-rule)", borderRadius: 3 }} />
+              <div style={{ width: 90, height: 12, background: "var(--mb-rule)", borderRadius: 3 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (!pulse) return null;
 
   // Defense-in-depth: drop any beat whose URL isn't trusted, even if the
-  // server already filtered. Caps at 4 visible beats.
-  const safeBeats = pulse.beats.filter(b => isTrustedNewsUrl(b.source_url)).slice(0, 4);
+  // server already filtered. Caps at 4 visible beats, dedup by URL.
+  const seen = new Set<string>();
+  const safeBeats = pulse.beats.filter(b => {
+    if (!isTrustedNewsUrl(b.source_url)) return false;
+    let key = b.source_url;
+    try { const u = new URL(b.source_url); key = `${u.hostname.replace(/^www\./, "")}${u.pathname}`.toLowerCase(); } catch { /* ignore */ }
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 4);
   if (safeBeats.length === 0) return null;
+
+  // Compute the actual window from the oldest beat shown — keeps the label honest.
+  const oldestDays = Math.max(0, ...safeBeats.map(b => Math.round((Date.now() - new Date(b.published_at).getTime()) / (1000 * 60 * 60 * 24))));
+  const displayWindow = Math.min(pulse.window_days || 30, Math.max(7, oldestDays));
 
   return (
     <div data-testid="sector-pulse" style={{ marginBottom: 22 }}>
