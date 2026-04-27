@@ -362,16 +362,20 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   }
 
   // ─── Observability: track which copy path won (LLM vs template).
-  // Operator uses this to decide when prompt quality is good enough to
-  // retire the templates entirely. Fires once per scan_id (ref-guarded
-  // to survive React strict-mode double-mount + re-renders). Silent on
-  // failure — never blocks the UI.
+  // Operator queries `behavior_events` to decide when prompt quality
+  // is good enough to retire the templates. Silent on failure.
+  //
+  // Dedup is *per scan_id*, not per-mount: Card1 unmounts/remounts every
+  // time the user navigates Card1 → Card2 → Card1. A useRef would re-fire
+  // on each remount and over-count by 3-5x. Module-level Set keyed by
+  // scan_id is correct (set survives remounts; resets on full page reload
+  // which is the right boundary — that IS a new "view" of the report).
   const { track } = useTrack(cardData?.scan_id);
-  const trackedRef = useRef(false);
   useEffect(() => {
-    if (trackedRef.current) return;
-    if (!hasValidScore) return;
-    trackedRef.current = true;
+    const sid = cardData?.scan_id;
+    if (!sid || !hasValidScore) return;
+    if (firedHeadlineEvents.has(sid)) return;
+    firedHeadlineEvents.add(sid);
     const source: "llm" | "template" = isWeakHeadline ? "template" : "llm";
     const band: "high" | "mid" | "low" = score >= 70 ? "high" : score >= 40 ? "mid" : "low";
     track("card1_headline_source", {
@@ -384,7 +388,8 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
       peer_fallback_used: c1.india_average == null,
       sector: sector || null,
     });
-  }, [track, hasValidScore, isWeakHeadline, isSpecificHeadline, family, score, llmHeadline.length, c1.india_average, sector]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardData?.scan_id]);
 
   // ─── Peer-comparator fallback: when c1.india_average is null we previously
   // showed "Peer benchmark unavailable" — a credibility hole. Replace with a
