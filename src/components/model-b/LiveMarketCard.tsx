@@ -694,7 +694,7 @@ function SnapshotView({
             } else {
               velocityLabel = "COOL";
               velocityColor = "var(--mb-ink2)";
-              velocityVerdict = `Hiring is quiet for ${role} this week — focus on direct applications and warm intros, not job-board scrolling.`;
+              velocityVerdict = `Hiring is quiet for ${displayRole} this week — focus on direct applications and warm intros, not job-board scrolling.`;
               velocityNote = `Only ${freshPct}% of dated postings are <7 days old — most listings are stale; hiring is not urgent right now.`;
             }
           }
