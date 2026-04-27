@@ -25,7 +25,8 @@ Deno.serve(async (req) => {
   const results: Record<string, string> = {};
 
   for (const table of tables) {
-    const check = await fetch(`${url}/rest/v1/${table}?limit=0`, {
+    const check = await fetchWithTimeout(`${url}/rest/v1/${table}?limit=0`, {
+      timeoutMs: 10000,
       headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
     });
     results[table] = check.status === 200 ? "already_exists" : "missing";
