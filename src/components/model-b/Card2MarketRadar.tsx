@@ -3,6 +3,7 @@ import { CardShell, CardHead, CardBody, Badge, LivePill, SectionLabel, InfoBox, 
 import { supabase } from "@/integrations/supabase/client";
 import SalaryFitWidget from "./SalaryFitWidget";
 import SectorNewsFeed from "./SectorNewsFeed";
+import { decideAttribution } from "./quote-attribution";
 
 interface NewsItem {
   headline: string;
