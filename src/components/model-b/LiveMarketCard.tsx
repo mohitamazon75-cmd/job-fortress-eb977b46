@@ -781,6 +781,12 @@ function SnapshotView({
               : "Turn this into your action plan →";
           return <CardNav onBack={onPrev} onNext={onNext} nextLabel={ctaLabel} />;
         })()}
+      </CardBody>
+    </CardShell>
+  );
+}
+
+/* ── Public component ── */
 export default function LiveMarketCard({
   role,
   city,
