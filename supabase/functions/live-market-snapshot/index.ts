@@ -168,6 +168,31 @@ function compactRoleForSearch(role: string): string {
   return (compact.length >= 2 ? compact : tokens.slice(0, 4)).join(" ") || role;
 }
 
+// ── Thin-signal retry helpers (added 2026-04-27) ────────────────────────────
+const SENIORITY_PREFIXES = ["senior", "sr", "lead", "principal", "head", "director", "vp", "chief"];
+export function elevateRoleQuery(role: string): string | null {
+  const r = String(role || "").trim();
+  if (!r) return null;
+  const lower = r.toLowerCase();
+  if (SENIORITY_PREFIXES.some((p) => lower.startsWith(p + " ") || lower.startsWith(p + "."))) {
+    if (/^(senior|sr\.?)\s/i.test(r)) return r.replace(/^(senior|sr\.?)\s/i, "Head of ");
+    if (/^lead\s/i.test(r)) return r.replace(/^lead\s/i, "Director of ");
+    if (/^principal\s/i.test(r)) return r.replace(/^principal\s/i, "Head of ");
+    return null;
+  }
+  return `Senior ${r}`;
+}
+
+export function dedupeJobs<T extends { jobLink?: string; jobTitle?: string; companyName?: string }>(jobs: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const j of jobs) {
+    const key = (j.jobLink || `${(j.jobTitle || "").toLowerCase()}|${(j.companyName || "").toLowerCase()}`).trim();
+    if (key && !seen.has(key)) { seen.add(key); out.push(j); }
+  }
+  return out;
+}
+
 // Inline copy of skillPresent from apify-naukri-jobs/index.ts.
 // Kept verbatim so the matcher behaviour is identical to the existing
 // production matcher. If that helper changes, mirror the change here.
