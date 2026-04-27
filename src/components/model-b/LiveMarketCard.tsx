@@ -4,6 +4,7 @@ import { CardShell, CardHead, CardBody, CardNav, Badge, LivePill } from "./Share
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeCity, detectExecutive } from "@/lib/jobsTab";
 import { detectFamily, applySectorTieBreaker, type Family } from "@/lib/card1-personalization";
+import { getVelocityBenchmark, compareToBenchmark } from "@/lib/live-market-benchmarks";
 
 /**
  * LiveMarketCard
