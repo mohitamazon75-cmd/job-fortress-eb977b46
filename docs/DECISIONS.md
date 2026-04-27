@@ -4,6 +4,26 @@
 
 ---
 
+## 2026-04-27 — Shared Firecrawl helper + first adoption (kg-refresh)
+
+**Decision**: Created `_shared/firecrawl.ts` (search + scrape), modeled on `_shared/tavily-search.ts`. Retrofitted one of 11 raw-fetch call sites — `kg-refresh` — as the pilot. Remaining 10 sites become individual follow-on PRs (per CLAUDE.md Rule 9: don't touch >5 files in one go).
+
+**Reason**: Firecrawl had no shared wrapper. 11 call sites across 8 functions all duplicate the same fetch+timeout boilerplate. Bug fixes had to be applied 11 times; outages had no breaker, so every scan burned its full retry budget against a dead host.
+
+**Adoption pattern (sticky for the next 10 PRs)**:
+1. Find the local `searchFirecrawl` (or inline `fetch`) function.
+2. Replace its body with a call to the shared `firecrawlSearch` / `firecrawlScrape`.
+3. Keep the local function signature intact so call sites don't move.
+4. Delete the now-unused AbortController + retry boilerplate.
+
+**Validation**: 6/6 firecrawl unit tests passing, 302/302 vitest passing, `kg-refresh` deployed.
+
+**Remaining adoption queue** (one PR each): live-news → company-news → live-market → market-signals (3 sites) → parse-linkedin → process-scan/scan-enrichment.
+
+**Owner**: CTO (AI).
+
+---
+
 ## 2026-04-27 — Tavily caller adopts retryFetch + structured logger (pilot)
 
 **Decision**: First production adoption of `_shared/retry.ts` + `_shared/logger.ts`. Rewrote `_shared/tavily-search.ts` internals to use the shared primitives. Public API and `null`-on-failure contract preserved — zero changes required at the 18 call-sites.
