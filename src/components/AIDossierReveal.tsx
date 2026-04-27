@@ -565,6 +565,16 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         {/* Free user: specific-teaser CTA + price anchor */}
         {!isProUser && (
           <div className="mt-4 space-y-3">
+            {/* Loss-aversion anchor — quantified cost of inaction, family-specific */}
+            {vibe.inactionCost && (
+              <div className={`rounded-lg border ${vibe.border} bg-background/50 px-3.5 py-2.5 flex items-start gap-2`}>
+                <span className="text-sm flex-shrink-0 mt-0.5">⚠️</span>
+                <p className="text-[11px] text-foreground/80 leading-snug">
+                  <span className="font-black uppercase tracking-wider text-[9.5px] text-muted-foreground mr-1.5">Cost of waiting</span>
+                  {vibe.inactionCost}
+                </p>
+              </div>
+            )}
             <div className="rounded-lg border border-dashed border-border/70 bg-background/40 px-3.5 py-3">
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">What's locked</p>
               <ul className="space-y-1.5 text-xs text-foreground/75">
