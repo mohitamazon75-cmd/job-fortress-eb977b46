@@ -266,12 +266,10 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   // unmounts/remounts on every nav. A useRef would re-fire on each
   // remount and over-count by 3-5x. Set survives remounts; resets on
   // full page reload, which IS a new "view" of the report.
-  // (`track` is declared at the top of the component to honour rules-of-hooks.)
-  useEffect(() => {
-    const sid = cardData?.scan_id;
-    if (!sid || !hasValidScore) return;
-    if (firedHeadlineEvents.has(sid)) return;
-    firedHeadlineEvents.add(sid);
+  // Effect lives at top of component (before early-return) for rules-of-hooks
+  // — we just provide the closure here once values are computed.
+  headlineTelemetryRef.current = () => {
+    if (!hasValidScore) return;
     track("card1_headline_source", {
       source: isWeak ? "template" : "llm",
       family,
@@ -284,8 +282,7 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
       is_fresher: isFresher,
       copy_confidence: copyConfidence,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cardData?.scan_id]);
+  };
 
   return (
     <CardShell>
