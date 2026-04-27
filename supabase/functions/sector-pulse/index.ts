@@ -128,10 +128,10 @@ async function fetchPerplexity(sectorQuery: string, sectorLabel: string, city: s
   const apiKey = Deno.env.get("PERPLEXITY_API_KEY");
   if (!apiKey) return { beats: [], reason: "fetch_failed" };
 
-  const prompt = `Find 2 to 4 news items from the LAST 14 DAYS about ${sectorQuery} in India${city ? ` (focus on ${city} where possible)` : ""}.
+  const prompt = `Find 2 to 4 news items from the LAST 30 DAYS about ${sectorQuery} in India${city ? ` (focus on ${city} where possible)` : ""}.
 
 STRICT RULES:
-- Every item MUST be from a real, verifiable news article — no rumours, no aggregators.
+- Every item MUST be from a real, verifiable news article published by an established Indian or global business publication (Economic Times, Mint, Business Standard, Inc42, Moneycontrol, Reuters, Bloomberg, etc.).
 - Each item MUST classify as exactly one of: "hiring" (expansion, new hires, new offices), "layoff" (cuts, downsizing, hiring freeze), or "funding" (raises, IPO, major M&A, strategic shifts that affect headcount).
 - Skip items where you cannot confidently identify the company name and the article URL.
 - Skip opinion pieces, listicles, and "top 10" content.
