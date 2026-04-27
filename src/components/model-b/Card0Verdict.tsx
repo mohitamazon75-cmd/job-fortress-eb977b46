@@ -10,6 +10,7 @@ import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, Book
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { detectRoleFamily, getFamilyNarrative } from "@/lib/role-family";
+import ProUpgradeModal from "@/components/ProUpgradeModal";
 
 interface Card0VerdictProps {
   cardData: any;
