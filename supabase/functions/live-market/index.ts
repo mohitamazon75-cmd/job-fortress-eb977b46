@@ -112,39 +112,33 @@ Deno.serve(async (req) => {
         },
       ]),
 
-      // SOURCE 2: Firecrawl web search
+      // SOURCE 2: Firecrawl web search (via shared helper: retries + circuit breaker + structured logs)
       FIRECRAWL_API_KEY ? (async () => {
-        try {
-          const queries = [
-            `"${primaryRole}" ${locale.salarySearchTerms} 2025 2026`,
-            `"${primaryRole}" jobs hiring ${locale.label} linkedin ${locale.jobBoards[0] || ''} ${tier}`,
-          ];
-          const searchResults = await Promise.all(
-            queries.map((query) =>
-              fetch("https://api.firecrawl.dev/v1/search", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ query, limit: 5, lang: locale.searchLang, country: locale.searchCountry, tbs: "qdr:m" }),
-              }).then((r) => r.ok ? r.json() : null).catch(() => null)
-            )
-          );
-          const articles: string[] = [];
-          for (const result of searchResults) {
-            if (!result?.data) continue;
-            for (const item of result.data) {
-              if (item.title || item.description) {
-                articles.push(`${item.title}: ${item.description || ""}`);
-              }
+        const queries = [
+          `"${primaryRole}" ${locale.salarySearchTerms} 2025 2026`,
+          `"${primaryRole}" jobs hiring ${locale.label} linkedin ${locale.jobBoards[0] || ''} ${tier}`,
+        ];
+        const searchResults = await Promise.all(
+          queries.map((query) =>
+            firecrawlSearch({
+              query,
+              limit: 5,
+              lang: locale.searchLang,
+              country: locale.searchCountry,
+              tbs: "qdr:m",
+            })
+          )
+        );
+        const articles: string[] = [];
+        for (const results of searchResults) {
+          if (!results) continue;
+          for (const item of results) {
+            if (item.title || item.description) {
+              articles.push(`${item.title || ""}: ${item.description || ""}`);
             }
           }
-          return articles;
-        } catch (e) {
-          console.error("[live-market] Firecrawl error:", e);
-          return [];
         }
+        return articles;
       })() : Promise.resolve([]),
     ]);
 
