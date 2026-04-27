@@ -125,13 +125,15 @@ export function getVibe(score: number, report: ScanReport): Vibe {
 
     plan: `Lock in your advantage: identify which of your "safe" skills were on the safe list 2 years ago — because some of them won't be 2 years from now. Your defense plan maps exactly which capabilities to double down on.`,
 
-    replaceability: 'Replacing you today would be expensive and painful. But AI-augmented professionals are learning to match your output at a fraction of the cost — your edge needs active maintenance.',
+    replaceability: 'Replacing you today would be expensive and painful. But AI-augmented professionals are learning to match your output at a fraction of the cost — your edge needs active maintenance.' + familyReplaceabilitySuffix,
 
     bullets: [
       `Hiring demand is ${demand} — but companies are already piloting AI alternatives for parts of this exact role`,
       moatSkills >= 3 ? `${moatSkills} skills are hard to automate — but the "safe" list shrinks every year. 2 of these weren't at risk 2 years ago.` : 'Your judgment-heavy work protects you — but AI agents are starting to handle nuanced decisions too',
       `Your defense plan shows which moat skills have the shortest shelf life — so you stay ahead of the curve, not react to it`,
     ],
+    proofLine,
+    inactionCost: fam.inactionCost,
   };
 
   // ── TIER 2: STAY SHARP (50–69) ───────────────────────────
