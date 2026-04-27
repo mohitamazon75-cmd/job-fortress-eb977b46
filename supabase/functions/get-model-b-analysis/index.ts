@@ -782,6 +782,104 @@ function clampNum(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
+// ═══════════════════════════════════════════════════════════════
+// DETERMINISTIC MONDAY MOVE (added 2026-04-27)
+// One concrete, calendarable action picked from the structured payload.
+// Priority: pivot role → critical-gap shield skill → survival diet day-1 →
+//   verdict closer (only if it passes actionability filter) → role-aware
+//   default. Pure function, exported for tests.
+// ═══════════════════════════════════════════════════════════════
+const MM_CONCRETE_VERBS = /\b(open|search|read|write|draft|send|email|call|post|publish|finish|complete|build|ship|record|message|dm|apply|review|list|map|sketch|outline|prepare|book|schedule|pick)\b/i;
+const MM_HAS_NUMBER = /\b\d+\b/;
+const MM_HAS_PROPER_NOUN = /\b[A-Z][a-zA-Z]{2,}/;
+const MM_VAGUE_OPENERS = /^(one|a|an|the)\s+\w+\s+(you|to)\b/i;
+
+export function isMondayActionable(sentence: string): boolean {
+  const s = String(sentence || "").trim();
+  if (s.length < 12 || s.length > 200) return false;
+  if (MM_VAGUE_OPENERS.test(s)) return false;
+  if (!MM_CONCRETE_VERBS.test(s)) return false;
+  return MM_HAS_NUMBER.test(s) || MM_HAS_PROPER_NOUN.test(s);
+}
+
+export function computeMondayMove(cardData: Record<string, unknown>): {
+  action: string;
+  why: string;
+  hinglish: string;
+  source: string;
+} {
+  const cd = cardData || {};
+  const c4 = (cd as any).card4_pivot || {};
+  const c3 = (cd as any).card3_shield || {};
+  const c1 = (cd as any).card1_risk || {};
+  const diet = (cd as any).scan_weekly_diet || (cd as any).weekly_survival_diet;
+
+  const pivots = c4.adjacent_roles || c4.pivots || c4.paths;
+  if (Array.isArray(pivots) && pivots.length > 0) {
+    const role = pivots[0]?.role || pivots[0]?.title;
+    if (role && typeof role === "string") {
+      return {
+        action: `Open Naukri Monday morning. Search "${role}". Read 3 listings end-to-end and copy 5 repeated keywords into a doc.`,
+        why: "Those 5 keywords go straight into your resume this week.",
+        hinglish: `Monday subah Naukri kholo. "${role}" search karo. 3 listings padho, 5 keywords note karo.`,
+        source: "From your pivot paths",
+      };
+    }
+  }
+
+  const skills = c3.skills;
+  if (Array.isArray(skills)) {
+    const gap = skills.find((s: any) => s?.tier === "critical-gap")
+             || skills.find((s: any) => s?.tier === "buildable");
+    if (gap?.name) {
+      return {
+        action: `Open one ${gap.name} tutorial Monday morning. Just one. Watch end-to-end and ship one tiny output by Friday.`,
+        why: `${gap.name} is your highest-leverage skill gap right now.`,
+        hinglish: `Monday ko ek ${gap.name} ka tutorial dekho. Sirf ek. Friday tak ek chhota output ship karo.`,
+        source: "From your skill shield",
+      };
+    }
+  }
+
+  const dietItems = (diet as any)?.items || (diet as any)?.days;
+  if (Array.isArray(dietItems) && dietItems.length > 0) {
+    const first = dietItems[0];
+    const skill = first?.skill || first?.action || first?.title || first?.task;
+    if (skill && typeof skill === "string") {
+      return {
+        action: `Spend 30 minutes on ${skill} Monday morning. Open one tutorial. Finish it.`,
+        why: "Day 1 of the 7-day plan you already have below.",
+        hinglish: `Monday subah 30 minute ${skill} pe lagao. Ek tutorial. Khatam karo.`,
+        source: "From your survival diet",
+      };
+    }
+  }
+
+  const conf = c1.confrontation;
+  if (typeof conf === "string" && conf.trim().length > 0) {
+    const sentences = conf.split(/(?<=[.!?])\s+/).map((s: string) => s.trim()).filter(Boolean);
+    const candidates = [sentences[sentences.length - 1], sentences[sentences.length - 2]].filter(Boolean) as string[];
+    const good = candidates.find(isMondayActionable);
+    if (good) {
+      return {
+        action: good,
+        why: "From your risk verdict — pulled because it names a concrete next step.",
+        hinglish: "Yeh ek kaam Monday subah karo. Bas yahi.",
+        source: "From your risk verdict",
+      };
+    }
+  }
+
+  const role = (cd as any)?.user?.current_title || (cd as any)?.role || "your role";
+  const search = typeof role === "string" && role.trim().length > 2 ? role : "your role";
+  return {
+    action: `Open Naukri Monday morning. Search "${search}". Read 3 listings end-to-end and copy 5 repeated keywords.`,
+    why: "Even 20 minutes here beats another anxious doom-scroll.",
+    hinglish: `Monday subah Naukri kholo. "${search}" search karo. 3 listings padho, 5 keywords note karo.`,
+    source: "Default action",
+  };
+}
+
 export function applyTrustGuardrails(
   cardData: Record<string, unknown>,
   detScoreAnchor: number | null,
