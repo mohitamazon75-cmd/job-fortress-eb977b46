@@ -255,7 +255,7 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   // unmounts/remounts on every nav. A useRef would re-fire on each
   // remount and over-count by 3-5x. Set survives remounts; resets on
   // full page reload, which IS a new "view" of the report.
-  const { track } = useTrack(cardData?.scan_id);
+  // (`track` is declared at the top of the component to honour rules-of-hooks.)
   useEffect(() => {
     const sid = cardData?.scan_id;
     if (!sid || !hasValidScore) return;
