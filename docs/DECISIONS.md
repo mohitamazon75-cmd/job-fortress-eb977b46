@@ -4,7 +4,34 @@
 
 ---
 
-## 2026-04-27 — CTO operating pattern saved as Core memory; live-news adopts Firecrawl helper
+## 2026-04-27 — Score-trust regression net (jobbachao_score determinism locked)
+
+**Context**: Earlier today we shipped a deterministic recompute of `jobbachao_score` inside `applyTrustGuardrails` (formula: `100 − (risk × (1 − shield/200))`) to fix the LLM hallucinating different scores (53 vs 67) for the same resume. The fix was verified live (Farheen-Dubai PDF locked at 64) but had **zero test coverage** — meaning any future edit could silently revive the bug.
+
+**Action**: Added 5 regression tests to `supabase/functions/get-model-b-analysis/score-anchor.test.ts`:
+1. **LLM-variance bounding** — 6 hallucinated LLM outputs (42–88) for fixed (risk=67, shield=58) all collapse to within ±2 of formula (52). Spread ≤ 4.
+2. **Production case pin** — exact Farheen-Dubai scan (r=67, s=94, LLM=82) → 64. Pins today's live verification forever.
+3. **±2 slack window** — LLM within ±2 is preserved (no spurious recompute), beyond ±2 triggers correction.
+4. **Adversarial clamping** — (r=100,s=0) → 0; (r=0,s=100) → 100. No out-of-range escape.
+5. **Backward-compat** — missing shield_score leaves jobbachao_score untouched (no fabrication).
+
+**What the tests caught while writing them**:
+- My initial expected value (53) was wrong — formula gives 52. Test failed → I learned the math, not the code. Perfect regression-net behavior.
+- My initial assertion (`assertEquals` to formula) was too strict — the slack window legitimately preserves LLM=53 when formula=52. Tightened the test to assert the actual contract (±2), not what I assumed.
+
+**What I have proof of**:
+- 10/10 deno tests passing (5 new + 5 existing risk-anchor tests)
+- 302/302 vitest passing — no regressions in frontend
+- Tests directly exercise `applyTrustGuardrails`, the exact function that was untested
+
+**What I do NOT have proof of**:
+- The end-to-end behavior in production (would require triggering scans). But the unit-level contract is now locked: any future change to the formula or slack window will break a named test with a clear message tying back to this incident.
+
+**Files**: `supabase/functions/get-model-b-analysis/score-anchor.test.ts` (+~110 lines, append-only).
+
+---
+
+
 
 **Pattern committed**: Saved deep-reasoning loop (state riskiest unknown → Karpathy filter → pilot-before-scale → in-context bug fixes → honest "have proof / do NOT have proof" status) as a Core rule in `mem://index.md` + detailed file at `mem://process/cto-operating-pattern.md`. This now applies to every engineering loop.
 

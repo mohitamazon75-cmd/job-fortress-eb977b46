@@ -106,3 +106,105 @@ Deno.test("non-finite LLM risk_score is left untouched", () => {
   // Should not throw, should not coerce NaN into a number band.
   assert(Number.isNaN(card.risk_score as number));
 });
+
+// ═══════════════════════════════════════════════════════════════
+// Regression tests — Trust Killer #2: jobbachao_score variance.
+//
+// Audit finding (2026-04-27): same resume scanned twice produced
+// jobbachao_score of 53 vs 67 because the LLM ignored the formula
+//   jobbachao_score = 100 − (risk_score × (1 − shield_score / 200))
+// on roughly 1-in-3 scans. The fix: deterministically recompute
+// jobbachao_score after the risk anchor so the page-top number
+// is mathematically locked to (risk_score, shield_score).
+//
+// These tests must NEVER be deleted without a replacement that
+// proves jobbachao_score is still deterministic for fixed inputs.
+// ═══════════════════════════════════════════════════════════════
+
+function makeCardWithShield(rawRisk: number, shield: number, llmJB: number) {
+  return {
+    risk_score: rawRisk,
+    shield_score: shield,
+    jobbachao_score: llmJB,
+    card1_risk: { risk_score: rawRisk, fear_hook: "x" },
+    card2_market: {},
+    card4_pivot: { pivots: [] },
+    card5_jobs: { job_matches: [] },
+  } as Record<string, unknown>;
+}
+
+Deno.test("jobbachao_score: same (risk,shield) → bounded output across LLM variance", () => {
+  // Production case: risk=67, shield=58 → formula = 52.
+  // Contract: output must be within ±2 of formula (the slack window).
+  // Without the fix, LLM produced wild swings (53 vs 67) for the same input.
+  const expected = Math.round(100 - (67 * (1 - 58 / 200))); // = 52
+  const llmHallucinations = [42, 53, 60, 67, 75, 88];
+
+  const outputs = llmHallucinations.map((llmJB) => {
+    const card = makeCardWithShield(67, 58, llmJB);
+    applyTrustGuardrails(card, 67, "Bangalore");
+    return card.jobbachao_score as number;
+  });
+
+  for (const out of outputs) {
+    assert(
+      Math.abs(out - expected) <= 2,
+      `jobbachao_score ${out} must be within ±2 of formula ${expected}`,
+    );
+  }
+
+  // Spread across all 6 simulated LLM runs must be ≤ 4 (2× slack).
+  const spread = Math.max(...outputs) - Math.min(...outputs);
+  assert(
+    spread <= 4,
+    `jobbachao_score spread ${spread} exceeds ±2 slack (×2 = 4)`,
+  );
+});
+
+Deno.test("jobbachao_score: matches Farheen-Dubai production scan (r=67, s≈94)", () => {
+  // Live verification 2026-04-27: log shows
+  //   "[model-b] jobbachao_score recomputed: LLM=82 formula(r=67,s=94)=64"
+  // This test pins that exact production case forever.
+  const card = makeCardWithShield(67, 94, 82);
+  applyTrustGuardrails(card, 67, "Bangalore");
+  assertEquals(card.jobbachao_score, 64);
+});
+
+Deno.test("jobbachao_score: tolerates ±2 LLM drift (no spurious recompute)", () => {
+  // If LLM is within ±2 of the formula, we keep its value to avoid
+  // log spam. This is intentional — verify the slack window holds.
+  const formula = Math.round(100 - (50 * (1 - 60 / 200))); // = 65
+  const card = makeCardWithShield(50, 60, formula + 1); // 1 off → keep
+  applyTrustGuardrails(card, 50, "Bangalore");
+  assertEquals(card.jobbachao_score, formula + 1);
+
+  const card2 = makeCardWithShield(50, 60, formula + 5); // 5 off → recompute
+  applyTrustGuardrails(card2, 50, "Bangalore");
+  assertEquals(card2.jobbachao_score, formula);
+});
+
+Deno.test("jobbachao_score: clamps to [0,100] for adversarial inputs", () => {
+  // Adversarial: risk=100, shield=0 → formula = 0
+  const cardLow = makeCardWithShield(100, 0, 999);
+  applyTrustGuardrails(cardLow, 100, "Bangalore");
+  assertEquals(cardLow.jobbachao_score, 0);
+
+  // Adversarial: risk=0, shield=100 → formula = 100
+  const cardHigh = makeCardWithShield(0, 100, -50);
+  applyTrustGuardrails(cardHigh, 0, "Bangalore");
+  assertEquals(cardHigh.jobbachao_score, 100);
+});
+
+Deno.test("jobbachao_score: untouched when shield_score is missing", () => {
+  // Backward compat: if shield never came back from LLM, don't fabricate one.
+  const card = {
+    risk_score: 60,
+    jobbachao_score: 75,
+    card1_risk: { risk_score: 60 },
+    card2_market: {},
+    card4_pivot: { pivots: [] },
+    card5_jobs: { job_matches: [] },
+  } as Record<string, unknown>;
+  applyTrustGuardrails(card, 60, "Bangalore");
+  assertEquals(card.jobbachao_score, 75);
+});
