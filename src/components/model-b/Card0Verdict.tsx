@@ -6,9 +6,10 @@
  * one threat, one moat, one move. Built for screenshot virality.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench, Briefcase, GraduationCap } from "lucide-react";
+import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench, Briefcase, GraduationCap, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { detectRoleFamily, getFamilyNarrative } from "@/lib/role-family";
 
 interface Card0VerdictProps {
   cardData: any;
