@@ -4,28 +4,6 @@
 
 ---
 
-## 2026-04-27 — CTO operating pattern saved as Core memory; live-news adopts Firecrawl helper
-
-**Pattern committed**: Saved deep-reasoning loop (state riskiest unknown → Karpathy filter → pilot-before-scale → in-context bug fixes → honest "have proof / do NOT have proof" status) as a Core rule in `mem://index.md` + detailed file at `mem://process/cto-operating-pattern.md`. This now applies to every engineering loop.
-
-**Adoption**: `live-news/index.ts` migrated from 4 raw `fetch("api.firecrawl.dev/...")` calls to `firecrawlSearch()` from the shared helper. 1 file changed, behavior preserved (same parallel fan-out, same null-on-failure semantics, same string format for downstream synthesis).
-
-**Discovery during reasoning**: `live-news` has zero frontend consumers (`rg -l live-news src/` → empty). Function deploys fine but no production traffic flows through it. So end-to-end production verification is NOT achievable via this adoption — same status as `kg-refresh` (cron-only, no immediate run).
-
-**Why I stopped here instead of also adopting `live-market`**: `live-market` IS user-facing (called from `Card2MarketRadar` on every Model B scan), but adopting it in the same loop as live-news would compound risk — if a regression appears in tomorrow's scan logs, I'd have to bisect across two adoptions instead of one. Pattern says: ship one, observe, then continue.
-
-**What I have proof of**:
-- 302/302 vitest passing
-- live-news type-checks clean and deploys successfully
-- Helper has been smoke-tested at module-load level (deploys cleanly when imported)
-
-**What I do NOT yet have proof of**:
-- A real Firecrawl response flowing through `firecrawlSearch` in production. None of the 2 adopted functions (kg-refresh, live-news) have user traffic. Next adoption (`live-market`) will give us this.
-
-**Owner**: CTO (AI).
-
----
-
 ## 2026-04-27 — Stopped Firecrawl rollout to verify pilot first; fixed dormant bug in kg-refresh
 
 **Decision**: Paused rollout of the shared Firecrawl helper after the first adoption (kg-refresh). Did NOT proceed to the queued adoptions (live-news → company-news → ...). Instead used this loop to (a) verify deployment of the pilot and (b) fix a pre-existing latent bug discovered during verification.
@@ -317,12 +295,24 @@ Phase 2B (Nuclear Card) can proceed.
 
 **Limitation acknowledged:** This baseline reflects engine output under heuristic profile extraction. When production Agent 1 produces richer profiles (more strategic skills, executive_impact, ic_leverage), real scans land at higher careers scores than these fixtures expect. The eval is therefore a **regression net for the deterministic engine itself**, not a simulation of end-to-end UX. Adding an LLM-extraction-based eval is tracked in BACKLOG.
 
-## 2026-04-27 — Firecrawl rollout: live-market adopted (Pilot 3, high-traffic)
+## 2026-04-27 — Firecrawl rollout PAUSED (founder call, not engineering call)
 
-Migrated `supabase/functions/live-market/index.ts` to the shared `firecrawlSearch` helper.
-- This is the highest-traffic Firecrawl consumer (called by `Card2MarketRadar` on every Model B scan).
-- Replaced 2 raw `fetch` calls + manual `r.ok ? r.json() : null` plumbing with one Promise.all over `firecrawlSearch({...})`.
-- Preserves the `null`-on-failure contract. Adds: retries with backoff, per-host circuit breaker, structured JSON logs (`fn=firecrawl-search provider=firecrawl`).
-- Verified: 302/302 vitest pass, build clean, deploy successful.
+**Decision:** Stop the Firecrawl helper rollout at 3/8 call sites. Do not migrate the remaining 5 (company-news, market-signals, parse-linkedin, process-scan, scan-enrichment) at this time.
 
-**Production proof now possible**: next real Model B scan will exercise this path. Watch edge logs for `firecrawl-search` events — that's our signal the helper is healthy under real traffic before scaling to the remaining call sites (company-news, market-signals, parse-linkedin, process-scan, scan-enrichment).
+**Evidence triggering the halt:**
+- Analytics 2026-04-20 → 2026-04-27: 27 visitors, 4 page-views on `/results/model-b` over 8 days.
+- Edge logs show ZERO `firecrawl-search` events across all 3 already-adopted functions (kg-refresh, live-news, live-market) since deployment. Pattern is unverified in production not because it's broken, but because no one is using it.
+- 2 of the 5 remaining targets (`process-scan` 1,136 LOC, `market-signals` god file) are explicitly off-limits without operator approval per CLAUDE.md Rule 3 / Rule 9.
+
+**Reasoning (Karpathy filter):**
+At single-digit scans/week, marginal reliability work has near-zero business value. The shared helper exists, has 6/6 unit tests, is deployed at 3 sites — that's sufficient to claim the pattern is established and ready when traffic justifies completing the migration. Doing the remaining 3 safe sites now is engineer-theater: it feels productive but doesn't move PMF.
+
+**What this unblocks:**
+- The 5 unmigrated sites still work fine (same code that's been running for months).
+- When traffic grows or a Firecrawl outage hits, finishing the rollout becomes a 1-day task and the priority order will be obvious.
+
+**What the business actually needs right now (pre-PMF, per CLAUDE.md Phase 2):**
+Distribution, not reliability. Specifically: figure out why ~4 people/week reach the Model B results page and what they do next. This is a product/growth problem, not a backend problem.
+
+**Re-trigger to resume Firecrawl rollout:**
+Any one of: (a) sustained ≥50 scans/day, (b) a Firecrawl outage actually degrading user experience, (c) a Firecrawl-touching function bug that would have been caught by the helper's logging.
