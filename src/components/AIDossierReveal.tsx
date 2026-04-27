@@ -1020,7 +1020,8 @@ export default function AIDossierReveal({ report, onComplete, scanId, isProUser 
     hr: () => <div className="my-8 flex items-center gap-3"><div className="flex-1 h-px bg-border/60" /><div className="w-1.5 h-1.5 rounded-full bg-primary/40" /><div className="flex-1 h-px bg-border/60" /></div>,
     ul: ({ children, ...props }: any) => <ul className="space-y-2 my-4 pl-0 list-none" {...props}>{children}</ul>,
     li: ({ children, ...props }: any) => <li className="flex items-start gap-2 text-[15px] text-foreground/85 leading-relaxed" {...props}><span className="mt-2 w-1.5 h-1.5 rounded-full bg-primary/60 flex-shrink-0" /><span>{children}</span></li>,
-  }), []);
+    // P1: include careerScore + scoreLabel — they're referenced in the inline "Context" badge above
+  }), [careerScore, scoreLabel]);
 
   return (
     <div className="fixed inset-0 z-[200] bg-background overflow-hidden flex flex-col">
