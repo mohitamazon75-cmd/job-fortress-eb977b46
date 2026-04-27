@@ -102,7 +102,7 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
             Replaces the previous 3 separate full-width banners (fear/confront/hope) which
             duplicated Card 1's pattern poorly. One container, three colored-rule beats —
             keeps the psychological arc, drops the 🚨/⚔️/✅ emoji triple ("AI slop" per audit). */}
-        {(c2.fear_hook || c2.confrontation || c2.hope_bridge) && (
+        {(c2.fear_hook || c2.tough_love || c2.confrontation || c2.hope_bridge) && (
           <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 16, padding: "16px 18px", marginBottom: 22, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--mb-ink3)", marginBottom: 12 }}>
               Market pulse · what's moving against you, with you
@@ -111,6 +111,11 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
               {c2.fear_hook && (
                 <div style={{ borderLeft: "3px solid var(--mb-red)", paddingLeft: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.6, whiteSpace: "pre-line" as const }}>
                   {c2.fear_hook}
+                </div>
+              )}
+              {c2.tough_love && (
+                <div style={{ borderLeft: "3px solid var(--mb-amber)", paddingLeft: 12, fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 600, color: "var(--mb-ink2)", fontStyle: "italic" as const, lineHeight: 1.6 }}>
+                  {c2.tough_love}
                 </div>
               )}
               {c2.confrontation && (

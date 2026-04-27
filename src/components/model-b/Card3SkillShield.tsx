@@ -42,9 +42,14 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.7, margin: 0 }}>🛡️ {c3.hope_bridge}</p>
           </div>
         )}
+        {c3.fear_hook && (
+          <div style={{ background: "var(--mb-red-tint)", border: "1.5px solid rgba(174,40,40,0.18)", borderRadius: 12, padding: "12px 16px", marginBottom: 10 }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.6, margin: 0 }}>⚠️ {c3.fear_hook}</p>
+          </div>
+        )}
         {c3.tough_love && (
           <div style={{ borderLeft: "4px solid var(--mb-amber)", background: "linear-gradient(90deg, var(--mb-amber-tint), transparent)", borderRadius: "0 12px 12px 0", padding: "12px 16px", marginBottom: 10 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0 }}>⚠️ {c3.tough_love}</p>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 600, color: "var(--mb-ink2)", fontStyle: "italic", lineHeight: 1.6, margin: 0 }}>{c3.tough_love}</p>
           </div>
         )}
         {c3.confrontation && (

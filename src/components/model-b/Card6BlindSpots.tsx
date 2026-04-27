@@ -317,6 +317,11 @@ export default function Card6BlindSpots({ cardData, onBack, onNext, scanId }: { 
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.7, margin: 0 }}>🔍 {d.fear_hook}</p>
           </div>
         )}
+        {d?.tough_love && (
+          <div style={{ borderLeft: "3px solid var(--mb-amber)", padding: "10px 14px", marginBottom: 10 }}>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 600, color: "var(--mb-ink2)", fontStyle: "italic", lineHeight: 1.6, margin: 0 }}>{d.tough_love}</p>
+          </div>
+        )}
         {d?.confrontation && (
           <div style={{ borderLeft: "4px solid var(--mb-red)", background: "linear-gradient(90deg, var(--mb-red-tint), transparent)", borderRadius: "0 12px 12px 0", padding: "14px 18px", marginBottom: 10 }}>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--mb-red)", marginBottom: 6 }}>⚔️ NO SUGARCOATING</div>

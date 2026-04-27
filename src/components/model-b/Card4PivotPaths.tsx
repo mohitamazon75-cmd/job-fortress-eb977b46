@@ -246,6 +246,11 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-amber)", lineHeight: 1.7, margin: 0 }}>⏳ {d.fear_hook}</p>
           </div>
         )}
+        {d.tough_love && (
+          <div style={{ borderLeft: "3px solid var(--mb-amber)", background: "transparent", padding: "10px 14px", marginBottom: 10 }}>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 600, color: "var(--mb-ink2)", fontStyle: "italic", lineHeight: 1.6, margin: 0 }}>{d.tough_love}</p>
+          </div>
+        )}
         {d.confrontation && (
           <div style={{ borderLeft: "4px solid var(--mb-navy)", background: "linear-gradient(90deg, var(--mb-navy-tint), transparent)", borderRadius: "0 12px 12px 0", padding: "12px 16px", marginBottom: 10 }}>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0 }}>⚔️ {d.confrontation}</p>
