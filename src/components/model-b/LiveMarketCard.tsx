@@ -375,7 +375,21 @@ function SnapshotView({
   onPrev?: () => void;
   onNext?: () => void;
 }) {
-  const { posting_count, top_tags, user_skill_overlap, salary, recency, source, fetched_at, cached } = snapshot;
+  const { posting_count, top_tags: rawTopTags, user_skill_overlap, salary, recency, source, fetched_at, cached } = snapshot;
+
+  // #1 Clean title for display — show the core role, not the verbose headline.
+  const displayRole = useMemo(() => extractCoreRoleClient(role) || role, [role]);
+
+  // #3 Filter tautological tags. If "Digital Marketing" is the role, don't
+  // surface "Digital Marketing" as a top required skill — it carries zero
+  // signal. Keep the filtered list, but if filtering wipes out everything,
+  // fall back to the raw list (better to show something than empty).
+  const top_tags = useMemo(() => {
+    const roleTokens = roleTokenSet(displayRole);
+    const filtered = rawTopTags.filter((t) => !tagIsTautological(t.tag, roleTokens));
+    return filtered.length >= 2 ? filtered : rawTopTags;
+  }, [rawTopTags, displayRole]);
+
   const matchedSet = useMemo(
     () => new Set(user_skill_overlap.matched_skills.map((s) => s.toLowerCase())),
     [user_skill_overlap.matched_skills]
@@ -410,9 +424,9 @@ function SnapshotView({
   // Returns null for families where Naukri isn't the right corpus
   // (founder/exec/creator/generic) — the line is then simply omitted.
   const family: Family = useMemo(() => {
-    const f = detectFamily(role.toLowerCase());
+    const f = detectFamily(displayRole.toLowerCase());
     return applySectorTieBreaker(f, "");
-  }, [role]);
+  }, [displayRole]);
   const velocityBenchmark = useMemo(
     () => getVelocityBenchmark(family, displayCity),
     [family, displayCity],
@@ -433,10 +447,10 @@ function SnapshotView({
     : isPartial
       ? `Your role's market is mixed — here's the signal that holds up.`
       : isThin
-        ? `Live demand for ${role} is sparse this week.`
-        : `Live demand for ${role} is real — here's what employers are asking for.`;
+        ? `Live demand for ${displayRole} is sparse this week.`
+        : `Live demand for ${displayRole} is real — here's what employers are asking for.`;
   const verdictSub = posting_count > 0
-    ? `${posting_count} posting${posting_count === 1 ? "" : "s"} analysed for ${role} in ${displayCity}, in the last 7 days.`
+    ? `${posting_count} posting${posting_count === 1 ? "" : "s"} analysed for ${displayRole} in ${displayCity}, in the last 7 days.`
     : `We couldn't pull a live posting set for this role+city right now.`;
 
   return (
