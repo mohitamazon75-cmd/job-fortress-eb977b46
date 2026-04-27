@@ -674,6 +674,10 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.0, ease: [0.16, 1, 0.3, 1] }}
+          onClick={() => setShowPaywall(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowPaywall(true); } }}
           style={{
             background: "white",
             border: "1.5px solid var(--mb-rule, #e5e7eb)",
@@ -681,14 +685,15 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
             padding: "18px 20px",
             marginBottom: 16,
             boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
+            cursor: "pointer",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--mb-muted, #6b7280)" }}>
               What's inside the full report
             </span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "var(--mb-muted, #9ca3af)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              <Lock size={10} /> Locked
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "#15803d", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              <Lock size={10} /> Tap to unlock
             </span>
           </div>
 
