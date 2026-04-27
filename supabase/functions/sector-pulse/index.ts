@@ -225,15 +225,14 @@ RULES:
     console.log(`[sector-pulse] perplexity returned ${rawBeats.length} raw beats for sector="${sectorQuery}". sample: ${JSON.stringify(rawBeats[0] ?? {}).slice(0, 200)}`);
     const cleanBeats: Beat[] = [];
     const dropReasons: string[] = [];
+    const seenUrls = new Set<string>();
+    const seenHeadlines = new Set<string>();
     for (const b of rawBeats as Beat[]) {
       if (typeof b?.source_url !== "string" || !isTrustedUrl(b.source_url)) {
         dropReasons.push(`untrusted:${b?.source_url ?? "none"}`);
         continue;
       }
       if (typeof b?.published_at !== "string") { dropReasons.push("no_date"); continue; }
-      // Drop anything older than 45 days as a safety net. Perplexity's published_at
-      // often reflects the article URL's first-indexed date which can lag the event,
-      // so we keep this lenient and rely on the prompt's "last 14 days" instruction.
       const ageDays = (Date.now() - new Date(b.published_at).getTime()) / (1000 * 60 * 60 * 24);
       if (!Number.isFinite(ageDays) || ageDays > 45 || ageDays < -1) {
         dropReasons.push(`age:${ageDays.toFixed(0)}d`);
@@ -241,6 +240,13 @@ RULES:
       }
       if (!["hiring", "layoff", "funding"].includes(b.signal)) { dropReasons.push(`signal:${b.signal}`); continue; }
       if (typeof b.headline !== "string" || b.headline.length < 10) { dropReasons.push("headline"); continue; }
+      // Dedup by canonical URL (strip query/hash) and by headline.
+      let urlKey = b.source_url;
+      try { const u = new URL(b.source_url); urlKey = `${u.hostname.replace(/^www\./, "")}${u.pathname}`.toLowerCase(); } catch { /* ignore */ }
+      const headlineKey = b.headline.trim().toLowerCase().replace(/\s+/g, " ");
+      if (seenUrls.has(urlKey) || seenHeadlines.has(headlineKey)) { dropReasons.push("duplicate"); continue; }
+      seenUrls.add(urlKey);
+      seenHeadlines.add(headlineKey);
       cleanBeats.push({
         headline: b.headline.trim(),
         source_name: (b.source_name ?? "").trim() || new URL(b.source_url).hostname,
