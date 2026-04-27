@@ -244,7 +244,7 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
                 className="w-full sm:w-auto px-8 sm:px-10 py-5 sm:py-6 rounded-2xl border-2 border-border bg-card hover:border-primary/30 hover:bg-primary/[0.04] text-foreground font-bold text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
               >
                 <FileText className="w-5 h-5" />
-                Upload Resume
+                Upload Resume (faster)
               </motion.button>
             </div>
 
