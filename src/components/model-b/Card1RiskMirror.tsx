@@ -348,7 +348,22 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   let displaySubline = llmSubline;
   if (isWeakHeadline && hasValidScore) {
     const replacing = familyVerb[family];
-    if (score >= 70) {
+
+    // Freshers (yrs < 1) get a different emotional beat across all bands.
+    // They're entering a market that's repricing entry-level work — not
+    // defending a seat. Same family routing, different framing.
+    if (isFresher) {
+      if (score >= 70) {
+        displayHeadline = `You're walking into a market that's repricing entry-level work in real time.`;
+        displaySubline = `The ${titleClean} roles you're applying to no longer hire for the work you'd have done in year one — AI is doing it. Your edge has to be the work it can't.`;
+      } else if (score >= 40) {
+        displayHeadline = `You're entering ${sector || "this field"} during its biggest re-pricing cycle in a decade.`;
+        displaySubline = `Junior roles for ${titleClean}s are getting fewer and meaner. The ones that hire are looking for AI fluency, not just credentials.`;
+      } else {
+        displayHeadline = `You're starting in a corner of the market AI hasn't reached yet.`;
+        displaySubline = `That's a real advantage — but it's a 2–3 year window, not a career. Use it to build the moat that AI can't copy.`;
+      }
+    } else if (score >= 70) {
       // High band — name the loss directly. Different opening per family
       // so two users with the same score don't read identical copy.
       const highHeadlines: Record<Family, string> = {
@@ -365,6 +380,14 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         finance: `Your spreadsheet fluency is being commoditised one Copilot release at a time.`,
         support: `Your tier-1 queue is shrinking faster than headcount can adjust.`,
         content: `The first-draft economy you trained for is now $20/month of tokens.`,
+        healthcare: `Your clinical work is safe. The paperwork around it is being absorbed by AI scribes.`,
+        legal: `The billable hours you charged for first-pass research are being eaten by AI.`,
+        education: `Your teaching is safe. The lesson-prep, grading, and admin around it isn't.`,
+        consulting: `The deck-and-deliverable factory that justified your day rate is being commoditised.`,
+        manufacturing: `Your operational judgment is safe. The planning and reporting layer underneath it isn't.`,
+        hospitality: `Front-desk and concierge tasks you trained for are being absorbed by AI agents.`,
+        creator: `The production grind that built your channel is now $20/month of tokens.`,
+        research: `The literature-review and synthesis half of your research is being eaten by AI.`,
         generic: `The job market doesn't need a ${titleClean} the way it did 18 months ago.`,
       };
       displayHeadline = highHeadlines[family];
@@ -384,6 +407,14 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         finance: `You're not being replaced. The reconciliation and first-draft forecasts are.`,
         support: `You're not being replaced. Tier-1 is.`,
         content: `You're not being replaced. The first draft is.`,
+        healthcare: `You're not being replaced. The documentation under your care is.`,
+        legal: `You're not being replaced. Discovery, drafting, and citation work is.`,
+        education: `You're not being replaced. The lesson-prep and first-pass grading is.`,
+        consulting: `You're not being replaced. The slide-and-model factory under you is.`,
+        manufacturing: `You're not being replaced. The planning and quality-reporting layer is.`,
+        hospitality: `You're not being replaced. The front-desk and reservation work is.`,
+        creator: `You're not being replaced. The thumbnails, scripts, and first-cut edits are.`,
+        research: `You're not being replaced. The lit-review and citation work is.`,
         generic: `You're not being replaced. You're being unbundled.`,
       };
       displayHeadline = midHeadlines[family];
@@ -403,6 +434,14 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         finance: `Your work is in AI's blind spot — controls, ethics, and signatures still need a human.`,
         support: `Your work is in AI's blind spot — escalations still need empathy.`,
         content: `Your work is in AI's blind spot — point of view still doesn't auto-generate.`,
+        healthcare: `Your work is in AI's blind spot — diagnosis, touch, and trust still need a human.`,
+        legal: `Your work is in AI's blind spot — judgment, advocacy, and accountability still need a human.`,
+        education: `Your work is in AI's blind spot — mentorship and classroom presence still need a human.`,
+        consulting: `Your work is in AI's blind spot — client relationships and judgment still don't ship via API.`,
+        manufacturing: `Your work is in AI's blind spot — physical operations and crisis judgment still need a human.`,
+        hospitality: `Your work is in AI's blind spot — hospitality is a contact sport, not a prompt.`,
+        creator: `Your work is in AI's blind spot — original POV and audience trust still don't auto-generate.`,
+        research: `Your work is in AI's blind spot — original questions and peer credibility still need a human.`,
         generic: `For now, AI works for you — not instead of you.`,
       };
       displayHeadline = lowHeadlines[family];
