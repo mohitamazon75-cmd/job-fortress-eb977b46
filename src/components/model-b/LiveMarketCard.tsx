@@ -215,7 +215,7 @@ function ThinSignalView({
             fontWeight: 500,
           }}
         >
-          <strong>Why we're hiding the tag list:</strong> Naukri's keyword search returned mostly adjacent-role listings (e.g. sales roles for marketing searches, or junior-tier roles for senior searches). Showing those tags as your market would mislead. Below is the slice of data that holds up regardless: salary disclosures and posting freshness.
+          <strong>Why we're hiding most of this card:</strong> Naukri's keyword search returned mostly adjacent-role listings (e.g. sales roles for marketing searches, or junior-tier roles for senior searches). The tag list and the disclosed-salary band would both mislead — Naukri's salary disclosures skew heavily junior and BPO, so a "median" computed from this corpus would be 50–70% below the real market for any senior or specialised role. The one slice that holds up is posting freshness, shown below.
         </div>
 
         {/* Salary — corpus-agnostic */}
