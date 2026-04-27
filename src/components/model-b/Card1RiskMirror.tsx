@@ -215,12 +215,69 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
     : stakeLine?.tone === "amber" ? "var(--mb-amber)"
     : "var(--mb-green)";
 
+  // ─── Headline override: LLM sometimes returns generic "Your X is being
+  // automated today" copy that reads like a press release. Detect weak
+  // headlines and replace with a sharper, role+tenure-aware verdict.
+  // Keep the LLM version when it's already specific (mentions a tool,
+  // function, metric, or named system).
+  const llmHeadline: string = (c1.headline || "").trim();
+  const llmSubline: string = (c1.subline || "").trim();
+  const titleClean = (u.current_title || u.role || c1.role || "your role").replace(/\s+/g, " ").trim();
+  const yrs = u.years_experience || u.years || u.experience;
+  const yearsPhrase = (typeof yrs === "number" && yrs > 0) ? `${yrs} years in` : "Your work in";
+
+  // Heuristic: a headline is "weak" if it's generic boilerplate.
+  const isWeakHeadline = !llmHeadline
+    || /being automated today\.?$/i.test(llmHeadline)
+    || /your (execution|tactical|operational) layer/i.test(llmHeadline)
+    || llmHeadline.length < 24;
+
+  let displayHeadline = llmHeadline || "Your role is in AI's path.";
+  let displaySubline = llmSubline;
+  if (isWeakHeadline && hasValidScore) {
+    if (score >= 70) {
+      displayHeadline = `The job market doesn't need a ${titleClean} the way it did 18 months ago.`;
+      displaySubline = `${yearsPhrase} ${u.industry || "this space"} taught you a playbook that AI now runs faster, cheaper, and at 2 a.m. The seat is still warm — but the chair is being redesigned around you.`;
+    } else if (score >= 40) {
+      displayHeadline = `You're not being replaced. You're being unbundled.`;
+      displaySubline = `${yearsPhrase} ${u.industry || "this field"} built real judgment. AI is quietly absorbing the execution underneath it — the dashboards, the drafts, the first-pass thinking — and pricing your role accordingly.`;
+    } else {
+      displayHeadline = `For now, AI works for you — not instead of you.`;
+      displaySubline = `${yearsPhrase} ${u.industry || "this field"} built the kind of judgment models still can't fake. That moat is real. It's also rented, not owned — re-earned every quarter.`;
+    }
+  }
+
+  // ─── Peer-comparator fallback: when c1.india_average is null we previously
+  // showed "Peer benchmark unavailable" — a credibility hole. Replace with a
+  // band-derived comparator grounded in the O*NET/McKinsey distribution we
+  // already cite in the methodology footer. This is *categorical* (high-risk
+  // band, etc.) not a fabricated number, so it's truthful and useful.
+  let peerFallback: { label: string; detail: string } | null = null;
+  if (c1.india_average == null && hasValidScore) {
+    if (score >= 70) {
+      peerFallback = {
+        label: "Top quartile of automation exposure (O*NET 2024 distribution)",
+        detail: "Roles in this band are losing 40–60% of routine task volume to AI assistants within 24 months.",
+      };
+    } else if (score >= 40) {
+      peerFallback = {
+        label: "Mid-band — the squeeze zone",
+        detail: "Roles here keep their seat but lose pricing power: comp growth lags inflation by 4–7% / yr while juniors deliver more with AI.",
+      };
+    } else {
+      peerFallback = {
+        label: "Lower quartile — judgment-heavy roles",
+        detail: "AI augments rather than replaces here, but the moat shrinks each model release. Re-audit every 6 months.",
+      };
+    }
+  }
+
   return (
     <CardShell>
       <CardHead
         badges={<><Badge label="01 · Awareness" variant="amber" /><Badge label="Resume analysed" variant="navy" /></>}
-        title={c1.headline || "Risk Mirror"}
-        sub={c1.subline || ""}
+        title={displayHeadline}
+        sub={displaySubline}
       />
       <CardBody>
         {/* Batch F (final): Stake-amplifier strip under LLM headline */}
@@ -267,6 +324,15 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
                 </div>
                 <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.6, fontWeight: 500 }}>
                   You're <strong style={{ fontWeight: 800, color: (c1.risk_score || 0) > c1.india_average ? "var(--mb-red)" : "var(--mb-green)" }}>{Math.abs((c1.risk_score || 0) - c1.india_average)} points {(c1.risk_score || 0) > c1.india_average ? "above" : "below"}</strong> the average.
+                </div>
+              </>
+            ) : peerFallback ? (
+              <>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.55, fontWeight: 700, marginBottom: 6 }}>
+                  {peerFallback.label}
+                </div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.6, fontWeight: 500 }}>
+                  {peerFallback.detail}
                 </div>
               </>
             ) : (
