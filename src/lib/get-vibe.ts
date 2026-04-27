@@ -194,18 +194,20 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `This is the warning your company will never give you.`,
     warmIntro: `You're not alone. 1 in 3 professionals in your category scored under 30 this year. The ones who turned it around started with exactly this kind of honest picture.`,
 
-    body: `${riskSource} High talent supply + routine tasks + ${demand} demand = the math isn't in your favor. Every month you wait, the options get fewer and the competition gets stronger.`,
+    body: `${riskSource} High talent supply + routine tasks + ${demand} demand = the math isn't in your favor. Every month you wait, the options get fewer and the competition gets stronger.` + familyBodySuffix,
 
-    hope: `But here's what matters: you're looking at this right now. You have 6 months of runway that most people in your role don't even know they're burning through. ${moatSkills > 0 ? `And you still have ${moatSkills} skills that create real differentiation — that's your starting point.` : 'The defense plan below maps your fastest path to building a genuine moat.'}`,
+    hope: `But here's what matters: you're looking at this right now. You have 6 months of runway that most people in your role don't even know they're burning through. ${moatSkills > 0 ? `And you still have ${moatSkills} skills that create real differentiation — that's your starting point.` : 'The defense plan below maps your fastest path to building a genuine moat.'}` + familyHopeSuffix,
 
     plan: `Start this week — not next month, this week. Identify one thing only YOU can do that requires human judgment, creativity, or relationships, and make it visible to decision-makers. Your defense plan gives you the exact 90-day roadmap.`,
 
-    replaceability: `This seat could be filled quickly. But you're here, looking at this clearly, while your peers are scrolling LinkedIn pretending everything is fine. That's the whole point.`,
+    replaceability: `This seat could be filled quickly. But you're here, looking at this clearly, while your peers are scrolling LinkedIn pretending everything is fine. That's the whole point.` + familyReplaceabilitySuffix,
 
     bullets: [
       riskBullet,
       `Talent supply is high — you're competing with more people AND machines simultaneously`,
       `Your defense plan is your escape route — the people who act on it within 7 days see the fastest score improvements`,
     ],
+    proofLine,
+    inactionCost: fam.inactionCost,
   };
 }
