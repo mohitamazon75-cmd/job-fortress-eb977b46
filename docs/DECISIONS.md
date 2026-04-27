@@ -316,3 +316,13 @@ Phase 2B (Nuclear Card) can proceed.
 **Outcome:** 50/50 pass (100%), all 8 families at 100%.
 
 **Limitation acknowledged:** This baseline reflects engine output under heuristic profile extraction. When production Agent 1 produces richer profiles (more strategic skills, executive_impact, ic_leverage), real scans land at higher careers scores than these fixtures expect. The eval is therefore a **regression net for the deterministic engine itself**, not a simulation of end-to-end UX. Adding an LLM-extraction-based eval is tracked in BACKLOG.
+
+## 2026-04-27 — Firecrawl rollout: live-market adopted (Pilot 3, high-traffic)
+
+Migrated `supabase/functions/live-market/index.ts` to the shared `firecrawlSearch` helper.
+- This is the highest-traffic Firecrawl consumer (called by `Card2MarketRadar` on every Model B scan).
+- Replaced 2 raw `fetch` calls + manual `r.ok ? r.json() : null` plumbing with one Promise.all over `firecrawlSearch({...})`.
+- Preserves the `null`-on-failure contract. Adds: retries with backoff, per-host circuit breaker, structured JSON logs (`fn=firecrawl-search provider=firecrawl`).
+- Verified: 302/302 vitest pass, build clean, deploy successful.
+
+**Production proof now possible**: next real Model B scan will exercise this path. Watch edge logs for `firecrawl-search` events — that's our signal the helper is healthy under real traffic before scaling to the remaining call sites (company-news, market-signals, parse-linkedin, process-scan, scan-enrichment).
