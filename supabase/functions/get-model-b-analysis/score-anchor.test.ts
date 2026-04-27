@@ -135,8 +135,8 @@ function makeCardWithShield(rawRisk: number, shield: number, llmJB: number) {
 
 Deno.test("jobbachao_score: same (risk,shield) → identical output across LLM variance", () => {
   // Production case: risk=67, shield=58. LLM produced 53 one day, 67 the next.
-  // After the fix, BOTH must collapse to the formula value.
-  const expected = Math.round(100 - (67 * (1 - 58 / 200))); // = 53
+  // After the fix, BOTH must collapse to the formula value (52).
+  const expected = Math.round(100 - (67 * (1 - 58 / 200))); // = 52
   const llmHallucinations = [42, 53, 60, 67, 75, 88];
 
   const outputs = llmHallucinations.map((llmJB) => {
