@@ -418,11 +418,23 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           Now: a dedicated card in the free dossier — the emotional anchor that makes
           users feel seen before they hit any blur wall. */}
       {!isProUser && (report.cognitive_moat || (report as any).moat_narrative) && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}
-          className="rounded-2xl border-2 border-prophet-green/20 bg-prophet-green/[0.04] p-5">
-          <p className="text-[10px] font-black uppercase tracking-widest text-prophet-green mb-2">
-            🛡️ Your irreplaceable edge
-          </p>
+        <motion.button
+          type="button"
+          onClick={() => onUpgrade?.()}
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }}
+          whileHover={{ y: -1 }}
+          className="group w-full text-left rounded-2xl border-2 border-prophet-green/20 hover:border-prophet-green/40 bg-prophet-green/[0.04] hover:bg-prophet-green/[0.07] p-5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-prophet-green/50"
+          aria-label="Reveal all unfair edges — upgrade"
+        >
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-prophet-green">
+              🛡️ Your irreplaceable edge
+            </p>
+            <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-prophet-green/80 group-hover:text-prophet-green transition-colors whitespace-nowrap">
+              Reveal all
+              <span className="transition-transform group-hover:translate-x-0.5">→</span>
+            </span>
+          </div>
           {report.cognitive_moat && (
             <p className="text-sm font-black text-foreground leading-snug mb-2">
               {report.cognitive_moat}
@@ -433,7 +445,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
               {(report as any).moat_narrative}
             </p>
           )}
-        </motion.div>
+        </motion.button>
       )}
 
       {/* FIX 1: free_advice_1/2/3 — the most personalised AI-generated insights.
