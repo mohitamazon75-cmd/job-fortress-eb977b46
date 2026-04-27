@@ -174,20 +174,22 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
             In 4 minutes — know your risk, and exactly what to fix this Sunday.
           </motion.p>
 
-          {/* Sub */}
+          {/* Sub — v2 (2026-04-27): tightened from 47-word feature list to a
+              benefit-led, friction-killing line. Old copy preserved in git
+              history. Funnel will measure the lift via landing_scroll_depth +
+              cta_click in /admin/funnel. To revert, restore the previous
+              <motion.p> block from git. */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
             className="text-lg sm:text-2xl md:text-3xl text-muted-foreground max-w-3xl mx-auto mb-8 sm:mb-12 leading-relaxed font-medium"
           >
-            We analyze your career through{' '}
-            <span className="text-foreground font-bold">7 intelligence cards</span> — risk diagnosis,{' '}
-            skill threats, pivot paths, market data — covering{' '}
-            <span className="text-foreground font-bold">98+ role archetypes</span>,{' '}
-            <span className="text-foreground font-bold">50+ AI tools</span>, and{' '}
-            <span className="text-foreground font-bold">live India market data</span>.{' '}
-            <span className="text-primary font-black">Know your risk. Own your future.</span>
+            Get a personalised{' '}
+            <span className="text-foreground font-bold">AI risk score</span> in{' '}
+            <span className="text-foreground font-bold">4 minutes</span> — based on your real role, skills, and{' '}
+            <span className="text-foreground font-bold">India 2026 hiring data</span>.{' '}
+            <span className="text-primary font-black">Free. No signup to start.</span>
           </motion.p>
 
           {/* Role selector — lets users self-identify before scanning */}
@@ -225,7 +227,7 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
                 className="group relative w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 rounded-2xl text-primary-foreground font-black text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
                 style={{ background: 'var(--gradient-primary)', boxShadow: '0 16px 60px hsl(var(--primary) / 0.4)' }}
               >
-                Get My Free Career Scan
+                Show Me My Risk Score
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
                 <motion.div
                   className="absolute inset-0 rounded-2xl"
@@ -242,18 +244,34 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
                 className="w-full sm:w-auto px-8 sm:px-10 py-5 sm:py-6 rounded-2xl border-2 border-border bg-card hover:border-primary/30 hover:bg-primary/[0.04] text-foreground font-bold text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
               >
                 <FileText className="w-5 h-5" />
-                Upload Resume
+                Upload Resume (faster)
               </motion.button>
             </div>
 
+            {/* Friction-killers — 3 explicit objection-removers, replacing the
+                old single-line "intelligence cards" feature recap. Per
+                mem://style/social-proof-credibility we do NOT claim user counts
+                we can't back up — only 5 real scans in last 30d as of today. */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9 }}
-              className="flex items-center justify-center gap-2 mt-5"
+              className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-5"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
-              <span className="text-xs text-muted-foreground"><span className="text-prophet-green font-bold">7 intelligence cards</span> · Risk + Skills + Market + Pivot + Mission · Under 4 min</span>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
+                <span className="text-xs text-muted-foreground"><span className="text-foreground font-bold">No signup</span> until you see your score</span>
+              </div>
+              <span className="text-muted-foreground/40 hidden sm:inline">·</span>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
+                <span className="text-xs text-muted-foreground"><span className="text-foreground font-bold">Under 4 minutes</span></span>
+              </div>
+              <span className="text-muted-foreground/40 hidden sm:inline">·</span>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
+                <span className="text-xs text-muted-foreground">Methodology from <span className="text-foreground font-bold">WEF, NASSCOM, O*NET</span></span>
+              </div>
             </motion.div>
           </motion.div>
 

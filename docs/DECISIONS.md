@@ -375,3 +375,36 @@ Migrated `supabase/functions/live-market/index.ts` to the shared `firecrawlSearc
 3. Which referrer is sending the most non-converting traffic? → tells us if we have a quality-of-traffic problem vs quality-of-page problem.
 
 **Stopping point:** All instrumentation needed to diagnose the top-of-funnel leak is now live. Adding share/CTA-post-reveal events is deferred until the funnel data shows users are actually reaching those steps in volume.
+
+## 2026-04-27 — Hero copy rewrite (founder call, addresses 92% top-of-funnel leak)
+
+**Hypothesis:** The 92% landing→CTA drop is primarily a copy problem, not a design problem. The current sub-headline is 47 words of feature jargon ("7 intelligence cards … 98+ role archetypes … 50+ AI tools …") written in builder-language not user-language. Bouncers read "intelligence cards" and leave because they don't know what they get.
+
+**Changes in `src/components/HeroSection.tsx` (surgical, 4 blocks):**
+
+1. **Sub-headline** — 47 words → 28 words, benefit-led:
+   - Old: "We analyze your career through 7 intelligence cards — risk diagnosis, skill threats, pivot paths, market data — covering 98+ role archetypes, 50+ AI tools, and live India market data. Know your risk. Own your future."
+   - New: "Get a personalised AI risk score in 4 minutes — based on your real role, skills, and India 2026 hiring data. Free. No signup to start."
+   - Why: leads with what the user gets ("risk score") and how long it takes (the second-strongest objection killer), kills three friction objections in one sentence.
+
+2. **Primary CTA** — "Get My Free Career Scan" → **"Show Me My Risk Score"**
+   - Why: mirrors the "Are You Next?" headline directly. Action implies the answer they want.
+
+3. **Secondary CTA** — "Upload Resume" → **"Upload Resume (faster)"**
+   - Why: tells them WHY they'd pick this path. The original gave no signal.
+
+4. **Trust strip** — replaced single-line "intelligence cards" feature recap with three friction-killers:
+   - "No signup until you see your score"
+   - "Under 4 minutes"
+   - "Methodology from WEF, NASSCOM, O*NET"
+   - Why: directly answers the three biggest objections of a stranger landing on a resume-asking site. Per `mem://style/social-proof-credibility` we did NOT include a "70+ professionals" claim because real 30d scan count is 5 — that would be a lie and the platform's whole credibility position depends on not lying about numbers.
+
+**Decision NOT to use a feature flag (CLAUDE.md Rule 4 exception):**
+At 4 scans/week, the experimental setup overhead exceeds the value. The funnel I shipped earlier today (`/admin/funnel`) will surface the conversion delta within 48h vs the preceding 8 days of data on the old hero. If lift is negative or flat, revert is a 30-second git restore.
+
+**Verification:** 302/302 tests pass, build clean (16s), changes are localized to lines 177-258 of HeroSection.tsx (no structural changes, animation timings preserved).
+
+**Measurable success criteria:**
+- landing_view → cta_click conversion improves from 8% (6/76) to >15% over the next 7 days
+- landing_scroll_depth shows users now reach 25% bucket more often (means they read the sub-headline)
+- If both move negative → revert
