@@ -355,3 +355,23 @@ Migrated `supabase/functions/live-market/index.ts` to the shared `firecrawlSearc
 
 **What's still dark (next pass once we have data):**
 - `share_opened` / `cta_post_reveal` need imperative `trackFunnelEvent()` calls in the share modal and CTA components. Deferred until we see whether anyone reaches those steps at all.
+
+## 2026-04-27 — Funnel v2: explain WHY of the 92% landing drop-off
+
+**Rationale:** Funnel v1 (shipped earlier today) confirms there's a 92% drop from `landing_view` → `cta_click` (76 → 6 over 8 days). Confirming a known leak isn't the same as understanding it. The most expensive thing we could do is spend 6 months "improving the landing page" without knowing whether bouncers leave above the fold (headline failure) or scroll deep without converting (value-prop failure). These have completely different fixes.
+
+**Built (still all additive, no god-file edits beyond 2 lines):**
+- `useAnalytics` extended with auto-attached session context: `is_returning`, `referrer_host`, `utm_source/medium/campaign`, `ref_code`. Captured once per session, merged into every event payload — zero changes at the ~15 existing call sites.
+- New `useLandingScrollDepth` hook fires `landing_scroll_depth` events at 25/50/75/100% buckets, with idempotency + 200ms throttle + on-leave capture via `pagehide` and `visibilitychange` so bouncers are recorded before the tab dies.
+- Wired into `Index.tsx` with 2 lines (1 import, 1 hook call), gated to `phase === 'hero'` so it auto-disables once user enters the scan flow.
+- `admin-funnel` edge function now also returns: scroll-depth distribution, new vs returning breakdown, and top referrer hosts.
+- `AdminFunnel` page gets a "Landing page health" card with two columns: audience composition + scroll-depth bars. Includes plain-English interpretation guide.
+
+**Verification:** 302/302 tests pass, build clean (11s), function redeployed.
+
+**Tomorrow's actionable questions this unlocks:**
+1. Of 76 landing views, how many even reached 50% scroll depth? → tells us if the hero is the bottleneck.
+2. What % of "new" visitors bounce above the fold vs "returning"? → tells us if it's a recognition or comprehension problem.
+3. Which referrer is sending the most non-converting traffic? → tells us if we have a quality-of-traffic problem vs quality-of-page problem.
+
+**Stopping point:** All instrumentation needed to diagnose the top-of-funnel leak is now live. Adding share/CTA-post-reveal events is deferred until the funnel data shows users are actually reaching those steps in volume.

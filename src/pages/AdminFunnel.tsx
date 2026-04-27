@@ -32,11 +32,19 @@ interface FunnelData {
     unique_scans_reaching_result: number;
     unique_scans_completing_journey: number;
   };
+  landing?: {
+    views_total: number;
+    views_returning: number;
+    views_new: number;
+    scroll_depth_buckets: Record<string, number>;
+    top_referrers: { host: string; count: number }[];
+  };
   totals: Record<string, number>;
 }
 
 const HUMAN_LABEL: Record<string, string> = {
   landing_view: "Landing viewed",
+  landing_scroll_depth: "Scrolled past fold",
   cta_click: "CTA clicked",
   auth_complete: "Signed in",
   input_method_selected: "Picked input method",
@@ -184,6 +192,72 @@ export default function AdminFunnel() {
             Steps with 0 events either haven't been wired up yet or no user has reached them in this window.
           </p>
         </Card>
+
+        {/* Landing page health — answers "do bouncers leave above the fold?" */}
+        {data.landing && data.landing.views_total > 0 && (
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold mb-4">Landing page health</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">Audience</p>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span>Total landing views</span>
+                    <span className="font-mono tabular-nums">{data.landing.views_total}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>New visitors</span>
+                    <span className="font-mono tabular-nums">{data.landing.views_new}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Returning visitors</span>
+                    <span className="font-mono tabular-nums">{data.landing.views_returning}</span>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4 mb-2">Top referrers</p>
+                <div className="space-y-1 text-sm">
+                  {data.landing.top_referrers.length === 0 ? (
+                    <p className="text-muted-foreground italic">No data yet</p>
+                  ) : data.landing.top_referrers.map((r) => (
+                    <div key={r.host} className="flex justify-between">
+                      <span className="truncate">{r.host}</span>
+                      <span className="font-mono tabular-nums ml-2">{r.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Scroll depth reached (% of all landing views)
+                </p>
+                <div className="space-y-3">
+                  {(["25", "50", "75", "100"] as const).map((bucket) => {
+                    const count = data.landing!.scroll_depth_buckets[bucket] || 0;
+                    const pct = Math.round((count / data.landing!.views_total) * 100);
+                    return (
+                      <div key={bucket} className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span>Reached {bucket}%</span>
+                          <span className="font-mono tabular-nums">{count} ({pct}%)</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  If most users don't reach 50%, the headline/hero is the leak. If they
+                  do reach the bottom but don't click CTA, the value prop is the leak.
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Daily breakdown */}
         <Card className="p-6">

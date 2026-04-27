@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     // thousands move to a SQL view.
     const [analyticsRes, behaviorRes, scansRes] = await Promise.all([
       sb.from("analytics_events")
-        .select("event_type, created_at")
+        .select("event_type, payload, created_at")
         .gte("created_at", since)
         .limit(10_000),
       sb.from("behavior_events")
@@ -114,12 +114,13 @@ Deno.serve(async (req) => {
     // Order matches the actual user journey so drop-off is visually obvious.
     const FUNNEL_ORDER = [
       "landing_view",
+      "landing_scroll_depth",   // ← NEW: did they scroll past the fold?
       "cta_click",
       "auth_complete",
       "input_method_selected",
       "scan_start",
       "scan_complete",
-      "result_loaded",       // ← new event from useScanFunnelTracking
+      "result_loaded",          // ← from useScanFunnelTracking
       "card_viewed",
       "share_opened",
       "journey_completed",
@@ -148,6 +149,31 @@ Deno.serve(async (req) => {
         .map((b) => b.scan_id),
     );
 
+    // ── Scroll-depth distribution (the "did they bounce above the fold?" answer)
+    const scrollDepth = { "25": 0, "50": 0, "75": 0, "100": 0 };
+    let landingViewsTotal = 0;
+    let landingViewsReturning = 0;
+    const refHostCounts = new Map<string, number>();
+    for (const a of analytics) {
+      const payload = (a as any).payload || {};
+      if (a.event_type === "landing_scroll_depth") {
+        const bucket = String(payload.bucket || "");
+        if (bucket in scrollDepth) {
+          scrollDepth[bucket as keyof typeof scrollDepth]++;
+        }
+      }
+      if (a.event_type === "landing_view") {
+        landingViewsTotal++;
+        if (payload.is_returning) landingViewsReturning++;
+        const host = payload.referrer_host || "(direct)";
+        refHostCounts.set(host, (refHostCounts.get(host) || 0) + 1);
+      }
+    }
+    const referrers = Array.from(refHostCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([host, count]) => ({ host, count }));
+
     return new Response(
       JSON.stringify({
         window_days: days,
@@ -157,6 +183,13 @@ Deno.serve(async (req) => {
           scans_in_window: scans.length,
           unique_scans_reaching_result: reachedResultScanIds.size,
           unique_scans_completing_journey: completedJourneyScanIds.size,
+        },
+        landing: {
+          views_total: landingViewsTotal,
+          views_returning: landingViewsReturning,
+          views_new: landingViewsTotal - landingViewsReturning,
+          scroll_depth_buckets: scrollDepth,
+          top_referrers: referrers,
         },
         totals,
       }),
