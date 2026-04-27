@@ -689,7 +689,7 @@ function SnapshotView({
             } else if (freshPct >= 40) {
               velocityLabel = "ACTIVE";
               velocityColor = "#8B6F1F";
-              velocityVerdict = `Steady hiring pulse for ${role} — no urgency, but the door is open. Apply where you fit; don't wait for a flood.`;
+              velocityVerdict = `Steady hiring pulse for ${displayRole} — no urgency, but the door is open. Apply where you fit; don't wait for a flood.`;
               velocityNote = `${freshPct}% of dated postings are <7 days old — a steady, consistent listing pulse.`;
             } else {
               velocityLabel = "COOL";
