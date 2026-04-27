@@ -6,6 +6,7 @@
 
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { logEdgeError } from "../_shared/edge-logger.ts";
+import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
 const PENDING_TIMEOUT_MIN = 1;     // pending > 1 min → re-trigger (was 2)
 const PROCESSING_TIMEOUT_MIN = 8;  // processing > 8 min → mark error (was 10; tighter w/ raised agent timeouts)
