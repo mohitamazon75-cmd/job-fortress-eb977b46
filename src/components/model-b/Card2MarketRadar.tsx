@@ -269,15 +269,23 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           </>
         )}
 
-        {/* Quote — kept last as a social-proof close, only when present */}
-        {c2.market_quote && (
-          <div style={{ borderLeft: "3px solid var(--mb-navy)", borderRadius: "0 10px 10px 0", padding: "14px 18px", background: "var(--mb-navy-tint)", marginBottom: 16 }}>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink)", lineHeight: 1.75, fontStyle: "italic", marginBottom: 6, fontWeight: 500 }}>“{c2.market_quote}”</div>
-            {c2.market_quote_source && (
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", fontWeight: 700 }}>— {c2.market_quote_source}</div>
-            )}
-          </div>
-        )}
+        {/* Quote — kept last as a social-proof close.
+            Attribution passes through decideAttribution() which whitelists
+            credible publishers/firms and quietly drops sources that look
+            fabricated (e.g. generic "AI Researcher" with no named entity).
+            See quote-attribution.ts for the decision matrix. */}
+        {(() => {
+          const att = decideAttribution(c2.market_quote, c2.market_quote_source);
+          if (!att.showQuote) return null;
+          return (
+            <div style={{ borderLeft: "3px solid var(--mb-navy)", borderRadius: "0 10px 10px 0", padding: "14px 18px", background: "var(--mb-navy-tint)", marginBottom: 16 }}>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink)", lineHeight: 1.75, fontStyle: "italic", marginBottom: att.showSource ? 6 : 0, fontWeight: 500 }}>“{c2.market_quote}”</div>
+              {att.showSource && (
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", fontWeight: 700 }}>— {att.source}</div>
+              )}
+            </div>
+          );
+        })()}
 
         <CardNav onBack={onBack} onNext={onNext} />
       </CardBody>
