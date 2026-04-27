@@ -629,7 +629,7 @@ function SnapshotView({
                   fontStyle: "italic",
                 }}
               >
-                Skill-match not shown — this market's top tags don't cleanly reflect {role} skills. We hide the column rather than show misleading matches.
+                Skill-match not shown — this market's top tags don't cleanly reflect {displayRole} skills. We hide the column rather than show misleading matches.
               </div>
             )}
           </div>
