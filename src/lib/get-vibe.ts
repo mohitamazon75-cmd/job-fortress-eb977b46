@@ -30,6 +30,8 @@ export type Vibe = {
   replaceability: string; // Boss-eye-view framing
   warmIntro?: string;     // Optional empathetic opener
   bullets: string[];      // Supporting evidence points
+  proofLine?: string;     // "We read your resume" specificity strip (yrs · stack · geo)
+  inactionCost?: string;  // Quantified loss-aversion anchor for paywall
 };
 
 /** Normalize demand trend to human-readable label */
