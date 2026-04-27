@@ -127,7 +127,6 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   // body itself guards against missing data so we don't fire telemetry for
   // empty cards.
   const { track } = useTrack(cardData?.scan_id);
-  const hasC1 = Boolean(c1);
 
   if (!c1) return null;
 
