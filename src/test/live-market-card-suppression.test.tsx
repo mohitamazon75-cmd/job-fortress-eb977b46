@@ -14,6 +14,7 @@
 
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LiveMarketCard from "@/components/model-b/LiveMarketCard";
 import {
   r1Fixture,
@@ -26,6 +27,17 @@ const baseProps = {
   city: "India",
   all_skills: [],
 };
+
+function renderCard(snapshot: typeof tinyFlatPartialFixture) {
+  // Disable retries so any accidental network call fails fast (the override
+  // path should bypass the query entirely, but the hook still mounts).
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <LiveMarketCard {...baseProps} snapshotOverride={snapshot} />
+    </QueryClientProvider>
+  );
+}
 
 describe("LiveMarketCard — Layer A: tag-table suppression", () => {
   it("suppresses the tag table when partial + tiny + flat (screenshot scenario)", () => {
