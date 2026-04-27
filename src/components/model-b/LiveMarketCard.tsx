@@ -500,7 +500,7 @@ function SnapshotView({
               fontWeight: 500,
             }}
           >
-            <strong>Why we're hiding the tag list:</strong> Naukri returned {posting_count} posting{posting_count === 1 ? "" : "s"} for {role} in 7 days, and no tag appears in more than {maxTagCount} of them — not enough to call a pattern. On a sample this small, the table would invent precision that isn't there. The numbers below are the slice of this dataset that holds up: hiring velocity and posting freshness.
+            <strong>Why we're hiding the tag list:</strong> Naukri returned {posting_count} posting{posting_count === 1 ? "" : "s"} for {displayRole} in 7 days, and no tag appears in more than {maxTagCount} of them — not enough to call a pattern. On a sample this small, the table would invent precision that isn't there. The numbers below are the slice of this dataset that holds up: hiring velocity and posting freshness.
           </div>
         )}
 
