@@ -58,29 +58,26 @@ Deno.serve(async (req) => {
       "artificial intelligence impact Indian IT industry",
     ];
 
-    const searchPromises = searchQueries.map((query) =>
-      fetch("https://api.firecrawl.dev/v1/search", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+    // 2026-04-27: migrated from raw fetch to firecrawlSearch helper —
+    // adds per-host circuit breaker (fast-fails during Firecrawl outages)
+    // and structured JSON logs. Behavior preserved: 4 parallel searches,
+    // null on individual failure, same string format for downstream synthesis.
+    const searchResults = await Promise.all(
+      searchQueries.map((query) =>
+        firecrawlSearch({
           query,
           limit: 5,
           lang: "en",
           country: "in",
           tbs: "qdr:w",
         }),
-      }).then((r) => r.ok ? r.json() : null).catch(() => null)
+      ),
     );
 
-    const searchResults = await Promise.all(searchPromises);
-
     const rawArticles: string[] = [];
-    for (const result of searchResults) {
-      if (!result?.data) continue;
-      for (const item of result.data) {
+    for (const results of searchResults) {
+      if (!results) continue; // helper returns null on failure
+      for (const item of results) {
         if (item.title || item.description) {
           rawArticles.push(`${item.title || ""} — ${item.description || ""} (${item.url || ""})`);
         }
