@@ -3,6 +3,14 @@ import { getCorsHeaders } from "../_shared/cors.ts";
 import { detectExecutiveTier, buildExecutiveModeBlock } from "../_shared/executive-mode.ts";
 import { CircuitBreaker } from "../_shared/circuit-breaker.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
+
+const ModelBSchema = z.object({
+  analysis_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  resume_filename: z.string().max(512).optional(),
+  poll: z.boolean().optional(),
+});
 
 // Module-level breaker — shared across invocations on the same isolate.
 // 3 consecutive india-jobs failures → 60s cooldown using LLM fallback.
@@ -29,15 +37,9 @@ Deno.serve(async (req) => {
   if (auth.kind === "unauthorized") return auth.response;
 
   try {
-    const body = await req.json();
-    const { analysis_id, user_id, resume_filename, poll } = body;
-
-    if (!analysis_id || !user_id) {
-      return new Response(
-        JSON.stringify({ success: false, error: "analysis_id and user_id are required" }),
-        { status: 400, headers: jsonHeaders }
-      );
-    }
+    const validated = await validateBody(req, ModelBSchema, getCorsHeaders(req));
+    if (validated.kind === "invalid") return validated.response;
+    const { analysis_id, user_id, resume_filename, poll } = validated.data;
 
     const supabase = createAdminClient();
 

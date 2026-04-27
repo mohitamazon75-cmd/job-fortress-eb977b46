@@ -1,6 +1,21 @@
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { callAgent, PRO_MODEL, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
+
+const AutopsySchema = z.object({
+  // 4-stage LLM pipeline — bound idea length to keep cost predictable.
+  idea: z.string().trim().min(10, "Please describe your startup idea (at least 10 characters)").max(8_000),
+  background: z.string().max(4_000).optional(),
+  founderProfile: z.object({
+    role: z.string().max(200).optional(),
+    company: z.string().max(200).optional(),
+    industry: z.string().max(200).optional(),
+    yearsExp: z.string().max(50).optional(),
+    skills: z.array(z.string().max(100)).max(50).optional(),
+    moatSkills: z.array(z.string().max(100)).max(50).optional(),
+  }).passthrough().optional(),
+});
 
 // ═══════════════════════════════════════════════════════════════
 // STARTUP AUTOPSY ENGINE v2 — 4-STAGE FORENSIC ANALYSIS
@@ -245,12 +260,9 @@ Deno.serve(async (req: Request) => {
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { idea, background, founderProfile } = await req.json();
-    if (!idea || idea.trim().length < 10) {
-      return new Response(JSON.stringify({ error: "Please describe your startup idea (at least 10 characters)" }), {
-        status: 400, headers: { ...cors, "Content-Type": "application/json" },
-      });
-    }
+    const parsedBody = await validateBody(req, AutopsySchema, cors);
+    if (parsedBody.kind === "invalid") return parsedBody.response;
+    const { idea, background, founderProfile } = parsedBody.data;
 
     const startMs = Date.now();
 

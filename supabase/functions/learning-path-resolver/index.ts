@@ -23,6 +23,16 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders, handleCorsPreFlight, okResponse, errResponse } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
+
+const LearningPathSchema = z.object({
+  gap_title: z.string().trim().min(1, "gap_title is required").max(300),
+  gap_body: z.string().max(4_000).optional(),
+  severity: z.enum(["LOW", "MODERATE", "HIGH", "CRITICAL"]).optional(),
+  role: z.string().max(200).optional(),
+  skills: z.array(z.string().max(120)).max(30).optional(),
+  scan_id: z.string().max(64).optional(),
+});
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -123,9 +133,10 @@ serve(async (req) => {
   if (auth.kind === "unauthorized") return auth.response;
 
   try {
-    const body = (await req.json().catch(() => ({}))) as ResolverInput;
-    const gapTitle = (body.gap_title || "").trim();
-    if (!gapTitle) return errResponse(req, "gap_title is required", 400);
+    const parsedBody = await validateBody(req, LearningPathSchema, getCorsHeaders(req));
+    if (parsedBody.kind === "invalid") return parsedBody.response;
+    const body = parsedBody.data;
+    const gapTitle = body.gap_title.trim();
     const role = (body.role || "").trim();
     const cacheKey = await buildCacheKey(gapTitle, role);
 

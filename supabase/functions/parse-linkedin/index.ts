@@ -4,6 +4,16 @@ import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { isFeatureEnabled } from "../_shared/feature-flags.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
+
+const ParseLinkedInSchema = z.object({
+  // Strict LinkedIn URL pattern — also acts as the format check the function used to do manually.
+  linkedinUrl: z
+    .string()
+    .min(1)
+    .max(512)
+    .regex(/^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/i, "Invalid LinkedIn URL format"),
+});
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
@@ -17,23 +27,9 @@ Deno.serve(async (req) => {
     const auth = await requireAuth(req, corsHeaders);
     if (auth.kind === "unauthorized") return auth.response;
 
-    const { linkedinUrl } = await req.json();
-
-    if (!linkedinUrl) {
-      return new Response(
-        JSON.stringify({ error: "linkedinUrl is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate LinkedIn URL
-    const linkedinRegex = /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/i;
-    if (!linkedinRegex.test(linkedinUrl)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid LinkedIn URL format. Expected: https://linkedin.com/in/username" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const validated = await validateBody(req, ParseLinkedInSchema, corsHeaders);
+    if (validated.kind === "invalid") return validated.response;
+    const { linkedinUrl } = validated.data;
 
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

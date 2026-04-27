@@ -6,6 +6,15 @@
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
+
+const TranslateSchema = z.object({
+  texts: z
+    .array(z.object({ key: z.string().min(1).max(120), value: z.string().min(1).max(4000) }))
+    .min(1)
+    .max(50),
+  target_language: z.enum(["hindi", "hinglish"]).optional(),
+});
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
@@ -25,14 +34,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "API key not configured" }), { status: 500, headers: jsonHeaders });
     }
 
-    const { texts, target_language } = await req.json() as {
-      texts: { key: string; value: string }[];
-      target_language?: string;
-    };
-
-    if (!texts || !Array.isArray(texts) || texts.length === 0) {
-      return new Response(JSON.stringify({ error: "texts array required" }), { status: 400, headers: jsonHeaders });
-    }
+    const validated = await validateBody(req, TranslateSchema, corsHeaders);
+    if (validated.kind === "invalid") return validated.response;
+    const { texts, target_language } = validated.data;
 
     const lang = target_language || "hindi";
     const isHinglish = lang === "hinglish";

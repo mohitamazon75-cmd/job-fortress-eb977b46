@@ -14,6 +14,12 @@
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
+
+const TrajectorySchema = z.object({
+  scan_id: z.string().uuid(),
+  user_id: z.string().uuid().optional(),
+});
 
 // Industry decay rates per month (% score drop without any action)
 // Based on WEF 2025 automation adoption curves
@@ -56,11 +62,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { scan_id, user_id } = await req.json();
-    if (!scan_id) {
-      return new Response(JSON.stringify({ error: "scan_id required" }), 
-        { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
-    }
+    const parsedBody = await validateBody(req, TrajectorySchema, cors);
+    if (parsedBody.kind === "invalid") return parsedBody.response;
+    const { scan_id, user_id } = parsedBody.data;
 
     const supabase = createAdminClient();
 

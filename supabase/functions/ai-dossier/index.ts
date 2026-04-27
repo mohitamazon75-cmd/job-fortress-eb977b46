@@ -5,8 +5,14 @@ import { createTokenTrackingTransform } from "../_shared/token-tracker.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { validateBody, z } from "../_shared/validate-input.ts";
 
-
+// `report` is a deeply nested object built upstream by process-scan; we don't
+// re-validate every internal field here (would be redundant with our own writes)
+// but we DO require it to be a non-null object — that's enough to stop griefing.
+const DossierSchema = z.object({
+  report: z.record(z.unknown()),
+});
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -22,13 +28,9 @@ Deno.serve(async (req) => {
   // if (subGuard) return subGuard;
 
   try {
-    const { report } = await req.json();
-    if (!report) {
-      return new Response(JSON.stringify({ error: "No report data" }), {
-        status: 400,
-        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-      });
-    }
+    const validated = await validateBody(req, DossierSchema, getCorsHeaders(req));
+    if (validated.kind === "invalid") return validated.response;
+    const { report } = validated.data;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
