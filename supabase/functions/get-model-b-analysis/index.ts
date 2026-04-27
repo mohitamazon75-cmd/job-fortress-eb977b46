@@ -787,6 +787,26 @@ export function applyTrustGuardrails(
     }
   }
 
+  // ─── Deterministic jobbachao_score (the page-top "Career Position Score") ───
+  // The LLM was asked to compute `100 − (risk × (1 − shield/200))` but ignored
+  // the formula on roughly 1-in-3 scans, producing same-input → different-output
+  // (audit 2026-04-27: same resume, risk=67, shield=58 → 53 today, 67 yesterday).
+  // We recompute deterministically AFTER the risk anchor so the top-of-page
+  // number is stable for repeat scans of the same profile.
+  {
+    const r = Number(cardData.risk_score);
+    const s = Number(cardData.shield_score);
+    if (Number.isFinite(r) && Number.isFinite(s)) {
+      const computed = Math.round(100 - (r * (1 - s / 200)));
+      const safe = clampNum(computed, 0, 100);
+      const llmJB = Number(cardData.jobbachao_score);
+      if (!Number.isFinite(llmJB) || Math.abs(llmJB - safe) > 2) {
+        console.log(`[model-b] jobbachao_score recomputed: LLM=${cardData.jobbachao_score} formula(r=${r},s=${s})=${safe}`);
+        cardData.jobbachao_score = safe;
+      }
+    }
+  }
+
   const c2 = cardData.card2_market as Record<string, unknown> | undefined;
   if (c2 && typeof c2 === "object" && "market_quote_source" in c2) {
     if (!isTrustedSource(c2.market_quote_source)) {
