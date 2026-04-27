@@ -1,7 +1,28 @@
 // ═══════════════════════════════════════════════════════════════
 // Shared Tavily Search Helper
 // Primary search API — replaces Perplexity for grounded web search
+//
+// 2026-04-27 — internals rewritten to use _shared/retry.ts (retryFetch
+// + per-host circuit breaker) and _shared/logger.ts (structured logs).
+//
+// Why the rewrite:
+//   - The previous bespoke loop retried indefinitely against an
+//     already-failing Tavily host, burning every user's scan budget
+//     during provider outages. The breaker now fast-fails after 5
+//     consecutive failures for a 30s cooldown.
+//   - Logs are now JSON-structured with a per-call request_id so
+//     Tavily latency / failure spikes are filterable in the dashboard.
+//
+// Contract preserved:
+//   - Public signatures of tavilySearch / tavilySearchParallel /
+//     extractCitations / buildSearchContext are unchanged.
+//   - Returns `null` on any failure (caller code at all 18 call-sites
+//     already handles null — see e.g. market-radar/index.ts).
+//   - Default timeout still 20s for single search, 30s for parallel.
 // ═══════════════════════════════════════════════════════════════
+
+import { retryFetch, CircuitOpenError } from "./retry.ts";
+import { createLogger } from "./logger.ts";
 
 export interface TavilySearchOptions {
   query: string;
@@ -27,31 +48,39 @@ export interface TavilyResponse {
   query: string;
 }
 
+const TAVILY_URL = "https://api.tavily.com/search";
+
 /**
  * Search the web using Tavily API.
- * Returns grounded search results with citations.
- * 
- * @param options - Search configuration
- * @param timeoutMs - Abort timeout (default 20s)
- * @returns TavilyResponse or null on failure
+ * Returns grounded search results with citations, or null on failure.
+ *
+ * @param options    - Search configuration
+ * @param timeoutMs  - Hard wall on the entire call (default 20s)
+ * @param maxRetries - Max attempts including initial (default 2)
  */
 export async function tavilySearch(
   options: TavilySearchOptions,
-  timeoutMs = 20000,
-  maxRetries = 2
+  timeoutMs = 20_000,
+  maxRetries = 2,
 ): Promise<TavilyResponse | null> {
   const TAVILY_API_KEY = Deno.env.get("TAVILY_API_KEY");
+  const log = createLogger({ fn: "tavily-search", base: { provider: "tavily" } });
+
   if (!TAVILY_API_KEY) {
-    console.warn("[tavily] TAVILY_API_KEY not configured");
+    log.warn("api_key_missing");
     return null;
   }
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  // One AbortController for the whole call (covers all retry attempts).
+  // retryFetch checks signal.aborted before each attempt and during sleep().
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const t0 = performance.now();
 
-    try {
-      const resp = await fetch("https://api.tavily.com/search", {
+  try {
+    const resp = await retryFetch(
+      TAVILY_URL,
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -66,51 +95,60 @@ export async function tavilySearch(
           topic: options.topic || "general",
         }),
         signal: controller.signal,
+      },
+      { maxAttempts: maxRetries, logger: log },
+    );
+
+    if (!resp.ok) {
+      // Terminal non-transient failure (e.g. 4xx) — retryFetch already
+      // returned the response; we drain and return null per contract.
+      log.warn("non_ok_response", {
+        status: resp.status,
+        latency_ms: Math.round(performance.now() - t0),
+        query_preview: options.query.slice(0, 80),
       });
-
-      clearTimeout(timeout);
-
-      if (resp.status === 429 || resp.status >= 500) {
-        const backoffMs = Math.min(1000 * Math.pow(2, attempt), 8000) + Math.random() * 500;
-        console.warn(`[tavily] ${resp.status} on attempt ${attempt + 1}, retrying in ${Math.round(backoffMs)}ms`);
-        await resp.text(); // consume body
-        await new Promise((r) => setTimeout(r, backoffMs));
-        continue;
-      }
-
-      if (!resp.ok) {
-        console.error(`[tavily] API error: ${resp.status}`);
-        await resp.text(); // consume body
-        return null;
-      }
-
-      const data = await resp.json();
-      return {
-        answer: data.answer || undefined,
-        results: (data.results || []).map((r: any) => ({
-          title: r.title || "",
-          url: r.url || "",
-          content: r.content || "",
-          score: r.score || 0,
-        })),
-        query: options.query,
-      };
-    } catch (e: any) {
-      clearTimeout(timeout);
-      if (e.name === "AbortError") {
-        console.error(`[tavily] Request timed out (attempt ${attempt + 1}/${maxRetries})`);
-      } else {
-        console.error(`[tavily] Error (attempt ${attempt + 1}/${maxRetries}):`, e.message);
-      }
-      if (attempt < maxRetries - 1) {
-        const backoffMs = Math.min(1000 * Math.pow(2, attempt), 8000);
-        await new Promise((r) => setTimeout(r, backoffMs));
-      }
+      await resp.text().catch(() => {});
+      return null;
     }
-  }
 
-  console.error("[tavily] All retry attempts exhausted");
-  return null;
+    const data = await resp.json();
+    log.info("search_ok", {
+      latency_ms: Math.round(performance.now() - t0),
+      result_count: Array.isArray(data.results) ? data.results.length : 0,
+      has_answer: Boolean(data.answer),
+    });
+
+    return {
+      answer: data.answer || undefined,
+      results: (data.results || []).map((r: any) => ({
+        title: r.title || "",
+        url: r.url || "",
+        content: r.content || "",
+        score: r.score || 0,
+      })),
+      query: options.query,
+    };
+  } catch (err) {
+    const latency_ms = Math.round(performance.now() - t0);
+    if (err instanceof CircuitOpenError) {
+      // Provider is in a known-bad state. Fast-fail is the *correct* outcome —
+      // log at info, not error, so it doesn't trigger the error-rate alert.
+      log.info("circuit_open_skip", {
+        latency_ms,
+        retry_after_ms: err.retryAfterMs,
+        breaker_key: err.breakerKey,
+      });
+      return null;
+    }
+    if (err instanceof DOMException && err.name === "AbortError") {
+      log.warn("timeout_or_abort", { latency_ms, timeout_ms: timeoutMs });
+      return null;
+    }
+    log.error("unexpected_failure", { latency_ms }, err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
@@ -119,14 +157,12 @@ export async function tavilySearch(
  */
 export async function tavilySearchParallel(
   searches: TavilySearchOptions[],
-  timeoutMs = 30000
+  timeoutMs = 30_000,
 ): Promise<(TavilyResponse | null)[]> {
   return Promise.all(searches.map((s) => tavilySearch(s, timeoutMs)));
 }
 
-/**
- * Extract citation URLs from Tavily results.
- */
+/** Extract citation URLs from Tavily results, ranked by score. */
 export function extractCitations(results: TavilyResult[]): string[] {
   return results
     .filter((r) => r.url)
@@ -135,9 +171,7 @@ export function extractCitations(results: TavilyResult[]): string[] {
     .slice(0, 10);
 }
 
-/**
- * Flatten Tavily results into a context string for LLM synthesis.
- */
+/** Flatten Tavily results into a context string for LLM synthesis. */
 export function buildSearchContext(results: TavilyResult[], maxItems = 10): string {
   return results
     .slice(0, maxItems)

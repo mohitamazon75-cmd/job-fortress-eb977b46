@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-04-27 — Tavily caller adopts retryFetch + structured logger (pilot)
+
+**Decision**: First production adoption of `_shared/retry.ts` + `_shared/logger.ts`. Rewrote `_shared/tavily-search.ts` internals to use the shared primitives. Public API and `null`-on-failure contract preserved — zero changes required at the 18 call-sites.
+
+**Reason**: Tavily is the highest-failure external dependency in the system (Market Radar timeouts dominate scan failures). The previous bespoke retry loop had no circuit breaker, so during Tavily outages every user's scan burned its full retry+timeout budget against a known-bad host. The breaker now fast-fails after 5 consecutive failures for a 30s cooldown, preserving p99 latency during incidents.
+
+**Wins**:
+- Per-host circuit breaker prevents thundering-herd against degraded provider.
+- JSON logs (event=`search_ok`/`circuit_open_skip`/`timeout_or_abort`) are filterable in Supabase log explorer, with per-call `request_id` for correlation.
+- `CircuitOpenError` logged at `info` (not `error`) so it doesn't trigger the 20%-error-rate alert during known outages — that alert is for unexpected breakage, not "Tavily is down and we noticed".
+
+**Validation**: 302/302 vitest passing. `market-radar` deployed to production.
+
+**Next adoption targets** (one PR each): Firecrawl, Adzuna, Lovable AI Gateway.
+
+**Owner**: CTO (AI).
+
+---
+
 ## 2026-04-27 — Week 2 reliability primitives shipped (logger + retry/breaker)
 
 **Decision**: Add two new shared modules — `_shared/logger.ts` (structured JSON logs) and `_shared/retry.ts` (exponential-backoff retry + per-host circuit breaker) — but do **not** retrofit them into the 79 existing edge functions in this loop.
