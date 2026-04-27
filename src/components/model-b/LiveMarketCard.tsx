@@ -600,6 +600,11 @@ function SnapshotView({
             }
           }
 
+        {/* Layer E: Sector Pulse — dated, cited hiring/layoff/funding news.
+            Slots into the space the salary block used to occupy. Silently
+            omitted when the sector has no signal or the role has no
+            sector mapping (founder/exec/creator/generic). */}
+        <SectorPulse role={role} city={displayCity} />
 
 
           return (
