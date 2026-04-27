@@ -466,6 +466,29 @@ function SnapshotView({
           </div>
         )}
 
+        {/* Layer B · #5: skill-overlap anchor line. One honest sentence above
+            the table giving the user a personal read before scanning rows. */}
+        {!suppressTags && top_tags.length > 0 && overlapShown && skillsTotalShown > 0 && (
+          <div
+            data-testid="skill-overlap-anchor"
+            style={{
+              marginBottom: 14,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13.5,
+              lineHeight: 1.6,
+              color: "var(--mb-ink2)",
+              fontWeight: 600,
+            }}
+          >
+            {skillsOnProfile === 0
+              ? <>None of the top {skillsTotalShown} tags appear on your profile — this is the gap to close first.</>
+              : skillsOnProfile >= skillsTotalShown
+                ? <>You already cover all {skillsTotalShown} top tags employers are asking for. Lead with these in your headline.</>
+                : <><strong>{skillsOnProfile} of {skillsTotalShown}</strong> top tags are already on your profile. The remaining {skillsTotalShown - skillsOnProfile} are where to invest next.</>
+            }
+          </div>
+        )}
+
         {/* Top tags — suppressed when the table carries no signal (see suppressTags above). */}
         {!suppressTags && top_tags.length > 0 && (
           <div style={{ marginBottom: 26 }}>
