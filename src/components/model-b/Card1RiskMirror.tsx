@@ -162,7 +162,7 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         {/* ─────────────── 4. Cost of standing still — single rupee-anchored line ─────────────── */}
         {(rupeeCostLine || cost?.decay_narrative) && (
           <>
-            <SectionLabel label="💸 The cost of standing still" />
+            <SectionLabel label="The cost of standing still" />
             <div style={{ borderLeft: "4px solid var(--mb-red)", background: "linear-gradient(90deg, var(--mb-red-tint), transparent)", padding: "14px 18px", borderRadius: "0 12px 12px 0", marginBottom: 8 }}>
               {rupeeCostLine && (
                 <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.6, margin: 0 }}>
