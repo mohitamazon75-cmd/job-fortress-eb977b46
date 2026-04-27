@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CardShell, CardHead, CardBody, CardNav, Badge, LivePill } from "./SharedUI";
+import SectorPulse from "./SectorPulse";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeCity, detectExecutive } from "@/lib/jobsTab";
 import { detectFamily, applySectorTieBreaker, type Family } from "@/lib/card1-personalization";
@@ -218,15 +219,9 @@ function ThinSignalView({
           <strong>Why we're hiding most of this card:</strong> Naukri's keyword search returned mostly adjacent-role listings (e.g. sales roles for marketing searches, or junior-tier roles for senior searches). The tag list and the disclosed-salary band would both mislead — Naukri's salary disclosures skew heavily junior and BPO, so a "median" computed from this corpus would be 50–70% below the real market for any senior or specialised role. The one slice that holds up is posting freshness, shown below.
         </div>
 
-        {/* Salary block intentionally removed on the thin branch.
-            Expert review (2026-04-27) flagged that Naukri's disclosed-pay
-            corpus is dominated by BPO/junior listings — computing a median
-            from it for a senior, specialised, or 10y+ role produces numbers
-            that are 50–70% below reality (e.g. 4.5 LPA shown for an 11y
-            Marketing leader whose true market is 22+ LPA). Better to show
-            nothing than a number that destroys trust. A future "Sector
-            Pulse" card (hiring/firing/funding news, properly grounded)
-            will fill this slot — tracked separately from this layer. */}
+        {/* Layer E: Sector Pulse fills the slot the salary block used to occupy.
+            Silently omits if the sector has no signal. */}
+        <SectorPulse role={role} city={displayCity} />
 
         {/* Recency — corpus-agnostic */}
         {(recency.same_day_count + recency.within_7d_count + recency.older_count) > 0 && (
@@ -544,6 +539,9 @@ function SnapshotView({
           </div>
         )}
 
+        {/* Layer E: Sector Pulse — dated, cited hiring/layoff/funding news. */}
+        <SectorPulse role={role} city={displayCity} />
+
         {/* Hiring Velocity — replaces salary block (Naukri salary data is unfiltered
             by seniority and misleads senior roles, so we surface posting freshness
             instead, which IS reliable from the same dataset). */}
@@ -598,7 +596,6 @@ function SnapshotView({
               velocityNote = `Only ${freshPct}% of dated postings are <7 days old — most listings are stale; hiring is not urgent right now.`;
             }
           }
-
 
 
           return (
@@ -769,7 +766,18 @@ function SnapshotView({
           Source: {source.name} via {source.via} · fetched {relativeTime(fetched_at)}{cached ? " (cached)" : ""} · cached for 6h
         </div>
 
-        <CardNav onBack={onPrev} onNext={onNext} nextLabel="See your action plan →" />
+        {(() => {
+          // Layer D: verdict-aware CTA. Match the next action to what the
+          // card just told the user, instead of a generic "action plan" label.
+          // Suppressed/thin → next card is higher-signal; partial → defense plan;
+          // strong → turn the live signal into action.
+          const ctaLabel = suppressTags || isThin
+            ? "See your matched companies →"
+            : isPartial
+              ? "See your defense plan →"
+              : "Turn this into your action plan →";
+          return <CardNav onBack={onPrev} onNext={onNext} nextLabel={ctaLabel} />;
+        })()}
       </CardBody>
     </CardShell>
   );

@@ -2041,6 +2041,36 @@ export type Database = {
         }
         Relationships: []
       }
+      sector_pulse_cache: {
+        Row: {
+          beats: Json
+          city: string
+          created_at: string
+          fetched_at: string
+          id: string
+          reason: string | null
+          sector: string
+        }
+        Insert: {
+          beats?: Json
+          city: string
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          reason?: string | null
+          sector: string
+        }
+        Update: {
+          beats?: Json
+          city?: string
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          reason?: string | null
+          sector?: string
+        }
+        Relationships: []
+      }
       share_events: {
         Row: {
           assessment_id: string | null
