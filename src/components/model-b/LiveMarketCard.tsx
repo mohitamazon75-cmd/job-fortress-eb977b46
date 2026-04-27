@@ -521,7 +521,7 @@ function SnapshotView({
               paddingLeft: 4,
             }}
           >
-            On a sample this thin, the higher-signal channel for {role} is the
+            On a sample this thin, the higher-signal channel for {displayRole} is the
             <strong style={{ color: "var(--mb-ink2)", fontStyle: "normal" }}> Best-Fit Companies </strong>
             card next — direct targets beat keyword scrapes for senior or specialised roles.
           </div>
