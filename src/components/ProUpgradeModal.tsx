@@ -248,11 +248,11 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
                 <span className="text-xs font-black text-primary uppercase tracking-wider">Career Defense</span>
               </div>
               <h2 className="text-lg font-black text-foreground leading-tight mb-2">
-                Your job is at risk. Here's exactly what to do about it.
+                Your salary is bleeding ₹3–8L over 24 months. Plug the leak for ₹10/day.
               </h2>
-              <p className="text-sm text-foreground font-semibold mb-3">₹10/day. One coffee. The career intelligence your company won't give you.</p>
+              <p className="text-sm text-foreground font-semibold mb-3">Less than one Swiggy order. Cancel anytime.</p>
               <p className="text-xs text-muted-foreground">
-                Join 47,000+ professionals who upgraded their career odds.
+                Your scan already named the threat. This unlocks the exact 12-week plan to fight it.
               </p>
             </div>
             <button onClick={onClose} className="w-9 h-9 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground flex-shrink-0 transition-colors">
