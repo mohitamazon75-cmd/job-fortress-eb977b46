@@ -24,6 +24,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { SKILL_SYNONYMS } from "../_shared/skill-synonyms.ts";
+import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
 const APIFY_ACTOR_ID = "alpcnRV9YI9lYVPWk";
 const CACHE_TTL_HOURS = 6;
