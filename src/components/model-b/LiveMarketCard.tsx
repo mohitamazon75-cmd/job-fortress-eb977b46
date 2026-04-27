@@ -654,6 +654,23 @@ function SnapshotView({
                   padding: "18px 20px",
                 }}
               >
+                {velocityVerdict && (
+                  <div
+                    data-testid="velocity-verdict"
+                    style={{
+                      fontFamily: "'PP Editorial New', 'Playfair Display', serif",
+                      fontSize: 17,
+                      lineHeight: 1.45,
+                      color: "var(--mb-ink)",
+                      fontWeight: 500,
+                      marginBottom: 14,
+                      paddingBottom: 14,
+                      borderBottom: "1px solid var(--mb-rule)",
+                    }}
+                  >
+                    {velocityVerdict}
+                  </div>
+                )}
                 <div
                   style={{
                     display: "flex",
