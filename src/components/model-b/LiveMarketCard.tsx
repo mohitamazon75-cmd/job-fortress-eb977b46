@@ -260,7 +260,7 @@ function ThinSignalView({
             Your Monday action
           </div>
           <div style={{ color: "var(--mb-ink)", fontWeight: 600 }}>
-            Open LinkedIn. Search "{role}" + "{displayCity}". Filter to "Past week" + 2nd-degree connections. DM 3 people with one specific question — not "open to chat".
+            Open LinkedIn. Search "{role.split(/\s*(?:\||\/|,|—|–| - | and | & )\s*/i)[0].trim() || role}" + "{displayCity}". Filter to "Past week" + 2nd-degree connections. DM 3 people with one specific question — not "open to chat".
           </div>
         </div>
 
