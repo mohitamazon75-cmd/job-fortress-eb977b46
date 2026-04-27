@@ -91,6 +91,23 @@ async function readCache(supabase: ReturnType<typeof createClient>, sector: stri
   return data;
 }
 
+// Stale cache: ignore TTL, return last known row if it has any beats. Used as a
+// fallback when a live fetch fails so the user still sees grounded news instead
+// of a blank strip.
+async function readStaleCache(supabase: ReturnType<typeof createClient>, sector: string, city: string) {
+  const { data } = await supabase
+    .from("sector_pulse_cache")
+    .select("beats, reason, fetched_at")
+    .eq("sector", sector)
+    .eq("city", city)
+    .maybeSingle();
+  if (!data) return null;
+  if (!Array.isArray(data.beats) || (data.beats as Beat[]).length === 0) return null;
+  // Cap at 7 days — anything older than that is too stale to show as "live".
+  if (ageHours(data.fetched_at as string) > 24 * 7) return null;
+  return data;
+}
+
 async function writeCache(
   supabase: ReturnType<typeof createClient>,
   sector: string,
