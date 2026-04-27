@@ -804,7 +804,7 @@ export default function ResultsModelB() {
         {cardData && !loading && !error && (
           <>
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
-            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} />}
+            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} />}
             {currentCard === 2 && (() => {
               const u = cardData.user || {};
               const role = u.current_title || cardData.role || "Professional";
