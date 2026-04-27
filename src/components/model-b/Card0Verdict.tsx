@@ -62,6 +62,10 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
     return () => clearTimeout(t);
   }, []);
 
+  // Paywall modal — opened by primary CTA, "Reveal all" affordance, and locked-block clicks.
+  // The free Cards 1-7 path is preserved via a small "skip" link beneath the CTA.
+  const [showPaywall, setShowPaywall] = useState(false);
+
   // ─── Verdict enrichment (real backend numbers, never fabricated) ──
   // Pulls deterministic resume rating, improvement count, action
   // playbook count, and missing-AI-tools count from the verdict-
