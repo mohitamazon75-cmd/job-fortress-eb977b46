@@ -2,6 +2,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { tavilySearch, tavilySearchParallel, extractCitations, buildSearchContext } from "../_shared/tavily-search.ts";
+import { firecrawlSearch } from "../_shared/firecrawl.ts";
 import { getLocale } from "../_shared/locale-config.ts";
 
 // DB-backed cache TTL (30 min)
