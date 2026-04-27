@@ -10,6 +10,7 @@ import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, Book
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { detectRoleFamily, getFamilyNarrative } from "@/lib/role-family";
+import ProUpgradeModal from "@/components/ProUpgradeModal";
 
 interface Card0VerdictProps {
   cardData: any;
@@ -60,6 +61,10 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
     const t = setTimeout(() => setHintVisible(true), 6000);
     return () => clearTimeout(t);
   }, []);
+
+  // Paywall modal — opened by primary CTA, "Reveal all" affordance, and locked-block clicks.
+  // The free Cards 1-7 path is preserved via a small "skip" link beneath the CTA.
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // ─── Verdict enrichment (real backend numbers, never fabricated) ──
   // Pulls deterministic resume rating, improvement count, action
@@ -595,7 +600,7 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
                   Your Edge
                 </div>
                 <button
-                  onClick={onNext}
+                  onClick={() => setShowPaywall(true)}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 4,
                     background: "transparent", border: "none", cursor: "pointer",
@@ -603,7 +608,7 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
                     color: "#15803d", padding: 0,
                     fontFamily: "'DM Sans', sans-serif",
                   }}
-                  aria-label="Reveal all unfair edges"
+                  aria-label="Unlock all unfair edges"
                 >
                   Reveal all <ArrowRight size={11} />
                 </button>
@@ -669,6 +674,10 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.0, ease: [0.16, 1, 0.3, 1] }}
+          onClick={() => setShowPaywall(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowPaywall(true); } }}
           style={{
             background: "white",
             border: "1.5px solid var(--mb-rule, #e5e7eb)",
@@ -676,14 +685,15 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
             padding: "18px 20px",
             marginBottom: 16,
             boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
+            cursor: "pointer",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--mb-muted, #6b7280)" }}>
               What's inside the full report
             </span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "var(--mb-muted, #9ca3af)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              <Lock size={10} /> Locked
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 700, color: "#15803d", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              <Lock size={10} /> Tap to unlock
             </span>
           </div>
 
@@ -854,14 +864,14 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
         </motion.div>
       )}
 
-      {/* CTA */}
+      {/* CTA — primary opens paywall, small skip-link preserves the free Cards 1-7 path */}
       <motion.button
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.05 }}
         whileHover={{ scale: 1.015, y: -1 }}
         whileTap={{ scale: 0.98 }}
-        onClick={onNext}
+        onClick={() => setShowPaywall(true)}
         style={{
           width: "100%",
           padding: "18px 24px",
@@ -873,17 +883,43 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           fontWeight: 800,
           cursor: "pointer",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 10,
+          gap: 4,
           fontFamily: "'DM Sans', sans-serif",
           letterSpacing: "0.01em",
           boxShadow: "0 10px 30px rgba(17,24,39,0.25)",
         }}
       >
-        See How to Survive
-        <ArrowRight size={18} />
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+          Unlock my full defense plan <ArrowRight size={18} />
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 600, opacity: 0.75, letterSpacing: "0.02em" }}>
+          ₹10/day · less than one Swiggy order · cancel anytime
+        </span>
       </motion.button>
+
+      <button
+        onClick={onNext}
+        style={{
+          display: "block",
+          margin: "10px auto 0",
+          background: "transparent",
+          border: "none",
+          fontSize: 11.5,
+          fontWeight: 600,
+          color: "var(--mb-muted, #9ca3af)",
+          cursor: "pointer",
+          textDecoration: "underline",
+          textUnderlineOffset: 3,
+          fontFamily: "'DM Sans', sans-serif",
+          letterSpacing: "0.02em",
+        }}
+        aria-label="Skip the upgrade and explore the free dashboard"
+      >
+        Skip — show me the free dashboard
+      </button>
 
       <p style={{ fontSize: 11, color: "var(--mb-muted, #9ca3af)", textAlign: "center", marginTop: 12, letterSpacing: "0.04em" }}>
         Unlock 7 intelligence cards · Your safe pivot · Defense plan · Live market signals
@@ -962,6 +998,14 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           Share on LinkedIn
         </button>
       </motion.div>
+
+      {/* Paywall — uses existing Razorpay flow (₹300/mo, ₹1999/yr). No payment-path edits. */}
+      <ProUpgradeModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        onSuccess={() => { setShowPaywall(false); onNext(); }}
+        defaultTier="month"
+      />
     </motion.div>
   );
 }

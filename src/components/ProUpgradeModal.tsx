@@ -248,11 +248,11 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
                 <span className="text-xs font-black text-primary uppercase tracking-wider">Career Defense</span>
               </div>
               <h2 className="text-lg font-black text-foreground leading-tight mb-2">
-                Your job is at risk. Here's exactly what to do about it.
+                Your salary is bleeding ₹3–8L over 24 months. Plug the leak for ₹10/day.
               </h2>
-              <p className="text-sm text-foreground font-semibold mb-3">₹10/day. One coffee. The career intelligence your company won't give you.</p>
+              <p className="text-sm text-foreground font-semibold mb-3">Less than one Swiggy order. Cancel anytime.</p>
               <p className="text-xs text-muted-foreground">
-                Join 47,000+ professionals who upgraded their career odds.
+                Your scan already named the threat. This unlocks the exact 12-week plan to fight it.
               </p>
             </div>
             <button onClick={onClose} className="w-9 h-9 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground flex-shrink-0 transition-colors">
@@ -281,18 +281,18 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
               >
                 <p className="text-base font-black text-foreground">₹300</p>
                 <p className="text-[11px] text-muted-foreground mt-1">per month</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Cancel anytime</p>
+                <p className="text-[10px] text-muted-foreground mt-1">= ₹10/day · one Swiggy order</p>
               </button>
               <button
                 onClick={() => setSelected('year')}
                 className={`rounded-xl border p-3 text-left transition-all relative ${selected === 'year' ? 'border-primary/40 bg-primary/5' : 'border-border bg-background'}`}
               >
                 {selected === 'year' && (
-                  <span className="absolute -top-2 right-2 text-[10px] font-black bg-primary text-primary-foreground px-2 py-0.5 rounded-full">BEST VALUE</span>
+                  <span className="absolute -top-2 right-2 text-[10px] font-black bg-primary text-primary-foreground px-2 py-0.5 rounded-full">SAVE 44%</span>
                 )}
                 <p className="text-base font-black text-foreground">₹1,999</p>
                 <p className="text-[11px] text-muted-foreground mt-1">per year</p>
-                <p className="text-[10px] text-muted-foreground mt-1">= ₹167/month — less than a coffee</p>
+                <p className="text-[10px] text-muted-foreground mt-1">= ₹5.50/day · 4 months free</p>
               </button>
             </div>
 
