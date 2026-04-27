@@ -223,20 +223,32 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         sub={c1.subline || ""}
       />
       <CardBody>
-        {/* ─────────────── Batch F: Personalized verdict hook (above gauge) ─────────────── */}
-        <div style={{ background: verdictBg, border: `2px solid ${verdictBorder}`, borderLeft: `5px solid ${verdictAccent}`, borderRadius: 14, padding: "16px 18px 18px", marginBottom: 14 }}>
-          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: verdictAccent, marginBottom: 8 }}>
-            {verdictHook.kicker}
+        {/* Batch F (final): Stake-amplifier strip under LLM headline */}
+        {stakeLine && (
+          <div style={{ display: "flex", alignItems: "stretch", gap: 14, background: stakeBg, border: `2px solid ${stakeBorder}`, borderLeft: `5px solid ${stakeAccent}`, borderRadius: 14, padding: "14px 18px", marginBottom: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minWidth: 78, paddingRight: 14, borderRight: `1.5px dashed ${stakeBorder}` }}>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 30, fontWeight: 800, color: stakeAccent, lineHeight: 1, letterSpacing: "-0.02em" }}>
+                {stakeLine.bigNumber}
+              </div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: stakeAccent, marginTop: 4 }}>
+                AI exposure
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: stakeAccent, marginBottom: 6 }}>
+                {stakeLine.kicker}
+              </div>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: "var(--mb-ink)", lineHeight: 1.55, margin: 0 }}>
+                {stakeLine.line}
+              </p>
+            </div>
           </div>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 19, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.45, margin: 0, letterSpacing: "-0.01em" }}>
-            {verdictHook.line}
-          </p>
-        </div>
+        )}
 
-        {/* ─────────────── 1. AI Exposure gauge — now evidence, not headline ─────────────── */}
+        {/* AI Exposure gauge - peer benchmark only (score moved up to stake strip) */}
         <div style={{ padding: "4px 14px 6px" }}>
           <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--mb-ink3)" }}>
-            The evidence · AI exposure for this role
+            The evidence - how you compare
           </div>
         </div>
         <div style={{ display: "flex", gap: 20, alignItems: "center", padding: 20, background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 16, marginBottom: 8, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
