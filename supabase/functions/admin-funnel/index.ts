@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     // thousands move to a SQL view.
     const [analyticsRes, behaviorRes, scansRes] = await Promise.all([
       sb.from("analytics_events")
-        .select("event_type, created_at")
+        .select("event_type, payload, created_at")
         .gte("created_at", since)
         .limit(10_000),
       sb.from("behavior_events")
