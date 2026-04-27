@@ -206,15 +206,25 @@ STRICT RULES:
     }
 
     const rawBeats = Array.isArray(parsed.beats) ? parsed.beats : [];
+    console.log(`[sector-pulse] perplexity returned ${rawBeats.length} raw beats for sector="${sectorQuery}"`);
     const cleanBeats: Beat[] = [];
+    const dropReasons: string[] = [];
     for (const b of rawBeats as Beat[]) {
-      if (typeof b?.source_url !== "string" || !isTrustedUrl(b.source_url)) continue;
-      if (typeof b?.published_at !== "string") continue;
-      // Drop anything older than 21 days as a safety net (Perplexity sometimes ignores recency).
+      if (typeof b?.source_url !== "string" || !isTrustedUrl(b.source_url)) {
+        dropReasons.push(`untrusted:${b?.source_url ?? "none"}`);
+        continue;
+      }
+      if (typeof b?.published_at !== "string") { dropReasons.push("no_date"); continue; }
+      // Drop anything older than 45 days as a safety net. Perplexity's published_at
+      // often reflects the article URL's first-indexed date which can lag the event,
+      // so we keep this lenient and rely on the prompt's "last 14 days" instruction.
       const ageDays = (Date.now() - new Date(b.published_at).getTime()) / (1000 * 60 * 60 * 24);
-      if (!Number.isFinite(ageDays) || ageDays > 21 || ageDays < -1) continue;
-      if (!["hiring", "layoff", "funding"].includes(b.signal)) continue;
-      if (typeof b.headline !== "string" || b.headline.length < 10) continue;
+      if (!Number.isFinite(ageDays) || ageDays > 45 || ageDays < -1) {
+        dropReasons.push(`age:${ageDays.toFixed(0)}d`);
+        continue;
+      }
+      if (!["hiring", "layoff", "funding"].includes(b.signal)) { dropReasons.push(`signal:${b.signal}`); continue; }
+      if (typeof b.headline !== "string" || b.headline.length < 10) { dropReasons.push("headline"); continue; }
       cleanBeats.push({
         headline: b.headline.trim(),
         source_name: (b.source_name ?? "").trim() || new URL(b.source_url).hostname,
@@ -226,7 +236,10 @@ STRICT RULES:
       if (cleanBeats.length >= MAX_BEATS) break;
     }
 
-    if (cleanBeats.length === 0) return { beats: [], reason: "low_confidence" };
+    if (cleanBeats.length === 0) {
+      console.log(`[sector-pulse] all beats dropped. reasons: ${dropReasons.join(", ")}`);
+      return { beats: [], reason: "low_confidence" };
+    }
     return { beats: cleanBeats };
   } catch (err) {
     clearTimeout(timeoutId);
