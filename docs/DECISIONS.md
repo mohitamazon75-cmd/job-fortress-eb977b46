@@ -326,3 +326,32 @@ Migrated `supabase/functions/live-market/index.ts` to the shared `firecrawlSearc
 - Verified: 302/302 vitest pass, build clean, deploy successful.
 
 **Production proof now possible**: next real Model B scan will exercise this path. Watch edge logs for `firecrawl-search` events — that's our signal the helper is healthy under real traffic before scaling to the remaining call sites (company-news, market-signals, parse-linkedin, process-scan, scan-enrichment).
+
+## 2026-04-27 — Pivot to instrumentation: funnel tracking shipped
+
+**Decision:** Stop reliability work. Ship visibility instead.
+
+**What:** Wired the missing post-scan funnel events and built `/admin/funnel`.
+
+**Why:** Pulled analytics — 27 visitors / 8 days, 4 hits to `/results/model-b`, and we had ZERO visibility into what those 4 people did after the scan loaded. We're shipping features into a black box. The single highest-leverage move is to stop doing that.
+
+**Discovered (not built from scratch):**
+- `analytics_events` (109 rows, healthy) tracks landing/auth/scan_start/scan_complete
+- `behavior_events` table exists, RLS correct, BUT 0 rows because:
+  - `useTrack` hook is wired in only 4 components
+  - None of those components cover the post-reveal journey
+- `admin-dashboard` function covers system health, NOT user funnel
+
+**Built (additive, no god-file edits):**
+- `src/hooks/use-scan-funnel-tracking.ts` — single hook fires `result_loaded`, `card_viewed`, `journey_completed` idempotently. Plus `trackFunnelEvent()` escape hatch for share/CTA components.
+- `supabase/functions/admin-funnel/index.ts` — admin-guarded aggregator, returns daily buckets + ordered funnel + reach metrics.
+- `src/pages/AdminFunnel.tsx` — single-page view: funnel bars with drop-off %, daily breakdown table.
+- 2-line edit to `src/pages/ResultsModelB.tsx` (1 import, 1 hook call) to wire it up. Stayed within Rule 9 by keeping all logic in the new files.
+- 2-line edit to `src/App.tsx` to register `/admin/funnel`.
+
+**Verification:** 302/302 tests pass, build clean (14s), function deployed.
+
+**What this unblocks:** Tomorrow morning the founder can open `/admin/funnel` and answer "where did this week's users actually drop off?" — for the first time. Every scan from now on adds data; value compounds.
+
+**What's still dark (next pass once we have data):**
+- `share_opened` / `cta_post_reveal` need imperative `trackFunnelEvent()` calls in the share modal and CTA components. Deferred until we see whether anyone reaches those steps at all.
