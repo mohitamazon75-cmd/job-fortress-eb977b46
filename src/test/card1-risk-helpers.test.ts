@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { formatAnnualLakhs, parsePctRange } from "@/components/model-b/Card1RiskMirror";
+import {
+  formatAnnualLakhs,
+  parsePctRange,
+  parseBandToAnnualInr,
+  deriveMonthlyFromBands,
+} from "@/components/model-b/Card1RiskMirror";
 
 /**
  * Unit tests for the rupee-anchoring helpers used by Card 1 (Risk Mirror).
@@ -84,5 +89,59 @@ describe("parsePctRange", () => {
     const hi = formatAnnualLakhs((annualSalary * range[1]) / 12); // 16,000/mo → 1,92,000/yr
     expect(lo).toBe("₹1.4L");
     expect(hi).toBe("₹1.9L");
+  });
+});
+
+describe("parseBandToAnnualInr", () => {
+  it("parses lakh range like '₹18-28L' to median annual rupees", () => {
+    expect(parseBandToAnnualInr("₹18-28L")).toBe(2_300_000);
+  });
+
+  it("parses single lakh figure like '₹35L'", () => {
+    expect(parseBandToAnnualInr("₹35L")).toBe(3_500_000);
+  });
+
+  it("parses crore range like '₹1.2-1.8Cr'", () => {
+    expect(parseBandToAnnualInr("₹1.2-1.8Cr")).toBe(15_000_000);
+  });
+
+  it("parses 'LPA' suffix variants", () => {
+    expect(parseBandToAnnualInr("18-28 LPA")).toBe(2_300_000);
+  });
+
+  it("returns null for unparseable / empty / non-INR strings", () => {
+    expect(parseBandToAnnualInr(undefined)).toBeNull();
+    expect(parseBandToAnnualInr("")).toBeNull();
+    expect(parseBandToAnnualInr("$120k")).toBeNull();
+    expect(parseBandToAnnualInr("competitive")).toBeNull();
+  });
+});
+
+describe("deriveMonthlyFromBands", () => {
+  const bands = [
+    { role: "VP Marketing", range: "₹35-60L" },
+    { role: "Head Demand Generation", range: "₹22-35L" },
+    { role: "Marketing Manager", range: "₹12-22L" },
+  ];
+
+  it("matches the user's current_title against band roles (substring, case-insensitive)", () => {
+    // ₹12-22L → median 17L = 17,00,000/yr → 17,00,000/12 = 141,666.66… → rounded 141,667
+    expect(deriveMonthlyFromBands(bands, "Marketing Manager")).toBe(141_667);
+    expect(deriveMonthlyFromBands(bands, "marketing manager")).toBe(141_667);
+  });
+
+  it("falls back to the middle band when no role match", () => {
+    // middle index = 1 → ₹22-35L → 28.5L → 28,50,000/12 = 237,500
+    expect(deriveMonthlyFromBands(bands, "Astronaut")).toBe(237_500);
+  });
+
+  it("returns null on empty / missing bands", () => {
+    expect(deriveMonthlyFromBands(undefined, "PM")).toBeNull();
+    expect(deriveMonthlyFromBands([], "PM")).toBeNull();
+    expect(deriveMonthlyFromBands(null, "PM")).toBeNull();
+  });
+
+  it("returns null when chosen band has no parseable range", () => {
+    expect(deriveMonthlyFromBands([{ role: "PM", range: "competitive" }], "PM")).toBeNull();
   });
 });

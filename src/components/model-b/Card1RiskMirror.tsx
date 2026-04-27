@@ -46,6 +46,66 @@ export function parsePctRange(s: string | undefined | null): [number, number] | 
   return null;
 }
 
+/**
+ * Parse an Indian salary band string (e.g. "₹18-28L", "₹50-90L", "₹1.2-1.8Cr",
+ * "₹35L", "18-28 LPA") into the median annual rupee figure.
+ * Returns null if no confident parse — caller falls back to LLM string.
+ *
+ * This is the component-layer fallback that powers rupee anchoring when the
+ * scan record's `estimated_monthly_salary_inr` column is null (current state
+ * for all 5 prod scans as of 2026-04-27 — the upstream pipeline does not
+ * populate that column yet). We derive a credible monthly figure from the
+ * LLM's already-grounded `card2_market.salary_bands` matched to the user's
+ * current_title — same numbers the user sees one card later, so there's
+ * zero credibility risk from a number mismatch.
+ */
+export function parseBandToAnnualInr(range: string | undefined | null): number | null {
+  if (!range) return null;
+  const isCrore = /Cr/i.test(range);
+  const isLakh = !isCrore && /(L|LPA|lakh)/i.test(range);
+  if (!isCrore && !isLakh) return null;
+  const nums = range.match(/(\d+(?:\.\d+)?)/g);
+  if (!nums || nums.length === 0) return null;
+  const lo = parseFloat(nums[0]);
+  const hi = nums.length > 1 ? parseFloat(nums[1]) : lo;
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return null;
+  const median = (lo + hi) / 2;
+  const unit = isCrore ? 10_000_000 : 100_000; // 1Cr = 1e7, 1L = 1e5
+  const annual = median * unit;
+  return annual > 0 ? annual : null;
+}
+
+/**
+ * Derive monthly salary in INR from the LLM-returned salary_bands array,
+ * preferring the band whose `role` best matches the user's current_title.
+ * Falls back to the median band if no match. Returns null if bands are absent
+ * or unparseable.
+ */
+export function deriveMonthlyFromBands(
+  bands: Array<{ role?: string; range?: string }> | undefined | null,
+  currentTitle: string | undefined | null,
+): number | null {
+  if (!Array.isArray(bands) || bands.length === 0) return null;
+  const title = (currentTitle || "").toLowerCase().trim();
+
+  // Prefer exact-substring role match (e.g. user "Marketing Manager" → band "Marketing Manager").
+  let chosen: { role?: string; range?: string } | undefined;
+  if (title) {
+    chosen = bands.find((b) => {
+      const r = (b?.role || "").toLowerCase();
+      if (!r) return false;
+      // Match if either string contains a meaningful chunk of the other.
+      return r.includes(title) || (title.length >= 4 && title.includes(r.slice(0, Math.min(r.length, 20))));
+    });
+  }
+  // Fallback: middle band (LLM is instructed to put aspirational first; middle ≈ "your level").
+  if (!chosen) chosen = bands[Math.floor(bands.length / 2)];
+
+  const annual = parseBandToAnnualInr(chosen?.range);
+  if (!annual) return null;
+  return Math.round(annual / 12);
+}
+
 export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanCount, monthlySalaryInr }: Props) {
   const c1 = cardData.card1_risk;
   const u = cardData.user || {};
@@ -73,20 +133,29 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
 
   const cost = c1.cost_of_inaction;
 
-  // Build the rupee-anchored cost sentence. We prefer the LLM's percentage range
-  // (annual_gap_pct) and convert via the user's actual monthly salary. If salary
-  // isn't available, we fall back to the LLM's raw monthly_loss_lpa string so the
-  // section never shows blank.
+  // Build the rupee-anchored cost sentence.
+  // Source-of-truth priority for monthly salary, in order:
+  //   1. monthlySalaryInr prop (from scans.estimated_monthly_salary_inr) — best.
+  //   2. Median of LLM's card2_market.salary_bands matched to user.current_title.
+  //      This is the same band the user sees on Card 2 → consistent narrative.
+  //   3. Raw monthly_loss_lpa string from LLM (legacy free-form).
+  // We never fabricate; if all three fail the line is suppressed cleanly.
+  const derivedMonthly = deriveMonthlyFromBands(
+    cardData?.card2_market?.salary_bands,
+    u.current_title || u.role,
+  );
+  const monthlyForCalc = (monthlySalaryInr && monthlySalaryInr > 0) ? monthlySalaryInr : derivedMonthly;
+
   let rupeeCostLine: string | null = null;
   if (cost) {
     const range = parsePctRange(cost.annual_gap_pct);
-    if (range && monthlySalaryInr && monthlySalaryInr > 0) {
-      const annualSalary = monthlySalaryInr * 12;
+    if (range && monthlyForCalc && monthlyForCalc > 0) {
+      const annualSalary = monthlyForCalc * 12;
       const lo = formatAnnualLakhs((annualSalary * range[0]) / 12);
       const hi = formatAnnualLakhs((annualSalary * range[1]) / 12);
       rupeeCostLine = lo === hi
-        ? `At your salary, that's roughly ${lo}/year you don't get back.`
-        : `At your salary, that's roughly ${lo}–${hi}/year you don't get back.`;
+        ? `At your level, that's roughly ${lo}/year you don't get back.`
+        : `At your level, that's roughly ${lo}–${hi}/year you don't get back.`;
     } else if (cost.monthly_loss_lpa) {
       rupeeCostLine = `At your level, that's roughly ${cost.monthly_loss_lpa} of earning power slipping past you each year.`;
     }
@@ -234,16 +303,26 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
           </>
         )}
 
-        {/* Tasks at risk / safe — kept; this is the single most personal beat */}
+        {/* Tasks at risk / safe — capped at 3+3 to avoid pill-soup overload.
+            LLM emits exactly 5 each; we surface the 3 highest-priority and
+            note the rest in a quiet caption. The full list lives in card3_shield. */}
         <SectionLabel label="What AI is replacing in your role right now" />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 22 }}>
-          {(c1.tasks_at_risk || []).map((t: string, i: number) => (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 8 }}>
+          {(c1.tasks_at_risk || []).slice(0, 3).map((t: string, i: number) => (
             <span key={`r${i}`} style={{ fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 20, border: "1.5px solid rgba(174,40,40,0.25)", color: "var(--mb-red)", background: "var(--mb-red-tint)", fontFamily: "'DM Sans', sans-serif" }}>❌ {t}</span>
           ))}
-          {(c1.tasks_safe || []).map((t: string, i: number) => (
+          {(c1.tasks_safe || []).slice(0, 3).map((t: string, i: number) => (
             <span key={`s${i}`} style={{ fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 20, border: "1.5px solid rgba(26,107,60,0.25)", color: "var(--mb-green)", background: "var(--mb-green-tint)", fontFamily: "'DM Sans', sans-serif" }}>✅ {t}</span>
           ))}
         </div>
+        {((c1.tasks_at_risk?.length || 0) > 3 || (c1.tasks_safe?.length || 0) > 3) && (
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginBottom: 22, paddingLeft: 4 }}>
+            Showing top 3 of each. Full skill map → Card 3 (Shield).
+          </div>
+        )}
+        {!((c1.tasks_at_risk?.length || 0) > 3 || (c1.tasks_safe?.length || 0) > 3) && (
+          <div style={{ marginBottom: 22 }} />
+        )}
 
         {/* India market signal — promoted, no longer buried under stat-grid noise */}
         <InfoBox variant="amber" title={`India market signal — ${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`} body={c1.india_data_insight || ""} />
