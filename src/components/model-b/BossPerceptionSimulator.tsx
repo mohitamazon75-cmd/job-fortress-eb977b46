@@ -411,27 +411,35 @@ export default function BossPerceptionSimulator({ role, years, riskScore, tasksA
               </div>
             </div>
 
+            {/* Demoted to secondary style — was a red gradient hero CTA that pulled
+                attention away from the rupee-cost data above it. Now reads as an
+                opt-in diagnostic, not the page's primary action. */}
             <button
               onClick={startSim}
               style={{
                 width: "100%",
-                background: "linear-gradient(135deg, #ff4d4d 0%, #c41e1e 100%)",
+                background: "transparent",
                 color: "white",
-                border: "none",
-                borderRadius: 12,
-                padding: "16px 22px",
+                border: "1.5px solid rgba(255,255,255,0.35)",
+                borderRadius: 10,
+                padding: "13px 20px",
                 fontFamily: "'DM Sans', sans-serif",
-                fontSize: 15,
-                fontWeight: 800,
-                letterSpacing: "0.02em",
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: "0.01em",
                 cursor: "pointer",
-                boxShadow: "0 6px 20px rgba(196,30,30,0.35)",
-                transition: "transform 0.15s",
+                transition: "background 0.15s, border-color 0.15s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.55)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)";
+              }}
             >
-              Run the Reality Check → Get my verdict
+              Run the 6-question reality check →
             </button>
             <p
               style={{

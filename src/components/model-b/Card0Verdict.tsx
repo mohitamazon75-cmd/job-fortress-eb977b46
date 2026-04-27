@@ -430,6 +430,21 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
             }}>
               out of 100
             </div>
+            {/* Disambiguation caption — Card 1 surfaces a separate "AI Exposure %" gauge
+                that users were conflating with this composite score. One-line clarifier
+                here removes the ambiguity at the source. */}
+            <div style={{
+              fontSize: 9,
+              fontWeight: 600,
+              color: "var(--mb-muted, #9ca3af)",
+              marginTop: 6,
+              letterSpacing: "0.04em",
+              textAlign: "center",
+              lineHeight: 1.4,
+              maxWidth: 180,
+            }}>
+              Composite of resume, market &amp; AI risk.<br/>Not the same as AI Exposure %.
+            </div>
           </div>
         </div>
 
