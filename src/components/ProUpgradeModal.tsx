@@ -281,18 +281,18 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
               >
                 <p className="text-base font-black text-foreground">₹300</p>
                 <p className="text-[11px] text-muted-foreground mt-1">per month</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Cancel anytime</p>
+                <p className="text-[10px] text-muted-foreground mt-1">= ₹10/day · one Swiggy order</p>
               </button>
               <button
                 onClick={() => setSelected('year')}
                 className={`rounded-xl border p-3 text-left transition-all relative ${selected === 'year' ? 'border-primary/40 bg-primary/5' : 'border-border bg-background'}`}
               >
                 {selected === 'year' && (
-                  <span className="absolute -top-2 right-2 text-[10px] font-black bg-primary text-primary-foreground px-2 py-0.5 rounded-full">BEST VALUE</span>
+                  <span className="absolute -top-2 right-2 text-[10px] font-black bg-primary text-primary-foreground px-2 py-0.5 rounded-full">SAVE 44%</span>
                 )}
                 <p className="text-base font-black text-foreground">₹1,999</p>
                 <p className="text-[11px] text-muted-foreground mt-1">per year</p>
-                <p className="text-[10px] text-muted-foreground mt-1">= ₹167/month — less than a coffee</p>
+                <p className="text-[10px] text-muted-foreground mt-1">= ₹5.50/day · 4 months free</p>
               </button>
             </div>
 
