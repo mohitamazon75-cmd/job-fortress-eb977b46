@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 // Eager: Index (landing), Auth (entry), NotFound (catch-all).
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminFunnel = lazy(() => import("./pages/AdminFunnel"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const AdvancedBeta = lazy(() => import("./pages/AdvancedBeta"));
@@ -129,6 +130,7 @@ const App = () => {
                 <Route path="/admin/monitor" element={<AuthGuard requiredRole="admin">{() => <ErrorBoundary scope="admin"><AdminDashboard /></ErrorBoundary>}</AuthGuard>} />
                 {/* Issue #12: determinism debug view (admin-only) — see determinism_meta block on a scan. */}
                 <Route path="/admin/scan/:scanId" element={<AuthGuard requiredRole="admin">{() => <ErrorBoundary scope="admin-scan-debug"><AdminScanDebug /></ErrorBoundary>}</AuthGuard>} />
+                <Route path="/admin/funnel" element={<AuthGuard requiredRole="admin">{() => <ErrorBoundary scope="admin-funnel"><AdminFunnel /></ErrorBoundary>}</AuthGuard>} />
                 {/* Diagnostic feature */}
                 <Route path="/diagnostic" element={<ErrorBoundary scope="diagnostic"><DiagnosticPage /></ErrorBoundary>} />
                 <Route path="/diagnostic/:token" element={<ErrorBoundary scope="diagnostic-share"><DiagnosticShare /></ErrorBoundary>} />

@@ -13,6 +13,7 @@ import Card6BlindSpots from "@/components/model-b/Card6BlindSpots";
 import Card7HumanAdvantage from "@/components/model-b/Card7HumanAdvantage";
 import Card0Verdict from "@/components/model-b/Card0Verdict";
 import PromptModal from "@/components/model-b/PromptModal";
+import { useScanFunnelTracking } from "@/hooks/use-scan-funnel-tracking";
 
 // Issue 1-A: Lazy-load the three highest-value previously-hidden features.
 // These were fully built but permanently unreachable in the old flow.
@@ -169,6 +170,16 @@ export default function ResultsModelB() {
   const [userId, setUserId] = useState<string | null>(null);
   const [showSavePrompt, setShowSavePrompt] = useState(false); // show for any non-email user
   const [journeyDone, setJourneyDone] = useState(initialJourney.done);
+
+  // Funnel instrumentation — fires result_loaded / card_viewed / journey_completed
+  // into behavior_events. Single line of business logic; all behavior in the hook.
+  useScanFunnelTracking({
+    scanId: analysisId,
+    resultLoaded: Boolean(cardData),
+    currentCard,
+    visitedCount: visitedCards.size,
+    totalCards: TOTAL_JOURNEY_TABS,
+  });
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
   // Risk-card rupee anchoring: pull the user's estimated monthly salary from the
