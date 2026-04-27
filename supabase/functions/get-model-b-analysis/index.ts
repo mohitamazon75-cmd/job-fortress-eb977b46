@@ -289,7 +289,7 @@ Deno.serve(async (req) => {
     // ─── Launch background AI processing ───
     const processPromise = processAnalysis(
       supabase, LOVABLE_API_KEY, analysis_id, user_id,
-      resume_filename, resumeText, userCity,
+      resume_filename ?? "Your Resume", resumeText, userCity,
       scan.role_detected || "", scan.industry || "",
       scan.years_experience || "",
       typeof scan.determinism_index === "number" ? scan.determinism_index : null,
