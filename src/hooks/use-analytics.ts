@@ -71,6 +71,10 @@ export function useAnalytics() {
   const lastEventRef = useRef<{ type: string; ts: number }>({ type: '', ts: 0 });
   const queueRef = useRef<QueuedEvent[]>([]);
   const flushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Computed once per hook lifetime — referrer/utm don't change mid-session
+  // and is_returning is a session-level fact, not a per-event one.
+  const sessionCtxRef = useRef<Record<string, unknown> | null>(null);
+  if (sessionCtxRef.current === null) sessionCtxRef.current = readSessionContext();
 
   // Flush queued events to Supabase
   const flushQueue = useCallback(async () => {
