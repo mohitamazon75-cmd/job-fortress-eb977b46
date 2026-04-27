@@ -2,6 +2,7 @@ import { type ScanReport, normalizeTools } from '@/lib/scan-engine';
 import { inferSeniorityTier } from '@/lib/seniority-utils';
 import { getVerbatimRole } from '@/lib/role-guard';
 import { computeScoreBreakdown } from '@/lib/stability-score';
+import { detectRoleFamily, getFamilyNarrative } from '@/lib/role-family';
 
 // ═══════════════════════════════════════════════════════════════
 // CENTRALIZED VIBE ENGINE — Fear → Anxiety → Hope → Plan arc
@@ -29,6 +30,8 @@ export type Vibe = {
   replaceability: string; // Boss-eye-view framing
   warmIntro?: string;     // Optional empathetic opener
   bullets: string[];      // Supporting evidence points
+  proofLine?: string;     // "We read your resume" specificity strip (yrs · stack · geo)
+  inactionCost?: string;  // Quantified loss-aversion anchor for paywall
 };
 
 /** Normalize demand trend to human-readable label */
@@ -77,6 +80,35 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     ? `Structural AI exposure for this role category: ${riskPct}% (industry-calibrated floor, not an individual task count)`
     : `~${riskPct}% task overlap with AI capabilities — measured against your actual skill profile`;
 
+  // ── Role-family overlay — same score reads differently for marketer vs dev vs analyst.
+  // This is the structural fix for "are we just a ChatGPT layer": persona × family × tier
+  // produces 50+ distinct narrative cells, all keyed off deterministic profile signals.
+  const family = detectRoleFamily(report);
+  const fam = getFamilyNarrative(family);
+
+  // ── "We read your resume" proof line — built from grounded extraction signals.
+  // Goal: within 1 second of seeing the verdict, the user knows we parsed their actual file.
+  const yearsExp = (report as any).years_experience as number | undefined;
+  const topStack: string[] = (() => {
+    const moats = (report.moat_skills || []).slice(0, 2);
+    const all = (report.all_skills || []).slice(0, 2);
+    const picks = moats.length ? moats : all;
+    return picks.filter(Boolean);
+  })();
+  const geo = (report as any).city || (report as any).country || (report as any).metro_tier;
+  const proofParts: string[] = [];
+  if (yearsExp && yearsExp > 0) proofParts.push(`${yearsExp} yrs`);
+  if (topStack.length) proofParts.push(topStack.join(' · '));
+  if (geo && typeof geo === 'string' && geo.length < 30) proofParts.push(geo);
+  const proofLine = proofParts.length >= 2 ? proofParts.join('  •  ') : undefined;
+
+  // ── Tier × family splice helpers — keep tier templates intact, weave family in.
+  const familyHeadlineSuffix = ` ${fam.threatFrame}`;
+  const familyBodySuffix = ` ${fam.lossFrame}`;
+  const familyHopeSuffix = ` ${fam.edgeFrame}`;
+  const familyReplaceabilitySuffix = ` For your function: ${fam.credibilityProof}`;
+
+
   // ── TIER 1: SAFE ZONE (70+) ──────────────────────────────
   if (score >= 70) return {
     emoji: '🛡️', label: 'Safe Zone',
@@ -85,21 +117,23 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `You're safe today. But "today" has a shelf life.`,
     warmIntro: `Take a breath — your career isn't on fire. But the smoke is closer than you think.`,
 
-    body: kgOverrideApplied
+    body: (kgOverrideApplied
       ? `Here's what keeps us up at night for people like you: ${riskSource} The professionals who lose their "safe" status are always the ones who assumed it was permanent.`
-      : `Here's what keeps us up at night for people like you: 18 months ago, only ~${Math.max(5, Math.round(riskPct * 0.5))}% of ${roleName} work overlapped with AI. Today it's ${riskPct}%. That number doesn't go backwards. The professionals who lose their "safe" status are always the ones who assumed it was permanent.`,
+      : `Here's what keeps us up at night for people like you: 18 months ago, only ~${Math.max(5, Math.round(riskPct * 0.5))}% of ${roleName} work overlapped with AI. Today it's ${riskPct}%. That number doesn't go backwards. The professionals who lose their "safe" status are always the ones who assumed it was permanent.`) + familyBodySuffix,
 
-    hope: `${moatSkills >= 3 ? `Your ${moatSkills} moat skills — the judgment-heavy, relationship-dependent ones — are genuinely hard to automate today.` : 'Your work requires real human judgment, and that creates natural protection.'} ${talentDensity === 'scarce' ? 'The talent pool for your profile is thin — that\'s real leverage.' : `As a ${tierLabel}, you carry institutional knowledge that doesn't live in any document.`}`,
+    hope: `${moatSkills >= 3 ? `Your ${moatSkills} moat skills — the judgment-heavy, relationship-dependent ones — are genuinely hard to automate today.` : 'Your work requires real human judgment, and that creates natural protection.'} ${talentDensity === 'scarce' ? 'The talent pool for your profile is thin — that\'s real leverage.' : `As a ${tierLabel}, you carry institutional knowledge that doesn't live in any document.`}` + familyHopeSuffix,
 
     plan: `Lock in your advantage: identify which of your "safe" skills were on the safe list 2 years ago — because some of them won't be 2 years from now. Your defense plan maps exactly which capabilities to double down on.`,
 
-    replaceability: 'Replacing you today would be expensive and painful. But AI-augmented professionals are learning to match your output at a fraction of the cost — your edge needs active maintenance.',
+    replaceability: 'Replacing you today would be expensive and painful. But AI-augmented professionals are learning to match your output at a fraction of the cost — your edge needs active maintenance.' + familyReplaceabilitySuffix,
 
     bullets: [
       `Hiring demand is ${demand} — but companies are already piloting AI alternatives for parts of this exact role`,
       moatSkills >= 3 ? `${moatSkills} skills are hard to automate — but the "safe" list shrinks every year. 2 of these weren't at risk 2 years ago.` : 'Your judgment-heavy work protects you — but AI agents are starting to handle nuanced decisions too',
       `Your defense plan shows which moat skills have the shortest shelf life — so you stay ahead of the curve, not react to it`,
     ],
+    proofLine,
+    inactionCost: fam.inactionCost,
   };
 
   // ── TIER 2: STAY SHARP (50–69) ───────────────────────────
@@ -110,19 +144,21 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `This is the danger zone where careers quietly die.`,
     warmIntro: `This is the trickiest score range. You feel secure, your manager hasn't flagged anything — but this is exactly where silent displacement happens.`,
 
-    body: `${riskSource} Right now, a 25-year-old with ChatGPT, Claude, and a weekend course can deliver what took you years to master — in half the time. That's not an insult. That's the new math your boss is doing quietly.`,
+    body: `${riskSource} Right now, a 25-year-old with ChatGPT, Claude, and a weekend course can deliver what took you years to master — in half the time. That's not an insult. That's the new math your boss is doing quietly.` + familyBodySuffix,
 
-    hope: `${moatSkills > 0 ? `You have ${moatSkills} skills that are genuinely hard to replicate — these are your lifeline. ` : ''}The gap between "valued" and "irreplaceable" is usually just 1-2 skills. You're not far from the safe zone — but you need to move deliberately.`,
+    hope: `${moatSkills > 0 ? `You have ${moatSkills} skills that are genuinely hard to replicate — these are your lifeline. ` : ''}The gap between "valued" and "irreplaceable" is usually just 1-2 skills. You're not far from the safe zone — but you need to move deliberately.` + familyHopeSuffix,
 
     plan: `Your defense plan identifies the exact 1-2 moves that shift you from 'replaceable' to 'essential'. Most people in your score range only need 90 days of focused action to cross the line.`,
 
-    replaceability: `You're valued — but "valued" and "irreplaceable" are very different words when budgets get cut. A younger professional with AI tools is your real competition now.`,
+    replaceability: `You're valued — but "valued" and "irreplaceable" are very different words when budgets get cut. A younger professional with AI tools is your real competition now.` + familyReplaceabilitySuffix,
 
     bullets: [
       `Market demand is ${demand} — but companies are hiring fewer people for more output. AI-augmented teams are the new baseline.`,
       moatSkills > 0 ? `${moatSkills} of your strengths are hard to replicate — but without active investment, that drops to zero within 2 years` : `You don't have a clear "only-I-can-do-this" skill yet — that's the single biggest risk we flag`,
       `The parts of your work that are routine? AI is already doing them better and cheaper. Focus on the messy, human-judgment stuff.`,
     ],
+    proofLine,
+    inactionCost: fam.inactionCost,
   };
 
   // ── TIER 3: HEADS UP (30–49) ─────────────────────────────
@@ -133,19 +169,21 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `Your career is bleeding — and you might not feel it yet.`,
     warmIntro: `We know this is uncomfortable. But the people who recover from this score range are always the ones who saw it clearly first.`,
 
-    body: `${riskSource} Hiring demand is ${demand}. That means more people competing for fewer seats, while machines quietly take over the routine work. If you do nothing for the next 6 months, this score drops further — and the options narrow.`,
+    body: `${riskSource} Hiring demand is ${demand}. That means more people competing for fewer seats, while machines quietly take over the routine work. If you do nothing for the next 6 months, this score drops further — and the options narrow.` + familyBodySuffix,
 
-    hope: `${moatSkills > 0 ? `You have ${moatSkills} unique strengths that still separate you from the crowd — that's your foundation to build on. ` : ''}You're seeing this before 90% of people in your role even think about it. That awareness gap is worth more than any single skill — if you act on it now.`,
+    hope: `${moatSkills > 0 ? `You have ${moatSkills} unique strengths that still separate you from the crowd — that's your foundation to build on. ` : ''}You're seeing this before 90% of people in your role even think about it. That awareness gap is worth more than any single skill — if you act on it now.` + familyHopeSuffix,
 
     plan: `This weekend: pick ONE skill that requires human creativity or deep relationships, and go all-in. Your defense plan shows the fastest path — most people in your range can meaningfully shift their score in 60-90 days.`,
 
-    replaceability: `Honestly? This role could be backfilled faster than you'd like. But that's precisely why seeing this now — before your boss does — changes everything.`,
+    replaceability: `Honestly? This role could be backfilled faster than you'd like. But that's precisely why seeing this now — before your boss does — changes everything.` + familyReplaceabilitySuffix,
 
     bullets: [
       `A big chunk of your daily work follows patterns AI can learn — that's the core vulnerability`,
       moatSkills > 0 ? `You have ${moatSkills} skills keeping you differentiated — lean into these hard, they're your margin of survival` : `Right now, it's hard to point to one thing that makes you irreplaceable — let's fix that before someone else notices`,
       `Your defense plan maps the fastest escape route from this risk zone — the window is open, but it's not open forever`,
     ],
+    proofLine,
+    inactionCost: fam.inactionCost,
   };
 
   // ── TIER 4: ACT NOW (<30) ────────────────────────────────
@@ -156,18 +194,20 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `This is the warning your company will never give you.`,
     warmIntro: `You're not alone. 1 in 3 professionals in your category scored under 30 this year. The ones who turned it around started with exactly this kind of honest picture.`,
 
-    body: `${riskSource} High talent supply + routine tasks + ${demand} demand = the math isn't in your favor. Every month you wait, the options get fewer and the competition gets stronger.`,
+    body: `${riskSource} High talent supply + routine tasks + ${demand} demand = the math isn't in your favor. Every month you wait, the options get fewer and the competition gets stronger.` + familyBodySuffix,
 
-    hope: `But here's what matters: you're looking at this right now. You have 6 months of runway that most people in your role don't even know they're burning through. ${moatSkills > 0 ? `And you still have ${moatSkills} skills that create real differentiation — that's your starting point.` : 'The defense plan below maps your fastest path to building a genuine moat.'}`,
+    hope: `But here's what matters: you're looking at this right now. You have 6 months of runway that most people in your role don't even know they're burning through. ${moatSkills > 0 ? `And you still have ${moatSkills} skills that create real differentiation — that's your starting point.` : 'The defense plan below maps your fastest path to building a genuine moat.'}` + familyHopeSuffix,
 
     plan: `Start this week — not next month, this week. Identify one thing only YOU can do that requires human judgment, creativity, or relationships, and make it visible to decision-makers. Your defense plan gives you the exact 90-day roadmap.`,
 
-    replaceability: `This seat could be filled quickly. But you're here, looking at this clearly, while your peers are scrolling LinkedIn pretending everything is fine. That's the whole point.`,
+    replaceability: `This seat could be filled quickly. But you're here, looking at this clearly, while your peers are scrolling LinkedIn pretending everything is fine. That's the whole point.` + familyReplaceabilitySuffix,
 
     bullets: [
       riskBullet,
       `Talent supply is high — you're competing with more people AND machines simultaneously`,
       `Your defense plan is your escape route — the people who act on it within 7 days see the fastest score improvements`,
     ],
+    proofLine,
+    inactionCost: fam.inactionCost,
   };
 }

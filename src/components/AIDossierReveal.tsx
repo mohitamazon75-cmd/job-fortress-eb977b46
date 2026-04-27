@@ -500,9 +500,17 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
       {/* Narrative Verdict — half-reveal for free users */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
         className={`rounded-2xl border-2 ${vibe.border} ${vibe.bg} p-5`}>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xl">{vibe.emoji}</span>
-          <span className={`text-[10px] font-black uppercase tracking-widest ${vibe.color}`}>{vibe.label}</span>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{vibe.emoji}</span>
+            <span className={`text-[10px] font-black uppercase tracking-widest ${vibe.color}`}>{vibe.label}</span>
+          </div>
+          {/* "We read your resume" proof strip — instant credibility signal */}
+          {vibe.proofLine && (
+            <span className="text-[9.5px] font-bold uppercase tracking-wider text-muted-foreground/80 truncate max-w-[55%] text-right">
+              {vibe.proofLine}
+            </span>
+          )}
         </div>
         {vibe.warmIntro && (
           <p className="text-sm text-foreground/70 leading-relaxed mb-3 italic border-l-2 border-border pl-3">
@@ -557,6 +565,16 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         {/* Free user: specific-teaser CTA + price anchor */}
         {!isProUser && (
           <div className="mt-4 space-y-3">
+            {/* Loss-aversion anchor — quantified cost of inaction, family-specific */}
+            {vibe.inactionCost && (
+              <div className={`rounded-lg border ${vibe.border} bg-background/50 px-3.5 py-2.5 flex items-start gap-2`}>
+                <span className="text-sm flex-shrink-0 mt-0.5">⚠️</span>
+                <p className="text-[11px] text-foreground/80 leading-snug">
+                  <span className="font-black uppercase tracking-wider text-[9.5px] text-muted-foreground mr-1.5">Cost of waiting</span>
+                  {vibe.inactionCost}
+                </p>
+              </div>
+            )}
             <div className="rounded-lg border border-dashed border-border/70 bg-background/40 px-3.5 py-3">
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">What's locked</p>
               <ul className="space-y-1.5 text-xs text-foreground/75">
