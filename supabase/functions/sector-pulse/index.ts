@@ -297,7 +297,7 @@ Deno.serve(async (req) => {
     if (cached) {
       const resp: PulseResponse = {
         beats: cached.beats as Beat[],
-        window_days: 14,
+        window_days: 30,
         fetched_at: cached.fetched_at as string,
         cached: true,
         reason: (cached.reason as PulseResponse["reason"]) ?? undefined,
@@ -318,7 +318,7 @@ Deno.serve(async (req) => {
       if (stale) {
         const resp: PulseResponse = {
           beats: stale.beats as Beat[],
-          window_days: 14,
+          window_days: 30,
           fetched_at: stale.fetched_at as string,
           cached: true,
           reason: undefined,
@@ -334,7 +334,7 @@ Deno.serve(async (req) => {
 
     const resp: PulseResponse = {
       beats,
-      window_days: 14,
+      window_days: 30,
       fetched_at: new Date().toISOString(),
       cached: false,
       reason: reason as PulseResponse["reason"],
@@ -346,7 +346,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("[sector-pulse] unhandled:", err);
     return new Response(JSON.stringify({
-      beats: [], window_days: 14, fetched_at: new Date().toISOString(),
+      beats: [], window_days: 30, fetched_at: new Date().toISOString(),
       cached: false, reason: "fetch_failed", sector_label: "",
     }), {
       status: 200, // Never throw to UI — empty beats is the contract
