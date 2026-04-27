@@ -1180,7 +1180,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     Promise.all([
-      fetch(`${supabaseUrl}/functions/v1/cohort-match`, {
+      fetchWithTimeout(`${supabaseUrl}/functions/v1/cohort-match`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1203,7 +1203,7 @@ Deno.serve(async (req) => {
             risk_score: Math.round(Math.max(0, Math.min(100, Number(s.risk_score || s.automation_risk || 50)))),
             half_life_months: Math.round(Math.max(1, Number(s.estimated_months || s.half_life_months || 24))),
           }));
-          return fetch(`${supabaseUrl}/functions/v1/store-prediction`, {
+          return fetchWithTimeout(`${supabaseUrl}/functions/v1/store-prediction`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -1236,7 +1236,7 @@ Deno.serve(async (req) => {
             risk_score: Math.round(Math.max(0, Math.min(100, Number(s.risk_score || s.automation_risk || 50)))),
             half_life_months: Math.round(Math.max(1, Number(s.estimated_months || s.half_life_months || 24))),
           }));
-          return fetch(`${supabaseUrl}/functions/v1/validate-prediction`, {
+          return fetchWithTimeout(`${supabaseUrl}/functions/v1/validate-prediction`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
