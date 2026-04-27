@@ -4,6 +4,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { firecrawlSearch } from "../_shared/firecrawl.ts";
 // Process job families in batches to avoid rate limits
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 3000;
@@ -12,28 +13,31 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function searchFirecrawl(apiKey: string, query: string): Promise<string[]> {
-  try {
-    const fcController = new AbortController();
-    const fcTimeout = setTimeout(() => fcController.abort(), 15_000);
-    const resp = await fetch("https://api.firecrawl.dev/v1/search", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query, limit: 5, lang: "en", country: "in", tbs: "qdr:m" }),
-      signal: fcController.signal,
-    });
-    clearTimeout(fcTimeout);
-    if (!resp.ok) return [];
-    const data = await resp.json();
-    return (data.data || [])
-      .filter((item: any) => item.title || item.description)
-      .map((item: any) => `${item.title || ""}: ${item.description || ""}`);
-  } catch {
-    return [];
-  }
+/**
+ * Search Firecrawl for India market signals on a job family.
+ *
+ * 2026-04-27: replaced bespoke fetch+timeout with the shared
+ * firecrawlSearch helper, which adds:
+ *   - per-host circuit breaker (fast-fails during outages)
+ *   - exponential backoff with jitter
+ *   - structured JSON logs
+ *
+ * The `apiKey` parameter is no longer needed — the helper reads
+ * FIRECRAWL_API_KEY from env directly. Kept in the signature so
+ * the call sites in this file don't need to change.
+ */
+async function searchFirecrawl(_apiKey: string, query: string): Promise<string[]> {
+  const results = await firecrawlSearch({
+    query,
+    limit: 5,
+    lang: "en",
+    country: "in",
+    tbs: "qdr:m",
+  });
+  if (!results) return [];
+  return results
+    .filter((item) => item.title || item.description)
+    .map((item) => `${item.title || ""}: ${item.description || ""}`);
 }
 
 async function synthesizeWithGemini(
