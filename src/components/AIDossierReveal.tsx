@@ -529,28 +529,17 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
         )}
       </motion.div>
 
-      {/* Why This Score accordion — blurred for free users */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}
-        className={!isProUser ? 'relative overflow-hidden rounded-2xl' : ''}>
-        <div className={!isProUser ? 'blur-[5px] select-none pointer-events-none' : ''}>
-          <WhyThisScore
-            score={score}
-            automationRisk={automationRisk}
-            demandTrend={marketModel?.demand_trend ?? 'Stable'}
-            moatSkillCount={moatSkills.length}
-            talentDensity={marketModel?.talent_density ?? 'moderate'}
-            seniorityTier={report.seniority_tier ?? 'PROFESSIONAL'}
-            defaultOpen={true}
-          />
-        </div>
-        {!isProUser && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="flex items-center gap-1.5 bg-background/80 backdrop-blur-sm rounded-full px-4 py-2 border border-border shadow-sm">
-              <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-xs font-bold text-muted-foreground">Score breakdown in Pro</span>
-            </div>
-          </div>
-        )}
+      {/* Why This Score accordion — visible to all users (transparency = trust) */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+        <WhyThisScore
+          score={score}
+          automationRisk={automationRisk}
+          demandTrend={marketModel?.demand_trend ?? 'Stable'}
+          moatSkillCount={moatSkills.length}
+          talentDensity={marketModel?.talent_density ?? 'moderate'}
+          seniorityTier={report.seniority_tier ?? 'PROFESSIONAL'}
+          defaultOpen={true}
+        />
       </motion.div>
 
       {/* AIRMM Framework — Pro only */}
