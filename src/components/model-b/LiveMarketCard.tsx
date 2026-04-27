@@ -219,15 +219,9 @@ function ThinSignalView({
           <strong>Why we're hiding most of this card:</strong> Naukri's keyword search returned mostly adjacent-role listings (e.g. sales roles for marketing searches, or junior-tier roles for senior searches). The tag list and the disclosed-salary band would both mislead — Naukri's salary disclosures skew heavily junior and BPO, so a "median" computed from this corpus would be 50–70% below the real market for any senior or specialised role. The one slice that holds up is posting freshness, shown below.
         </div>
 
-        {/* Salary block intentionally removed on the thin branch.
-            Expert review (2026-04-27) flagged that Naukri's disclosed-pay
-            corpus is dominated by BPO/junior listings — computing a median
-            from it for a senior, specialised, or 10y+ role produces numbers
-            that are 50–70% below reality (e.g. 4.5 LPA shown for an 11y
-            Marketing leader whose true market is 22+ LPA). Better to show
-            nothing than a number that destroys trust. A future "Sector
-            Pulse" card (hiring/firing/funding news, properly grounded)
-            will fill this slot — tracked separately from this layer. */}
+        {/* Layer E: Sector Pulse fills the slot the salary block used to occupy.
+            Silently omits if the sector has no signal. */}
+        <SectorPulse role={role} city={displayCity} />
 
         {/* Recency — corpus-agnostic */}
         {(recency.same_day_count + recency.within_7d_count + recency.older_count) > 0 && (
