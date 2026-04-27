@@ -294,3 +294,25 @@ Phase 2B (Nuclear Card) can proceed.
 **Outcome:** 50/50 pass (100%), all 8 families at 100%.
 
 **Limitation acknowledged:** This baseline reflects engine output under heuristic profile extraction. When production Agent 1 produces richer profiles (more strategic skills, executive_impact, ic_leverage), real scans land at higher careers scores than these fixtures expect. The eval is therefore a **regression net for the deterministic engine itself**, not a simulation of end-to-end UX. Adding an LLM-extraction-based eval is tracked in BACKLOG.
+
+## 2026-04-27 — Firecrawl rollout PAUSED (founder call, not engineering call)
+
+**Decision:** Stop the Firecrawl helper rollout at 3/8 call sites. Do not migrate the remaining 5 (company-news, market-signals, parse-linkedin, process-scan, scan-enrichment) at this time.
+
+**Evidence triggering the halt:**
+- Analytics 2026-04-20 → 2026-04-27: 27 visitors, 4 page-views on `/results/model-b` over 8 days.
+- Edge logs show ZERO `firecrawl-search` events across all 3 already-adopted functions (kg-refresh, live-news, live-market) since deployment. Pattern is unverified in production not because it's broken, but because no one is using it.
+- 2 of the 5 remaining targets (`process-scan` 1,136 LOC, `market-signals` god file) are explicitly off-limits without operator approval per CLAUDE.md Rule 3 / Rule 9.
+
+**Reasoning (Karpathy filter):**
+At single-digit scans/week, marginal reliability work has near-zero business value. The shared helper exists, has 6/6 unit tests, is deployed at 3 sites — that's sufficient to claim the pattern is established and ready when traffic justifies completing the migration. Doing the remaining 3 safe sites now is engineer-theater: it feels productive but doesn't move PMF.
+
+**What this unblocks:**
+- The 5 unmigrated sites still work fine (same code that's been running for months).
+- When traffic grows or a Firecrawl outage hits, finishing the rollout becomes a 1-day task and the priority order will be obvious.
+
+**What the business actually needs right now (pre-PMF, per CLAUDE.md Phase 2):**
+Distribution, not reliability. Specifically: figure out why ~4 people/week reach the Model B results page and what they do next. This is a product/growth problem, not a backend problem.
+
+**Re-trigger to resume Firecrawl rollout:**
+Any one of: (a) sustained ≥50 scans/day, (b) a Firecrawl outage actually degrading user experience, (c) a Firecrawl-touching function bug that would have been caught by the helper's logging.
