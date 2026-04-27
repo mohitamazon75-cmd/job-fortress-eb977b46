@@ -178,7 +178,7 @@ export default function ResultsModelB() {
     resultLoaded: Boolean(cardData),
     currentCard,
     visitedCount: visitedCards.size,
-    totalCards: 8, // 7 cards + Card0 verdict; matches TOTAL_JOURNEY_TABS
+    totalCards: TOTAL_JOURNEY_TABS,
   });
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
