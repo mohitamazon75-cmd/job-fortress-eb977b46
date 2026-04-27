@@ -182,7 +182,10 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
   // Replaces the green "moat skills" reassurance pill with a red "skills decaying" threat metric.
   const aiCoverage = c1?.ai_coverage_pct ?? c1?.exposure_pct
     ?? (typeof c1?.risk_score === "number" ? c1.risk_score : null);
-  const decayingSkillsCount = c3?.skills?.filter((s: any) => s.level === "decaying" || s.level === "weak" || s.level === "obsolete")?.length || 0;
+  // Decaying = skills under threat. Card 3 schema uses "critical-gap" (already obsolete)
+  // + "buildable" (urgent reskill). Legacy values kept as fallback for older payloads.
+  const DECAY_LEVELS = new Set(["critical-gap", "buildable", "decaying", "weak", "obsolete"]);
+  const decayingSkillsCount = c3?.skills?.filter((s: any) => DECAY_LEVELS.has(s?.level))?.length || 0;
   const pivotCount = c4?.pivots?.length || 0;
 
   // Top move — HOPE REVEAL (role name shown, 90-day plan locked).
@@ -507,23 +510,29 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           AI exposure is the canonical fear number.
           Decaying-skills replaces the old green moat pill (no reassurance during fear phase).
           Safe-pivots count is locked teaser (count visible, names behind paywall via #1 move card). */}
-      {(aiCoverage != null || decayingSkillsCount > 0 || pivotCount > 0) && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 8,
-            marginBottom: 28,
-          }}
-        >
-          <StatPill icon={<TrendingDown size={14} />} value={aiCoverage != null ? `${aiCoverage}%` : "—"} label="AI exposure" tone="threat" />
-          <StatPill icon={<TrendingDown size={14} />} value={decayingSkillsCount > 0 ? String(decayingSkillsCount) : "—"} label="Skills decaying" tone="threat" />
-          <StatPill icon={<Sparkles size={14} />} value={pivotCount > 0 ? String(pivotCount) : "—"} label="Safe pivots" tone="hope" />
-        </motion.div>
-      )}
+      {(() => {
+        // Build the visible-tile list dynamically — never render an empty "—" tile.
+        const tiles: Array<{ key: string; el: JSX.Element }> = [];
+        if (aiCoverage != null) tiles.push({ key: "ai", el: <StatPill icon={<TrendingDown size={14} />} value={`${aiCoverage}%`} label="AI exposure" tone="threat" /> });
+        if (decayingSkillsCount > 0) tiles.push({ key: "decay", el: <StatPill icon={<TrendingDown size={14} />} value={String(decayingSkillsCount)} label="Skills decaying" tone="threat" /> });
+        if (pivotCount > 0) tiles.push({ key: "pivot", el: <StatPill icon={<Sparkles size={14} />} value={String(pivotCount)} label="Safe pivots" tone="hope" /> });
+        if (tiles.length === 0) return null;
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${tiles.length}, 1fr)`,
+              gap: 8,
+              marginBottom: 28,
+            }}
+          >
+            {tiles.map(t => <div key={t.key}>{t.el}</div>)}
+          </motion.div>
+        );
+      })()}
 
       {/* DIVIDER */}
       <motion.div
