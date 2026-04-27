@@ -114,6 +114,8 @@ async function readStaleCache(supabase: ReturnType<typeof createClient>, sector:
     .maybeSingle();
   if (!data) return null;
   if (!Array.isArray(data.beats) || (data.beats as Beat[]).length === 0) return null;
+  // Don't resurrect rows that were themselves a "we tried and got nothing" marker.
+  if (data.reason === "low_confidence" || data.reason === "no_signal" || data.reason === "fetch_failed" || data.reason === "timeout") return null;
   // Cap at 7 days — anything older than that is too stale to show as "live".
   if (ageHours(data.fetched_at as string) > 24 * 7) return null;
   return data;
@@ -197,7 +199,7 @@ RULES:
         // (isTrustedUrl) to enforce the whitelist as defense-in-depth.
         response_format: { type: "json_schema", json_schema: schema },
         temperature: 0.1,
-        max_tokens: 1500,
+        max_tokens: 2200,
       }),
     });
     clearTimeout(timeoutId);
@@ -223,15 +225,14 @@ RULES:
     console.log(`[sector-pulse] perplexity returned ${rawBeats.length} raw beats for sector="${sectorQuery}". sample: ${JSON.stringify(rawBeats[0] ?? {}).slice(0, 200)}`);
     const cleanBeats: Beat[] = [];
     const dropReasons: string[] = [];
+    const seenUrls = new Set<string>();
+    const seenHeadlines = new Set<string>();
     for (const b of rawBeats as Beat[]) {
       if (typeof b?.source_url !== "string" || !isTrustedUrl(b.source_url)) {
         dropReasons.push(`untrusted:${b?.source_url ?? "none"}`);
         continue;
       }
       if (typeof b?.published_at !== "string") { dropReasons.push("no_date"); continue; }
-      // Drop anything older than 45 days as a safety net. Perplexity's published_at
-      // often reflects the article URL's first-indexed date which can lag the event,
-      // so we keep this lenient and rely on the prompt's "last 14 days" instruction.
       const ageDays = (Date.now() - new Date(b.published_at).getTime()) / (1000 * 60 * 60 * 24);
       if (!Number.isFinite(ageDays) || ageDays > 45 || ageDays < -1) {
         dropReasons.push(`age:${ageDays.toFixed(0)}d`);
@@ -239,6 +240,13 @@ RULES:
       }
       if (!["hiring", "layoff", "funding"].includes(b.signal)) { dropReasons.push(`signal:${b.signal}`); continue; }
       if (typeof b.headline !== "string" || b.headline.length < 10) { dropReasons.push("headline"); continue; }
+      // Dedup by canonical URL (strip query/hash) and by headline.
+      let urlKey = b.source_url;
+      try { const u = new URL(b.source_url); urlKey = `${u.hostname.replace(/^www\./, "")}${u.pathname}`.toLowerCase(); } catch { /* ignore */ }
+      const headlineKey = b.headline.trim().toLowerCase().replace(/\s+/g, " ");
+      if (seenUrls.has(urlKey) || seenHeadlines.has(headlineKey)) { dropReasons.push("duplicate"); continue; }
+      seenUrls.add(urlKey);
+      seenHeadlines.add(headlineKey);
       cleanBeats.push({
         headline: b.headline.trim(),
         source_name: (b.source_name ?? "").trim() || new URL(b.source_url).hostname,
@@ -289,7 +297,7 @@ Deno.serve(async (req) => {
     if (cached) {
       const resp: PulseResponse = {
         beats: cached.beats as Beat[],
-        window_days: 14,
+        window_days: 30,
         fetched_at: cached.fetched_at as string,
         cached: true,
         reason: (cached.reason as PulseResponse["reason"]) ?? undefined,
@@ -310,7 +318,7 @@ Deno.serve(async (req) => {
       if (stale) {
         const resp: PulseResponse = {
           beats: stale.beats as Beat[],
-          window_days: 14,
+          window_days: 30,
           fetched_at: stale.fetched_at as string,
           cached: true,
           reason: undefined,
@@ -326,7 +334,7 @@ Deno.serve(async (req) => {
 
     const resp: PulseResponse = {
       beats,
-      window_days: 14,
+      window_days: 30,
       fetched_at: new Date().toISOString(),
       cached: false,
       reason: reason as PulseResponse["reason"],
@@ -338,7 +346,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("[sector-pulse] unhandled:", err);
     return new Response(JSON.stringify({
-      beats: [], window_days: 14, fetched_at: new Date().toISOString(),
+      beats: [], window_days: 30, fetched_at: new Date().toISOString(),
       cached: false, reason: "fetch_failed", sector_label: "",
     }), {
       status: 200, // Never throw to UI — empty beats is the contract
