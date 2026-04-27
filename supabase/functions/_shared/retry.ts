@@ -140,8 +140,14 @@ export async function retryFetch(
         continue;
       }
 
-      // Terminal response (success OR non-transient failure).
-      onSuccess(key, log);
+      // Terminal response. Distinguish actual success (2xx/3xx) from a
+      // transient failure we ran out of retries on — the latter must still
+      // count toward the breaker even though we're returning the Response.
+      if (isTransientStatus(res.status)) {
+        onFailure(key, log);
+      } else {
+        onSuccess(key, log);
+      }
       return res;
     } catch (err) {
       lastError = err;
