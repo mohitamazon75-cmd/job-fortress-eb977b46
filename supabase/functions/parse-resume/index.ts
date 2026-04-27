@@ -22,9 +22,9 @@ Deno.serve(async (req) => {
     const auth = await requireAuth(req, corsHeaders);
     if (auth.kind === "unauthorized") return auth.response;
 
-    const parsed = await validateBody(req, ParseResumeSchema, corsHeaders);
-    if (parsed.kind === "invalid") return parsed.response;
-    const { resumeFilePath } = parsed.data;
+    const validated = await validateBody(req, ParseResumeSchema, corsHeaders);
+    if (validated.kind === "invalid") return validated.response;
+    const { resumeFilePath } = validated.data;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
