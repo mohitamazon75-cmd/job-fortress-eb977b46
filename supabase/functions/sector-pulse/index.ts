@@ -275,6 +275,26 @@ Deno.serve(async (req) => {
 
     // Live fetch
     const { beats, reason } = await fetchPerplexity(sector, sectorLabel, city);
+
+    // If live fetch returned nothing usable, try a stale-but-recent cache row
+    // before giving up. Better to show 5-day-old grounded news than a blank.
+    if (beats.length === 0) {
+      const stale = await readStaleCache(supabase, sector, city);
+      if (stale) {
+        const resp: PulseResponse = {
+          beats: stale.beats as Beat[],
+          window_days: 14,
+          fetched_at: stale.fetched_at as string,
+          cached: true,
+          reason: undefined,
+          sector_label: sectorLabel,
+        };
+        return new Response(JSON.stringify(resp), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     await writeCache(supabase, sector, city, beats, reason);
 
     const resp: PulseResponse = {
