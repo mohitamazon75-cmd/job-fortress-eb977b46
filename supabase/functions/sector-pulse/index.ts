@@ -199,7 +199,7 @@ RULES:
         // (isTrustedUrl) to enforce the whitelist as defense-in-depth.
         response_format: { type: "json_schema", json_schema: schema },
         temperature: 0.1,
-        max_tokens: 1500,
+        max_tokens: 2200,
       }),
     });
     clearTimeout(timeoutId);
