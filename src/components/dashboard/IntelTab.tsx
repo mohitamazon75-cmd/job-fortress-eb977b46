@@ -52,6 +52,9 @@ export default function IntelTab({ props }: { props: DashboardSharedProps }) {
 
   useEffect(() => {
     fetchSignals();
+    // P1: intentional — refetch only on role/industry change. Other report fields
+    // are stable for a given scan; refetching on every transient change would spam role-intel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [report.role, report.industry]);
 
   const fetchSignals = async () => {
