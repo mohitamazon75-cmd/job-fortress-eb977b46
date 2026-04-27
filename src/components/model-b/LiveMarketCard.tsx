@@ -479,7 +479,7 @@ function SnapshotView({
             }}
           >
             <strong style={{ color: "var(--mb-amber, #c47d1e)" }}>Mixed market.</strong>{" "}
-            Naukri's results for "{role}" include adjacent roles. Some tags below may not reflect your specific role.
+            Naukri's results for "{displayRole}" include adjacent roles. Some tags below may not reflect your specific role.
           </div>
         )}
 
