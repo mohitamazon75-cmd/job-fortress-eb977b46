@@ -565,6 +565,19 @@ async function processAnalysis(
     console.warn("[model-b] Trust guardrails failed (non-fatal, keeping LLM output):", gErr);
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DETERMINISTIC MONDAY MOVE (added 2026-04-27)
+  // The LLM sometimes still ends `confrontation` with abstract phrasing.
+  // We compute a guaranteed-actionable Monday Move from the structured payload
+  // and ship it as a top-level field. The frontend prefers this if present.
+  // Pure function, no LLM call, no latency.
+  // ═══════════════════════════════════════════════════════════════════════════
+  try {
+    (cardData as Record<string, unknown>).monday_move = computeMondayMove(cardData);
+  } catch (mErr) {
+    console.warn("[model-b] Monday-move computation failed (non-fatal):", mErr);
+  }
+
   const insertPayload = {
     analysis_id: analysisId,
     user_id: userId,
