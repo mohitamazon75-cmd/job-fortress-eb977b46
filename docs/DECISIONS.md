@@ -465,3 +465,26 @@ At 4 scans/week, the experimental setup overhead exceeds the value. The funnel I
 - landing_view → cta_click conversion improves from 8% (6/76) to >15% over the next 7 days
 - landing_scroll_depth shows users now reach 25% bucket more often (means they read the sub-headline)
 - If both move negative → revert
+
+## 2026-04-27 — Tab-by-tab narration audit: `tough_love` was silently dropped on Cards 2/4/6, `fear_hook` on Card 3
+
+**Same disease as Card 1.** Backend produces the full 4-beat arc (`fear_hook` / `tough_love` / `hope_bridge` / `confrontation`) for cards 1, 2, 3, 4, 6 per `agent-prompts.ts` schema, but the UI was rendering only 3 of 4 on each card.
+
+Audit method: `rg -c '\b<field>\b' src/components/model-b/Card*.tsx` against the schema — anything < 1 = silent drop.
+
+Findings:
+- Card 1 — already restored last loop
+- Card 2 (Market Radar) — added `tough_love` between fear_hook and confrontation, broadsheet italic style
+- Card 3 (Skill Shield) — added `fear_hook` after hope_bridge (preserves hope-first opening), retoned existing `tough_love` to italic broadsheet
+- Card 4 (Pivot Paths) — added `tough_love` between fear_hook and confrontation
+- Card 6 (Blind Spots) — added `tough_love` between fear_hook and confrontation
+- Card 7 (Human Advantage) — DELIBERATELY does not render the 4-beat narrative; replaced by live cohort intelligence (Scarcity / Demand / Half-life / Scripts). Documented as a design choice, not a regression.
+
+Verification:
+- `npx tsc --noEmit` clean
+- 302/302 vitest tests pass
+- Visual style matches each card's existing palette so the new beat doesn't read as a graft
+
+Why this matters: the Fear → Reframe → Hope → Plan arc is the platform's emotional contract with the user. Dropping the Reframe beat on 4 of 7 cards turns the experience into Threat → Threat → Hope, which (per qualitative feedback) reads as alarmist.
+
+**Regression net to add next:** lightweight render test that asserts each card emits a node containing the LLM-provided `tough_love` text when present. Filed in BACKLOG.
