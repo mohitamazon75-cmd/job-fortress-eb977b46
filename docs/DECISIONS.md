@@ -4,6 +4,21 @@
 
 ---
 
+## 2026-04-27 — Week 2 reliability primitives shipped (logger + retry/breaker)
+
+**Decision**: Add two new shared modules — `_shared/logger.ts` (structured JSON logs) and `_shared/retry.ts` (exponential-backoff retry + per-host circuit breaker) — but do **not** retrofit them into the 79 existing edge functions in this loop.
+
+**Reason**: Hazard F (god files frozen) plus Rule 9 (ask before touching >5 files) means a sweeping rewrite of the scan pipeline is the wrong unit of work. The right unit is: ship the primitives with their own test suite (10/10 passing), then opt in function-by-function with golden-eval as the regression net. Each adoption is small, reviewable, and revertible.
+
+**Adoption plan**: Wire into outbound providers in this order — Tavily (highest failure rate), Firecrawl, Adzuna, Lovable AI Gateway. Each gets one PR.
+
+**Costs accepted**: Two new shared files exist but are unused for one loop. Zero runtime impact. Pre-existing TS errors in `_shared/scan-cache.ts` and `_shared/scan-helpers.ts` (unrelated to this work) still block `supabase--test_edge_functions` for the whole tree — logged for separate triage.
+
+**Owner**: CTO (AI).
+**Related**: CLAUDE.md Rule 4 (feature-flag rollout), `_shared/logger.test.ts`, `_shared/retry.test.ts`.
+
+
+
 ## 2026-04-24 — `ENFORCE_PRO` stays off (Pro gating bypassed in production)
 
 **Decision**: Leave the `ENFORCE_PRO` env var unset (or `false`) in Lovable Cloud. All Pro-tier features remain freely accessible to all users.
