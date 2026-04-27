@@ -6,9 +6,10 @@
  * one threat, one moat, one move. Built for screenshot virality.
  */
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench, Briefcase, GraduationCap } from "lucide-react";
+import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench, Briefcase, GraduationCap, AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { detectRoleFamily, getFamilyNarrative } from "@/lib/role-family";
 
 interface Card0VerdictProps {
   cardData: any;
@@ -113,7 +114,7 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
 
   // Build the visceral fear→hope couplet — the threat is named, the edge is TEASED
   const threatToolStr = typeof threatTool === "string" ? threatTool : null;
-  const fearLine = threatTask && threatPct
+  const baseFearLine = threatTask && threatPct
     ? `${cap(threatTask)} — ${threatPct}% of it${threatToolStr ? ` is already done by ${threatToolStr}` : " can be automated"} today.`
     : threatTask
     ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
@@ -121,9 +122,42 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
   // Curiosity gap: show how many edges they have, lock the names.
   const moatSkillsList = c3?.skills?.filter((s: any) => s.level === "best-in-class" || s.level === "strong") || [];
   const moatCount = moatSkillsList.length;
-  const hopeLine = moatCount > 0
+  const baseHopeLine = moatCount > 0
     ? `You have ${moatCount === 1 ? "1 unfair edge" : `${moatCount} unfair edges`} AI cannot replicate — unlock to see ${moatCount === 1 ? "what it is" : "what they are"}.`
     : `You have edges AI cannot replicate — unlock to see them.`;
+
+  // ── Role-family overlay — same score reads differently for marketer vs dev vs analyst.
+  // Reuses the deterministic IP from src/lib/role-family.ts (already in the bundle).
+  // Synthesize a minimal ScanReport-shaped object from cardData so we can call detectRoleFamily.
+  const roleFamilyInput = {
+    role: user?.current_title || user?.role || c1?.role || "",
+    role_detected: user?.role_detected || user?.current_title || "",
+  } as any;
+  const roleFamily = detectRoleFamily(roleFamilyInput);
+  const fam = getFamilyNarrative(roleFamily);
+  // Splice family-specific framing into the threat + edge lines.
+  // Falls back to base copy if family is GENERIC (suffix is just appended cleanly).
+  const fearLine = roleFamily === "GENERIC" ? baseFearLine : `${baseFearLine} ${fam.threatFrame}`;
+  const hopeLine = roleFamily === "GENERIC" ? baseHopeLine : `${baseHopeLine} ${fam.edgeFrame}`;
+
+  // ── "We read your resume" proof strip — shown under the masthead.
+  // Built from grounded extraction signals: years, top skills, geo.
+  // Goal: within 1 second of seeing the verdict, the user knows we parsed their actual file.
+  const yearsExp = user?.years_experience || user?.years || user?.experience;
+  const topStack: string[] = (() => {
+    const all: string[] = Array.isArray(cardData?.all_skills) ? cardData.all_skills : [];
+    const moats: string[] = Array.isArray(cardData?.moat_skills) ? cardData.moat_skills : [];
+    const picks = moats.length ? moats : all;
+    return picks.slice(0, 2).filter(Boolean);
+  })();
+  const geoRaw = user?.location || user?.city || user?.country;
+  const geo = typeof geoRaw === "string" && geoRaw.length > 0 && geoRaw.length < 30 ? geoRaw : null;
+  const proofParts: string[] = [];
+  if (yearsExp && Number(yearsExp) > 0) proofParts.push(`${yearsExp}y`);
+  if (topStack.length) proofParts.push(topStack.join(" · "));
+  if (geo) proofParts.push(geo);
+  const proofLine = proofParts.length >= 2 ? proofParts.join("  •  ") : null;
+
 
   // Risk tier — drives the entire color story
   const tier = rawScore >= 70
@@ -261,7 +295,30 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
         }}>
           {user?.current_title}{user?.location ? ` · ${user.location}` : ""}{user?.years_experience ? ` · ${user.years_experience}y experience` : ""}
         </div>
+        {/* Proof strip — "we read your resume" specificity (yrs · top stack · geo).
+            Renders only when ≥2 grounded fields present. Drives credibility within 1s. */}
+        {proofLine && (
+          <div style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            marginTop: 10,
+            padding: "5px 12px",
+            background: "rgba(15,31,58,0.04)",
+            border: "1px solid rgba(15,31,58,0.1)",
+            borderRadius: 999,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--mb-ink2, #374151)",
+            letterSpacing: "0.04em",
+          }}>
+            <FileCheck2 size={11} color="#15803d" />
+            <span style={{ fontFamily: "'DM Mono', monospace" }}>{proofLine}</span>
+            <span style={{ color: "var(--mb-muted, #9ca3af)", fontSize: 10, fontWeight: 600 }}>· from your resume</span>
+          </div>
+        )}
       </motion.div>
+
 
       {/* THE SCORE — knockout centerpiece */}
       <motion.div
@@ -528,18 +585,35 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           {/* Soft separator */}
           <div style={{ height: 1, background: "var(--mb-rule, #e5e7eb)", marginBottom: 14 }} />
 
-          {/* Hope half */}
+          {/* Hope half — clickable affordance: header row shows "→ Reveal all" so the strip
+              looks intentional and tap-able. The whole card is the CTA via onNext below. */}
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
             <div style={{ fontSize: 18, lineHeight: 1, marginTop: 2 }}>🛡️</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#15803d", marginBottom: 4 }}>
-                Your Edge
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#15803d" }}>
+                  Your Edge
+                </div>
+                <button
+                  onClick={onNext}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    background: "transparent", border: "none", cursor: "pointer",
+                    fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase",
+                    color: "#15803d", padding: 0,
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                  aria-label="Reveal all unfair edges"
+                >
+                  Reveal all <ArrowRight size={11} />
+                </button>
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, color: "var(--mb-ink, #111827)", lineHeight: 1.45, letterSpacing: "-0.005em" }}>
                 {hopeLine}
               </div>
             </div>
           </div>
+
         </motion.div>
 
         {/* Move — solid navy */}
@@ -750,9 +824,33 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
             )}
           </div>
 
+          {/* Cost-of-waiting anchor — role-family-specific loss-aversion frame.
+              Renders only when family overlay is non-generic so we don't fabricate a number. */}
+          {roleFamily !== "GENERIC" && fam.inactionCost && (
+            <div style={{
+              marginTop: 14,
+              padding: "10px 14px",
+              background: "rgba(220,38,38,0.05)",
+              border: "1px solid rgba(220,38,38,0.18)",
+              borderRadius: 10,
+              display: "flex", alignItems: "flex-start", gap: 8,
+            }}>
+              <AlertTriangle size={14} color="#dc2626" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#dc2626", marginBottom: 2 }}>
+                  Cost of waiting
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--mb-ink2, #374151)", lineHeight: 1.45 }}>
+                  {fam.inactionCost}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div style={{ marginTop: 14, fontSize: 10, fontWeight: 600, color: "var(--mb-muted, #9ca3af)", textAlign: "center", letterSpacing: "0.04em" }}>
             Numbers derived from your scan — no estimates, no fillers.
           </div>
+
         </motion.div>
       )}
 
