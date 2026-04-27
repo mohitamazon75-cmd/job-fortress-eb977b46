@@ -684,7 +684,7 @@ function SnapshotView({
             } else if (freshPct >= 70) {
               velocityLabel = "HOT";
               velocityColor = "#B8341C";
-              velocityVerdict = `${role} is in active hiring right now — move this week, not next month.`;
+              velocityVerdict = `${displayRole} is in active hiring right now — move this week, not next month.`;
               velocityNote = `${freshPct}% of dated postings are <7 days old — recruiters are actively listing this role. Note Naukri can't distinguish new requisitions from reposts.`;
             } else if (freshPct >= 40) {
               velocityLabel = "ACTIVE";
