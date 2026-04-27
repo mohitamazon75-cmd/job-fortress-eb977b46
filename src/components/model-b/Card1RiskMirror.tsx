@@ -248,12 +248,9 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         {/* India market signal — promoted, no longer buried under stat-grid noise */}
         <InfoBox variant="amber" title={`India market signal — ${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`} body={c1.india_data_insight || ""} />
 
-        {/* Hope bridge — closes the fear→relief arc on the same card */}
-        {c1.hope_bridge && (
-          <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px", marginTop: 14, marginBottom: 14 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}>✅ {c1.hope_bridge}</p>
-          </div>
-        )}
+        {/* hope_bridge intentionally NOT rendered here — Card 1 ends on pressure.
+            Card 2 (Market Radar) opens with its own hope_bridge to land the relief beat
+            after the user has fully processed the risk. Avoids duplicate green panels. */}
 
         {/* Social proof */}
         {scanCount && (
