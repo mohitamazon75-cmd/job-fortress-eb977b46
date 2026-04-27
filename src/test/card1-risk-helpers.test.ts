@@ -1,0 +1,88 @@
+import { describe, it, expect } from "vitest";
+import { formatAnnualLakhs, parsePctRange } from "@/components/model-b/Card1RiskMirror";
+
+/**
+ * Unit tests for the rupee-anchoring helpers used by Card 1 (Risk Mirror).
+ *
+ * Why these matter: these are the only reason the user sees "₹1.8L–2.4L/year"
+ * instead of the abstract "15-20%" that Indian users (per qualitative feedback)
+ * read as "AI slop". Money math without tests = a future audit finding waiting
+ * to happen — see docs/DEFINITION_OF_DONE.md Gate 2.
+ */
+
+describe("formatAnnualLakhs", () => {
+  it("formats sub-lakh monthly into ₹k/year", () => {
+    // 5,000 INR/month × 12 = 60,000 → "₹60k"
+    expect(formatAnnualLakhs(5_000)).toBe("₹60k");
+  });
+
+  it("formats single-digit lakhs with one decimal", () => {
+    // 50,000/month × 12 = 6,00,000 → 6.0L
+    expect(formatAnnualLakhs(50_000)).toBe("₹6.0L");
+  });
+
+  it("formats double-digit lakhs as rounded integers", () => {
+    // 1,00,000/month × 12 = 12,00,000 → ₹12L
+    expect(formatAnnualLakhs(100_000)).toBe("₹12L");
+  });
+
+  it("formats crore-range income correctly", () => {
+    // 10,00,000/month × 12 = 1.2 Cr
+    expect(formatAnnualLakhs(1_000_000)).toBe("₹1.2Cr");
+  });
+
+  it("handles the lakh boundary correctly (just under 10L)", () => {
+    // 75,000 × 12 = 9L exactly → 9.0L (one decimal)
+    expect(formatAnnualLakhs(75_000)).toBe("₹9.0L");
+  });
+
+  it("handles zero gracefully without throwing", () => {
+    expect(formatAnnualLakhs(0)).toBe("₹0k");
+  });
+});
+
+describe("parsePctRange", () => {
+  it("parses a hyphenated percentage range", () => {
+    expect(parsePctRange("15-20%")).toEqual([0.15, 0.20]);
+  });
+
+  it("parses an en-dash percentage range (LLM commonly emits this)", () => {
+    expect(parsePctRange("15–20%")).toEqual([0.15, 0.20]);
+  });
+
+  it("parses 'X to Y%' phrasing", () => {
+    expect(parsePctRange("15 to 20%")).toEqual([0.15, 0.20]);
+  });
+
+  it("parses a single percentage as a degenerate range", () => {
+    expect(parsePctRange("18%")).toEqual([0.18, 0.18]);
+  });
+
+  it("parses decimal percentages", () => {
+    expect(parsePctRange("7.5-12.5%")).toEqual([0.075, 0.125]);
+  });
+
+  it("returns null for null/undefined/empty", () => {
+    expect(parsePctRange(null)).toBeNull();
+    expect(parsePctRange(undefined)).toBeNull();
+    expect(parsePctRange("")).toBeNull();
+  });
+
+  it("returns null for unparseable strings (no %)", () => {
+    expect(parsePctRange("about 15 to 20")).toBeNull();
+    expect(parsePctRange("significant")).toBeNull();
+  });
+
+  it("integration: range × salary produces the expected ₹/year string", () => {
+    // 80,000/month salary, 15-20% gap → ₹1.4L–1.9L/year
+    const range = parsePctRange("15-20%");
+    expect(range).not.toBeNull();
+    if (!range) return;
+    const monthlySalary = 80_000;
+    const annualSalary = monthlySalary * 12; // 9,60,000
+    const lo = formatAnnualLakhs((annualSalary * range[0]) / 12); // 12,000/mo → 1,44,000/yr
+    const hi = formatAnnualLakhs((annualSalary * range[1]) / 12); // 16,000/mo → 1,92,000/yr
+    expect(lo).toBe("₹1.4L");
+    expect(hi).toBe("₹1.9L");
+  });
+});
