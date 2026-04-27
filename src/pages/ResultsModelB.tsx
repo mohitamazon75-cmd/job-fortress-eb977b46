@@ -171,6 +171,10 @@ export default function ResultsModelB() {
   const [journeyDone, setJourneyDone] = useState(initialJourney.done);
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
+  // Risk-card rupee anchoring: pull the user's estimated monthly salary from the
+  // scan record so Card1 can convert percentage gaps into absolute ₹ values.
+  // (Component layer — does not change LLM contract.)
+  const [monthlySalaryInr, setMonthlySalaryInr] = useState<number | null>(null);
   // Feature 3: Weekly intel for the Tools tab Judo section — fetched lazily when Tools tab opens.
   const [weeklyIntel, setWeeklyIntel] = useState<WeeklyIntelData | null>(null);
   const [weeklyIntelLoading, setWeeklyIntelLoading] = useState(false);
