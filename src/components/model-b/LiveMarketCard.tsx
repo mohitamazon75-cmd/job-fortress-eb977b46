@@ -725,6 +725,23 @@ function SnapshotView({
                 >
                   {velocityNote}
                 </div>
+                {velocityBenchmark && hasSignal && (
+                  <div
+                    data-testid="velocity-benchmark"
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 12.5,
+                      color: "var(--mb-ink2)",
+                      lineHeight: 1.6,
+                      marginTop: 10,
+                      paddingTop: 10,
+                      borderTop: "1px dashed var(--mb-rule)",
+                    }}
+                  >
+                    <strong>Benchmark:</strong> {velocityBenchmark.text}{" "}
+                    Today's <strong>{sameDay}</strong> sits <strong>{compareToBenchmark(sameDay, velocityBenchmark)}</strong>.
+                  </div>
+                )}
                 <div
                   style={{
                     fontFamily: "'DM Sans', sans-serif",
