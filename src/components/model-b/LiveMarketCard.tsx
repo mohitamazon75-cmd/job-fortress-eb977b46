@@ -218,45 +218,15 @@ function ThinSignalView({
           <strong>Why we're hiding most of this card:</strong> Naukri's keyword search returned mostly adjacent-role listings (e.g. sales roles for marketing searches, or junior-tier roles for senior searches). The tag list and the disclosed-salary band would both mislead — Naukri's salary disclosures skew heavily junior and BPO, so a "median" computed from this corpus would be 50–70% below the real market for any senior or specialised role. The one slice that holds up is posting freshness, shown below.
         </div>
 
-        {/* Salary — corpus-agnostic */}
-        {salary.shown && salary.median_lpa != null && (
-          <div style={{ marginBottom: 22 }}>
-            <div
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 12,
-                fontWeight: 800,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: "var(--mb-ink3)",
-                marginBottom: 10,
-              }}
-            >
-              Salary across the broader corpus
-            </div>
-            <div
-              style={{
-                background: "var(--mb-navy-tint)",
-                border: "1.5px solid var(--mb-navy-tint2)",
-                borderRadius: 14,
-                padding: "16px 18px",
-              }}
-            >
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--mb-ink2)", marginBottom: 8, fontFamily: "'DM Sans', sans-serif" }}>
-                {salary.n_disclosed} of {salary.n_total} postings disclosed pay
-              </div>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 26, fontWeight: 800, color: "var(--mb-navy)" }}>
-                {formatLpa(salary.median_lpa)} <span style={{ fontSize: 15, fontWeight: 700, color: "var(--mb-ink2)" }}>LPA median</span>
-              </div>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: "var(--mb-ink2)", marginTop: 6 }}>
-                Range: {formatLpa(salary.p25_lpa)} – {formatLpa(salary.p75_lpa)} LPA (P25–P75)
-              </div>
-              <div style={{ marginTop: 10, fontSize: 11.5, color: "var(--mb-ink3)", fontStyle: "italic", fontFamily: "'DM Sans', sans-serif" }}>
-                Note: these numbers reflect the broader corpus, not specifically {role}.
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Salary block intentionally removed on the thin branch.
+            Expert review (2026-04-27) flagged that Naukri's disclosed-pay
+            corpus is dominated by BPO/junior listings — computing a median
+            from it for a senior, specialised, or 10y+ role produces numbers
+            that are 50–70% below reality (e.g. 4.5 LPA shown for an 11y
+            Marketing leader whose true market is 22+ LPA). Better to show
+            nothing than a number that destroys trust. A future "Sector
+            Pulse" card (hiring/firing/funding news, properly grounded)
+            will fill this slot — tracked separately from this layer. */}
 
         {/* Recency — corpus-agnostic */}
         {(recency.same_day_count + recency.within_7d_count + recency.older_count) > 0 && (
