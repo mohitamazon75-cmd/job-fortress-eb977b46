@@ -45,8 +45,11 @@ Deno.serve(async (req) => {
     // request alive via EdgeRuntime.waitUntil inside process-scan itself.
     const triggers = (pendingScans ?? []).map(async (scan: { id: string; created_at: string }) => {
       try {
-        const resp = await fetch(`${supabaseUrl}/functions/v1/process-scan`, {
+        const resp = await fetchWithTimeout(`${supabaseUrl}/functions/v1/process-scan`, {
           method: "POST",
+          // process-scan itself uses EdgeRuntime.waitUntil; we just need the HTTP
+          // ack. 30s is plenty for the trigger to be accepted and queued.
+          timeoutMs: 30000,
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${serviceKey}`,
