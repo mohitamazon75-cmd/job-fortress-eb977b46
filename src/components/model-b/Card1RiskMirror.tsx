@@ -238,10 +238,13 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   const sector = (u.industry || "").trim();
 
   // Tenure phrasing — covers 0, decimals, missing, and very-senior cases
-  // without ever printing "0 years" or "NaN years".
+  // without ever printing "0 years" or "NaN years". Freshers (0 yrs) get
+  // a different emotional beat downstream — they're entering a market,
+  // not defending a seat.
   const yrsRaw = u.years_experience ?? u.years ?? u.experience;
   const yrsNum = typeof yrsRaw === "number" ? yrsRaw : (typeof yrsRaw === "string" ? parseFloat(yrsRaw) : NaN);
   const hasYears = Number.isFinite(yrsNum) && yrsNum >= 1;
+  const isFresher = Number.isFinite(yrsNum) && yrsNum < 1;
   const yrsInt = hasYears ? Math.round(yrsNum) : 0;
   const tenurePhrase = hasYears
     ? (yrsInt >= 15 ? `${yrsInt} years deep into ${sector || "your field"}`
@@ -250,25 +253,58 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
     : `Your work in ${sector || "your field"}`;
 
   // Role-family classifier — drives metaphor-specific copy.
-  // Order matters: founder/exec catches before "manager".
-  type Family = "founder" | "exec" | "eng" | "data" | "design" | "pm" | "marketing" | "sales" | "ops" | "hr" | "finance" | "support" | "content" | "generic";
+  // Order matters: founder/exec catches before "manager"; specific verticals
+  // (healthcare, legal, edu) before generic. Hindi/Hinglish keywords mapped
+  // to the same families (we don't translate the copy — just route correctly).
+  type Family = "founder" | "exec" | "eng" | "data" | "design" | "pm" | "marketing" | "sales" | "ops" | "hr" | "finance" | "support" | "content"
+    | "healthcare" | "legal" | "education" | "consulting" | "manufacturing" | "hospitality" | "creator" | "research"
+    | "generic";
   const detectFamily = (t: string): Family => {
-    if (/founder|ceo|coo|cto|cmo|cfo|chief|managing director|md\b|owner/.test(t)) return "founder";
-    if (/\bvp\b|vice president|head of|director|gm\b|general manager/.test(t)) return "exec";
-    if (/engineer|developer|sde|programmer|architect|devops|sre|backend|frontend|fullstack|full[- ]stack|mobile|android|ios|qa|tester/.test(t)) return "eng";
-    if (/data scien|analyst|ml |machine learning|ai engineer|bi |business intel|statistic/.test(t)) return "data";
-    if (/design|ux|ui |creative|illustrator|art director/.test(t)) return "design";
-    if (/product manager|product owner|\bpm\b|product lead/.test(t)) return "pm";
-    if (/market|growth|brand|seo|sem|content|copywrit|social media|community/.test(t)) return "marketing";
-    if (/sales|account exec|business development|\bbd\b|partnerships|revenue/.test(t)) return "sales";
-    if (/operations|ops |supply chain|logistics|procurement|admin/.test(t)) return "ops";
-    if (/\bhr\b|human resour|talent|recruit|people ops|l&d/.test(t)) return "hr";
-    if (/finance|accountant|controller|treasur|audit|tax|cfo/.test(t)) return "finance";
-    if (/support|customer success|\bcs\b|cx |service desk/.test(t)) return "support";
-    if (/writer|editor|journalist|content/.test(t)) return "content";
+    // Founder / exec — catch before any generic "manager"
+    if (/founder|ceo|coo|cto|cmo|cfo|chief|managing director|md\b|owner|प्रबंध निदेशक|संस्थापक/.test(t)) return "founder";
+    if (/\bvp\b|vice president|head of|director|gm\b|general manager|निदेशक|प्रमुख/.test(t)) return "exec";
+    // Specific verticals — before generic "manager" routes
+    if (/doctor|nurse|surgeon|physician|dentist|pharmac|healthcare|medical|clinical|hospital|डॉक्टर|नर्स|चिकित्सक/.test(t)) return "healthcare";
+    if (/lawyer|attorney|advocate|legal counsel|paralegal|वकील|अधिवक्ता/.test(t)) return "legal";
+    if (/teacher|professor|lecturer|educator|tutor|principal|शिक्षक|प्राध्यापक|अध्यापक/.test(t)) return "education";
+    if (/consultant|advisory|strategy consultant|management consult|सलाहकार/.test(t)) return "consulting";
+    if (/manufactur|production engineer|plant manager|factory|industrial|उत्पादन/.test(t)) return "manufacturing";
+    if (/hotel|chef|restaurant|hospitality|f&b|housekeeping|आतिथ्य|शेफ/.test(t)) return "hospitality";
+    if (/creator|influencer|youtuber|streamer|podcast/.test(t)) return "creator";
+    if (/researcher|scientist|phd|postdoc|शोधकर्ता|वैज्ञानिक/.test(t)) return "research";
+    // Tech / digital families (Hindi keywords mapped)
+    if (/engineer|developer|sde|programmer|architect|devops|sre|backend|frontend|fullstack|full[- ]stack|mobile|android|ios|qa|tester|डेवलपर|इंजीनियर|प्रोग्रामर/.test(t)) return "eng";
+    if (/data scien|analyst|ml |machine learning|ai engineer|bi |business intel|statistic|डेटा|विश्लेषक/.test(t)) return "data";
+    if (/design|ux|ui |creative|illustrator|art director|डिज़ाइनर|डिजाइनर/.test(t)) return "design";
+    if (/product manager|product owner|\bpm\b|product lead|उत्पाद प्रबंधक/.test(t)) return "pm";
+    if (/market|growth|brand|seo|sem|copywrit|social media|community|मार्केटिंग|विपणन|ब्रांड/.test(t)) return "marketing";
+    if (/sales|account exec|business development|\bbd\b|partnerships|revenue|बिक्री|विक्रय/.test(t)) return "sales";
+    if (/operations|ops |supply chain|logistics|procurement|admin|प्रचालन|संचालन|लॉजिस्टिक्स/.test(t)) return "ops";
+    if (/\bhr\b|human resour|talent|recruit|people ops|l&d|मानव संसाधन|भर्ती/.test(t)) return "hr";
+    if (/finance|accountant|controller|treasur|audit|tax|वित्त|लेखाकार/.test(t)) return "finance";
+    if (/support|customer success|\bcs\b|cx |service desk|सहायता|ग्राहक सेवा/.test(t)) return "support";
+    if (/writer|editor|journalist|content|लेखक|संपादक|पत्रकार/.test(t)) return "content";
     return "generic";
   };
-  const family = detectFamily(titleLower);
+  let family = detectFamily(titleLower);
+
+  // Sector tie-breaker: when title resolves to "generic" but industry is a
+  // specific high-signal vertical, pivot family to match the sector. Saves
+  // users with vague titles ("Manager", "Officer", "Associate") in strong
+  // verticals from falling into generic boilerplate.
+  if (family === "generic" && sector) {
+    const s = sector.toLowerCase();
+    if (/health|hospital|pharma|medical|clinical/.test(s)) family = "healthcare";
+    else if (/legal|law/.test(s)) family = "legal";
+    else if (/education|edtech|teaching|university/.test(s)) family = "education";
+    else if (/consult|advisory/.test(s)) family = "consulting";
+    else if (/manufactur|industrial|automotive/.test(s)) family = "manufacturing";
+    else if (/hospitality|hotel|restaurant|f&b|tourism/.test(s)) family = "hospitality";
+    else if (/research|r&d/.test(s)) family = "research";
+    else if (/finance|banking|insurance|fintech/.test(s)) family = "finance";
+    else if (/saas|software|tech|it services|product/.test(s)) family = "eng";
+    else if (/marketing|adver|media/.test(s)) family = "marketing";
+  }
 
   // What AI is actually replacing in this family (specific, not generic).
   const familyVerb: Record<Family, string> = {
@@ -285,6 +321,14 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
     finance: "the close cycle — variance analysis, reconciliations, forecast first drafts",
     support: "the tier-1 layer — ticket triage, FAQ replies, status pings",
     content: "the first draft — outlines, briefs, SEO scaffolding, distribution copy",
+    healthcare: "the documentation layer — clinical notes, billing codes, prior-auth letters",
+    legal: "the discovery and drafting layer — contract review, citation pulls, first-pass memos",
+    education: "the lesson-prep layer — quiz generation, lesson plans, first-pass grading",
+    consulting: "the deck-and-deliverable factory — slide builds, market scans, first-cut models",
+    manufacturing: "the planning layer — production schedules, quality reports, predictive maintenance triage",
+    hospitality: "the front-desk layer — reservations, FAQ replies, itinerary drafting",
+    creator: "the production layer — thumbnails, scripts, first-cut edits, captioning",
+    research: "the literature-review layer — paper summaries, citation graphs, hypothesis scaffolding",
     generic: "the execution layer — the daily output your role is measured on",
   };
 
