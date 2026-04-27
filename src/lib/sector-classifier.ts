@@ -107,21 +107,32 @@ export function getSectorDescriptor(family: Family): SectorDescriptor | null {
  */
 export const TRUSTED_NEWS_DOMAINS: ReadonlyArray<string> = [
   "economictimes.indiatimes.com",
+  "economictimes.com",
+  "indiatimes.com",
   "livemint.com",
+  "mint.com",
   "moneycontrol.com",
   "business-standard.com",
+  "businesstoday.in",
+  "business-today.in",
   "inc42.com",
   "yourstory.com",
   "entrackr.com",
   "the-ken.com",
   "thehindubusinessline.com",
+  "thehindu.com",
   "financialexpress.com",
+  "cnbctv18.com",
+  "ndtvprofit.com",
+  "theprint.in",
+  "fortuneindia.com",
+  "forbesindia.com",
   "bloomberg.com",
   "reuters.com",
   "techcrunch.com",
-  "forbesindia.com",
   "ft.com",
   "wsj.com",
+  "cnbc.com",
 ];
 
 export function isTrustedNewsUrl(url: string): boolean {
