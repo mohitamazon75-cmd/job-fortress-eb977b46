@@ -117,11 +117,11 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     headline: `You're safe today. But "today" has a shelf life.`,
     warmIntro: `Take a breath — your career isn't on fire. But the smoke is closer than you think.`,
 
-    body: kgOverrideApplied
+    body: (kgOverrideApplied
       ? `Here's what keeps us up at night for people like you: ${riskSource} The professionals who lose their "safe" status are always the ones who assumed it was permanent.`
-      : `Here's what keeps us up at night for people like you: 18 months ago, only ~${Math.max(5, Math.round(riskPct * 0.5))}% of ${roleName} work overlapped with AI. Today it's ${riskPct}%. That number doesn't go backwards. The professionals who lose their "safe" status are always the ones who assumed it was permanent.`,
+      : `Here's what keeps us up at night for people like you: 18 months ago, only ~${Math.max(5, Math.round(riskPct * 0.5))}% of ${roleName} work overlapped with AI. Today it's ${riskPct}%. That number doesn't go backwards. The professionals who lose their "safe" status are always the ones who assumed it was permanent.`) + familyBodySuffix,
 
-    hope: `${moatSkills >= 3 ? `Your ${moatSkills} moat skills — the judgment-heavy, relationship-dependent ones — are genuinely hard to automate today.` : 'Your work requires real human judgment, and that creates natural protection.'} ${talentDensity === 'scarce' ? 'The talent pool for your profile is thin — that\'s real leverage.' : `As a ${tierLabel}, you carry institutional knowledge that doesn't live in any document.`}`,
+    hope: `${moatSkills >= 3 ? `Your ${moatSkills} moat skills — the judgment-heavy, relationship-dependent ones — are genuinely hard to automate today.` : 'Your work requires real human judgment, and that creates natural protection.'} ${talentDensity === 'scarce' ? 'The talent pool for your profile is thin — that\'s real leverage.' : `As a ${tierLabel}, you carry institutional knowledge that doesn't live in any document.`}` + familyHopeSuffix,
 
     plan: `Lock in your advantage: identify which of your "safe" skills were on the safe list 2 years ago — because some of them won't be 2 years from now. Your defense plan maps exactly which capabilities to double down on.`,
 
