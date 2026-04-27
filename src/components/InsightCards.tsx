@@ -261,7 +261,7 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
     setCardIndex(i => i + 1);
   };
 
-  const [dragDir, setDragDir] = useState(0);
+  // (`dragDir` declared at top of component to honour rules-of-hooks.)
 
   const swipeConfidenceThreshold = 50;
   const handleDragEnd = (_: any, info: { offset: { x: number }; velocity: { x: number } }) => {
