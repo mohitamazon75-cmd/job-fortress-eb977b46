@@ -123,6 +123,12 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   // avoiding a redundant DB query every time this card renders.
   const scanCount = monthlyScanCount ?? null;
 
+  // ─── Hooks MUST run before any early return (rules-of-hooks). The effect
+  // body itself guards against missing data so we don't fire telemetry for
+  // empty cards.
+  const { track } = useTrack(cardData?.scan_id);
+  const hasC1 = Boolean(c1);
+
   if (!c1) return null;
 
   const r = 36;
