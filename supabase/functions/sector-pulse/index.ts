@@ -25,26 +25,37 @@ const corsHeaders = {
 // Kept in lock-step manually; the UI re-validates on render.
 const TRUSTED_DOMAINS: ReadonlyArray<string> = [
   "economictimes.indiatimes.com",
+  "economictimes.com",
+  "indiatimes.com",
   "livemint.com",
+  "mint.com",
   "moneycontrol.com",
   "business-standard.com",
+  "businesstoday.in",
+  "business-today.in",
   "inc42.com",
   "yourstory.com",
   "entrackr.com",
   "the-ken.com",
   "thehindubusinessline.com",
+  "thehindu.com",
   "financialexpress.com",
+  "cnbctv18.com",
+  "ndtvprofit.com",
+  "theprint.in",
+  "fortuneindia.com",
+  "forbesindia.com",
   "bloomberg.com",
   "reuters.com",
   "techcrunch.com",
-  "forbesindia.com",
   "ft.com",
   "wsj.com",
+  "cnbc.com",
 ];
 
 const CACHE_TTL_HOURS_OK = 24;
 const CACHE_TTL_HOURS_EMPTY = 0.17; // ~10 min — short retry window on empty results
-const PERPLEXITY_TIMEOUT_MS = 5000;
+const PERPLEXITY_TIMEOUT_MS = 22000; // sonar + domain filter typically needs 8–15s; give headroom
 const MAX_BEATS = 4;
 
 interface Beat {
@@ -91,6 +102,23 @@ async function readCache(supabase: ReturnType<typeof createClient>, sector: stri
   return data;
 }
 
+// Stale cache: ignore TTL, return last known row if it has any beats. Used as a
+// fallback when a live fetch fails so the user still sees grounded news instead
+// of a blank strip.
+async function readStaleCache(supabase: ReturnType<typeof createClient>, sector: string, city: string) {
+  const { data } = await supabase
+    .from("sector_pulse_cache")
+    .select("beats, reason, fetched_at")
+    .eq("sector", sector)
+    .eq("city", city)
+    .maybeSingle();
+  if (!data) return null;
+  if (!Array.isArray(data.beats) || (data.beats as Beat[]).length === 0) return null;
+  // Cap at 7 days — anything older than that is too stale to show as "live".
+  if (ageHours(data.fetched_at as string) > 24 * 7) return null;
+  return data;
+}
+
 async function writeCache(
   supabase: ReturnType<typeof createClient>,
   sector: string,
@@ -111,15 +139,14 @@ async function fetchPerplexity(sectorQuery: string, sectorLabel: string, city: s
   const apiKey = Deno.env.get("PERPLEXITY_API_KEY");
   if (!apiKey) return { beats: [], reason: "fetch_failed" };
 
-  const prompt = `Find 2 to 4 news items from the LAST 14 DAYS about ${sectorQuery} in India${city ? ` (focus on ${city} where possible)` : ""}.
+  const prompt = `Find 2 to 4 recent news items (LAST 30 DAYS preferred, up to 45 days acceptable) about ${sectorQuery} in India${city ? ` (${city} relevance is a bonus, not required)` : ""}.
 
-STRICT RULES:
-- Every item MUST be from a real, verifiable news article — no rumours, no aggregators.
-- Each item MUST classify as exactly one of: "hiring" (expansion, new hires, new offices), "layoff" (cuts, downsizing, hiring freeze), or "funding" (raises, IPO, major M&A, strategic shifts that affect headcount).
-- Skip items where you cannot confidently identify the company name and the article URL.
-- Skip opinion pieces, listicles, and "top 10" content.
-- Return FACTS ONLY — no interpretation, no advice, no commentary on what it means for job seekers.
-- If you cannot find at least 2 confident items, return an empty array.`;
+RULES:
+- Each item must be from a real, verifiable news article published by an established Indian or global business publication (Economic Times, Mint, Business Standard, Inc42, Moneycontrol, Reuters, Bloomberg, YourStory, Times of India business, Forbes India, etc.).
+- Classify each item as exactly one of: "hiring" (expansion, new hires, new offices, fresh recruitment drives), "layoff" (cuts, downsizing, hiring freeze, restructuring), or "funding" (raises, IPO, M&A, major business shifts that affect headcount).
+- Include the article URL and publication date (ISO format).
+- Skip pure opinion pieces and listicles.
+- It is OK to return just 1 item if that's all you can find with confidence — do NOT return an empty array unless you genuinely have nothing.`;
 
   const schema = {
     name: "sector_pulse",
@@ -161,11 +188,13 @@ STRICT RULES:
       body: JSON.stringify({
         model: "sonar",
         messages: [
-          { role: "system", content: "You are a precise news researcher. Return only verifiable, dated facts with real article URLs." },
+          { role: "system", content: "You are a precise news researcher. Return only verifiable, dated facts with real article URLs from established business publications." },
           { role: "user", content: prompt },
         ],
         search_recency_filter: "month",
-        search_domain_filter: TRUSTED_DOMAINS,
+        // NOTE: search_domain_filter removed — it's a hard pre-filter on Perplexity's
+        // index and was eliminating ~all results. We trust the prompt + post-filter
+        // (isTrustedUrl) to enforce the whitelist as defense-in-depth.
         response_format: { type: "json_schema", json_schema: schema },
         temperature: 0.1,
         max_tokens: 1500,
@@ -180,24 +209,36 @@ STRICT RULES:
 
     const data = await res.json();
     const content = data?.choices?.[0]?.message?.content;
+    const citations = data?.citations ?? [];
+    console.log(`[sector-pulse] perplexity citations: ${citations.length}, content_len: ${content?.length ?? 0}`);
     if (!content) return { beats: [], reason: "no_signal" };
 
     let parsed: { beats?: unknown };
     try { parsed = JSON.parse(content); } catch {
-      console.error("[sector-pulse] perplexity returned non-JSON content");
+      console.error(`[sector-pulse] perplexity returned non-JSON content: ${content.slice(0, 300)}`);
       return { beats: [], reason: "fetch_failed" };
     }
 
     const rawBeats = Array.isArray(parsed.beats) ? parsed.beats : [];
+    console.log(`[sector-pulse] perplexity returned ${rawBeats.length} raw beats for sector="${sectorQuery}". sample: ${JSON.stringify(rawBeats[0] ?? {}).slice(0, 200)}`);
     const cleanBeats: Beat[] = [];
+    const dropReasons: string[] = [];
     for (const b of rawBeats as Beat[]) {
-      if (typeof b?.source_url !== "string" || !isTrustedUrl(b.source_url)) continue;
-      if (typeof b?.published_at !== "string") continue;
-      // Drop anything older than 21 days as a safety net (Perplexity sometimes ignores recency).
+      if (typeof b?.source_url !== "string" || !isTrustedUrl(b.source_url)) {
+        dropReasons.push(`untrusted:${b?.source_url ?? "none"}`);
+        continue;
+      }
+      if (typeof b?.published_at !== "string") { dropReasons.push("no_date"); continue; }
+      // Drop anything older than 45 days as a safety net. Perplexity's published_at
+      // often reflects the article URL's first-indexed date which can lag the event,
+      // so we keep this lenient and rely on the prompt's "last 14 days" instruction.
       const ageDays = (Date.now() - new Date(b.published_at).getTime()) / (1000 * 60 * 60 * 24);
-      if (!Number.isFinite(ageDays) || ageDays > 21 || ageDays < -1) continue;
-      if (!["hiring", "layoff", "funding"].includes(b.signal)) continue;
-      if (typeof b.headline !== "string" || b.headline.length < 10) continue;
+      if (!Number.isFinite(ageDays) || ageDays > 45 || ageDays < -1) {
+        dropReasons.push(`age:${ageDays.toFixed(0)}d`);
+        continue;
+      }
+      if (!["hiring", "layoff", "funding"].includes(b.signal)) { dropReasons.push(`signal:${b.signal}`); continue; }
+      if (typeof b.headline !== "string" || b.headline.length < 10) { dropReasons.push("headline"); continue; }
       cleanBeats.push({
         headline: b.headline.trim(),
         source_name: (b.source_name ?? "").trim() || new URL(b.source_url).hostname,
@@ -209,7 +250,10 @@ STRICT RULES:
       if (cleanBeats.length >= MAX_BEATS) break;
     }
 
-    if (cleanBeats.length === 0) return { beats: [], reason: "low_confidence" };
+    if (cleanBeats.length === 0) {
+      console.log(`[sector-pulse] all beats dropped. reasons: ${dropReasons.join(", ")}`);
+      return { beats: [], reason: "low_confidence" };
+    }
     return { beats: cleanBeats };
   } catch (err) {
     clearTimeout(timeoutId);
@@ -258,6 +302,26 @@ Deno.serve(async (req) => {
 
     // Live fetch
     const { beats, reason } = await fetchPerplexity(sector, sectorLabel, city);
+
+    // If live fetch returned nothing usable, try a stale-but-recent cache row
+    // before giving up. Better to show 5-day-old grounded news than a blank.
+    if (beats.length === 0) {
+      const stale = await readStaleCache(supabase, sector, city);
+      if (stale) {
+        const resp: PulseResponse = {
+          beats: stale.beats as Beat[],
+          window_days: 14,
+          fetched_at: stale.fetched_at as string,
+          cached: true,
+          reason: undefined,
+          sector_label: sectorLabel,
+        };
+        return new Response(JSON.stringify(resp), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     await writeCache(supabase, sector, city, beats, reason);
 
     const resp: PulseResponse = {
