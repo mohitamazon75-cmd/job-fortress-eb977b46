@@ -553,6 +553,46 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         mid: "Mid-band content seats squeeze hardest — distribution and POV become the moat, not output volume.",
         low: "Editorial judgment, original reporting, and brand voice remain durable — POV doesn't auto-generate.",
       },
+      healthcare: {
+        high: "Clinical-documentation work is the steepest-falling layer — AMA scribe-AI pilots show 60%+ note-time reduction. Direct care remains a human role.",
+        mid: "Mid-band clinical roles keep their seat but absorb broader admin scope as scribes and prior-auth bots roll out.",
+        low: "Direct-care, diagnosis, and bedside roles remain durable — touch and trust don't transfer to API.",
+      },
+      legal: {
+        high: "Discovery, contract review, and first-pass research are the steepest-falling layers — Big Law pilots show 40–60% time reduction (ABA Tech Survey 2024).",
+        mid: "Mid-band legal roles keep their seat but lose billable hours on routine drafting and research.",
+        low: "Advocacy, judgment-bearing counsel, and accountability roles remain durable — signatures still belong to humans.",
+      },
+      education: {
+        high: "Lesson-prep, quiz generation, and first-pass grading are seeing rapid AI adoption — directional NCES + EdTech survey signal.",
+        mid: "Mid-band teaching roles shift weight from prep/grading to mentorship and classroom engagement.",
+        low: "Mentorship, classroom presence, and pastoral roles remain durable — relationships don't scale via prompt.",
+      },
+      consulting: {
+        high: "The deck-and-model factory is being commoditised — McKinsey, BCG, Bain all running internal LLM-deck tools at scale.",
+        mid: "Mid-band consulting seats keep the title but absorb 1.5–2x scope per head as deliverable cost falls.",
+        low: "Senior partner / relationship roles remain durable — client trust and judgment are the moat, not slide volume.",
+      },
+      manufacturing: {
+        high: "Planning, quality reporting, and predictive-maintenance triage are the steepest-falling layers — Industry 4.0 + WEF 2024 signal.",
+        mid: "Mid-band ops roles keep their seat but absorb broader scope as planning and reporting compress.",
+        low: "Crisis judgment, supplier relationships, and physical-floor leadership remain durable — atoms still need humans.",
+      },
+      hospitality: {
+        high: "Front-desk, reservations, and concierge tasks are seeing rapid AI-agent adoption — directional Skift/Hotel Tech 2024 signal.",
+        mid: "Mid-band hospitality seats shift weight from front-of-house tasks to guest-experience judgment and complex problem-solving.",
+        low: "In-person hospitality, F&B leadership, and crisis recovery remain durable — service is a contact sport.",
+      },
+      creator: {
+        high: "Production work — thumbnails, scripts, first-cut edits, captioning — is now commodity. Distribution + POV are the moat.",
+        mid: "Mid-band creators feel the squeeze hardest — output volume rises but per-view economics fall as AI-assisted competition grows.",
+        low: "Original POV, audience trust, and IP ownership remain durable — these don't auto-generate.",
+      },
+      research: {
+        high: "Literature review, citation graphs, and synthesis work are the steepest-falling layers — Elicit/Consensus/SciSpace adoption rising fast.",
+        mid: "Mid-band researchers keep their seat but absorb broader scope as lit-review and synthesis time compresses.",
+        low: "Original questions, peer credibility, and lab-running roles remain durable — these don't transfer to API.",
+      },
       generic: {
         high: "Roles in your band are losing 40–60% of routine task volume to AI assistants within 24 months (O*NET 2024 distribution).",
         mid: "Roles here keep their seat but lose pricing power: comp growth lags inflation by 4–7%/yr while juniors deliver more with AI.",
