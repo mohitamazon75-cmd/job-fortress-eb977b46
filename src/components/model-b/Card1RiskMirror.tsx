@@ -1,8 +1,13 @@
 // useState removed — scan count is now a prop from ResultsModelB
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { CardShell, CardHead, CardBody, Badge, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import BossPerceptionSimulator from "./BossPerceptionSimulator";
 import { useTrack } from "@/hooks/use-track";
+
+// Module-level dedup for analytics: ensures `card1_headline_source` fires
+// once per scan_id even when Card1 unmounts/remounts during card navigation.
+// Resets on full page reload (correct boundary — new view of the report).
+const firedHeadlineEvents = new Set<string>();
 
 interface Props {
   cardData: any;
