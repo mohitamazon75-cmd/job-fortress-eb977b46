@@ -29,10 +29,10 @@ import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 const APIFY_ACTOR_ID = "alpcnRV9YI9lYVPWk";
 const CACHE_TTL_HOURS = 6;
 const RUN_LIMIT = 50;
-// v3: strips seniority modifiers from the Naukri search URL and aggregates
-// only role-relevant listings, preventing polluted corpora from leaking into
-// tags/salary. Bumping invalidates v2 raw caches fetched with noisier URLs.
-const CACHE_VERSION = "v3";
+// v4: extractCoreRole strips verbose suffixes (e.g. "Manager | Growth & Demand
+// Generation Leader") so search query AND corpus-relevance scoring run against
+// the core role only. Bumping invalidates v3 caches fetched with noisier URLs.
+const CACHE_VERSION = "v4";
 
 // Same EXECUTIVE_HINTS as src/lib/jobsTab.ts (kept in sync manually —
 // duplicated to avoid cross-tier import).
