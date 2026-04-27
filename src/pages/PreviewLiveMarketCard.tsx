@@ -7,10 +7,11 @@ import { r1Fixture, r3Fixture, r2ThinFixture, execFixture, errorFixture, tinyFla
  * Isolated preview route for LiveMarketCard.
  *
  * Usage: /preview/live-market-card?state=r1|r3|thin|exec|error|loading
- *   r1    → strong band (clean Java corpus, full card)
- *   r3    → partial band (Eng-Mgr corpus with disclaimer)
- *   thin  → thin band (marketing user / sales-polluted corpus)
- *   exec  → executive skip
+ *   r1     → strong band (clean Java corpus, full card)
+ *   r3     → partial band (Eng-Mgr corpus with disclaimer, table still shown)
+ *   thin   → thin band (marketing user / sales-polluted corpus)
+ *   tiny   → partial + tiny + flat (table SUPPRESSED — Layer A fix, screenshot scenario)
+ *   exec   → executive skip
  */
 export default function PreviewLiveMarketCard() {
   const [params] = useSearchParams();
