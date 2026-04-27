@@ -33,9 +33,9 @@ Deno.serve(async (req) => {
     const systemPrompt = buildDossierPrompt();
     const profileContext = buildProfileContext(report);
 
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
+      { timeoutMs: 45000, // streaming dossier; allow more for slow tokens
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
