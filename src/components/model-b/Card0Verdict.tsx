@@ -295,7 +295,30 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
         }}>
           {user?.current_title}{user?.location ? ` · ${user.location}` : ""}{user?.years_experience ? ` · ${user.years_experience}y experience` : ""}
         </div>
+        {/* Proof strip — "we read your resume" specificity (yrs · top stack · geo).
+            Renders only when ≥2 grounded fields present. Drives credibility within 1s. */}
+        {proofLine && (
+          <div style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            marginTop: 10,
+            padding: "5px 12px",
+            background: "rgba(15,31,58,0.04)",
+            border: "1px solid rgba(15,31,58,0.1)",
+            borderRadius: 999,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--mb-ink2, #374151)",
+            letterSpacing: "0.04em",
+          }}>
+            <FileCheck2 size={11} color="#15803d" />
+            <span style={{ fontFamily: "'DM Mono', monospace" }}>{proofLine}</span>
+            <span style={{ color: "var(--mb-muted, #9ca3af)", fontSize: 10, fontWeight: 600 }}>· from your resume</span>
+          </div>
+        )}
       </motion.div>
+
 
       {/* THE SCORE — knockout centerpiece */}
       <motion.div
