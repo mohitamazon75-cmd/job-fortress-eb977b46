@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { CardShell, CardHead, CardBody, CardNav, Badge, LivePill } from "./SharedUI";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeCity, detectExecutive } from "@/lib/jobsTab";
+import { detectFamily, applySectorTieBreaker, type Family } from "@/lib/card1-personalization";
+import { getVelocityBenchmark, compareToBenchmark } from "@/lib/live-market-benchmarks";
 
 /**
  * LiveMarketCard
@@ -351,8 +353,30 @@ function SnapshotView({
   const tagPctSpread = top_tags.length > 0
     ? Math.max(...top_tags.map(t => t.pct)) - Math.min(...top_tags.map(t => t.pct))
     : 0;
+  const maxTagCount = top_tags.length > 0 ? Math.max(...top_tags.map(t => t.count)) : 0;
   const tagsAreFlat = top_tags.length >= 4 && tagPctSpread <= 5;
   const suppressTags = (isPartial || isThin) && posting_count <= 8 && tagsAreFlat;
+
+  // ─── Layer B · #6: directional benchmark for Hiring Velocity.
+  // Reuses Card1's family classifier so a "6 today" volume can be compared
+  // against typical Naukri daily volume for that family in this city.
+  // Returns null for families where Naukri isn't the right corpus
+  // (founder/exec/creator/generic) — the line is then simply omitted.
+  const family: Family = useMemo(() => {
+    const f = detectFamily(role.toLowerCase());
+    return applySectorTieBreaker(f, "");
+  }, [role]);
+  const velocityBenchmark = useMemo(
+    () => getVelocityBenchmark(family, displayCity),
+    [family, displayCity],
+  );
+
+  // ─── Layer B · #5: skill-overlap anchor.
+  // One honest line summarising overlap so the user gets a personal anchor
+  // before scanning the table. Only computed when overlap data is shown
+  // (i.e. corpus is strong enough that matched_skills is meaningful).
+  const skillsOnProfile = user_skill_overlap.matched_count;
+  const skillsTotalShown = top_tags.length;
 
   // ─── Layer A · #3: verdict-driven headline (was a logline before).
   // Title varies by corpus_relevance.band so users see *what we found*,
@@ -415,7 +439,30 @@ function SnapshotView({
               fontWeight: 500,
             }}
           >
-            <strong>Why we're hiding the tag list:</strong> Naukri returned {posting_count} posting{posting_count === 1 ? "" : "s"} for {role} in 7 days, and no tag appears often enough to call a pattern (every tag shows up in just 1 posting). On a sample this small, the table would invent precision that isn't there. The numbers below are the slice of this dataset that holds up: hiring velocity and posting freshness.
+            <strong>Why we're hiding the tag list:</strong> Naukri returned {posting_count} posting{posting_count === 1 ? "" : "s"} for {role} in 7 days, and no tag appears in more than {maxTagCount} of them — not enough to call a pattern. On a sample this small, the table would invent precision that isn't there. The numbers below are the slice of this dataset that holds up: hiring velocity and posting freshness.
+          </div>
+        )}
+
+        {/* Layer B · #4: nav prompt for partial/thin corpora.
+            Turns the "we hid stuff" disclaimer into a navigation prompt
+            toward the higher-signal next card. Suppressed-tag and
+            mixed-market both qualify; strong-band corpora don't need it. */}
+        {(suppressTags || (isPartial && !suppressTags) || isThin) && (
+          <div
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 12.5,
+              lineHeight: 1.65,
+              color: "var(--mb-ink3)",
+              fontStyle: "italic",
+              marginTop: -8,
+              marginBottom: 22,
+              paddingLeft: 4,
+            }}
+          >
+            On a sample this thin, the higher-signal channel for {role} is the
+            <strong style={{ color: "var(--mb-ink2)", fontStyle: "normal" }}> Best-Fit Companies </strong>
+            card next — direct targets beat keyword scrapes for senior or specialised roles.
           </div>
         )}
 

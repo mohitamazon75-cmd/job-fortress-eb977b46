@@ -1,16 +1,17 @@
 import "@/styles/model-b-tokens.css";
 import { useSearchParams } from "react-router-dom";
 import LiveMarketCard from "@/components/model-b/LiveMarketCard";
-import { r1Fixture, r3Fixture, r2ThinFixture, execFixture, errorFixture } from "@/components/model-b/liveMarketFixtures";
+import { r1Fixture, r3Fixture, r2ThinFixture, execFixture, errorFixture, tinyFlatPartialFixture } from "@/components/model-b/liveMarketFixtures";
 
 /**
  * Isolated preview route for LiveMarketCard.
  *
  * Usage: /preview/live-market-card?state=r1|r3|thin|exec|error|loading
- *   r1    → strong band (clean Java corpus, full card)
- *   r3    → partial band (Eng-Mgr corpus with disclaimer)
- *   thin  → thin band (marketing user / sales-polluted corpus)
- *   exec  → executive skip
+ *   r1     → strong band (clean Java corpus, full card)
+ *   r3     → partial band (Eng-Mgr corpus with disclaimer, table still shown)
+ *   thin   → thin band (marketing user / sales-polluted corpus)
+ *   tiny   → partial + tiny + flat (table SUPPRESSED — Layer A fix, screenshot scenario)
+ *   exec   → executive skip
  */
 export default function PreviewLiveMarketCard() {
   const [params] = useSearchParams();
@@ -27,6 +28,9 @@ export default function PreviewLiveMarketCard() {
   } else if (state === "thin") {
     role = "Digital Marketing Manager";
     snapshot = r2ThinFixture;
+  } else if (state === "tiny") {
+    role = "Digital Marketing Manager | Growth & Demand Generation Leader";
+    snapshot = tinyFlatPartialFixture;
   } else if (state === "exec") {
     role = "Chief Executive Officer";
     snapshot = execFixture;
@@ -75,7 +79,7 @@ export default function PreviewLiveMarketCard() {
             color: "var(--mb-ink3, #6b6b6b)",
           }}
         >
-          Switch state via query string: <code>?state=r1</code> · <code>?state=r3</code> · <code>?state=thin</code> · <code>?state=exec</code> · <code>?state=error</code> · <code>?state=loading</code>
+          Switch state via query string: <code>?state=r1</code> · <code>?state=r3</code> · <code>?state=thin</code> · <code>?state=tiny</code> · <code>?state=exec</code> · <code>?state=error</code> · <code>?state=loading</code>
         </div>
       </div>
     </div>
