@@ -303,16 +303,26 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
           </>
         )}
 
-        {/* Tasks at risk / safe — kept; this is the single most personal beat */}
+        {/* Tasks at risk / safe — capped at 3+3 to avoid pill-soup overload.
+            LLM emits exactly 5 each; we surface the 3 highest-priority and
+            note the rest in a quiet caption. The full list lives in card3_shield. */}
         <SectionLabel label="What AI is replacing in your role right now" />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 22 }}>
-          {(c1.tasks_at_risk || []).map((t: string, i: number) => (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 8 }}>
+          {(c1.tasks_at_risk || []).slice(0, 3).map((t: string, i: number) => (
             <span key={`r${i}`} style={{ fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 20, border: "1.5px solid rgba(174,40,40,0.25)", color: "var(--mb-red)", background: "var(--mb-red-tint)", fontFamily: "'DM Sans', sans-serif" }}>❌ {t}</span>
           ))}
-          {(c1.tasks_safe || []).map((t: string, i: number) => (
+          {(c1.tasks_safe || []).slice(0, 3).map((t: string, i: number) => (
             <span key={`s${i}`} style={{ fontSize: 13, fontWeight: 700, padding: "6px 16px", borderRadius: 20, border: "1.5px solid rgba(26,107,60,0.25)", color: "var(--mb-green)", background: "var(--mb-green-tint)", fontFamily: "'DM Sans', sans-serif" }}>✅ {t}</span>
           ))}
         </div>
+        {((c1.tasks_at_risk?.length || 0) > 3 || (c1.tasks_safe?.length || 0) > 3) && (
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginBottom: 22, paddingLeft: 4 }}>
+            Showing top 3 of each. Full skill map → Card 3 (Shield).
+          </div>
+        )}
+        {!((c1.tasks_at_risk?.length || 0) > 3 || (c1.tasks_safe?.length || 0) > 3) && (
+          <div style={{ marginBottom: 22 }} />
+        )}
 
         {/* India market signal — promoted, no longer buried under stat-grid noise */}
         <InfoBox variant="amber" title={`India market signal — ${new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' })}`} body={c1.india_data_insight || ""} />
