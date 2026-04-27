@@ -19,7 +19,7 @@ interface Props {
  * Used to convert abstract percentage gaps into concrete loss-aversion anchors
  * for the Indian middle-class reader.
  */
-function formatAnnualLakhs(monthlyInr: number): string {
+export function formatAnnualLakhs(monthlyInr: number): string {
   const annual = monthlyInr * 12;
   if (annual >= 10000000) return `₹${(annual / 10000000).toFixed(1)}Cr`;
   if (annual >= 100000) {
@@ -32,8 +32,9 @@ function formatAnnualLakhs(monthlyInr: number): string {
 /**
  * Parse a string like "15-20%" or "15%" into [low, high] decimals (0.15, 0.20).
  * Returns null if the string can't be confidently parsed.
+ * Exported for unit testing — see src/test/card1-risk-helpers.test.ts.
  */
-function parsePctRange(s: string | undefined | null): [number, number] | null {
+export function parsePctRange(s: string | undefined | null): [number, number] | null {
   if (!s) return null;
   const matches = s.match(/(\d+(?:\.\d+)?)\s*[-–to]+\s*(\d+(?:\.\d+)?)\s*%/i);
   if (matches) return [parseFloat(matches[1]) / 100, parseFloat(matches[2]) / 100];
