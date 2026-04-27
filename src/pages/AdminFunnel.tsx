@@ -44,6 +44,7 @@ interface FunnelData {
 
 const HUMAN_LABEL: Record<string, string> = {
   landing_view: "Landing viewed",
+  landing_scroll_depth: "Scrolled past fold",
   cta_click: "CTA clicked",
   auth_complete: "Signed in",
   input_method_selected: "Picked input method",
