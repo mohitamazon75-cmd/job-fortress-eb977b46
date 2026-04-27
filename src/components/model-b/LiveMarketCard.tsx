@@ -338,24 +338,48 @@ function SnapshotView({
   const tagMatched = (tag: string): boolean =>
     overlapShown && matchedSet.has(tag.toLowerCase());
 
-  const isPartial = snapshot.corpus_relevance?.band === "partial";
+  const band = snapshot.corpus_relevance?.band ?? "strong";
+  const isPartial = band === "partial";
+  const isThin = band === "thin";
+
+  // ─── Layer A · #1: suppress the top-tag table when it carries no signal.
+  // On partial-band corpora (Naukri returned adjacent roles) AND a tiny
+  // sample (≤8 postings) AND the tag percentages are flat (max-min ≤ 5pp,
+  // i.e. every row says "1/6 = 17%"), the table is wallpaper pretending
+  // to be data. Better to suppress it and lead with Hiring Velocity, which
+  // IS reliable on the same dataset.
+  const tagPctSpread = top_tags.length > 0
+    ? Math.max(...top_tags.map(t => t.pct)) - Math.min(...top_tags.map(t => t.pct))
+    : 0;
+  const tagsAreFlat = top_tags.length >= 4 && tagPctSpread <= 5;
+  const suppressTags = (isPartial || isThin) && posting_count <= 8 && tagsAreFlat;
+
+  // ─── Layer A · #3: verdict-driven headline (was a logline before).
+  // Title varies by corpus_relevance.band so users see *what we found*,
+  // not just *what we measured*. Sub keeps the operational facts.
+  const verdictTitle = suppressTags
+    ? `Your role's market on Naukri is too thin to read.`
+    : isPartial
+      ? `Your role's market is mixed — here's the signal that holds up.`
+      : isThin
+        ? `Live demand for ${role} is sparse this week.`
+        : `Live demand for ${role} is real — here's what employers are asking for.`;
+  const verdictSub = posting_count > 0
+    ? `${posting_count} posting${posting_count === 1 ? "" : "s"} analysed for ${role} in ${displayCity}, in the last 7 days.`
+    : `We couldn't pull a live posting set for this role+city right now.`;
 
   return (
     <CardShell>
       <CardHead
         badges={<><Badge label="Live market" variant="navy" /><LivePill /></>}
-        title="Your role's job market — live"
-        sub={
-          posting_count > 0
-            ? `${posting_count} posting${posting_count === 1 ? "" : "s"} analyzed for ${role} in ${displayCity}, in the last 7 days.`
-            : `We couldn't pull a live posting set for this role+city right now.`
-        }
+        title={verdictTitle}
+        sub={verdictSub}
       />
       <CardBody>
-        {/* Partial-band disclaimer — corpus has SOME signal but adjacent
-            roles bleed in. Render before the tag list so users read it
-            before scanning the tags. */}
-        {isPartial && (
+        {/* Partial-band disclaimer — only when we still show the tag table.
+            When the table is suppressed, the headline already carries the
+            verdict and a second amber strip would just nag. */}
+        {isPartial && !suppressTags && (
           <div
             style={{
               background: "var(--mb-amber-tint, #fef3e7)",
@@ -373,8 +397,30 @@ function SnapshotView({
             Naukri's results for "{role}" include adjacent roles. Some tags below may not reflect your specific role.
           </div>
         )}
-        {/* Top tags */}
-        {top_tags.length > 0 && (
+
+        {/* Tag-suppressed state — replace the noisy table with a single
+            honest line + a navigation prompt to the higher-signal card. */}
+        {suppressTags && (
+          <div
+            style={{
+              background: "var(--mb-paper)",
+              border: "1.5px solid var(--mb-rule)",
+              borderRadius: 14,
+              padding: "16px 18px",
+              marginBottom: 22,
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13.5,
+              lineHeight: 1.65,
+              color: "var(--mb-ink2)",
+              fontWeight: 500,
+            }}
+          >
+            <strong>Why we're hiding the tag list:</strong> Naukri returned {posting_count} posting{posting_count === 1 ? "" : "s"} for {role} in 7 days, and no tag appears often enough to call a pattern (every tag shows up in just 1 posting). On a sample this small, the table would invent precision that isn't there. The numbers below are the slice of this dataset that holds up: hiring velocity and posting freshness.
+          </div>
+        )}
+
+        {/* Top tags — suppressed when the table carries no signal (see suppressTags above). */}
+        {!suppressTags && top_tags.length > 0 && (
           <div style={{ marginBottom: 26 }}>
             <div
               style={{
