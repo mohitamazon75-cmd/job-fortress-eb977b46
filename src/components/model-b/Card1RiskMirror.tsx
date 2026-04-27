@@ -154,7 +154,7 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         {c1.tough_love && (
           <div style={{ marginTop: -6, marginBottom: 18, paddingLeft: 4 }}>
             <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700, color: "var(--mb-ink2)", lineHeight: 1.6, margin: 0, fontStyle: "italic", whiteSpace: "pre-line" }}>
-              💡 {c1.tough_love}
+              {c1.tough_love}
             </p>
           </div>
         )}
