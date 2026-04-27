@@ -65,7 +65,7 @@ describe("LiveMarketCard — Layer A: tag-table suppression", () => {
   it("promotes Hiring Velocity above the (now absent) tag block", () => {
     const { container } = renderCard(tinyFlatPartialFixture);
     const html = container.innerHTML;
-    const suppressionIdx = html.indexOf("Why we&#x27;re hiding the tag list");
+    const suppressionIdx = html.search(/hiding the tag list/i);
     const velocityIdx = html.indexOf("Hiring Velocity");
     expect(suppressionIdx).toBeGreaterThanOrEqual(0);
     expect(velocityIdx).toBeGreaterThanOrEqual(0);
