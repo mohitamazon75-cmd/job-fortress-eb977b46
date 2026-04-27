@@ -198,16 +198,18 @@ RULES:
 
     const data = await res.json();
     const content = data?.choices?.[0]?.message?.content;
+    const citations = data?.citations ?? [];
+    console.log(`[sector-pulse] perplexity citations: ${citations.length}, content_len: ${content?.length ?? 0}`);
     if (!content) return { beats: [], reason: "no_signal" };
 
     let parsed: { beats?: unknown };
     try { parsed = JSON.parse(content); } catch {
-      console.error("[sector-pulse] perplexity returned non-JSON content");
+      console.error(`[sector-pulse] perplexity returned non-JSON content: ${content.slice(0, 300)}`);
       return { beats: [], reason: "fetch_failed" };
     }
 
     const rawBeats = Array.isArray(parsed.beats) ? parsed.beats : [];
-    console.log(`[sector-pulse] perplexity returned ${rawBeats.length} raw beats for sector="${sectorQuery}"`);
+    console.log(`[sector-pulse] perplexity returned ${rawBeats.length} raw beats for sector="${sectorQuery}". sample: ${JSON.stringify(rawBeats[0] ?? {}).slice(0, 200)}`);
     const cleanBeats: Beat[] = [];
     const dropReasons: string[] = [];
     for (const b of rawBeats as Beat[]) {
