@@ -302,8 +302,9 @@ export async function sendOutcomeFollowUps(supabase: ReturnType<typeof createAdm
   </div>
 </div>`;
 
-        await fetch("https://api.resend.com/emails", {
+        await fetchWithTimeout("https://api.resend.com/emails", {
           method: "POST",
+          timeoutMs: 15000,
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${Deno.env.get("RESEND_API_KEY") || ""}`,
