@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { CardShell, CardHead, CardBody, Badge, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import BossPerceptionSimulator from "./BossPerceptionSimulator";
 import { useTrack } from "@/hooks/use-track";
+import { personalizeCard1 } from "@/lib/card1-personalization";
 
 // Module-level dedup for analytics: ensures `card1_headline_source` fires
 // once per scan_id even when Card1 unmounts/remounts during card navigation.
