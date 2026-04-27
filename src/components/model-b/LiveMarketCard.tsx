@@ -194,12 +194,26 @@ function ThinSignalView({
   onNext?: () => void;
 }) {
   const { posting_count, recency, source, fetched_at, cached } = snapshot;
+  // Be honest about WHY the corpus is thin. Only frame as "senior roles don't
+  // live on public boards" when the role actually IS senior. For mid-level
+  // roles with verbose specialised titles (e.g. "Digital Marketing Manager |
+  // Growth & Demand Generation Leader") the right frame is "your title is
+  // specialised — Naukri matched the broad category".
+  const lowerRole = role.toLowerCase();
+  const isSeniorRole = /\b(senior|sr\.?|lead|principal|head|director|vp|vice president|chief|cxo|founder|partner)\b/.test(lowerRole) || detectExecutive(role);
+  const headline = isSeniorRole
+    ? "Senior roles like yours don't live on public boards"
+    : "Your title is specialised — most public listings are adjacent";
+  const subline = isSeniorRole
+    ? `We scanned ${posting_count} live Naukri posting${posting_count === 1 ? "" : "s"} for ${role} in ${displayCity}. Most are junior or adjacent — that's a market signal, not a bug.`
+    : `We scanned ${posting_count} live Naukri posting${posting_count === 1 ? "" : "s"} in ${displayCity}. Public boards index broad categories — for a specialised title like yours, the highest-relevance openings sit on LinkedIn and company careers pages.`;
+  const meansLabel = isSeniorRole ? "What this means for you" : "Where the real matches live";
   return (
     <CardShell>
       <CardHead
-        badges={<><Badge label="Live market · senior roles" variant="navy" /><LivePill /></>}
-        title="Senior roles like yours don't live on public boards"
-        sub={`We scanned ${posting_count} live Naukri posting${posting_count === 1 ? "" : "s"} for ${role} in ${displayCity}. Most are junior or adjacent — that's a market signal, not a bug.`}
+        badges={<><Badge label={isSeniorRole ? "Live market · senior roles" : "Live market · specialised title"} variant="navy" /><LivePill /></>}
+        title={headline}
+        sub={subline}
       />
       <CardBody>
         {/* What this actually means — a useful frame, not an apology */}
@@ -219,9 +233,13 @@ function ThinSignalView({
           }}
         >
           <div style={{ fontWeight: 800, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--mb-navy)", marginBottom: 8 }}>
-            What this means for you
+            {meansLabel}
           </div>
-          For senior, niche, or specialised roles like <strong>{role}</strong>, ~80% of opportunities flow through three off-board channels: <strong>LinkedIn warm intros</strong>, <strong>executive search firms</strong>, and <strong>direct company applications</strong>. Companies pay 8–15% commission to keep these searches private — by design.
+          {isSeniorRole ? (
+            <>For senior, niche, or specialised roles like <strong>{role}</strong>, ~80% of opportunities flow through three off-board channels: <strong>LinkedIn warm intros</strong>, <strong>executive search firms</strong>, and <strong>direct company applications</strong>. Companies pay 8–15% commission to keep these searches private — by design.</>
+          ) : (
+            <>Naukri matched on the broad category, not your full title. For <strong>{role}</strong>, the strongest openings surface on <strong>LinkedIn (filter by 2nd-degree + Past Week)</strong> and on <strong>direct careers pages of companies hiring for that specialisation</strong>. Naukri is best for the broad role; LinkedIn surfaces the niche.</>
+          )}
         </div>
 
         {/* One concrete Monday action — not abstract advice */}
@@ -242,7 +260,7 @@ function ThinSignalView({
             Your Monday action
           </div>
           <div style={{ color: "var(--mb-ink)", fontWeight: 600 }}>
-            Open LinkedIn. Search "{role}" + "{displayCity}". Filter to "Past week" + 2nd-degree connections. DM 3 people with one specific question — not "open to chat".
+            Open LinkedIn. Search "{role.split(/\s*(?:\||\/|,|—|–| - | and | & )\s*/i)[0].trim() || role}" + "{displayCity}". Filter to "Past week" + 2nd-degree connections. DM 3 people with one specific question — not "open to chat".
           </div>
         </div>
 

@@ -162,10 +162,29 @@ function slugify(text: string): string {
     .replace(/\s+/g, "-") || "jobs";
 }
 
+// Verbose titles like "Digital Marketing Manager | Growth & Demand Generation Leader"
+// produce noisy Apify queries AND a too-strict roleTokens set (every word becomes a
+// must-match), which collapses corpus_relevance into "thin" even when Naukri has
+// thousands of matching jobs. Strip everything after the first separator (|, -, ,, /,
+// "and", "&") so we score and search against the core role only.
+export function extractCoreRole(role: string): string {
+  const r = String(role || "").trim();
+  if (!r) return "";
+  // Split on common separators that introduce sub-titles or specialisations.
+  const parts = r.split(/\s*(?:\||\/|,|—|–| - | and | & )\s*/i).map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return r;
+  // Use the first chunk if it's substantive (≥2 tokens), else fall back to the
+  // longest chunk (handles "Growth Lead | Manager" where part 1 is too short).
+  const first = parts[0];
+  if (first.split(/\s+/).filter(Boolean).length >= 2) return first;
+  return parts.reduce((a, b) => (b.split(/\s+/).length > a.split(/\s+/).length ? b : a), first);
+}
+
 function compactRoleForSearch(role: string): string {
-  const tokens = normalizeText(role).split(" ").filter(Boolean);
+  const core = extractCoreRole(role) || role;
+  const tokens = normalizeText(core).split(" ").filter(Boolean);
   const compact = tokens.filter((t) => !SEARCH_MODIFIER_STOPWORDS.has(t)).slice(0, 4);
-  return (compact.length >= 2 ? compact : tokens.slice(0, 4)).join(" ") || role;
+  return (compact.length >= 2 ? compact : tokens.slice(0, 4)).join(" ") || core;
 }
 
 // ── Thin-signal retry helpers (added 2026-04-27) ────────────────────────────
@@ -411,7 +430,11 @@ const ROLE_TITLE_STOPWORDS = new Set([
 ]);
 
 export function roleTokens(role: string): string[] {
-  return normalizeText(role)
+  // Score against the core role (pre-separator) so verbose titles like
+  // "Digital Marketing Manager | Growth & Demand Generation Leader" don't
+  // require every Naukri posting to mention "growth" AND "demand" AND "leader".
+  const core = extractCoreRole(role) || role;
+  return normalizeText(core)
     .split(" ")
     .filter((t) => (t.length >= 4 || SHORT_ROLE_TOKENS.has(t)) && !ROLE_TITLE_STOPWORDS.has(t));
 }
