@@ -46,6 +46,66 @@ export function parsePctRange(s: string | undefined | null): [number, number] | 
   return null;
 }
 
+/**
+ * Parse an Indian salary band string (e.g. "₹18-28L", "₹50-90L", "₹1.2-1.8Cr",
+ * "₹35L", "18-28 LPA") into the median annual rupee figure.
+ * Returns null if no confident parse — caller falls back to LLM string.
+ *
+ * This is the component-layer fallback that powers rupee anchoring when the
+ * scan record's `estimated_monthly_salary_inr` column is null (current state
+ * for all 5 prod scans as of 2026-04-27 — the upstream pipeline does not
+ * populate that column yet). We derive a credible monthly figure from the
+ * LLM's already-grounded `card2_market.salary_bands` matched to the user's
+ * current_title — same numbers the user sees one card later, so there's
+ * zero credibility risk from a number mismatch.
+ */
+export function parseBandToAnnualInr(range: string | undefined | null): number | null {
+  if (!range) return null;
+  const isCrore = /Cr/i.test(range);
+  const isLakh = !isCrore && /(L|LPA|lakh)/i.test(range);
+  if (!isCrore && !isLakh) return null;
+  const nums = range.match(/(\d+(?:\.\d+)?)/g);
+  if (!nums || nums.length === 0) return null;
+  const lo = parseFloat(nums[0]);
+  const hi = nums.length > 1 ? parseFloat(nums[1]) : lo;
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return null;
+  const median = (lo + hi) / 2;
+  const unit = isCrore ? 10_000_000 : 100_000; // 1Cr = 1e7, 1L = 1e5
+  const annual = median * unit;
+  return annual > 0 ? annual : null;
+}
+
+/**
+ * Derive monthly salary in INR from the LLM-returned salary_bands array,
+ * preferring the band whose `role` best matches the user's current_title.
+ * Falls back to the median band if no match. Returns null if bands are absent
+ * or unparseable.
+ */
+export function deriveMonthlyFromBands(
+  bands: Array<{ role?: string; range?: string }> | undefined | null,
+  currentTitle: string | undefined | null,
+): number | null {
+  if (!Array.isArray(bands) || bands.length === 0) return null;
+  const title = (currentTitle || "").toLowerCase().trim();
+
+  // Prefer exact-substring role match (e.g. user "Marketing Manager" → band "Marketing Manager").
+  let chosen: { role?: string; range?: string } | undefined;
+  if (title) {
+    chosen = bands.find((b) => {
+      const r = (b?.role || "").toLowerCase();
+      if (!r) return false;
+      // Match if either string contains a meaningful chunk of the other.
+      return r.includes(title) || (title.length >= 4 && title.includes(r.slice(0, Math.min(r.length, 20))));
+    });
+  }
+  // Fallback: middle band (LLM is instructed to put aspirational first; middle ≈ "your level").
+  if (!chosen) chosen = bands[Math.floor(bands.length / 2)];
+
+  const annual = parseBandToAnnualInr(chosen?.range);
+  if (!annual) return null;
+  return Math.round(annual / 12);
+}
+
 export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanCount, monthlySalaryInr }: Props) {
   const c1 = cardData.card1_risk;
   const u = cardData.user || {};
