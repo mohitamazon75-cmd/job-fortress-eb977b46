@@ -4,6 +4,7 @@
  * Safe to call multiple times. Protected by secret header.
  */
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
