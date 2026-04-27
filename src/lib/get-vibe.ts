@@ -80,6 +80,35 @@ export function getVibe(score: number, report: ScanReport): Vibe {
     ? `Structural AI exposure for this role category: ${riskPct}% (industry-calibrated floor, not an individual task count)`
     : `~${riskPct}% task overlap with AI capabilities — measured against your actual skill profile`;
 
+  // ── Role-family overlay — same score reads differently for marketer vs dev vs analyst.
+  // This is the structural fix for "are we just a ChatGPT layer": persona × family × tier
+  // produces 50+ distinct narrative cells, all keyed off deterministic profile signals.
+  const family = detectRoleFamily(report);
+  const fam = getFamilyNarrative(family);
+
+  // ── "We read your resume" proof line — built from grounded extraction signals.
+  // Goal: within 1 second of seeing the verdict, the user knows we parsed their actual file.
+  const yearsExp = (report as any).years_experience as number | undefined;
+  const topStack: string[] = (() => {
+    const moats = (report.moat_skills || []).slice(0, 2);
+    const all = (report.all_skills || []).slice(0, 2);
+    const picks = moats.length ? moats : all;
+    return picks.filter(Boolean);
+  })();
+  const geo = (report as any).city || (report as any).country || (report as any).metro_tier;
+  const proofParts: string[] = [];
+  if (yearsExp && yearsExp > 0) proofParts.push(`${yearsExp} yrs`);
+  if (topStack.length) proofParts.push(topStack.join(' · '));
+  if (geo && typeof geo === 'string' && geo.length < 30) proofParts.push(geo);
+  const proofLine = proofParts.length >= 2 ? proofParts.join('  •  ') : undefined;
+
+  // ── Tier × family splice helpers — keep tier templates intact, weave family in.
+  const familyHeadlineSuffix = ` ${fam.threatFrame}`;
+  const familyBodySuffix = ` ${fam.lossFrame}`;
+  const familyHopeSuffix = ` ${fam.edgeFrame}`;
+  const familyReplaceabilitySuffix = ` For your function: ${fam.credibilityProof}`;
+
+
   // ── TIER 1: SAFE ZONE (70+) ──────────────────────────────
   if (score >= 70) return {
     emoji: '🛡️', label: 'Safe Zone',
