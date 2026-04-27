@@ -132,7 +132,7 @@ export default function SectorPulse({ role, city, pulseOverride }: SectorPulsePr
           marginBottom: 10,
         }}
       >
-        Sector Pulse · {sector.label} · last {pulse.window_days} days
+        Sector Pulse · {sector.label} · last {displayWindow} days
       </div>
       <div
         style={{
