@@ -264,7 +264,7 @@ function ThinSignalView({
                 marginBottom: 10,
               }}
             >
-              Posting freshness
+              Posting freshness · what we did pull
             </div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink)", lineHeight: 1.7 }}>
               <strong>{recency.same_day_count}</strong> posted today · <strong>{recency.within_7d_count}</strong> this week · <strong>{recency.older_count}</strong> older
@@ -283,7 +283,7 @@ function ThinSignalView({
             fontStyle: "italic",
           }}
         >
-          For senior, niche, or specialized roles like {role}, the real opportunities live on LinkedIn, executive search firms, and direct company applications — not public job boards. See the next card for your matched companies.
+          Signal Quality: Low for public-board listings · High for the off-board channels above. See the next card for your matched companies.
         </div>
 
         <div
