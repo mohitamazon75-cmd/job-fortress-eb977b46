@@ -242,6 +242,34 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   const { family, band, isFresher, isWeak, isSpecific, copyConfidence,
           displayHeadline, displaySubline, peerFallback } = personalization;
 
+  // ─── Observability: track which copy path won (LLM vs template).
+  // Operator queries `behavior_events` to decide when prompt quality is
+  // good enough to retire the templates. Silent on failure. Dedup is
+  // *per scan_id* (module-level Set) — not per-mount — because Card1
+  // unmounts/remounts on every nav. A useRef would re-fire on each
+  // remount and over-count by 3-5x. Set survives remounts; resets on
+  // full page reload, which IS a new "view" of the report.
+  const { track } = useTrack(cardData?.scan_id);
+  useEffect(() => {
+    const sid = cardData?.scan_id;
+    if (!sid || !hasValidScore) return;
+    if (firedHeadlineEvents.has(sid)) return;
+    firedHeadlineEvents.add(sid);
+    track("card1_headline_source", {
+      source: isWeak ? "template" : "llm",
+      family,
+      band,
+      score,
+      llm_headline_len: (c1.headline || "").trim().length,
+      llm_was_specific: isSpecific,
+      peer_fallback_used: c1.india_average == null,
+      sector: sector || null,
+      is_fresher: isFresher,
+      copy_confidence: copyConfidence,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardData?.scan_id]);
+
   return (
     <CardShell>
       <CardHead
