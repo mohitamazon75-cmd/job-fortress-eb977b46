@@ -52,6 +52,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { type ScanReport, createScan, uploadResume, triggerProcessScan, subscribeScanStatus } from '@/lib/scan-engine';
 import { createClient } from '@supabase/supabase-js';
 import { useAnalytics } from '@/hooks/use-analytics';
+import { useLandingScrollDepth } from '@/hooks/use-landing-scroll-depth';
 import { useRequestMutex } from '@/hooks/use-request-mutex';
 import { useScanFlow } from '@/hooks/useScanFlow';
 import { useOnboardingState, detectCountry } from '@/hooks/useOnboardingState';
