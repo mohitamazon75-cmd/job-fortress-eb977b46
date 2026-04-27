@@ -459,6 +459,20 @@ export default function ResultsModelB() {
           setMonthlyScanCount(Math.floor(count / 10) * 10);
         }
       }, () => { /* P0 #3: swallow RLS/network errors silently */ });
+
+    // Pull monthly salary for this scan so Card1 can render rupee-anchored cost lines.
+    if (analysisId) {
+      supabase
+        .from("scans")
+        .select("estimated_monthly_salary_inr")
+        .eq("id", analysisId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!isMountedRef.current) return;
+          const v = (data as any)?.estimated_monthly_salary_inr;
+          if (typeof v === "number" && v > 0) setMonthlySalaryInr(v);
+        }, () => { /* swallow silently — card has graceful fallback */ });
+    }
   }, [analysisId, navigate, fetchAnalysis]);
 
   // Loading message cycling
