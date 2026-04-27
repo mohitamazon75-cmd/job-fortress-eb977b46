@@ -238,10 +238,13 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   const sector = (u.industry || "").trim();
 
   // Tenure phrasing — covers 0, decimals, missing, and very-senior cases
-  // without ever printing "0 years" or "NaN years".
+  // without ever printing "0 years" or "NaN years". Freshers (0 yrs) get
+  // a different emotional beat downstream — they're entering a market,
+  // not defending a seat.
   const yrsRaw = u.years_experience ?? u.years ?? u.experience;
   const yrsNum = typeof yrsRaw === "number" ? yrsRaw : (typeof yrsRaw === "string" ? parseFloat(yrsRaw) : NaN);
   const hasYears = Number.isFinite(yrsNum) && yrsNum >= 1;
+  const isFresher = Number.isFinite(yrsNum) && yrsNum < 1;
   const yrsInt = hasYears ? Math.round(yrsNum) : 0;
   const tenurePhrase = hasYears
     ? (yrsInt >= 15 ? `${yrsInt} years deep into ${sector || "your field"}`
@@ -250,25 +253,58 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
     : `Your work in ${sector || "your field"}`;
 
   // Role-family classifier — drives metaphor-specific copy.
-  // Order matters: founder/exec catches before "manager".
-  type Family = "founder" | "exec" | "eng" | "data" | "design" | "pm" | "marketing" | "sales" | "ops" | "hr" | "finance" | "support" | "content" | "generic";
+  // Order matters: founder/exec catches before "manager"; specific verticals
+  // (healthcare, legal, edu) before generic. Hindi/Hinglish keywords mapped
+  // to the same families (we don't translate the copy — just route correctly).
+  type Family = "founder" | "exec" | "eng" | "data" | "design" | "pm" | "marketing" | "sales" | "ops" | "hr" | "finance" | "support" | "content"
+    | "healthcare" | "legal" | "education" | "consulting" | "manufacturing" | "hospitality" | "creator" | "research"
+    | "generic";
   const detectFamily = (t: string): Family => {
-    if (/founder|ceo|coo|cto|cmo|cfo|chief|managing director|md\b|owner/.test(t)) return "founder";
-    if (/\bvp\b|vice president|head of|director|gm\b|general manager/.test(t)) return "exec";
-    if (/engineer|developer|sde|programmer|architect|devops|sre|backend|frontend|fullstack|full[- ]stack|mobile|android|ios|qa|tester/.test(t)) return "eng";
-    if (/data scien|analyst|ml |machine learning|ai engineer|bi |business intel|statistic/.test(t)) return "data";
-    if (/design|ux|ui |creative|illustrator|art director/.test(t)) return "design";
-    if (/product manager|product owner|\bpm\b|product lead/.test(t)) return "pm";
-    if (/market|growth|brand|seo|sem|content|copywrit|social media|community/.test(t)) return "marketing";
-    if (/sales|account exec|business development|\bbd\b|partnerships|revenue/.test(t)) return "sales";
-    if (/operations|ops |supply chain|logistics|procurement|admin/.test(t)) return "ops";
-    if (/\bhr\b|human resour|talent|recruit|people ops|l&d/.test(t)) return "hr";
-    if (/finance|accountant|controller|treasur|audit|tax|cfo/.test(t)) return "finance";
-    if (/support|customer success|\bcs\b|cx |service desk/.test(t)) return "support";
-    if (/writer|editor|journalist|content/.test(t)) return "content";
+    // Founder / exec — catch before any generic "manager"
+    if (/founder|ceo|coo|cto|cmo|cfo|chief|managing director|md\b|owner|प्रबंध निदेशक|संस्थापक/.test(t)) return "founder";
+    if (/\bvp\b|vice president|head of|director|gm\b|general manager|निदेशक|प्रमुख/.test(t)) return "exec";
+    // Specific verticals — before generic "manager" routes
+    if (/doctor|nurse|surgeon|physician|dentist|pharmac|healthcare|medical|clinical|hospital|डॉक्टर|नर्स|चिकित्सक/.test(t)) return "healthcare";
+    if (/lawyer|attorney|advocate|legal counsel|paralegal|वकील|अधिवक्ता/.test(t)) return "legal";
+    if (/teacher|professor|lecturer|educator|tutor|principal|शिक्षक|प्राध्यापक|अध्यापक/.test(t)) return "education";
+    if (/consultant|advisory|strategy consultant|management consult|सलाहकार/.test(t)) return "consulting";
+    if (/manufactur|production engineer|plant manager|factory|industrial|उत्पादन/.test(t)) return "manufacturing";
+    if (/hotel|chef|restaurant|hospitality|f&b|housekeeping|आतिथ्य|शेफ/.test(t)) return "hospitality";
+    if (/creator|influencer|youtuber|streamer|podcast/.test(t)) return "creator";
+    if (/researcher|scientist|phd|postdoc|शोधकर्ता|वैज्ञानिक/.test(t)) return "research";
+    // Tech / digital families (Hindi keywords mapped)
+    if (/engineer|developer|sde|programmer|architect|devops|sre|backend|frontend|fullstack|full[- ]stack|mobile|android|ios|qa|tester|डेवलपर|इंजीनियर|प्रोग्रामर/.test(t)) return "eng";
+    if (/data scien|analyst|ml |machine learning|ai engineer|bi |business intel|statistic|डेटा|विश्लेषक/.test(t)) return "data";
+    if (/design|ux|ui |creative|illustrator|art director|डिज़ाइनर|डिजाइनर/.test(t)) return "design";
+    if (/product manager|product owner|\bpm\b|product lead|उत्पाद प्रबंधक/.test(t)) return "pm";
+    if (/market|growth|brand|seo|sem|copywrit|social media|community|मार्केटिंग|विपणन|ब्रांड/.test(t)) return "marketing";
+    if (/sales|account exec|business development|\bbd\b|partnerships|revenue|बिक्री|विक्रय/.test(t)) return "sales";
+    if (/operations|ops |supply chain|logistics|procurement|admin|प्रचालन|संचालन|लॉजिस्टिक्स/.test(t)) return "ops";
+    if (/\bhr\b|human resour|talent|recruit|people ops|l&d|मानव संसाधन|भर्ती/.test(t)) return "hr";
+    if (/finance|accountant|controller|treasur|audit|tax|वित्त|लेखाकार/.test(t)) return "finance";
+    if (/support|customer success|\bcs\b|cx |service desk|सहायता|ग्राहक सेवा/.test(t)) return "support";
+    if (/writer|editor|journalist|content|लेखक|संपादक|पत्रकार/.test(t)) return "content";
     return "generic";
   };
-  const family = detectFamily(titleLower);
+  let family = detectFamily(titleLower);
+
+  // Sector tie-breaker: when title resolves to "generic" but industry is a
+  // specific high-signal vertical, pivot family to match the sector. Saves
+  // users with vague titles ("Manager", "Officer", "Associate") in strong
+  // verticals from falling into generic boilerplate.
+  if (family === "generic" && sector) {
+    const s = sector.toLowerCase();
+    if (/health|hospital|pharma|medical|clinical/.test(s)) family = "healthcare";
+    else if (/legal|law/.test(s)) family = "legal";
+    else if (/education|edtech|teaching|university/.test(s)) family = "education";
+    else if (/consult|advisory/.test(s)) family = "consulting";
+    else if (/manufactur|industrial|automotive/.test(s)) family = "manufacturing";
+    else if (/hospitality|hotel|restaurant|f&b|tourism/.test(s)) family = "hospitality";
+    else if (/research|r&d/.test(s)) family = "research";
+    else if (/finance|banking|insurance|fintech/.test(s)) family = "finance";
+    else if (/saas|software|tech|it services|product/.test(s)) family = "eng";
+    else if (/marketing|adver|media/.test(s)) family = "marketing";
+  }
 
   // What AI is actually replacing in this family (specific, not generic).
   const familyVerb: Record<Family, string> = {
@@ -285,6 +321,14 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
     finance: "the close cycle — variance analysis, reconciliations, forecast first drafts",
     support: "the tier-1 layer — ticket triage, FAQ replies, status pings",
     content: "the first draft — outlines, briefs, SEO scaffolding, distribution copy",
+    healthcare: "the documentation layer — clinical notes, billing codes, prior-auth letters",
+    legal: "the discovery and drafting layer — contract review, citation pulls, first-pass memos",
+    education: "the lesson-prep layer — quiz generation, lesson plans, first-pass grading",
+    consulting: "the deck-and-deliverable factory — slide builds, market scans, first-cut models",
+    manufacturing: "the planning layer — production schedules, quality reports, predictive maintenance triage",
+    hospitality: "the front-desk layer — reservations, FAQ replies, itinerary drafting",
+    creator: "the production layer — thumbnails, scripts, first-cut edits, captioning",
+    research: "the literature-review layer — paper summaries, citation graphs, hypothesis scaffolding",
     generic: "the execution layer — the daily output your role is measured on",
   };
 
@@ -304,7 +348,22 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   let displaySubline = llmSubline;
   if (isWeakHeadline && hasValidScore) {
     const replacing = familyVerb[family];
-    if (score >= 70) {
+
+    // Freshers (yrs < 1) get a different emotional beat across all bands.
+    // They're entering a market that's repricing entry-level work — not
+    // defending a seat. Same family routing, different framing.
+    if (isFresher) {
+      if (score >= 70) {
+        displayHeadline = `You're walking into a market that's repricing entry-level work in real time.`;
+        displaySubline = `The ${titleClean} roles you're applying to no longer hire for the work you'd have done in year one — AI is doing it. Your edge has to be the work it can't.`;
+      } else if (score >= 40) {
+        displayHeadline = `You're entering ${sector || "this field"} during its biggest re-pricing cycle in a decade.`;
+        displaySubline = `Junior roles for ${titleClean}s are getting fewer and meaner. The ones that hire are looking for AI fluency, not just credentials.`;
+      } else {
+        displayHeadline = `You're starting in a corner of the market AI hasn't reached yet.`;
+        displaySubline = `That's a real advantage — but it's a 2–3 year window, not a career. Use it to build the moat that AI can't copy.`;
+      }
+    } else if (score >= 70) {
       // High band — name the loss directly. Different opening per family
       // so two users with the same score don't read identical copy.
       const highHeadlines: Record<Family, string> = {
@@ -321,6 +380,14 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         finance: `Your spreadsheet fluency is being commoditised one Copilot release at a time.`,
         support: `Your tier-1 queue is shrinking faster than headcount can adjust.`,
         content: `The first-draft economy you trained for is now $20/month of tokens.`,
+        healthcare: `Your clinical work is safe. The paperwork around it is being absorbed by AI scribes.`,
+        legal: `The billable hours you charged for first-pass research are being eaten by AI.`,
+        education: `Your teaching is safe. The lesson-prep, grading, and admin around it isn't.`,
+        consulting: `The deck-and-deliverable factory that justified your day rate is being commoditised.`,
+        manufacturing: `Your operational judgment is safe. The planning and reporting layer underneath it isn't.`,
+        hospitality: `Front-desk and concierge tasks you trained for are being absorbed by AI agents.`,
+        creator: `The production grind that built your channel is now $20/month of tokens.`,
+        research: `The literature-review and synthesis half of your research is being eaten by AI.`,
         generic: `The job market doesn't need a ${titleClean} the way it did 18 months ago.`,
       };
       displayHeadline = highHeadlines[family];
@@ -340,6 +407,14 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         finance: `You're not being replaced. The reconciliation and first-draft forecasts are.`,
         support: `You're not being replaced. Tier-1 is.`,
         content: `You're not being replaced. The first draft is.`,
+        healthcare: `You're not being replaced. The documentation under your care is.`,
+        legal: `You're not being replaced. Discovery, drafting, and citation work is.`,
+        education: `You're not being replaced. The lesson-prep and first-pass grading is.`,
+        consulting: `You're not being replaced. The slide-and-model factory under you is.`,
+        manufacturing: `You're not being replaced. The planning and quality-reporting layer is.`,
+        hospitality: `You're not being replaced. The front-desk and reservation work is.`,
+        creator: `You're not being replaced. The thumbnails, scripts, and first-cut edits are.`,
+        research: `You're not being replaced. The lit-review and citation work is.`,
         generic: `You're not being replaced. You're being unbundled.`,
       };
       displayHeadline = midHeadlines[family];
@@ -359,6 +434,14 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         finance: `Your work is in AI's blind spot — controls, ethics, and signatures still need a human.`,
         support: `Your work is in AI's blind spot — escalations still need empathy.`,
         content: `Your work is in AI's blind spot — point of view still doesn't auto-generate.`,
+        healthcare: `Your work is in AI's blind spot — diagnosis, touch, and trust still need a human.`,
+        legal: `Your work is in AI's blind spot — judgment, advocacy, and accountability still need a human.`,
+        education: `Your work is in AI's blind spot — mentorship and classroom presence still need a human.`,
+        consulting: `Your work is in AI's blind spot — client relationships and judgment still don't ship via API.`,
+        manufacturing: `Your work is in AI's blind spot — physical operations and crisis judgment still need a human.`,
+        hospitality: `Your work is in AI's blind spot — hospitality is a contact sport, not a prompt.`,
+        creator: `Your work is in AI's blind spot — original POV and audience trust still don't auto-generate.`,
+        research: `Your work is in AI's blind spot — original questions and peer credibility still need a human.`,
         generic: `For now, AI works for you — not instead of you.`,
       };
       displayHeadline = lowHeadlines[family];
@@ -383,6 +466,18 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
     firedHeadlineEvents.add(sid);
     const source: "llm" | "template" = isWeakHeadline ? "template" : "llm";
     const band: "high" | "mid" | "low" = score >= 70 ? "high" : score >= 40 ? "mid" : "low";
+    // Confidence flag — operator triages weak families fastest by filtering
+    // on copy_confidence='low'. "high" = stat-cited families (eng, marketing,
+    // sales, support, etc.). "medium" = directional-only families (healthcare,
+    // legal, edu, mfg, hospitality, creator, research, consulting). "low" =
+    // routed to generic OR fresher path (least personalized).
+    const highConfFamilies: Family[] = ["founder", "exec", "eng", "data", "design", "pm", "marketing", "sales", "ops", "hr", "finance", "support", "content"];
+    const mediumConfFamilies: Family[] = ["healthcare", "legal", "education", "consulting", "manufacturing", "hospitality", "creator", "research"];
+    const copy_confidence: "high" | "medium" | "low" =
+      isFresher || family === "generic" ? "low"
+      : highConfFamilies.includes(family) ? "high"
+      : mediumConfFamilies.includes(family) ? "medium"
+      : "low";
     track("card1_headline_source", {
       source,
       family,
@@ -392,6 +487,8 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
       llm_was_specific: isSpecificHeadline,
       peer_fallback_used: c1.india_average == null,
       sector: sector || null,
+      is_fresher: isFresher,
+      copy_confidence,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cardData?.scan_id]);
@@ -469,6 +566,46 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         high: "First-draft content roles are seeing 50–70% task absorption by GenAI (Content Marketing Institute 2024).",
         mid: "Mid-band content seats squeeze hardest — distribution and POV become the moat, not output volume.",
         low: "Editorial judgment, original reporting, and brand voice remain durable — POV doesn't auto-generate.",
+      },
+      healthcare: {
+        high: "Clinical-documentation work is the steepest-falling layer — AMA scribe-AI pilots show 60%+ note-time reduction. Direct care remains a human role.",
+        mid: "Mid-band clinical roles keep their seat but absorb broader admin scope as scribes and prior-auth bots roll out.",
+        low: "Direct-care, diagnosis, and bedside roles remain durable — touch and trust don't transfer to API.",
+      },
+      legal: {
+        high: "Discovery, contract review, and first-pass research are the steepest-falling layers — Big Law pilots show 40–60% time reduction (ABA Tech Survey 2024).",
+        mid: "Mid-band legal roles keep their seat but lose billable hours on routine drafting and research.",
+        low: "Advocacy, judgment-bearing counsel, and accountability roles remain durable — signatures still belong to humans.",
+      },
+      education: {
+        high: "Lesson-prep, quiz generation, and first-pass grading are seeing rapid AI adoption — directional NCES + EdTech survey signal.",
+        mid: "Mid-band teaching roles shift weight from prep/grading to mentorship and classroom engagement.",
+        low: "Mentorship, classroom presence, and pastoral roles remain durable — relationships don't scale via prompt.",
+      },
+      consulting: {
+        high: "The deck-and-model factory is being commoditised — McKinsey, BCG, Bain all running internal LLM-deck tools at scale.",
+        mid: "Mid-band consulting seats keep the title but absorb 1.5–2x scope per head as deliverable cost falls.",
+        low: "Senior partner / relationship roles remain durable — client trust and judgment are the moat, not slide volume.",
+      },
+      manufacturing: {
+        high: "Planning, quality reporting, and predictive-maintenance triage are the steepest-falling layers — Industry 4.0 + WEF 2024 signal.",
+        mid: "Mid-band ops roles keep their seat but absorb broader scope as planning and reporting compress.",
+        low: "Crisis judgment, supplier relationships, and physical-floor leadership remain durable — atoms still need humans.",
+      },
+      hospitality: {
+        high: "Front-desk, reservations, and concierge tasks are seeing rapid AI-agent adoption — directional Skift/Hotel Tech 2024 signal.",
+        mid: "Mid-band hospitality seats shift weight from front-of-house tasks to guest-experience judgment and complex problem-solving.",
+        low: "In-person hospitality, F&B leadership, and crisis recovery remain durable — service is a contact sport.",
+      },
+      creator: {
+        high: "Production work — thumbnails, scripts, first-cut edits, captioning — is now commodity. Distribution + POV are the moat.",
+        mid: "Mid-band creators feel the squeeze hardest — output volume rises but per-view economics fall as AI-assisted competition grows.",
+        low: "Original POV, audience trust, and IP ownership remain durable — these don't auto-generate.",
+      },
+      research: {
+        high: "Literature review, citation graphs, and synthesis work are the steepest-falling layers — Elicit/Consensus/SciSpace adoption rising fast.",
+        mid: "Mid-band researchers keep their seat but absorb broader scope as lit-review and synthesis time compresses.",
+        low: "Original questions, peer credibility, and lab-running roles remain durable — these don't transfer to API.",
       },
       generic: {
         high: "Roles in your band are losing 40–60% of routine task volume to AI assistants within 24 months (O*NET 2024 distribution).",
