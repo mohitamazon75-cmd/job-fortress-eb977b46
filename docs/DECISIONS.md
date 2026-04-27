@@ -488,3 +488,13 @@ Verification:
 Why this matters: the Fear → Reframe → Hope → Plan arc is the platform's emotional contract with the user. Dropping the Reframe beat on 4 of 7 cards turns the experience into Threat → Threat → Hope, which (per qualitative feedback) reads as alarmist.
 
 **Regression net to add next:** lightweight render test that asserts each card emits a node containing the LLM-provided `tough_love` text when present. Filed in BACKLOG.
+
+## 2026-04-27 — Card 5 (Jobs) and Card 7 (Human) narrative beat restoration
+
+**Context:** Final tabs in the Model B narration audit. Backend (`get-model-b-analysis/index.ts` lines 1165–1175 and 1220–1230) ships `fear_hook`, `tough_love`, `hope_bridge`, and (for Card 5) `confrontation` for both cards. UI was silently dropping all four blocks.
+
+**Change:** Inserted the standardized 4-beat narrative block at the top of `<CardBody>` in `Card5JobsTracker.tsx` (4 beats) and `Card7HumanAdvantage.tsx` (3 beats — backend schema for card 7 omits `confrontation`). Visual treatment matches the convention used in Cards 1, 2, 4, 6: red fear → italic Playfair amber tough_love → green hope_bridge → navy bold confrontation (Card 5 only).
+
+**Why:** Closes the narration-audit loop across all 7 Model B tabs. The "honest reframe" beat (`tough_love`) is the load-bearing element of the emotional contract — without it the cards read as either purely alarmist or purely promotional.
+
+**Verification:** `npx tsc --noEmit` clean. Visual QA pending user click-through on Jobs and Human tabs.
