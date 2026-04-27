@@ -114,12 +114,13 @@ Deno.serve(async (req) => {
     // Order matches the actual user journey so drop-off is visually obvious.
     const FUNNEL_ORDER = [
       "landing_view",
+      "landing_scroll_depth",   // ← NEW: did they scroll past the fold?
       "cta_click",
       "auth_complete",
       "input_method_selected",
       "scan_start",
       "scan_complete",
-      "result_loaded",       // ← new event from useScanFunnelTracking
+      "result_loaded",          // ← from useScanFunnelTracking
       "card_viewed",
       "share_opened",
       "journey_completed",
