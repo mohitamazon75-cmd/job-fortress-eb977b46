@@ -356,6 +356,27 @@ function SnapshotView({
   const tagsAreFlat = top_tags.length >= 4 && tagPctSpread <= 5;
   const suppressTags = (isPartial || isThin) && posting_count <= 8 && tagsAreFlat;
 
+  // ─── Layer B · #6: directional benchmark for Hiring Velocity.
+  // Reuses Card1's family classifier so a "6 today" volume can be compared
+  // against typical Naukri daily volume for that family in this city.
+  // Returns null for families where Naukri isn't the right corpus
+  // (founder/exec/creator/generic) — the line is then simply omitted.
+  const family: Family = useMemo(() => {
+    const f = detectFamily(role.toLowerCase());
+    return applySectorTieBreaker(f, "");
+  }, [role]);
+  const velocityBenchmark = useMemo(
+    () => getVelocityBenchmark(family, displayCity),
+    [family, displayCity],
+  );
+
+  // ─── Layer B · #5: skill-overlap anchor.
+  // One honest line summarising overlap so the user gets a personal anchor
+  // before scanning the table. Only computed when overlap data is shown
+  // (i.e. corpus is strong enough that matched_skills is meaningful).
+  const skillsOnProfile = user_skill_overlap.matched_count;
+  const skillsTotalShown = top_tags.length;
+
   // ─── Layer A · #3: verdict-driven headline (was a logline before).
   // Title varies by corpus_relevance.band so users see *what we found*,
   // not just *what we measured*. Sub keeps the operational facts.
