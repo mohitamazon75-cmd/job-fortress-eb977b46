@@ -31,6 +31,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders, handleCorsPreFlight, okResponse, errResponse } from "../_shared/cors.ts";
 import { fetchAdzunaSalaryForRole } from "../_shared/adzuna-salary.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -322,6 +323,10 @@ function fallbackScripts(args: any): any[] {
 // ── handler ────────────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
+
+  // P0 hardening: require valid JWT — paid LLM + Adzuna API calls.
+  const auth = await requireAuth(req, getCorsHeaders(req));
+  if (auth.kind === "unauthorized") return auth.response;
 
   try {
     const body = (await req.json().catch(() => ({}))) as ResolverInput;

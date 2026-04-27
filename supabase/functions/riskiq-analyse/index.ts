@@ -8,6 +8,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
 import { scoreProfile, type ProfileInput, type RiskReport } from "../_shared/riskiq-scoring.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const PERPLEXITY_URL = "https://api.perplexity.ai/chat/completions";
@@ -22,6 +23,10 @@ Deno.serve(async (req) => {
   try {
     const blocked = guardRequest(req, corsHeaders);
     if (blocked) return blocked;
+
+    // P0 hardening: require valid JWT — this function calls paid LLM + Perplexity.
+    const auth = await requireAuth(req, corsHeaders);
+    if (auth.kind === "unauthorized") return auth.response;
 
     const { profile, raw_text, stream } = await req.json() as { profile: ProfileInput; raw_text?: string; stream?: boolean };
 

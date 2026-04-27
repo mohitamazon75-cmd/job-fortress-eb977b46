@@ -3,6 +3,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest } from "../_shared/abuse-guard.ts";
 import { isFeatureEnabled } from "../_shared/feature-flags.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
@@ -11,6 +12,10 @@ Deno.serve(async (req) => {
   try {
     const blocked = guardRequest(req, corsHeaders);
     if (blocked) return blocked;
+
+    // P0 hardening: require valid JWT — Apify scraping ($0.10–0.30/call).
+    const auth = await requireAuth(req, corsHeaders);
+    if (auth.kind === "unauthorized") return auth.response;
 
     const { linkedinUrl } = await req.json();
 

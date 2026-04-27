@@ -13,6 +13,7 @@
  */
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 // Industry decay rates per month (% score drop without any action)
 // Based on WEF 2025 automation adoption curves
@@ -44,6 +45,15 @@ const ACTION_UPLIFT: Record<string, { impact: number; months: number; probabilit
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
   const cors = getCorsHeaders(req);
+
+  // P0 hardening: require valid JWT, with service-role bypass for internal callers (process-scan).
+  const authHeader = req.headers.get("Authorization") || "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const isServiceRole = serviceKey && authHeader === `Bearer ${serviceKey}`;
+  if (!isServiceRole) {
+    const auth = await requireAuth(req, cors);
+    if (auth.kind === "unauthorized") return auth.response;
+  }
 
   try {
     const { scan_id, user_id } = await req.json();
