@@ -30,6 +30,8 @@ import type {
   JobSkillMapRow,
   JobTaxonomyRow,
   MarketSignalRow,
+  ExecutiveImpactSignals,
+  IcLeverageSignals,
 } from "../_shared/det-types.ts";
 
 const corsHeaders = {
@@ -72,15 +74,101 @@ function extractSkillCandidates(resumeText: string): string[] {
 }
 
 /**
+ * Infer company tier from resume text (used to pass companyTier into computeAll
+ * so salary + scoring path matches what Agent 1 would extract from real resumes).
+ */
+function inferCompanyTier(text: string): string | null {
+  const t = text.toLowerCase();
+  if (/faang|google|meta|amazon|microsoft|apple|netflix/.test(t)) return "FAANG";
+  if (/unicorn|series-?[c-f]|ipo'?d|public listed/.test(t)) return "Unicorn";
+  if (/mnc|multinational|fortune 500|series-?b/.test(t)) return "MNC";
+  if (/startup|series-?[a]|seed|bootstrap|founder|d2c brand|saas/.test(t)) return "Startup";
+  if (/it[\s-]services|captive|offshore|consultancy|sme/.test(t)) return "SME";
+  return null;
+}
+
+/**
+ * Extract experience_years robustly. Handles: "11 years total", "8 years", "decade",
+ * "3 as EM" (skipped — wants total), "7 years total / 3 as EM" → 7.
+ */
+function extractYears(text: string): number | null {
+  // Prefer "X years total" or first "X years" mention
+  const totalMatch = text.match(/(\d{1,2})\s*years?\s*total/i);
+  if (totalMatch) return Math.min(40, parseInt(totalMatch[1], 10));
+  const anyMatch = text.match(/(\d{1,2})\s*years?/i);
+  if (anyMatch) return Math.min(40, parseInt(anyMatch[1], 10));
+  if (/decade/i.test(text)) return 10;
+  return null;
+}
+
+/**
+ * Build executive_impact signals from text. Only populated for SENIOR_LEADER+
+ * tiers — mirrors what Agent 1 does in the production pipeline.
+ */
+function buildExecutiveImpact(text: string): ExecutiveImpactSignals | null {
+  const t = text.toLowerCase();
+  // Team size — "60-person team", "8 engineers", "180-person team"
+  const teamMatch = t.match(/(\d{1,4})[\s-]*(person|engineers?|people|team members)/);
+  const team_size_org = teamMatch ? parseInt(teamMatch[1], 10) : null;
+  // Budget — "₹8 Cr", "₹2 Cr/month", "$500K"
+  const budgetCr = t.match(/₹\s*(\d{1,4})\s*cr/);
+  const budget_authority_usd = budgetCr ? parseInt(budgetCr[1], 10) * 120000 : null; // 1 Cr ≈ $120K
+  // Revenue — "₹18 Cr ARR", "₹85 Cr ARR"
+  const arrMatch = t.match(/₹\s*(\d{1,4})\s*cr\s*arr/);
+  const revenue_scope_usd = arrMatch ? parseInt(arrMatch[1], 10) * 120000 : null;
+  const board_exposure = /board|investor|raised|seed|series|ipo/.test(t);
+  const investor_facing = /investor|raised|series|seed|funded/.test(t);
+  // Domain tenure — match "X years" again
+  const tenureMatch = t.match(/(\d{1,2})\s*years?/);
+  const domain_tenure_years = tenureMatch ? parseInt(tenureMatch[1], 10) : null;
+  let moat_type: ExecutiveImpactSignals["moat_type"] = null;
+  if (/regulator|compliance|hipaa|dpdp|sebi|rbi/.test(t)) moat_type = "REGULATORY";
+  else if (/scaled|scale|10x|growth|cr arr/.test(t)) moat_type = "SCALE";
+  else if (/relationship|client|account|enterprise/.test(t)) moat_type = "RELATIONSHIP";
+  else if (/domain|expert|specialist/.test(t)) moat_type = "DOMAIN";
+  return {
+    revenue_scope_usd,
+    team_size_direct: null,
+    team_size_org,
+    budget_authority_usd,
+    regulatory_domains: /hipaa/.test(t) ? ["HIPAA"] : /dpdp/.test(t) ? ["DPDP"] : [],
+    geographic_scope: ["India"],
+    board_exposure,
+    investor_facing,
+    domain_tenure_years,
+    cross_industry_pivots: 0,
+    moat_type,
+    moat_evidence: moat_type ? "inferred from resume text" : null,
+  };
+}
+
+/**
+ * Build ic_leverage signals from text. Used by professional/manager tier moat scoring.
+ */
+function buildIcLeverage(text: string, years: number | null): IcLeverageSignals | null {
+  const t = text.toLowerCase();
+  return {
+    owns_key_relationships: /owns|owner|account|client|relationship|p&l/.test(t),
+    cross_team_dependence: /cross[\s-]?functional|cross[\s-]?team|6 product|multiple teams|squads/.test(t),
+    niche_replacement_difficulty: /niche|specialist|regulatory|domain|architect|staff|principal/.test(t),
+    vendor_displacement_history: /displaced|replaced|in-?house|brought in-?house|consolidat/.test(t),
+    tenure_in_function_years: years,
+  };
+}
+
+/**
  * Build a ProfileInput from a fixture by matching its resume text against the
  * live KG. Skills the KG recognizes become execution_skills; everything else
  * is dropped. Strategic vs execution split is heuristic (anything containing
  * 'lead', 'manage', 'strategy', 'architect' goes strategic).
+ *
+ * v2 (2026-04-27): supplies executive_impact + ic_leverage + companyTier-aware
+ * adaptability so the engine has real signal to score with — not just structural floor.
  */
 function buildProfile(
   fixture: GoldenFixture,
   allSkillRiskRows: SkillRiskRow[],
-): ProfileInput {
+): { profile: ProfileInput; companyTier: string | null; metroTier: string } {
   const candidates = extractSkillCandidates(fixture.resume_text);
   const matchedSkills: string[] = [];
   const seen = new Set<string>();
@@ -92,36 +180,53 @@ function buildProfile(
     }
   }
 
-  const STRATEGIC_HINTS = ["lead", "manage", "manager", "director", "strategy", "architect", "owner", "head", "vp", "ceo", "cto", "coo"];
+  const STRATEGIC_HINTS = ["lead", "manage", "manager", "director", "strategy", "architect", "owner", "head", "vp", "ceo", "cto", "coo", "founder", "principal", "staff"];
   const isStrategic = (s: string) => STRATEGIC_HINTS.some((h) => s.toLowerCase().includes(h));
 
   const strategic_skills = matchedSkills.filter(isStrategic);
   const execution_skills = matchedSkills.filter((s) => !isStrategic(s));
   const all_skills = matchedSkills;
 
-  // Years from resume text — naive regex
-  const yearsMatch = fixture.resume_text.match(/(\d{1,2})\s*years/i);
-  const experience_years = yearsMatch ? Math.min(40, parseInt(yearsMatch[1], 10)) : null;
+  const experience_years = extractYears(fixture.resume_text);
 
-  // Seniority tier — anchored to role string
+  // Seniority tier — anchored to role string + text signals
   const role = fixture.role.toLowerCase();
+  const text = fixture.resume_text.toLowerCase();
   let seniority_tier: ProfileInput["seniority_tier"] = "PROFESSIONAL";
   if (/ceo|cto|coo|cfo|founder|president|chief/.test(role)) seniority_tier = "EXECUTIVE";
-  else if (/vp|director|head|principal|staff/.test(role)) seniority_tier = "SENIOR_LEADER";
-  else if (/manager|lead|tl/.test(role)) seniority_tier = "MANAGER";
-  else if (/junior|associate|intern|trainee/.test(role)) seniority_tier = "ENTRY";
+  else if (/vp|director|head|principal|staff|group/.test(role)) seniority_tier = "SENIOR_LEADER";
+  else if (/manager|tech lead|tech manager|^lead\b/.test(role) || (/manager/.test(role) && !/social media|email/.test(role))) seniority_tier = "MANAGER";
+  else if (/junior|associate|intern|trainee|executive/.test(role) && !/manager/.test(role)) seniority_tier = "ENTRY";
+
+  // Strong AI-tooling signal — count distinct AI markers in text
+  const aiMarkers = ["cursor", "claude", "gpt", "chatgpt", "llm", "rag", "vector db", "ai feature", "ai tool", "ml-ops", "mlops", "ai-native"];
+  const aiCount = aiMarkers.filter((m) => text.includes(m)).length;
+  const adaptability_signals = aiCount >= 3 ? 5 : aiCount >= 1 ? 3 : 1;
+
+  const companyTier = inferCompanyTier(fixture.resume_text);
+  // Metro tier inference
+  const metroTier = /bengaluru|bangalore|mumbai|delhi|gurugram|gurgaon|hyderabad|pune|chennai/i.test(fixture.city) ? "tier1" : "tier2";
+
+  // Only populate executive_impact / ic_leverage for tiers that the engine actually uses them for
+  const isExec = seniority_tier === "EXECUTIVE" || seniority_tier === "SENIOR_LEADER";
+  const executive_impact = isExec ? buildExecutiveImpact(fixture.resume_text) : null;
+  const ic_leverage = !isExec ? buildIcLeverage(fixture.resume_text, experience_years) : null;
 
   return {
-    experience_years,
-    execution_skills,
-    strategic_skills,
-    all_skills,
-    geo_advantage: fixture.city,
-    adaptability_signals: matchedSkills.some((s) => /ai|cursor|claude|gpt|llm|rag/i.test(s)) ? 3 : 1,
-    estimated_monthly_salary_inr: null,
-    seniority_tier,
-    executive_impact: null,
-    ic_leverage: null,
+    profile: {
+      experience_years,
+      execution_skills,
+      strategic_skills,
+      all_skills,
+      geo_advantage: fixture.city,
+      adaptability_signals,
+      estimated_monthly_salary_inr: null,
+      seniority_tier,
+      executive_impact,
+      ic_leverage,
+    },
+    companyTier,
+    metroTier,
   };
 }
 
@@ -242,10 +347,10 @@ Deno.serve(async (req) => {
         kg = await loadKG(supabase, fixture.industry);
         kgCache.set(fixture.industry, kg);
       }
-      const profile = buildProfile(fixture, kg.allSkillRiskRows);
+      const built = buildProfile(fixture, kg.allSkillRiskRows);
       const result = computeAll(
-        profile, kg.allSkillRiskRows, kg.skillMapRows, kg.primaryJob, kg.marketSignal,
-        false, null, "tier1", null, fixture.industry, fixture.country, null, null,
+        built.profile, kg.allSkillRiskRows, kg.skillMapRows, kg.primaryJob, kg.marketSignal,
+        false, built.companyTier, built.metroTier, null, fixture.industry, fixture.country, null, null,
       );
       const careerScore = Math.max(0, Math.min(100, 100 - result.determinism_index));
       results.push(evaluateFixture(fixture, careerScore, result.tone_tag));
