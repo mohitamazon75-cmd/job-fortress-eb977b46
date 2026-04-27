@@ -69,6 +69,7 @@ Deno.test("Cache path — rejects report missing weekly_survival_diet (legacy re
 Deno.test("Cache path — accepts report with all_skills array (correct cache hit)", () => {
   const goodReport = {
     weekly_survival_diet: { theme: "AI Fluency", items: [{ day: "Mon", skill: "Prompt Engineering" }] },
+    role: "Software Engineer",
     all_skills: ["Python", "System Design", "Stakeholder Management"],
     moat_score: 65,
     _engine_version: 5,
@@ -83,6 +84,8 @@ Deno.test("Cache path — accepts report with all_skills array (correct cache hi
 Deno.test("Cache path — accepts report with score_breakdown.skill_adjustments (alternative signal)", () => {
   const reportWithBreakdown = {
     weekly_survival_diet: { theme: "Skills", items: [] },
+    role: "Software Engineer",
+    all_skills: ["Excel", "SQL", "PowerBI"],
     score_breakdown: {
       skill_adjustments: [
         { skill_name: "Excel", automation_risk: 85, weight: 0.2, contribution: 17 },
@@ -101,6 +104,8 @@ Deno.test("Cache path — accepts report with score_breakdown.skill_adjustments 
 Deno.test("Cache path — accepts report with execution_skills_dead (alternative signal)", () => {
   const reportWithDeadSkills = {
     weekly_survival_diet: {},
+    role: "Operations Analyst",
+    all_skills: ["Excel", "SQL", "Process Mapping"],
     execution_skills_dead: ["Data Entry", "Email Sorting"],
     moat_score: 75,
     _engine_version: 5,
