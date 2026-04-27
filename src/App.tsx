@@ -130,6 +130,7 @@ const App = () => {
                 <Route path="/admin/monitor" element={<AuthGuard requiredRole="admin">{() => <ErrorBoundary scope="admin"><AdminDashboard /></ErrorBoundary>}</AuthGuard>} />
                 {/* Issue #12: determinism debug view (admin-only) — see determinism_meta block on a scan. */}
                 <Route path="/admin/scan/:scanId" element={<AuthGuard requiredRole="admin">{() => <ErrorBoundary scope="admin-scan-debug"><AdminScanDebug /></ErrorBoundary>}</AuthGuard>} />
+                <Route path="/admin/funnel" element={<AuthGuard requiredRole="admin">{() => <ErrorBoundary scope="admin-funnel"><AdminFunnel /></ErrorBoundary>}</AuthGuard>} />
                 {/* Diagnostic feature */}
                 <Route path="/diagnostic" element={<ErrorBoundary scope="diagnostic"><DiagnosticPage /></ErrorBoundary>} />
                 <Route path="/diagnostic/:token" element={<ErrorBoundary scope="diagnostic-share"><DiagnosticShare /></ErrorBoundary>} />
