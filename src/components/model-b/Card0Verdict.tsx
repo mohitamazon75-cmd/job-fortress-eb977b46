@@ -430,21 +430,6 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
             }}>
               out of 100
             </div>
-            {/* Disambiguation caption — Card 1 surfaces a separate "AI Exposure %" gauge
-                that users were conflating with this composite score. One-line clarifier
-                here removes the ambiguity at the source. */}
-            <div style={{
-              fontSize: 9,
-              fontWeight: 600,
-              color: "var(--mb-muted, #9ca3af)",
-              marginTop: 6,
-              letterSpacing: "0.04em",
-              textAlign: "center",
-              lineHeight: 1.4,
-              maxWidth: 180,
-            }}>
-              Composite of resume, market &amp; AI risk.<br/>Not the same as AI Exposure %.
-            </div>
           </div>
         </div>
 
@@ -476,6 +461,24 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           zIndex: 1,
         }}>
           {tier.sub}
+        </div>
+
+        {/* Disambiguation caption — clarifies this composite score vs the
+            standalone "AI Exposure %" gauge surfaced in Card 1. Placed below
+            the tier badge (not inside the ring) so it's actually legible. */}
+        <div style={{
+          marginTop: 10,
+          maxWidth: 320,
+          textAlign: "center",
+          fontSize: 11.5,
+          fontWeight: 500,
+          lineHeight: 1.5,
+          color: "var(--mb-muted, #6b7280)",
+          letterSpacing: "0.01em",
+          zIndex: 1,
+        }}>
+          Composite of resume strength, market demand &amp; AI risk —
+          <span style={{ color: "var(--mb-ink2, #374151)", fontWeight: 600 }}> not the same as AI Exposure %</span> shown in Card 1.
         </div>
 
         {/* Confidence + freshness micro-line */}
