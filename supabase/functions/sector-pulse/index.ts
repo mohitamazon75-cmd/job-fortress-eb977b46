@@ -178,11 +178,13 @@ STRICT RULES:
       body: JSON.stringify({
         model: "sonar",
         messages: [
-          { role: "system", content: "You are a precise news researcher. Return only verifiable, dated facts with real article URLs." },
+          { role: "system", content: "You are a precise news researcher. Return only verifiable, dated facts with real article URLs from established business publications." },
           { role: "user", content: prompt },
         ],
         search_recency_filter: "month",
-        search_domain_filter: TRUSTED_DOMAINS,
+        // NOTE: search_domain_filter removed — it's a hard pre-filter on Perplexity's
+        // index and was eliminating ~all results. We trust the prompt + post-filter
+        // (isTrustedUrl) to enforce the whitelist as defense-in-depth.
         response_format: { type: "json_schema", json_schema: schema },
         temperature: 0.1,
         max_tokens: 1500,
