@@ -70,8 +70,9 @@ Deno.serve(async (req) => {
     const webhookUrl = Deno.env.get("ALERT_WEBHOOK_URL");
     if (webhookUrl) {
       try {
-        const webhookResp = await fetch(webhookUrl, {
+        const webhookResp = await fetchWithTimeout(webhookUrl, {
           method: "POST",
+          timeoutMs: 10000,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
