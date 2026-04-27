@@ -326,6 +326,15 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
                   You're <strong style={{ fontWeight: 800, color: (c1.risk_score || 0) > c1.india_average ? "var(--mb-red)" : "var(--mb-green)" }}>{Math.abs((c1.risk_score || 0) - c1.india_average)} points {(c1.risk_score || 0) > c1.india_average ? "above" : "below"}</strong> the average.
                 </div>
               </>
+            ) : peerFallback ? (
+              <>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "var(--mb-ink2)", lineHeight: 1.55, fontWeight: 700, marginBottom: 6 }}>
+                  {peerFallback.label}
+                </div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.6, fontWeight: 500 }}>
+                  {peerFallback.detail}
+                </div>
+              </>
             ) : (
               <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", lineHeight: 1.6, fontStyle: "italic" }}>
                 Peer benchmark unavailable for this role.
