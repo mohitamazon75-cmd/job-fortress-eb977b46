@@ -443,6 +443,29 @@ function SnapshotView({
           </div>
         )}
 
+        {/* Layer B · #4: nav prompt for partial/thin corpora.
+            Turns the "we hid stuff" disclaimer into a navigation prompt
+            toward the higher-signal next card. Suppressed-tag and
+            mixed-market both qualify; strong-band corpora don't need it. */}
+        {(suppressTags || (isPartial && !suppressTags) || isThin) && (
+          <div
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 12.5,
+              lineHeight: 1.65,
+              color: "var(--mb-ink3)",
+              fontStyle: "italic",
+              marginTop: -8,
+              marginBottom: 22,
+              paddingLeft: 4,
+            }}
+          >
+            On a sample this thin, the higher-signal channel for {role} is the
+            <strong style={{ color: "var(--mb-ink2)", fontStyle: "normal" }}> Best-Fit Companies </strong>
+            card next — direct targets beat keyword scrapes for senior or specialised roles.
+          </div>
+        )}
+
         {/* Top tags — suppressed when the table carries no signal (see suppressTags above). */}
         {!suppressTags && top_tags.length > 0 && (
           <div style={{ marginBottom: 26 }}>
