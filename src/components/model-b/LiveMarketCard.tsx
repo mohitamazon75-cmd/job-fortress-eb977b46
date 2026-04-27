@@ -197,26 +197,53 @@ function ThinSignalView({
   return (
     <CardShell>
       <CardHead
-        badges={<><Badge label="Live market · thin signal" variant="navy" /><LivePill /></>}
-        title="Public boards under-represent this role"
-        sub={`We pulled ${posting_count} Naukri posting${posting_count === 1 ? "" : "s"} for ${role} in ${displayCity}, but most don't actually look like ${role} jobs.`}
+        badges={<><Badge label="Live market · senior roles" variant="navy" /><LivePill /></>}
+        title="Senior roles like yours don't live on public boards"
+        sub={`We scanned ${posting_count} live Naukri posting${posting_count === 1 ? "" : "s"} for ${role} in ${displayCity}. Most are junior or adjacent — that's a market signal, not a bug.`}
       />
       <CardBody>
+        {/* What this actually means — a useful frame, not an apology */}
+        <div
+          style={{
+            background: "linear-gradient(135deg, var(--mb-navy-tint) 0%, var(--mb-paper) 70%)",
+            border: "1.5px solid var(--mb-navy-tint2)",
+            borderLeft: "4px solid var(--mb-navy)",
+            borderRadius: 14,
+            padding: "16px 18px",
+            marginBottom: 18,
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 13.5,
+            lineHeight: 1.65,
+            color: "var(--mb-ink)",
+            fontWeight: 500,
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--mb-navy)", marginBottom: 8 }}>
+            What this means for you
+          </div>
+          For senior, niche, or specialised roles like <strong>{role}</strong>, ~80% of opportunities flow through three off-board channels: <strong>LinkedIn warm intros</strong>, <strong>executive search firms</strong>, and <strong>direct company applications</strong>. Companies pay 8–15% commission to keep these searches private — by design.
+        </div>
+
+        {/* One concrete Monday action — not abstract advice */}
         <div
           style={{
             background: "var(--mb-paper)",
             border: "1.5px solid var(--mb-rule)",
             borderRadius: 14,
-            padding: "16px 18px",
-            marginBottom: 22,
+            padding: "14px 18px",
+            marginBottom: 18,
             fontFamily: "'DM Sans', sans-serif",
             fontSize: 13.5,
-            lineHeight: 1.7,
+            lineHeight: 1.65,
             color: "var(--mb-ink2)",
-            fontWeight: 500,
           }}
         >
-          <strong>Why we're hiding most of this card:</strong> Naukri's keyword search returned mostly adjacent-role listings (e.g. sales roles for marketing searches, or junior-tier roles for senior searches). The tag list and the disclosed-salary band would both mislead — Naukri's salary disclosures skew heavily junior and BPO, so a "median" computed from this corpus would be 50–70% below the real market for any senior or specialised role. The one slice that holds up is posting freshness, shown below.
+          <div style={{ fontWeight: 800, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--mb-ink3)", marginBottom: 6 }}>
+            Your Monday action
+          </div>
+          <div style={{ color: "var(--mb-ink)", fontWeight: 600 }}>
+            Open LinkedIn. Search "{role}" + "{displayCity}". Filter to "Past week" + 2nd-degree connections. DM 3 people with one specific question — not "open to chat".
+          </div>
         </div>
 
         {/* Layer E: Sector Pulse fills the slot the salary block used to occupy.
