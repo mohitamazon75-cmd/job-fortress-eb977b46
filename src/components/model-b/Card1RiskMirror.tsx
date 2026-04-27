@@ -361,6 +361,31 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
     }
   }
 
+  // ─── Observability: track which copy path won (LLM vs template).
+  // Operator uses this to decide when prompt quality is good enough to
+  // retire the templates entirely. Fires once per scan_id (ref-guarded
+  // to survive React strict-mode double-mount + re-renders). Silent on
+  // failure — never blocks the UI.
+  const { track } = useTrack(cardData?.scan_id);
+  const trackedRef = useRef(false);
+  useEffect(() => {
+    if (trackedRef.current) return;
+    if (!hasValidScore) return;
+    trackedRef.current = true;
+    const source: "llm" | "template" = isWeakHeadline ? "template" : "llm";
+    const band: "high" | "mid" | "low" = score >= 70 ? "high" : score >= 40 ? "mid" : "low";
+    track("card1_headline_source", {
+      source,
+      family,
+      band,
+      score,
+      llm_headline_len: llmHeadline.length,
+      llm_was_specific: isSpecificHeadline,
+      peer_fallback_used: c1.india_average == null,
+      sector: sector || null,
+    });
+  }, [track, hasValidScore, isWeakHeadline, isSpecificHeadline, family, score, llmHeadline.length, c1.india_average, sector]);
+
   // ─── Peer-comparator fallback: when c1.india_average is null we previously
   // showed "Peer benchmark unavailable" — a credibility hole. Replace with a
   // band-derived comparator grounded in the O*NET / McKinsey / Goldman
