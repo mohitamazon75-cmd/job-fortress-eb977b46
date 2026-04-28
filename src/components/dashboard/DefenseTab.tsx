@@ -96,6 +96,9 @@ export default function DefenseTab({ props }: { props: DashboardSharedProps }) {
         {/* Resume Weaponizer — heavy async LLM tool, intentionally placed after quick-win sections per user feedback (long latency at top of screen creates "broken" perception) */}
         <ResumeWeaponizerWidget report={report} scanId={scanId} />
 
+        {/* Story Bank — persistent STAR+Reflection store. Free 3 / Pro unlimited. Inspired by techinterviewhandbook story-bank pattern. */}
+        <StoryBankWidget userId={userId} scanId={scanId} />
+
         {/* Collapsed Deep Dive */}
         <button
           onClick={() => setDeepDiveOpen(!deepDiveOpen)}
