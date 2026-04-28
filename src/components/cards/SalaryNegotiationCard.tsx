@@ -88,6 +88,13 @@ export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardP
       script: `For this ${role} engagement in ${industry}, my consulting rate is ₹${hasSalaryData ? Math.round((estimatedSalary || 0) * 2 / 1000) : 'XX'}K per day. This reflects the market premium for ${topMoat} expertise — a capability that AI tools cannot replicate and that directly impacts project outcomes. My ${secondMoat} background means I deliver both strategic direction and execution without needing additional coordination layers. For a retainer arrangement of 10+ days per month, I can offer a 15% reduction on the day rate. I am happy to start with a 2-week trial engagement so you can validate the ROI before committing longer term.`,
       tag: 'Consulting Rate',
     },
+    {
+      label: 'Geographic Discount Pushback (Tier-2/Remote)',
+      icon: MapPin,
+      context: 'When the offer is lowered citing your city or remote work',
+      script: `I appreciate the offer, but I want to push back on the location-based adjustment. The work I will deliver as a ${role} — particularly the ${topMoat} and ${secondMoat} — produces the same business outcome regardless of whether I sit in Bengaluru, Pune or a Tier-2 city. Naukri, LinkedIn and AmbitionBox listings for remote ${role} roles in ${industry} are now benchmarked against metro CTC, not city-of-residence. My cost base is my problem; my output is the company's gain. I would like the fixed CTC re-evaluated on the role and skill benchmark, not my pincode. A ${isHighDemand ? '15-20%' : '10-15%'} correction would bring this in line with current remote-first market data.`,
+      tag: 'Geo Pushback',
+    },
   ];
 
   const handleCopy = (text: string, idx: number) => {
