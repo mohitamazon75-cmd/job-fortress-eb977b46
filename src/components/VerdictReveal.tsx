@@ -356,6 +356,15 @@ export default function VerdictReveal({ report, onComplete }: VerdictRevealProps
                     {verdict.body}
                   </p>
 
+                  {/* Exec-tier calibration disclaimer (BL-025 mitigation, audit P1 #7).
+                      Until executive-tier scoring is independently calibrated, label
+                      the score as directional for Director+ and above. Indicative
+                      tone per mem://style/tone-and-liability-calibration. */}
+                  {isExec && (
+                    <p className="text-[11px] text-background/60 italic max-w-md mx-auto leading-snug">
+                      Executive-tier scoring is calibrated against IC archetypes. Treat as directional, not absolute.
+                    </p>
+                  )}
                   {/* ═══ HOPE SIGNAL — Sprint 3.2 ═══ */}
                   <motion.div
                     initial={{ opacity: 0 }}
