@@ -230,3 +230,15 @@ Bump the next ID monotonically. **Never reuse IDs.** Closed entries stay in the 
 - **Operator decision (2026-04-25)**: Leave as-is for now, log to backlog. Re-evaluate before any press / paid acquisition.
 - **Owner**: unassigned.
 - **Status**: open (deferred — not a launch blocker per operator).
+
+### BL-036 — `live-market-card-layer-c.test.tsx` HOT-verdict test red against current copy
+- **Found**: 2026-04-28 (full suite run during Tier 3 regression-net loop).
+- **Problem**: `r1Fixture` (50 same-day, 0 within_7d, 0 older) hits the `repostNoiseSuspected` branch in `LiveMarketCard.tsx:679` *before* it can reach the HOT branch at line 684. The test expects copy `/active hiring right now/` + `/move this week/`, but the component returns `"Looks busy on the surface, but most \"today\" postings on a pool this small are recruiter reposts of older requisitions. Treat as steady, not urgent."`.
+- **Likely cause**: Repost-noise heuristic was tightened (or HOT threshold loosened) without updating the fixture — or the fixture itself drifted. Both component code and test live in the repo; one of them is wrong.
+- **Impact**: Suite is **red**. Per `docs/DEFINITION_OF_DONE.md`, this blocks merges. **Has been red since at least 2026-04-28** — caught only because the operator's CTO loop now runs the full suite.
+- **Two clean fixes** (operator picks):
+  - **(a) Fix the fixture**: bump `posting_count` >> repost-suspicion threshold so HOT actually triggers (e.g., 200+ with 150 same-day in a way that doesn't trip the noise filter). Cheapest, doesn't change product behavior.
+  - **(b) Fix the test expectation**: if the new repost-noise copy is the intended verdict for the `r1Fixture` shape, update the test's regex to match `/looks busy on the surface/` and rename the case. Reflects current product intent.
+- **Constraint**: `LiveMarketCard.tsx` is a 1025-line "god file" — per `CLAUDE.md` Rule 3, do not refactor.
+- **Owner**: unassigned.
+- **Status**: open (blocking suite green).
