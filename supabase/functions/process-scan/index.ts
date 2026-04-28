@@ -107,6 +107,9 @@ Deno.serve(async (req) => {
     if (!scanId) {
       return new Response(JSON.stringify({ error: "scanId is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    // Set scan context for downstream cost-logger calls (ai-agent-caller, etc.)
+    // Cleared in the catch handler & at end of try block.
+    setCurrentScanId(scanId);
 
     const supabase = createAdminClient();
 
