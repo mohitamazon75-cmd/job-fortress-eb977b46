@@ -27,6 +27,8 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
   const [error, setError] = useState<string | null>(null);
   const [expandedJob, setExpandedJob] = useState<number | null>(0);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [referralOpenIdx, setReferralOpenIdx] = useState<number | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   
   const role = report.role || 'Your Role';
   const industry = report.industry || 'Your Industry';
