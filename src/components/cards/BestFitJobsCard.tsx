@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Briefcase, ChevronDown, ExternalLink, Loader2, RefreshCw, Shield, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Briefcase, ChevronDown, ExternalLink, Loader2, RefreshCw, Shield, TrendingUp, MessageCircle, Copy, Check } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
@@ -27,6 +27,8 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
   const [error, setError] = useState<string | null>(null);
   const [expandedJob, setExpandedJob] = useState<number | null>(0);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [referralOpenIdx, setReferralOpenIdx] = useState<number | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   
   const role = report.role || 'Your Role';
   const industry = report.industry || 'Your Industry';
@@ -139,6 +141,39 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
 
   const extractDomain = (url: string) => {
     try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; }
+  };
+
+  // Deterministic referral message templates — no LLM, no fabrication.
+  // Builds short, polite asks for WhatsApp and LinkedIn DM. User must replace [Name].
+  const buildReferralTemplates = (job: RealJobListing) => {
+    const topMatched = (job.skills_matched ?? []).slice(0, 2).join(' and ') || 'core skills';
+    const myRole = role;
+    const targetRole = job.title;
+    const company = job.company;
+
+    const whatsapp =
+`Hi [Name] — hope you're doing well!
+
+I noticed ${company} is hiring for ${targetRole}. I'm a ${myRole} with strong ${topMatched} experience and the role looks like a genuine fit.
+
+Would you be open to referring me, or pointing me to whoever owns the hire? Happy to share my resume in 2 lines, no pressure either way.
+
+Thanks for considering 🙏`;
+
+    const linkedin =
+`Hi [Name],
+
+Saw ${company} has an open ${targetRole} role. As a ${myRole} with ${topMatched} experience, I think I'd be a strong fit and would value an internal referral if you're open to it.
+
+Totally understand if it's not a fit — would also appreciate any pointer on who owns this hire. Thanks!`;
+
+    return { whatsapp, linkedin };
+  };
+
+  const handleCopyReferral = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
   };
 
   if (loading && !hasLoaded) {
@@ -358,12 +393,83 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
                           const targetUrl = buildTargetedUrl(job.url, job.title, job.company);
                           const isDirectLink = targetUrl === job.url;
                           return (
-                            <a href={targetUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-black hover:bg-primary/90 transition-colors">
-                              {isDirectLink ? 'Apply Now' : 'Search This Role'} <ExternalLink className="w-3 h-3" />
-                            </a>
+                            <div className="flex flex-wrap gap-2 items-center">
+                              <a href={targetUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-black hover:bg-primary/90 transition-colors">
+                                {isDirectLink ? 'Apply Now' : 'Search This Role'} <ExternalLink className="w-3 h-3" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setReferralOpenIdx(referralOpenIdx === i ? null : i); }}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-prophet-cyan/30 bg-prophet-cyan/5 text-prophet-cyan text-xs font-black hover:bg-prophet-cyan/10 transition-colors"
+                                title="Generate a referral ask message"
+                              >
+                                <MessageCircle className="w-3 h-3" /> Ask for Referral
+                              </button>
+                            </div>
                           );
                         })()}
+
+                        {/* Referral templates drawer */}
+                        <AnimatePresence>
+                          {referralOpenIdx === i && (() => {
+                            const templates = buildReferralTemplates(job);
+                            return (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="mt-3 p-3 rounded-lg border border-prophet-cyan/20 bg-prophet-cyan/5 space-y-3">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-prophet-cyan/80">
+                                    Referral Asks · Replace [Name] before sending
+                                  </p>
+
+                                  {/* WhatsApp template */}
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[10px] font-bold text-foreground/70">WhatsApp</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyReferral(templates.whatsapp, `${i}-wa`)}
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-prophet-cyan hover:text-prophet-cyan/80"
+                                      >
+                                        {copiedKey === `${i}-wa` ? (<><Check className="w-3 h-3" /> Copied</>) : (<><Copy className="w-3 h-3" /> Copy</>)}
+                                      </button>
+                                    </div>
+                                    <pre className="whitespace-pre-wrap text-[11px] leading-relaxed text-foreground/85 font-sans bg-background/50 rounded p-2 border border-border/40">
+{templates.whatsapp}
+                                    </pre>
+                                  </div>
+
+                                  {/* LinkedIn template */}
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[10px] font-bold text-foreground/70">LinkedIn DM</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyReferral(templates.linkedin, `${i}-li`)}
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-prophet-cyan hover:text-prophet-cyan/80"
+                                      >
+                                        {copiedKey === `${i}-li` ? (<><Check className="w-3 h-3" /> Copied</>) : (<><Copy className="w-3 h-3" /> Copy</>)}
+                                      </button>
+                                    </div>
+                                    <pre className="whitespace-pre-wrap text-[11px] leading-relaxed text-foreground/85 font-sans bg-background/50 rounded p-2 border border-border/40">
+{templates.linkedin}
+                                    </pre>
+                                  </div>
+
+                                  <p className="text-[10px] text-muted-foreground italic">
+                                    Tip: Search "{job.company}" on LinkedIn → filter by 2nd-degree connections → message someone in a relevant team.
+                                  </p>
+                                </div>
+                              </motion.div>
+                            );
+                          })()}
+                        </AnimatePresence>
                       </div>
                     </motion.div>
                   )}
