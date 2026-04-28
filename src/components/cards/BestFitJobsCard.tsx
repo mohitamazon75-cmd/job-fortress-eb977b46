@@ -250,6 +250,19 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
+                      {(() => {
+                        const g = fitGrade(job.skill_match_pct);
+                        return (
+                          <span
+                            className={`inline-flex flex-col items-center justify-center min-w-[34px] h-[34px] rounded-md ring-1 ${g.bg} ${g.text} ${g.ring} leading-none`}
+                            title={`Fit grade ${g.letter} · ${g.label} (${job.skill_match_pct}% skill match)`}
+                            aria-label={`Fit grade ${g.letter}: ${g.label}`}
+                          >
+                            <span className="text-[14px] font-black tracking-tight">{g.letter}</span>
+                            <span className="text-[7px] font-bold uppercase opacity-70 mt-[1px]">Fit</span>
+                          </span>
+                        );
+                      })()}
                       <span className={`text-xs font-black px-2 py-0.5 rounded-full ${i === 0 ? 'bg-prophet-green/15 text-prophet-green' : 'bg-muted text-muted-foreground'}`}>
                         #{i + 1}
                       </span>
