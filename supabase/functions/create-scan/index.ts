@@ -34,6 +34,7 @@ Deno.serve(async (req: Request) => {
       keySkills,
       userId,
       dpdpConsentGiven,
+      dataRetentionConsent,
       estimatedMonthlySalaryInr: rawCTC,
     } = body as Record<string, string | boolean | number | undefined>;
 
