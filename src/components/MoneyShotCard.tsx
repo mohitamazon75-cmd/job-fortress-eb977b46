@@ -5,6 +5,7 @@ import { type ScanReport, normalizeTools } from '@/lib/scan-engine';
 import { computeStabilityScore } from '@/lib/stability-score';
 import { getVerbatimRole } from '@/lib/role-guard';
 import { supabase } from '@/integrations/supabase/client';
+import { useTrack } from '@/hooks/use-track';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 
@@ -82,9 +83,28 @@ function Counter({ target, duration = 1500, prefix = '', suffix = '', className,
 }
 
 export default function MoneyShotCard({ report, onContinue, scanId }: MoneyShotCardProps) {
+  const { track } = useTrack(scanId);
+
   useEffect(() => {
     console.debug('[MoneyShotCard] MOUNTED');
+
+    // Time-to-Money-Shot instrumentation (audit P1 #9).
+    // Reads jb_scan_start_ts anchor set in Index.tsx when phase → 'processing'.
+    // elapsed_ms = null if anchor missing (fresh page, restored scan, etc.) — never fabricate.
+    try {
+      const startTsRaw = sessionStorage.getItem('jb_scan_start_ts');
+      const startTs = startTsRaw ? parseInt(startTsRaw, 10) : NaN;
+      const elapsed = Number.isFinite(startTs) ? Date.now() - startTs : null;
+      track('money_shot_revealed', {
+        scan_id: scanId ?? null,
+        elapsed_ms: elapsed,
+      });
+    } catch {
+      track('money_shot_revealed', { scan_id: scanId ?? null, elapsed_ms: null });
+    }
+
     return () => console.debug('[MoneyShotCard] UNMOUNTED');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [phase, setPhase] = useState<'invoice' | 'multiplier' | 'ready'>('invoice');
