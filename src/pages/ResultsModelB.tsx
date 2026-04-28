@@ -719,7 +719,7 @@ export default function ResultsModelB() {
                 }
                 setStreakModal(true);
               }}
-              className="mb-btn-primary"
+              className="mb-btn-primary mb-attn-pulse"
               style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "1.5px solid var(--mb-navy)", borderRadius: 20, padding: "8px 14px", cursor: "pointer", minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", gap: 4, transition: "all 150ms", WebkitTapHighlightColor: "rgba(255,255,255,0.2)" }}
             >Today's task →</button>
           </div>
