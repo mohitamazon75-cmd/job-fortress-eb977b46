@@ -1719,6 +1719,33 @@ export type Database = {
         }
         Relationships: []
       }
+      processed_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string | null
+          id: string
+          payload: Json | null
+          provider: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          provider: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          provider?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           coach_questions_used: number | null
