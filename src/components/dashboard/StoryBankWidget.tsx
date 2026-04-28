@@ -187,8 +187,91 @@ export default function StoryBankWidget({ userId, scanId }: StoryBankWidgetProps
           <div className="flex items-center justify-center py-6">
             <Loader2 className="w-5 h-5 text-prophet-cyan animate-spin" />
           </div>
+        ) : drillActive && drillStory ? (
+          <div className="rounded-lg border-2 border-prophet-gold/50 bg-prophet-gold/[0.04] p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-prophet-gold" />
+                <p className="text-[11px] font-black uppercase tracking-widest text-prophet-gold">Drill Mode</p>
+              </div>
+              <button onClick={exitDrill} className="text-muted-foreground hover:text-foreground" aria-label="Exit drill">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground">
+              Recall this story out loud. Tap each section to verify.
+            </p>
+
+            <div className="rounded-md border border-border bg-card p-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-prophet-cyan/70 mb-1">Title</p>
+              <p className="text-sm font-bold text-foreground">{drillStory.title}</p>
+            </div>
+
+            <div className="rounded-md border border-border bg-card p-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-prophet-cyan/70 mb-1">Situation (given)</p>
+              <p className="text-xs text-foreground/85 leading-relaxed whitespace-pre-wrap">{drillStory.situation}</p>
+            </div>
+
+            {/* Hidden recall sections — tap to reveal */}
+            {(['task', 'action', 'result'] as const).map((key) => {
+              const revealed = drillReveal[key];
+              const label = key.charAt(0).toUpperCase() + key.slice(1);
+              return (
+                <div key={key} className="rounded-md border border-border bg-card p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-prophet-cyan/70">{label}</p>
+                    {!revealed && (
+                      <button
+                        onClick={() => setDrillReveal({ ...drillReveal, [key]: true })}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-prophet-gold hover:text-prophet-gold/80"
+                      >
+                        <Eye className="w-3 h-3" /> Reveal
+                      </button>
+                    )}
+                  </div>
+                  {revealed ? (
+                    <p className="text-xs text-foreground/85 leading-relaxed whitespace-pre-wrap">{drillStory[key]}</p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground italic">Recall this from memory, then reveal to check.</p>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                onClick={() => startDrill(drillStoryId)}
+                disabled={stories.length < 2}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-prophet-gold text-white font-black text-xs hover:bg-prophet-gold/90 transition-colors disabled:opacity-50"
+              >
+                <SkipForward className="w-3 h-3" /> Next story
+              </button>
+              <button
+                onClick={exitDrill}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 border-border text-foreground font-bold text-xs hover:bg-muted/40 transition-colors"
+              >
+                Done
+              </button>
+            </div>
+
+            <p className="text-[10px] text-muted-foreground/80 text-center pt-1">
+              Tip: drill 1 story/day. Spaced recall &gt; cramming the night before.
+            </p>
+          </div>
         ) : (
           <>
+            {/* Drill CTA — only when ≥1 story exists */}
+            {stories.length > 0 && (
+              <button
+                onClick={() => startDrill()}
+                className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 border-prophet-gold/30 bg-prophet-gold/5 text-prophet-gold font-black text-xs hover:bg-prophet-gold/10 transition-colors mb-3"
+              >
+                <Brain className="w-3.5 h-3.5" />
+                Drill me on a random story
+              </button>
+            )}
+
             {/* Story list */}
             {stories.length > 0 && (
               <div className="space-y-2 mb-3">
