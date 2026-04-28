@@ -90,6 +90,11 @@ const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 9]);
 //   • Monday Move felt redundant on every screen — restrict to the two action-y tabs.
 const SHARE_STRIP_HIDDEN_TABS = new Set([0]);
 const MONDAY_MOVE_VISIBLE_TABS = new Set([1, 5]); // Risk + Pivot Paths
+// P0 polish (2026-04-28): Tab 0 = pure verdict moment.
+// Hide streak bar, progress bar and tab nav above the score so the
+// first frame is exactly: logo → score card. Card0Verdict's onNext
+// CTA carries the user forward; we don't strand them.
+const FRAME_MINIMAL_TABS = new Set([0]);
 // Total content tabs = single source of truth (avoids drift with TAB_LABELS).
 const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
 
@@ -701,8 +706,8 @@ export default function ResultsModelB() {
           )}
         </div>
 
-        {/* Streak bar */}
-        {cardData && !loading && (
+        {/* Streak bar — hidden on Verdict tab so the score lands first */}
+        {cardData && !loading && !FRAME_MINIMAL_TABS.has(currentCard) && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--mb-navy-tint)", border: "1px solid var(--mb-navy-tint2)", borderRadius: 12, marginBottom: 18, boxShadow: "var(--mb-shadow-sm)" }}>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 700, color: "var(--mb-navy)" }}>🔥 {streak}</span>
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--mb-navy)", flex: 1 }}>day streak</span>
@@ -714,21 +719,21 @@ export default function ResultsModelB() {
                 }
                 setStreakModal(true);
               }}
-              className="mb-btn-primary"
+              className="mb-btn-primary mb-attn-pulse"
               style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "1.5px solid var(--mb-navy)", borderRadius: 20, padding: "8px 14px", cursor: "pointer", minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", gap: 4, transition: "all 150ms", WebkitTapHighlightColor: "rgba(255,255,255,0.2)" }}
             >Today's task →</button>
           </div>
         )}
 
-        {/* Progress bar */}
-        {cardData && !loading && (
+        {/* Progress bar — hidden on Verdict tab (no journey context yet) */}
+        {cardData && !loading && !FRAME_MINIMAL_TABS.has(currentCard) && (
           <div style={{ height: 4, background: "var(--mb-rule)", borderRadius: 2, marginBottom: 14, overflow: "hidden" }}>
             <div style={{ height: 4, background: "var(--mb-navy)", borderRadius: 2, width: `${progressPct}%`, transition: "width 0.4s ease" }} />
           </div>
         )}
 
-        {/* Navigation — scrollable pill row, works on any screen size */}
-        {cardData && !loading && (
+        {/* Navigation — scrollable pill row. Hidden on Verdict tab so the score isn't competing with 10 chrome pills. Card0Verdict's own onNext CTA moves the user forward. */}
+        {cardData && !loading && !FRAME_MINIMAL_TABS.has(currentCard) && (
           <div style={{ marginBottom: 20, WebkitOverflowScrolling: "touch" }}>
             <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {TAB_LABELS.map((label, i) => {
@@ -1048,9 +1053,13 @@ export default function ResultsModelB() {
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
                     marginBottom: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                 >
-                  ⚡ Generate with AI · tap any
+                  <span aria-hidden>⚡</span>
+                  <span>Generate with AI</span>
                 </div>
                 <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   {actionPrompts.map((action, i) => (
