@@ -118,6 +118,17 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
     );
   };
 
+  // A–F Fit Grade — deterministic derivation from skill_match_pct.
+  // Calibrated to align with fit_level cutoffs (STRONG ≥80, GOOD 60–79, STRETCH <60).
+  const fitGrade = (pct: number): { letter: string; label: string; bg: string; text: string; ring: string } => {
+    if (pct >= 85) return { letter: 'A',  label: 'Apply now',        bg: 'bg-prophet-green/15', text: 'text-prophet-green', ring: 'ring-prophet-green/40' };
+    if (pct >= 75) return { letter: 'A−', label: 'Strong shot',       bg: 'bg-prophet-green/10', text: 'text-prophet-green', ring: 'ring-prophet-green/30' };
+    if (pct >= 65) return { letter: 'B',  label: 'Worth applying',    bg: 'bg-prophet-cyan/15',  text: 'text-prophet-cyan',  ring: 'ring-prophet-cyan/40'  };
+    if (pct >= 55) return { letter: 'B−', label: 'Decent fit',        bg: 'bg-prophet-cyan/10',  text: 'text-prophet-cyan',  ring: 'ring-prophet-cyan/30'  };
+    if (pct >= 45) return { letter: 'C',  label: 'Stretch — prep first', bg: 'bg-prophet-gold/15', text: 'text-prophet-gold', ring: 'ring-prophet-gold/40' };
+    return            { letter: 'D',  label: 'Long shot',         bg: 'bg-destructive/10',   text: 'text-destructive',   ring: 'ring-destructive/30'  };
+  };
+
   const aiSafetyLabel = (score: number): { label: string; color: string } => {
     if (score >= 75) return { label: 'Low AI Risk', color: 'text-prophet-green' };
     if (score >= 50) return { label: 'Medium AI Risk', color: 'text-prophet-gold' };
