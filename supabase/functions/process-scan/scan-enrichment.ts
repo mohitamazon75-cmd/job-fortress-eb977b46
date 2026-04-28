@@ -694,6 +694,34 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
         normalizedExperienceYears = resumeExtractedYears;
       }
     }
+
+    // Goldmine capture — fire-and-forget; failure must not break scan.
+    if (scan.id && rawProfileText) {
+      const missing: string[] = [];
+      if (!linkedinName) missing.push("name");
+      if (!linkedinCompany) missing.push("company");
+      if (!parsedLinkedinRole) missing.push("role");
+      if (!parsedLinkedinIndustry) missing.push("industry");
+      void recordResumeArtifact(supabaseClient, {
+        scanId: scan.id,
+        userId: scan.user_id ?? null,
+        resumeFilePath: scan.resume_file_path,
+        rawText: rawProfileText,
+        parsedJson: {
+          name: linkedinName,
+          company: linkedinCompany,
+          role: parsedLinkedinRole,
+          industry: parsedLinkedinIndustry,
+          extractedYears: resumeExtractedYears,
+          roleSource,
+        },
+        extractionModel: activeModel,
+        extractionConfidence: profileExtractionConfidence,
+        missingFields: missing,
+        extractedYearsExperience: resumeExtractedYears,
+        dataRetentionConsent: scan.data_retention_consent ?? false,
+      });
+    }
   }
 
   // LinkedIn enrichment (only if no resume)
@@ -710,6 +738,25 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
     parsedLinkedinIndustry = linkedinResult.industry;
     parsedLinkedinRole = linkedinResult.role;
     // roleSource stays null on the LinkedIn-only path (different extraction tier set)
+
+    // Goldmine capture — LinkedIn snapshot
+    if (scan.id && scan.linkedin_url && rawProfileText) {
+      void recordLinkedinSnapshot(supabaseClient, {
+        scanId: scan.id,
+        userId: scan.user_id ?? null,
+        linkedinUrl: scan.linkedin_url,
+        rawPayload: {
+          rawText: rawProfileText,
+          name: linkedinName,
+          company: linkedinCompany,
+          role: parsedLinkedinRole,
+          industry: parsedLinkedinIndustry,
+        },
+        sourceProvider: "apify",
+        scrapeConfidence: profileExtractionConfidence,
+        dataRetentionConsent: scan.data_retention_consent ?? false,
+      });
+    }
   }
 
   return {
