@@ -138,6 +138,9 @@ Deno.serve(async (req: Request) => {
       payment_status: "unpaid",
       dpdp_consent_given: dpdpConsentGiven ?? true,
       dpdp_consent_at: dpdpConsentGiven ? new Date().toISOString() : null,
+      // DPDP Phase B: explicit opt-in for indefinite retention of resume_artifacts
+      // and linkedin_snapshots. Default false → eligible for 90-day purge cron.
+      data_retention_consent: dataRetentionConsent === true,
       ...(keySkills ? { enrichment_cache: { key_skills: keySkills } } : {}),
       ...(userId ? { user_id: userId } : {}),
       // User-reported CTC — pre-validated and clamped above
