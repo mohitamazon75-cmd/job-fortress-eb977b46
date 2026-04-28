@@ -242,3 +242,10 @@ Bump the next ID monotonically. **Never reuse IDs.** Closed entries stay in the 
 - **Constraint**: `LiveMarketCard.tsx` is a 1025-line "god file" — per `CLAUDE.md` Rule 3, do not refactor.
 - **Owner**: unassigned.
 - **Status**: open (blocking suite green).
+
+### BL-036 — RESOLVED 2026-04-28
+- **Fix path**: Option (a) — corrected the test fixture, not the product copy. The repost-noise heuristic added a second clause (`sameDayShare ≥ 85% AND within7d === 0`, `LiveMarketCard.tsx:669`) that the original test author missed; their inline comment ("NOT repost-suspected (50 > 10)") was stale.
+- **Change**: `live-market-card-layer-c.test.tsx` HOT case now uses `posting_count: 70, recency: { same_day: 40, within_7d: 30, older: 0 }` — 100% fresh, sameDayShare 57% (well below 85%), pool well above 10. HOT branch reachable + heuristic still meaningful.
+- **Why not option (b)**: Updating the test to accept "Looks busy on the surface" would have gutted the entire HOT regression net. The product copy is correct; the fixture drifted.
+- **Verification**: full suite 328/328 green.
+- **Status**: closed.
