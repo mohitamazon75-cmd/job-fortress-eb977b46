@@ -90,6 +90,11 @@ const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 9]);
 //   • Monday Move felt redundant on every screen — restrict to the two action-y tabs.
 const SHARE_STRIP_HIDDEN_TABS = new Set([0]);
 const MONDAY_MOVE_VISIBLE_TABS = new Set([1, 5]); // Risk + Pivot Paths
+// P0 polish (2026-04-28): Tab 0 = pure verdict moment.
+// Hide streak bar, progress bar and tab nav above the score so the
+// first frame is exactly: logo → score card. Card0Verdict's onNext
+// CTA carries the user forward; we don't strand them.
+const FRAME_MINIMAL_TABS = new Set([0]);
 // Total content tabs = single source of truth (avoids drift with TAB_LABELS).
 const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
 
