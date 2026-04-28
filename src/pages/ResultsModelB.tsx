@@ -865,26 +865,28 @@ export default function ResultsModelB() {
         {/* Main content */}
         {cardData && !loading && !error && (
           <>
-            <RevealShareStrip
-              ctx={{
-                scanId: analysisId,
-                userId,
-                scanRole: cardData?.user?.current_title ?? null,
-                scanIndustry: cardData?.user?.industry ?? null,
-                scanScore:
-                  typeof cardData?.jobbachao_score === "number"
-                    ? cardData.jobbachao_score
-                    : null,
-                scanCity: cardData?.user?.location ?? null,
-              }}
-              firstName={
-                (cardData?.user?.full_name || cardData?.user?.name || "")
-                  .toString()
-                  .trim()
-                  .split(/\s+/)[0] || null
-              }
-            />
-            <MondayMoveCard cardData={cardData} />
+            {!SHARE_STRIP_HIDDEN_TABS.has(currentCard) && (
+              <RevealShareStrip
+                ctx={{
+                  scanId: analysisId,
+                  userId,
+                  scanRole: cardData?.user?.current_title ?? null,
+                  scanIndustry: cardData?.user?.industry ?? null,
+                  scanScore:
+                    typeof cardData?.jobbachao_score === "number"
+                      ? cardData.jobbachao_score
+                      : null,
+                  scanCity: cardData?.user?.location ?? null,
+                }}
+                firstName={
+                  (cardData?.user?.full_name || cardData?.user?.name || "")
+                    .toString()
+                    .trim()
+                    .split(/\s+/)[0] || null
+                }
+              />
+            )}
+            {MONDAY_MOVE_VISIBLE_TABS.has(currentCard) && <MondayMoveCard cardData={cardData} />}
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
             {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} />}
             {currentCard === 2 && (() => {
