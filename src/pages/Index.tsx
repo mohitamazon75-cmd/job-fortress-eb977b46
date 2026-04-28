@@ -305,7 +305,7 @@ const Index = () => {
     } catch {}
   }, []);
 
-  const getPendingInputContext = useCallback((): { linkedinUrl?: string; hasResume?: boolean } | null => {
+  const getPendingInputContext = useCallback((): { linkedinUrl?: string; hasResume?: boolean; dataRetentionConsent?: boolean } | null => {
     try {
       const pending = sessionStorage.getItem('jb_pending_input');
       return pending ? JSON.parse(pending) as { linkedinUrl?: string; hasResume?: boolean } : null;
