@@ -22,6 +22,7 @@ import { getLocale } from "../_shared/locale-config.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, timingSafeEqual, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { logEdgeError, trackUsage } from "../_shared/edge-logger.ts";
+import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
 import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 
@@ -106,6 +107,9 @@ Deno.serve(async (req) => {
     if (!scanId) {
       return new Response(JSON.stringify({ error: "scanId is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    // Set scan context for downstream cost-logger calls (ai-agent-caller, etc.)
+    // Cleared in the catch handler & at end of try block.
+    setCurrentScanId(scanId);
 
     const supabase = createAdminClient();
 
@@ -1281,5 +1285,8 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } finally {
+    // Always clear scan context so next request in this isolate doesn't bleed.
+    clearCurrentScanId();
   }
 });

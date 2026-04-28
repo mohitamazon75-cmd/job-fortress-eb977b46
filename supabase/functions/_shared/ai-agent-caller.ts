@@ -9,7 +9,7 @@
 
 import { trackAgentLatency } from "./edge-logger.ts";
 import { logTokenUsage } from "./token-tracker.ts";
-import { logCostEvent, estimateLlmCostInrPaise } from "./cost-logger.ts";
+import { logCostEvent, estimateLlmCostInrPaise, getCurrentScanId } from "./cost-logger.ts";
 
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const GPT5_MODEL = "google/gemini-3.1-pro-preview"; // Tier 1: Deep reasoning & narrative
@@ -144,6 +144,7 @@ async function callAgentCore(
       if (paise > 0) {
         logCostEvent({
           function_name: "process-scan",
+          scan_id: getCurrentScanId(),
           provider: "lovable_ai",
           cost_inr_paise: paise,
           note: agentName,
