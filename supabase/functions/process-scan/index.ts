@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
     // Previously select("*") fetched ~25 columns including final_json_report (50–200KB
     // from a previous scan on rescans) that was immediately discarded.
     const { data: scan, error: scanErr } = await supabase.from("scans")
-      .select("id, user_id, scan_status, access_token, linkedin_url, resume_file_path, industry, years_experience, metro_tier, country, enrichment_cache, final_json_report")
+      .select("id, user_id, scan_status, access_token, linkedin_url, resume_file_path, industry, years_experience, metro_tier, country, enrichment_cache, final_json_report, data_retention_consent")
       .eq("id", scanId).single();
     if (scanErr || !scan) {
       return new Response(JSON.stringify({ error: "Scan not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -303,11 +303,14 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════════════
     const enrichment = await gatherEnrichmentData({
       scan: {
+        id: scan.id,
+        user_id: scan.user_id,
         linkedin_url: scan.linkedin_url,
         resume_file_path: scan.resume_file_path,
         years_experience: scan.years_experience,
         metro_tier: scan.metro_tier,
         industry: scan.industry,
+        data_retention_consent: (scan as any).data_retention_consent ?? false,
       },
       hasResume,
       activeModel,
