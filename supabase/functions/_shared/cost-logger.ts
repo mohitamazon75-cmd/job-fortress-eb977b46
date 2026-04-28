@@ -29,6 +29,24 @@ export interface CostEventInput {
   note?: string | null;
 }
 
+// ─── Request-scoped scan context ─────────────────────────────
+// Edge function entry points (process-scan, get-model-b-analysis, etc.)
+// call setCurrentScanId(scanId) once they know the scan being processed.
+// Downstream loggers (ai-agent-caller, etc.) read it via getCurrentScanId()
+// so per-scan COGS attribution works without threading scanId through 18+
+// call signatures. Deno isolates are short-lived & per-request, so a
+// module-level mutable is safe (no cross-request bleed in practice).
+let _currentScanId: string | null = null;
+export function setCurrentScanId(scanId: string | null | undefined): void {
+  _currentScanId = scanId ?? null;
+}
+export function getCurrentScanId(): string | null {
+  return _currentScanId;
+}
+export function clearCurrentScanId(): void {
+  _currentScanId = null;
+}
+
 /**
  * Fire-and-forget: insert one cost event. Errors swallowed.
  */
