@@ -58,7 +58,16 @@
   border-color: var(--mb-rule2) !important;
 }
 
-/* Scrollbar styling */
+/* P0 polish (2026-04-28): one-time gentle attention pulse on the
+   top-right "Today's task" pill so it reads as actionable, not chrome.
+   Plays twice in the first 4s after mount, then stays still — no nag. */
+@keyframes mbAttnPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(27,47,85,0); }
+  50%      { box-shadow: 0 0 0 6px rgba(27,47,85,0.18); }
+}
+.mb-attn-pulse {
+  animation: mbAttnPulse 2s ease-out 2 both;
+}
 .mb-root ::-webkit-scrollbar { width: 4px; height: 4px; }
 .mb-root ::-webkit-scrollbar-track { background: transparent; }
 .mb-root ::-webkit-scrollbar-thumb { background: var(--mb-rule2); border-radius: 2px; }
