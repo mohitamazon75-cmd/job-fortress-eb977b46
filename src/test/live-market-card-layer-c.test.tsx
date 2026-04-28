@@ -39,8 +39,15 @@ function makeSnapshot(over: Partial<LiveMarketSnapshot>): LiveMarketSnapshot {
 
 describe("LiveMarketCard — Layer C: velocity 'so-what' verdict", () => {
   it("renders HOT verdict (move this week) when freshness ≥70% on a real sample", () => {
-    // r1Fixture: 50 same-day, 0 within_7d, 0 older → 100% fresh, NOT repost-suspected (50 > 10)
-    renderCard(r1Fixture);
+    // Need: freshPct ≥ 70 AND not repost-noise-suspected.
+    // Repost-noise trips when sameDayShare ≥ 85% AND within7d === 0, OR small pool ≤10.
+    // Use a balanced fresh mix (40 same-day + 30 within_7d on a 70-pool) so:
+    //   freshPct = 100% (HOT), sameDayShare = 57% (<85%, safe), pool = 70 (>10, safe).
+    const snap = makeSnapshot({
+      posting_count: 70,
+      recency: { same_day_count: 40, within_7d_count: 30, older_count: 0 },
+    });
+    renderCard(snap);
     const verdict = screen.getByTestId("velocity-verdict");
     expect(verdict.textContent).toMatch(/active hiring right now/i);
     expect(verdict.textContent).toMatch(/move this week/i);
