@@ -4,6 +4,7 @@ import { BookMarked, Plus, Trash2, ChevronDown, ChevronUp, Loader2, Lock, Zap, S
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/use-subscription';
 import ProUpgradeModal from '@/components/ProUpgradeModal';
+import { pickRandomDrillStory } from '@/lib/drill-picker';
 
 interface UserStory {
   id: string;
@@ -128,11 +129,11 @@ export default function StoryBankWidget({ userId, scanId }: StoryBankWidgetProps
     }
   };
 
-  // Drill: pick a random story (excluding current one if possible)
+  // Drill: pick a random story (excluding current one when pool >1).
+  // Logic extracted to src/lib/drill-picker.ts for unit-test coverage.
   const startDrill = (excludeId?: string | null) => {
-    const pool = excludeId && stories.length > 1 ? stories.filter((s) => s.id !== excludeId) : stories;
-    if (pool.length === 0) return;
-    const next = pool[Math.floor(Math.random() * pool.length)];
+    const next = pickRandomDrillStory(stories, excludeId);
+    if (!next) return;
     setDrillStoryId(next.id);
     setDrillReveal({ task: false, action: false, result: false });
     setDrillActive(true);
