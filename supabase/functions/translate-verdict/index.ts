@@ -5,6 +5,7 @@
 
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { logCostEvent, estimateLlmCostInrPaise } from "../_shared/cost-logger.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { validateBody, z } from "../_shared/validate-input.ts";
 
@@ -76,6 +77,12 @@ Deno.serve(async (req) => {
 
     const data = await resp.json();
     logTokenUsage("translate-verdict", null, MODEL, data);
+    logCostEvent({
+      function_name: "translate-verdict",
+      provider: "lovable_ai",
+      cost_inr_paise: estimateLlmCostInrPaise(MODEL, data),
+      note: `lang=${lang}`,
+    });
     const content = data.choices?.[0]?.message?.content || "{}";
     const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
 
