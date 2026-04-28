@@ -707,10 +707,16 @@ export default function ResultsModelB() {
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 700, color: "var(--mb-navy)" }}>🔥 {streak}</span>
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--mb-navy)", flex: 1 }}>day streak</span>
             <button
-              onClick={() => setStreakModal(true)}
+              onClick={() => {
+                if (typeof console !== "undefined") {
+                  // eslint-disable-next-line no-console
+                  console.log("[jb] today's action tapped, streak=", streak);
+                }
+                setStreakModal(true);
+              }}
               className="mb-btn-primary"
-              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: "var(--mb-navy)", background: "white", border: "1px solid var(--mb-navy-tint2)", borderRadius: 20, padding: "6px 16px", cursor: "pointer", minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", transition: "all 150ms" }}
-            >Today's action</button>
+              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "1.5px solid var(--mb-navy)", borderRadius: 20, padding: "8px 14px", cursor: "pointer", minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", gap: 4, transition: "all 150ms", WebkitTapHighlightColor: "rgba(255,255,255,0.2)" }}
+            >Today's task →</button>
           </div>
         )}
 
