@@ -706,8 +706,8 @@ export default function ResultsModelB() {
           )}
         </div>
 
-        {/* Streak bar */}
-        {cardData && !loading && (
+        {/* Streak bar — hidden on Verdict tab so the score lands first */}
+        {cardData && !loading && !FRAME_MINIMAL_TABS.has(currentCard) && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--mb-navy-tint)", border: "1px solid var(--mb-navy-tint2)", borderRadius: 12, marginBottom: 18, boxShadow: "var(--mb-shadow-sm)" }}>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 700, color: "var(--mb-navy)" }}>🔥 {streak}</span>
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--mb-navy)", flex: 1 }}>day streak</span>
@@ -725,15 +725,15 @@ export default function ResultsModelB() {
           </div>
         )}
 
-        {/* Progress bar */}
-        {cardData && !loading && (
+        {/* Progress bar — hidden on Verdict tab (no journey context yet) */}
+        {cardData && !loading && !FRAME_MINIMAL_TABS.has(currentCard) && (
           <div style={{ height: 4, background: "var(--mb-rule)", borderRadius: 2, marginBottom: 14, overflow: "hidden" }}>
             <div style={{ height: 4, background: "var(--mb-navy)", borderRadius: 2, width: `${progressPct}%`, transition: "width 0.4s ease" }} />
           </div>
         )}
 
-        {/* Navigation — scrollable pill row, works on any screen size */}
-        {cardData && !loading && (
+        {/* Navigation — scrollable pill row. Hidden on Verdict tab so the score isn't competing with 10 chrome pills. Card0Verdict's own onNext CTA moves the user forward. */}
+        {cardData && !loading && !FRAME_MINIMAL_TABS.has(currentCard) && (
           <div style={{ marginBottom: 20, WebkitOverflowScrolling: "touch" }}>
             <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {TAB_LABELS.map((label, i) => {
