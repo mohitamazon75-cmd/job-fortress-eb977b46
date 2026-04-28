@@ -143,6 +143,39 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
     try { return new URL(url).hostname.replace('www.', ''); } catch { return ''; }
   };
 
+  // Deterministic referral message templates — no LLM, no fabrication.
+  // Builds short, polite asks for WhatsApp and LinkedIn DM. User must replace [Name].
+  const buildReferralTemplates = (job: RealJobListing) => {
+    const topMatched = (job.skills_matched ?? []).slice(0, 2).join(' and ') || 'core skills';
+    const myRole = role;
+    const targetRole = job.title;
+    const company = job.company;
+
+    const whatsapp =
+`Hi [Name] — hope you're doing well!
+
+I noticed ${company} is hiring for ${targetRole}. I'm a ${myRole} with strong ${topMatched} experience and the role looks like a genuine fit.
+
+Would you be open to referring me, or pointing me to whoever owns the hire? Happy to share my resume in 2 lines, no pressure either way.
+
+Thanks for considering 🙏`;
+
+    const linkedin =
+`Hi [Name],
+
+Saw ${company} has an open ${targetRole} role. As a ${myRole} with ${topMatched} experience, I think I'd be a strong fit and would value an internal referral if you're open to it.
+
+Totally understand if it's not a fit — would also appreciate any pointer on who owns this hire. Thanks!`;
+
+    return { whatsapp, linkedin };
+  };
+
+  const handleCopyReferral = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
   if (loading && !hasLoaded) {
     return (
       <div className="space-y-4">
