@@ -38,6 +38,13 @@ Status: `open` · `in-progress` · `done` · `wontfix` (with reason)
 
 ## Open — P1
 
+### BL-037 — Mobile 368px hazards (4 critical screens)
+- **Discovered**: 2026-04-28, audit pass (`docs/qa/mobile-368px-audit-2026-04-28.md`).
+- **Findings**: V-2 (VerdictReveal hardcoded 500x500 blur exceeds viewport), V-3 (CTA may sit below fold, modal needs sticky CTA + overflow-y-auto on <sm), D-1 (DefenseTab milestone titles need line-clamp at half-width).
+- **Fix sketch**: see audit doc §"Recommended P0/P1 fix sequence". ~half day total. None touch frozen files.
+- **Status**: open.
+
+
 *(none — BL-016 resolved 2026-04-24.)*
 
 ## Resolved — P1
