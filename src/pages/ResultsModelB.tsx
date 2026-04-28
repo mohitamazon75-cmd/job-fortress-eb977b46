@@ -1031,22 +1031,61 @@ export default function ResultsModelB() {
             })()}
 
             {/* Bottom action buttons — hidden on Verdict (own CTAs) and Tools (utility tab) */}
-            {!ACTION_BUTTONS_HIDDEN_TABS.has(currentCard) && (
-              <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
-                {actionPrompts.map((action, i) => (
-                  <button
-                    key={i}
-                    className="mb-btn-secondary"
-                    onClick={() => {
-                      logEvent("modal_opened", { source: action.label });
-                      setActionModal({ title: action.title, promptText: action.promptText });
-                    }}
-                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, padding: "14px 12px", borderRadius: 12, cursor: "pointer", border: "1px solid var(--mb-rule)", background: "white", color: "var(--mb-ink)", display: "flex", alignItems: "center", gap: 10, transition: "all 150ms", minHeight: 48, boxShadow: "var(--mb-shadow-sm)" }}
-                  >
-                    <span style={{ fontSize: 16 }}>{action.icon}</span>
-                    {action.label}
-                  </button>
-                ))}
+            {!ACTION_BUTTONS_HIDDEN_TABS.has(currentCard) && actionPrompts.length > 0 && (
+              <div style={{ marginTop: 24 }}>
+                <div
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: "var(--mb-navy)",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    marginBottom: 10,
+                  }}
+                >
+                  ⚡ Generate with AI · tap any
+                </div>
+                <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {actionPrompts.map((action, i) => (
+                    <button
+                      key={i}
+                      className="mb-btn-secondary"
+                      onClick={() => {
+                        // Diagnostic: friendly #2 said "bottom 4 not working" — log every tap
+                        // so the next debrief tells us if buttons are silent or content fails.
+                        if (typeof console !== "undefined") {
+                          // eslint-disable-next-line no-console
+                          console.log("[jb] action button tapped:", action.label);
+                        }
+                        logEvent("modal_opened", { source: action.label });
+                        setActionModal({ title: action.title, promptText: action.promptText });
+                      }}
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        padding: "16px 12px",
+                        borderRadius: 14,
+                        cursor: "pointer",
+                        border: "1.5px solid var(--mb-navy)",
+                        background: "var(--mb-navy)",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        transition: "all 150ms",
+                        minHeight: 56,
+                        boxShadow: "var(--mb-shadow-sm)",
+                        WebkitTapHighlightColor: "rgba(255,255,255,0.2)",
+                      }}
+                    >
+                      <span style={{ fontSize: 18 }}>{action.icon}</span>
+                      <span style={{ flex: 1, textAlign: "left" }}>{action.label}</span>
+                      <span style={{ fontSize: 14, opacity: 0.7 }}>→</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </>
