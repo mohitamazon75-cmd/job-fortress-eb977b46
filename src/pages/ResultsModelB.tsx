@@ -85,6 +85,11 @@ const HEADER_SCORE_HIDDEN_TABS = new Set([0, 4, 9]);
 // Tabs where the bottom action button grid is hidden — these tabs have their own
 // dedicated CTAs and the grid would clutter the emotional/utility frame.
 const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 9]);
+// Friendly #2 (Farheen) feedback (2026-04-28):
+//   • Verdict tab must be score-only — no Share Strip, no Monday Move on first frame.
+//   • Monday Move felt redundant on every screen — restrict to the two action-y tabs.
+const SHARE_STRIP_HIDDEN_TABS = new Set([0]);
+const MONDAY_MOVE_VISIBLE_TABS = new Set([1, 5]); // Risk + Pivot Paths
 // Total content tabs = single source of truth (avoids drift with TAB_LABELS).
 const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
 
