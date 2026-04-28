@@ -19,16 +19,20 @@ import {
 } from "../_shared/scan-utils.ts";
 import { inferFromLinkedinUrl, parseExperienceYears } from "../_shared/scan-helpers.ts";
 import { parseResumeWithAffinda } from "../_shared/affinda-parser.ts";
+import { recordResumeArtifact, recordLinkedinSnapshot } from "../_shared/artifact-recorder.ts";
 
 // ── Types ──
 
 export interface EnrichmentInput {
   scan: {
+    id?: string;
+    user_id?: string | null;
     linkedin_url: string | null;
     resume_file_path: string | null;
     years_experience: string | null;
     metro_tier: string | null;
     industry: string | null;
+    data_retention_consent?: boolean;
   };
   hasResume: boolean;
   activeModel: string;
