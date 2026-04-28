@@ -431,19 +431,21 @@ const Index = () => {
   };
 
   // After user commits to an input method, persist context & gate auth
-  const handleLinkedinSubmit = (url: string) => {
+  const handleLinkedinSubmit = (url: string, dataRetentionConsent: boolean) => {
     setLinkedinUrl(url);
-    track('input_method_selected', { method: 'linkedin' });
+    dataRetentionConsentRef.current = dataRetentionConsent;
+    track('input_method_selected', { method: 'linkedin', data_retention_consent: dataRetentionConsent });
     // Persist so OAuth redirect can restore context and skip old-scan recovery.
-    try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ linkedinUrl: url })); } catch {}
+    try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ linkedinUrl: url, dataRetentionConsent })); } catch {}
     try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
     try { localStorage.setItem(PENDING_SCAN_MODE_KEY, 'linkedin'); } catch {}
     setPhase('auth-gate');
   };
 
-  const handleResumeSubmit = async (file: File) => {
+  const handleResumeSubmit = async (file: File, dataRetentionConsent: boolean) => {
     resumeFileRef.current = file;
-    track('input_method_selected', { method: 'resume' });
+    dataRetentionConsentRef.current = dataRetentionConsent;
+    track('input_method_selected', { method: 'resume', data_retention_consent: dataRetentionConsent });
     // CRITICAL: Clear stale industry/years from previous scan so process-scan
     // doesn't get biased toward old profile data (e.g. Marketing when uploading
     // an engineering resume). This is the root cause of "same old results" bug.
@@ -452,7 +454,7 @@ const Index = () => {
     setMetroTier('');
     setKeySkills('');
     setStep(1);
-    try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true })); } catch {}
+    try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true, dataRetentionConsent })); } catch {}
     try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
     try { localStorage.setItem(PENDING_SCAN_MODE_KEY, 'resume'); } catch {}
     setPhase('auth-gate');
