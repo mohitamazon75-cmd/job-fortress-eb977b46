@@ -85,6 +85,11 @@ const HEADER_SCORE_HIDDEN_TABS = new Set([0, 4, 9]);
 // Tabs where the bottom action button grid is hidden — these tabs have their own
 // dedicated CTAs and the grid would clutter the emotional/utility frame.
 const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 9]);
+// Friendly #2 (Farheen) feedback (2026-04-28):
+//   • Verdict tab must be score-only — no Share Strip, no Monday Move on first frame.
+//   • Monday Move felt redundant on every screen — restrict to the two action-y tabs.
+const SHARE_STRIP_HIDDEN_TABS = new Set([0]);
+const MONDAY_MOVE_VISIBLE_TABS = new Set([1, 5]); // Risk + Pivot Paths
 // Total content tabs = single source of truth (avoids drift with TAB_LABELS).
 const TOTAL_JOURNEY_TABS = TAB_LABELS.length;
 
@@ -702,10 +707,16 @@ export default function ResultsModelB() {
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 700, color: "var(--mb-navy)" }}>🔥 {streak}</span>
             <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--mb-navy)", flex: 1 }}>day streak</span>
             <button
-              onClick={() => setStreakModal(true)}
+              onClick={() => {
+                if (typeof console !== "undefined") {
+                  // eslint-disable-next-line no-console
+                  console.log("[jb] today's action tapped, streak=", streak);
+                }
+                setStreakModal(true);
+              }}
               className="mb-btn-primary"
-              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: "var(--mb-navy)", background: "white", border: "1px solid var(--mb-navy-tint2)", borderRadius: 20, padding: "6px 16px", cursor: "pointer", minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", transition: "all 150ms" }}
-            >Today's action</button>
+              style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "1.5px solid var(--mb-navy)", borderRadius: 20, padding: "8px 14px", cursor: "pointer", minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", gap: 4, transition: "all 150ms", WebkitTapHighlightColor: "rgba(255,255,255,0.2)" }}
+            >Today's task →</button>
           </div>
         )}
 
@@ -860,26 +871,28 @@ export default function ResultsModelB() {
         {/* Main content */}
         {cardData && !loading && !error && (
           <>
-            <RevealShareStrip
-              ctx={{
-                scanId: analysisId,
-                userId,
-                scanRole: cardData?.user?.current_title ?? null,
-                scanIndustry: cardData?.user?.industry ?? null,
-                scanScore:
-                  typeof cardData?.jobbachao_score === "number"
-                    ? cardData.jobbachao_score
-                    : null,
-                scanCity: cardData?.user?.location ?? null,
-              }}
-              firstName={
-                (cardData?.user?.full_name || cardData?.user?.name || "")
-                  .toString()
-                  .trim()
-                  .split(/\s+/)[0] || null
-              }
-            />
-            <MondayMoveCard cardData={cardData} />
+            {!SHARE_STRIP_HIDDEN_TABS.has(currentCard) && (
+              <RevealShareStrip
+                ctx={{
+                  scanId: analysisId,
+                  userId,
+                  scanRole: cardData?.user?.current_title ?? null,
+                  scanIndustry: cardData?.user?.industry ?? null,
+                  scanScore:
+                    typeof cardData?.jobbachao_score === "number"
+                      ? cardData.jobbachao_score
+                      : null,
+                  scanCity: cardData?.user?.location ?? null,
+                }}
+                firstName={
+                  (cardData?.user?.full_name || cardData?.user?.name || "")
+                    .toString()
+                    .trim()
+                    .split(/\s+/)[0] || null
+                }
+              />
+            )}
+            {MONDAY_MOVE_VISIBLE_TABS.has(currentCard) && <MondayMoveCard cardData={cardData} />}
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
             {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} />}
             {currentCard === 2 && (() => {
@@ -1024,22 +1037,61 @@ export default function ResultsModelB() {
             })()}
 
             {/* Bottom action buttons — hidden on Verdict (own CTAs) and Tools (utility tab) */}
-            {!ACTION_BUTTONS_HIDDEN_TABS.has(currentCard) && (
-              <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
-                {actionPrompts.map((action, i) => (
-                  <button
-                    key={i}
-                    className="mb-btn-secondary"
-                    onClick={() => {
-                      logEvent("modal_opened", { source: action.label });
-                      setActionModal({ title: action.title, promptText: action.promptText });
-                    }}
-                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, padding: "14px 12px", borderRadius: 12, cursor: "pointer", border: "1px solid var(--mb-rule)", background: "white", color: "var(--mb-ink)", display: "flex", alignItems: "center", gap: 10, transition: "all 150ms", minHeight: 48, boxShadow: "var(--mb-shadow-sm)" }}
-                  >
-                    <span style={{ fontSize: 16 }}>{action.icon}</span>
-                    {action.label}
-                  </button>
-                ))}
+            {!ACTION_BUTTONS_HIDDEN_TABS.has(currentCard) && actionPrompts.length > 0 && (
+              <div style={{ marginTop: 24 }}>
+                <div
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: "var(--mb-navy)",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    marginBottom: 10,
+                  }}
+                >
+                  ⚡ Generate with AI · tap any
+                </div>
+                <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {actionPrompts.map((action, i) => (
+                    <button
+                      key={i}
+                      className="mb-btn-secondary"
+                      onClick={() => {
+                        // Diagnostic: friendly #2 said "bottom 4 not working" — log every tap
+                        // so the next debrief tells us if buttons are silent or content fails.
+                        if (typeof console !== "undefined") {
+                          // eslint-disable-next-line no-console
+                          console.log("[jb] action button tapped:", action.label);
+                        }
+                        logEvent("modal_opened", { source: action.label });
+                        setActionModal({ title: action.title, promptText: action.promptText });
+                      }}
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        padding: "16px 12px",
+                        borderRadius: 14,
+                        cursor: "pointer",
+                        border: "1.5px solid var(--mb-navy)",
+                        background: "var(--mb-navy)",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        transition: "all 150ms",
+                        minHeight: 56,
+                        boxShadow: "var(--mb-shadow-sm)",
+                        WebkitTapHighlightColor: "rgba(255,255,255,0.2)",
+                      }}
+                    >
+                      <span style={{ fontSize: 18 }}>{action.icon}</span>
+                      <span style={{ flex: 1, textAlign: "left" }}>{action.label}</span>
+                      <span style={{ fontSize: 14, opacity: 0.7 }}>→</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </>
