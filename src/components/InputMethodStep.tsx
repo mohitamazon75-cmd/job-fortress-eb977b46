@@ -36,7 +36,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
       return;
     }
     setFileName(file.name);
-    onSubmitResume(file);
+    onSubmitResume(file, dataRetentionConsent);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +63,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
 
   const handleLinkedinSubmit = () => {
     if (isValidLinkedinUrl(linkedinUrl)) {
-      onSubmitLinkedin(linkedinUrl);
+      onSubmitLinkedin(linkedinUrl, dataRetentionConsent);
     }
   };
 
