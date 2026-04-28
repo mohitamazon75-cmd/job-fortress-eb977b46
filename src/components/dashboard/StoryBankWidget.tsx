@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookMarked, Plus, Trash2, ChevronDown, ChevronUp, Loader2, Lock, Zap, Save, X } from 'lucide-react';
+import { BookMarked, Plus, Trash2, ChevronDown, ChevronUp, Loader2, Lock, Zap, Save, X, Brain, SkipForward, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/hooks/use-subscription';
 import ProUpgradeModal from '@/components/ProUpgradeModal';
