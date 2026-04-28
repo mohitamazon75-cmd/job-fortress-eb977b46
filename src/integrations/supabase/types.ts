@@ -2389,6 +2389,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_stories: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          reflection: string | null
+          result: string
+          situation: string
+          source_scan_id: string | null
+          tags: string[]
+          task: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          reflection?: string | null
+          result: string
+          situation: string
+          source_scan_id?: string | null
+          tags?: string[]
+          task: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          reflection?: string | null
+          result?: string
+          situation?: string
+          source_scan_id?: string | null
+          tags?: string[]
+          task?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_briefs: {
         Row: {
           brief_json: Json
