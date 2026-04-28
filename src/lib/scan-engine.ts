@@ -344,6 +344,7 @@ export async function createScan(params: {
   metroTier?: string;
   keySkills?: string;
   estimatedMonthlySalaryInr?: number | null; // Optional CTC — improves Replacement Invoice accuracy
+  dataRetentionConsent?: boolean; // DPDP Phase B: opt-in for indefinite retention of resume_artifacts/linkedin_snapshots
 }): Promise<{ id: string; accessToken: string; triggered?: boolean }> {
   const { data: { session }, error: authError } = await supabase.auth.getSession();
   if (authError) {
@@ -372,6 +373,8 @@ export async function createScan(params: {
         userId: user?.id || null,
         // VibeSec: server-side clamp enforced in create-scan edge fn (5k–5M INR/month)
         estimatedMonthlySalaryInr: params.estimatedMonthlySalaryInr ?? null,
+        // DPDP Phase B: explicit opt-in for indefinite retention. Default false.
+        dataRetentionConsent: params.dataRetentionConsent === true,
       },
     });
 
@@ -439,6 +442,8 @@ export async function createScan(params: {
     metro_tier: params.metroTier || null,
     scan_status: 'processing',
     payment_status: 'unpaid',
+    // DPDP Phase B: opt-in for indefinite retention. Default false → 90-day purge eligible.
+    data_retention_consent: params.dataRetentionConsent === true,
     // Store manual key skills in enrichment_cache for process-scan to read
     ...(params.keySkills ? { enrichment_cache: { key_skills: params.keySkills } } : {}),
   };

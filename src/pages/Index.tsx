@@ -284,6 +284,11 @@ const Index = () => {
     handleMoneyShotComplete,
   } = scanFlow;
 
+  // DPDP Phase B: carry data-retention consent across the auth-gate redirect.
+  // Default false. Forwarded to createScan → scans.data_retention_consent →
+  // governs resume_artifacts / linkedin_snapshots retention beyond 90 days.
+  const dataRetentionConsentRef = useRef<boolean>(false);
+
 
   // On mount: capture ?ref= referral code, log click, store for conversion tracking
   useEffect(() => {
@@ -300,7 +305,7 @@ const Index = () => {
     } catch {}
   }, []);
 
-  const getPendingInputContext = useCallback((): { linkedinUrl?: string; hasResume?: boolean } | null => {
+  const getPendingInputContext = useCallback((): { linkedinUrl?: string; hasResume?: boolean; dataRetentionConsent?: boolean } | null => {
     try {
       const pending = sessionStorage.getItem('jb_pending_input');
       return pending ? JSON.parse(pending) as { linkedinUrl?: string; hasResume?: boolean } : null;
@@ -343,6 +348,10 @@ const Index = () => {
     if (pendingInput?.linkedinUrl) setLinkedinUrl(pendingInput.linkedinUrl);
     if ((pendingInput?.hasResume || pendingMode === 'resume') && !resumeFileRef.current) {
       console.warn('Resume file lost after redirect — user will need to re-upload');
+    }
+    // DPDP Phase B: rehydrate consent so it survives the OAuth bounce-back.
+    if (typeof pendingInput?.dataRetentionConsent === 'boolean') {
+      dataRetentionConsentRef.current = pendingInput.dataRetentionConsent;
     }
 
     setPhase('auth-gate');
@@ -431,19 +440,21 @@ const Index = () => {
   };
 
   // After user commits to an input method, persist context & gate auth
-  const handleLinkedinSubmit = (url: string) => {
+  const handleLinkedinSubmit = (url: string, dataRetentionConsent: boolean) => {
     setLinkedinUrl(url);
-    track('input_method_selected', { method: 'linkedin' });
+    dataRetentionConsentRef.current = dataRetentionConsent;
+    track('input_method_selected', { method: 'linkedin', data_retention_consent: dataRetentionConsent });
     // Persist so OAuth redirect can restore context and skip old-scan recovery.
-    try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ linkedinUrl: url })); } catch {}
+    try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ linkedinUrl: url, dataRetentionConsent })); } catch {}
     try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
     try { localStorage.setItem(PENDING_SCAN_MODE_KEY, 'linkedin'); } catch {}
     setPhase('auth-gate');
   };
 
-  const handleResumeSubmit = async (file: File) => {
+  const handleResumeSubmit = async (file: File, dataRetentionConsent: boolean) => {
     resumeFileRef.current = file;
-    track('input_method_selected', { method: 'resume' });
+    dataRetentionConsentRef.current = dataRetentionConsent;
+    track('input_method_selected', { method: 'resume', data_retention_consent: dataRetentionConsent });
     // CRITICAL: Clear stale industry/years from previous scan so process-scan
     // doesn't get biased toward old profile data (e.g. Marketing when uploading
     // an engineering resume). This is the root cause of "same old results" bug.
@@ -452,7 +463,7 @@ const Index = () => {
     setMetroTier('');
     setKeySkills('');
     setStep(1);
-    try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true })); } catch {}
+    try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true, dataRetentionConsent })); } catch {}
     try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
     try { localStorage.setItem(PENDING_SCAN_MODE_KEY, 'resume'); } catch {}
     setPhase('auth-gate');
@@ -671,6 +682,7 @@ const Index = () => {
           metroTier: metro,
           keySkills: skills || undefined,
           estimatedMonthlySalaryInr: userReportedCTC ?? null,
+          dataRetentionConsent: dataRetentionConsentRef.current,
         });
         if (!id || !token) {
           console.error('Scan creation failed: missing id or token');

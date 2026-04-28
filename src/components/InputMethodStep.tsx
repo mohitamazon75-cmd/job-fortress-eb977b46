@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { Linkedin, FileText, ArrowRight, Upload, Link2, Sparkles, Shield, Lock, ChevronRight, Zap } from 'lucide-react';
 
 interface InputMethodStepProps {
-  onSubmitLinkedin: (url: string) => void;
-  onSubmitResume: (file: File) => void;
+  onSubmitLinkedin: (url: string, dataRetentionConsent: boolean) => void;
+  onSubmitResume: (file: File, dataRetentionConsent: boolean) => void;
   onSkip: () => void;
 }
 
@@ -16,6 +16,11 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
   const [linkedinError, setLinkedinError] = useState('');
 
   const [fileError, setFileError] = useState('');
+
+  // DPDP Phase B: explicit, opt-in consent for indefinite retention of raw resume
+  // text + LinkedIn snapshot in resume_artifacts / linkedin_snapshots.
+  // Default OFF — when unchecked, those rows are eligible for the 90-day purge cron.
+  const [dataRetentionConsent, setDataRetentionConsent] = useState(false);
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const ALLOWED_MIME_TYPES = ['application/pdf'];
@@ -31,7 +36,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
       return;
     }
     setFileName(file.name);
-    onSubmitResume(file);
+    onSubmitResume(file, dataRetentionConsent);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,7 +63,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
 
   const handleLinkedinSubmit = () => {
     if (isValidLinkedinUrl(linkedinUrl)) {
-      onSubmitLinkedin(linkedinUrl);
+      onSubmitLinkedin(linkedinUrl, dataRetentionConsent);
     }
   };
 
@@ -290,6 +295,21 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
             transition={{ delay: 0.8 }}
             className="mt-10 space-y-3"
           >
+            {/* DPDP Phase B: explicit, granular consent for indefinite retention.
+                Default OFF. When unchecked, raw resume + LinkedIn snapshot rows
+                are eligible for the 90-day auto-purge cron. */}
+            <label className="flex items-start gap-3 px-4 py-3 rounded-xl border border-border bg-card/60 hover:border-primary/30 transition-colors cursor-pointer">
+              <input
+                type="checkbox"
+                checked={dataRetentionConsent}
+                onChange={(e) => setDataRetentionConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/30 cursor-pointer flex-shrink-0"
+              />
+              <span className="text-[11px] text-muted-foreground leading-relaxed">
+                <span className="font-semibold text-foreground">Optional:</span> Allow JobBachao to retain my resume &amp; profile data beyond 90 days to improve career insights and personalised tracking. You can withdraw consent any time from Settings. Unchecked = standard 90-day auto-deletion.
+              </span>
+            </label>
+
             <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5" />
@@ -304,7 +324,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
               By proceeding, you agree to our{' '}
               <a href="/terms" target="_blank" className="underline underline-offset-2 text-foreground/70 hover:text-foreground">Terms of Service</a> &{' '}
               <a href="/privacy" target="_blank" className="underline underline-offset-2 text-foreground/70 hover:text-foreground">Privacy Policy</a>.
-              Your data is retained for 90 days then auto-deleted.
+              Default retention is 90 days then auto-deleted.
             </p>
           </motion.div>
         </motion.div>
