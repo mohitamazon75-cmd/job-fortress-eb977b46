@@ -128,6 +128,26 @@ export default function StoryBankWidget({ userId, scanId }: StoryBankWidgetProps
     }
   };
 
+  // Drill: pick a random story (excluding current one if possible)
+  const startDrill = (excludeId?: string | null) => {
+    const pool = excludeId && stories.length > 1 ? stories.filter((s) => s.id !== excludeId) : stories;
+    if (pool.length === 0) return;
+    const next = pool[Math.floor(Math.random() * pool.length)];
+    setDrillStoryId(next.id);
+    setDrillReveal({ task: false, action: false, result: false });
+    setDrillActive(true);
+    setExpanded(null);
+    setComposing(false);
+  };
+
+  const exitDrill = () => {
+    setDrillActive(false);
+    setDrillStoryId(null);
+    setDrillReveal({ task: false, action: false, result: false });
+  };
+
+  const drillStory = drillStoryId ? stories.find((s) => s.id === drillStoryId) : null;
+
   // Sign-in required
   if (!userId) {
     return (
