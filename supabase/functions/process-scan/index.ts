@@ -1285,5 +1285,8 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } finally {
+    // Always clear scan context so next request in this isolate doesn't bleed.
+    clearCurrentScanId();
   }
 });
