@@ -344,6 +344,7 @@ export async function createScan(params: {
   metroTier?: string;
   keySkills?: string;
   estimatedMonthlySalaryInr?: number | null; // Optional CTC — improves Replacement Invoice accuracy
+  dataRetentionConsent?: boolean; // DPDP Phase B: opt-in for indefinite retention of resume_artifacts/linkedin_snapshots
 }): Promise<{ id: string; accessToken: string; triggered?: boolean }> {
   const { data: { session }, error: authError } = await supabase.auth.getSession();
   if (authError) {
