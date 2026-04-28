@@ -203,7 +203,7 @@ export default function VerdictReveal({ report, onComplete }: VerdictRevealProps
             <motion.div
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 0.12, scale: 1 }}
-              className="absolute w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none"
+              className="absolute w-[min(500px,90vw)] h-[min(500px,90vw)] rounded-full blur-[80px] sm:blur-[120px] pointer-events-none"
               style={{ background: verdict.glow }}
             />
           )}
