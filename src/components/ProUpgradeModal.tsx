@@ -314,8 +314,26 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
             )}
 
             <button
-              onClick={handleUpgrade}
+              onClick={(e) => {
+                if (e.shiftKey) {
+                  try {
+                    window.localStorage.setItem('jb_dev_pro_bypass', '1');
+                    window.dispatchEvent(new Event('subscription-updated'));
+                    toast.success('Dev bypass: Pro unlocked locally', {
+                      description: 'Razorpay skipped. Clear with localStorage.removeItem("jb_dev_pro_bypass").',
+                      duration: 4000,
+                    });
+                    onSuccess?.(TIER_CONFIG[selected].tier);
+                    onClose();
+                  } catch {
+                    setPaymentError('Could not enable dev bypass.');
+                  }
+                  return;
+                }
+                handleUpgrade();
+              }}
               disabled={loading}
+              title="Tip: Shift+Click to bypass payment for testing"
               className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-70 text-primary-foreground text-sm font-black transition-colors flex items-center justify-center gap-2 min-h-[48px]"
             >
               {loading ? (

@@ -72,6 +72,16 @@ export function useSubscription(): SubscriptionState {
           return;
         }
 
+        // Local dev/test bypass — set via Shift+click on upgrade button.
+        // Lets friendlies preview Pro while live payments are still being wired.
+        // Clear with: localStorage.removeItem('jb_dev_pro_bypass')
+        if (typeof window !== 'undefined' && window.localStorage.getItem('jb_dev_pro_bypass') === '1') {
+          if (!cancelled) {
+            setState({ tier: 'pro', isActive: true, expiresAt: null, loading: false });
+          }
+          return;
+        }
+
         // Admin / founder whitelist — always Pro
         const email = user.email?.toLowerCase() ?? '';
         if (ADMIN_PRO_EMAILS.has(email)) {
