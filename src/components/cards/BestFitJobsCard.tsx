@@ -254,6 +254,7 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
                     <div className="flex items-center gap-2 flex-wrap">
                       {(() => {
                         const g = fitGrade(job.skill_match_pct);
+                        if (!g) return null;
                         return (
                           <span
                             className={`inline-flex flex-col items-center justify-center min-w-[34px] h-[34px] rounded-md ring-1 ${g.bg} ${g.text} ${g.ring} leading-none`}
