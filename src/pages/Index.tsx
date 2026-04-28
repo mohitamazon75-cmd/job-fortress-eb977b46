@@ -682,6 +682,7 @@ const Index = () => {
           metroTier: metro,
           keySkills: skills || undefined,
           estimatedMonthlySalaryInr: userReportedCTC ?? null,
+          dataRetentionConsent: dataRetentionConsentRef.current,
         });
         if (!id || !token) {
           console.error('Scan creation failed: missing id or token');
