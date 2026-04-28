@@ -68,6 +68,8 @@
 .mb-attn-pulse {
   animation: mbAttnPulse 2s ease-out 2 both;
 }
+
+/* Scrollbar styling */
 .mb-root ::-webkit-scrollbar { width: 4px; height: 4px; }
 .mb-root ::-webkit-scrollbar-track { background: transparent; }
 .mb-root ::-webkit-scrollbar-thumb { background: var(--mb-rule2); border-radius: 2px; }
