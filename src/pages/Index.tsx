@@ -349,6 +349,10 @@ const Index = () => {
     if ((pendingInput?.hasResume || pendingMode === 'resume') && !resumeFileRef.current) {
       console.warn('Resume file lost after redirect — user will need to re-upload');
     }
+    // DPDP Phase B: rehydrate consent so it survives the OAuth bounce-back.
+    if (typeof pendingInput?.dataRetentionConsent === 'boolean') {
+      dataRetentionConsentRef.current = pendingInput.dataRetentionConsent;
+    }
 
     setPhase('auth-gate');
   }, [getPendingInputContext, getPendingScanMode, routedScanId, setLinkedinUrl, setPhase, resumeFileRef]);
