@@ -442,6 +442,8 @@ export async function createScan(params: {
     metro_tier: params.metroTier || null,
     scan_status: 'processing',
     payment_status: 'unpaid',
+    // DPDP Phase B: opt-in for indefinite retention. Default false → 90-day purge eligible.
+    data_retention_consent: params.dataRetentionConsent === true,
     // Store manual key skills in enrichment_cache for process-scan to read
     ...(params.keySkills ? { enrichment_cache: { key_skills: params.keySkills } } : {}),
   };
