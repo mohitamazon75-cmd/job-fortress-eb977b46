@@ -2645,6 +2645,13 @@ export type Database = {
         }
         Returns: number
       }
+      purge_unconsented_artifacts: {
+        Args: never
+        Returns: {
+          linkedin_snapshots_deleted: number
+          resume_artifacts_deleted: number
+        }[]
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
