@@ -15,6 +15,11 @@ import Card0Verdict from "@/components/model-b/Card0Verdict";
 import MondayMoveCard from "@/components/model-b/MondayMoveCard";
 import PromptModal from "@/components/model-b/PromptModal";
 import { useScanFunnelTracking } from "@/hooks/use-scan-funnel-tracking";
+import {
+  trackRevealEvent,
+  classifyRevealOpen,
+  makeScrollDepthTracker,
+} from "@/lib/reveal-tracking";
 
 // Issue 1-A: Lazy-load the three highest-value previously-hidden features.
 // These were fully built but permanently unreachable in the old flow.
