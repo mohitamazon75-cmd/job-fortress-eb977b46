@@ -359,7 +359,12 @@ const Index = () => {
     window.scrollTo(0, 0);
     console.debug('[Phase]', phase, { scanReport: !!scanReport, moneyShotSeen });
     if (phase === 'hero') track('landing_view');
-    else if (phase === 'processing') track('scan_start');
+    else if (phase === 'processing') {
+      track('scan_start');
+      // Anchor for Time-to-Money-Shot instrumentation (audit P1 #9).
+      // Read by MoneyShotCard mount to compute elapsed_ms.
+      try { sessionStorage.setItem('jb_scan_start_ts', String(Date.now())); } catch { /* storage may be blocked */ }
+    }
     else if (phase === 'reveal') track('score_view');
     else if (phase === 'money-shot') track('tab_view', { tab: 'money-shot' });
     else if (phase === 'error') track('error_view');

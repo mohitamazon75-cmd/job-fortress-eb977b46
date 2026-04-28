@@ -5,13 +5,17 @@ import SEO from '@/components/SEO';
 import { useTrack } from '@/hooks/use-track';
 
 const FREE_FEATURES = [
-  'Full AI career scan',
+  'One full AI career scan',
   'Career Position Score™',
   'Top 3 skill risk analysis',
   'Basic action plan',
   'Peer comparison',
   'WhatsApp sharing',
 ];
+
+// One-payment-one-analysis rule (mem://business/monetization-constraints):
+// Each Free scan analyses exactly one resume. Re-running on a new resume
+// requires a new scan slot. Pro removes this cap.
 
 const PRO_FEATURES = [
   'Everything in Free, plus:',
@@ -94,6 +98,9 @@ export default function Pricing() {
                 <span className="text-muted-foreground text-sm">forever</span>
               </div>
               <p className="text-sm text-muted-foreground mt-2">Perfect for a quick career check-up</p>
+              <p className="text-[11px] text-muted-foreground mt-1 italic">
+                One scan analyses one resume. Re-scan a different resume = a new free slot.
+              </p>
             </div>
             <ul className="space-y-3">
               {FREE_FEATURES.map((f) => (
@@ -158,10 +165,12 @@ export default function Pricing() {
           <h3 className="text-2xl font-bold text-center text-foreground">Questions?</h3>
           <div className="space-y-4">
             {[
-              { q: 'Can I try before buying?', a: 'Absolutely! The free tier gives you a full scan with your Career Position Score and top 3 skill risks. No credit card needed.' },
+              { q: 'Can I try before buying?', a: 'Absolutely! The free tier gives you one full scan with your Career Position Score and top 3 skill risks. No credit card needed.' },
+              { q: 'How many scans does Free include?', a: 'One free scan analyses one resume end-to-end. To analyse a different resume, you start a new free scan. Pro removes this limit — unlimited scans, unlimited re-runs.' },
+              { q: 'What does Pro unlock that Free does not?', a: 'Pro unlocks the full Strategic Dossier, Side Hustle Generator, weekly intelligence briefs, PDF export, priority queue, and unlimited AI Coach questions. Free users see partial previews of these.' },
               { q: 'What payment methods do you accept?', a: 'We use Razorpay — supports UPI, credit/debit cards, net banking, and wallets.' },
               { q: 'Can I cancel anytime?', a: 'Yes. Yearly plans can be cancelled anytime. You keep access until the period ends.' },
-              { q: 'Is my data safe?', a: 'Your data is encrypted and never shared. You can delete your account and all data at any time.' },
+              { q: 'Is my data safe?', a: 'Your data is encrypted, retained for 90 days per India DPDP Act, and never shared. You can delete your account and all data at any time.' },
             ].map(({ q, a }) => (
               <div key={q} className="rounded-xl bg-muted/50 p-4">
                 <p className="font-semibold text-foreground text-sm">{q}</p>
