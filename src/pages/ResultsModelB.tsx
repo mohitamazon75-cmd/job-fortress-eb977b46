@@ -492,6 +492,45 @@ export default function ResultsModelB() {
     }
   }, [analysisId, navigate, fetchAnalysis]);
 
+  // Friendly debrief instrumentation (2026-04-28).
+  // Three signals captured here:
+  //   1. reveal_opened / reveal_reopened — fired exactly once per scan per device
+  //      (localStorage marker keyed on scan id) so we can compute return-rate.
+  //   2. scroll_depth — fires once each at 25/50/75/100% of page scroll. The
+  //      `crossed` Set lives in a ref so threshold de-duplication survives
+  //      re-renders; we re-allocate it whenever the scan changes.
+  //   3. (share/CTA events live on the buttons themselves, not in this effect.)
+  // Gated on `cardData` so we don't fire opens before the payload is on screen.
+  const scrollCrossedRef = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    if (!analysisId || !cardData) return;
+    scrollCrossedRef.current = new Set();
+
+    const ctx = {
+      scanId: analysisId,
+      userId,
+      scanRole: cardData?.user?.current_title ?? null,
+      scanIndustry: cardData?.user?.industry ?? null,
+      scanScore:
+        typeof cardData?.jobbachao_score === "number" ? cardData.jobbachao_score : null,
+      scanCity: cardData?.user?.location ?? null,
+    };
+
+    const openType = classifyRevealOpen(analysisId);
+    if (openType) {
+      trackRevealEvent(openType, ctx, {
+        viewport_w: typeof window !== "undefined" ? window.innerWidth : null,
+      });
+    }
+
+    const handler = makeScrollDepthTracker(scrollCrossedRef.current, (pct) => {
+      trackRevealEvent("scroll_depth", ctx, { pct });
+    });
+    window.addEventListener("scroll", handler, { passive: true });
+    handler(); // fire once in case page is shorter than viewport
+    return () => window.removeEventListener("scroll", handler);
+  }, [analysisId, cardData, userId]);
+
   // Loading message cycling
   useEffect(() => {
     if (!loading) {
