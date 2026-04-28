@@ -1053,9 +1053,13 @@ export default function ResultsModelB() {
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
                     marginBottom: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                 >
-                  ⚡ Generate with AI · tap any
+                  <span aria-hidden>⚡</span>
+                  <span>Generate with AI</span>
                 </div>
                 <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   {actionPrompts.map((action, i) => (
