@@ -101,36 +101,60 @@ function isAnonymousAuthSession(session: Awaited<ReturnType<typeof supabase.auth
 // flow after login/signup. This prevents anonymous scans from generating stale
 // resume-less analyses and ensures Google/email auth is the required entrypoint.
 function AuthGate({ onReady }: { onReady: () => void }) {
-  const fired = useRef(false);
+  const decided = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (fired.current) return;
-    fired.current = true;
+    // CRITICAL: subscribe to onAuthStateChange BEFORE getSession() to avoid the
+    // OAuth callback race condition. Returning from Google → window.location.origin
+    // means we land here while supabase-js is still parsing the URL hash and
+    // setting the session. A naive getSession() returns null and we redirect
+    // back to /auth, which triggers the loop the user reported.
+    let timer: number | undefined;
 
-    (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session && !isAnonymousAuthSession(session)) {
-          onReady();
-          return;
-        }
+    const decide = (session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']) => {
+      if (decided.current) return;
+      if (session && !isAnonymousAuthSession(session)) {
+        decided.current = true;
+        if (timer) window.clearTimeout(timer);
+        onReady();
+        return;
+      }
+    };
 
-        try {
-          sessionStorage.setItem('jb_post_auth_redirect', '/');
-        } catch {}
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      decide(session);
+    });
 
-        navigate('/auth', { replace: true });
-      } catch (e) {
-        console.warn('[AuthGate] Auth check failed, redirecting to login:', e);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      decide(session);
+      // If we still don't have a session after the initial check, give the
+      // OAuth callback up to 1.5s to land via the listener above. Then bail.
+      if (!decided.current) {
+        timer = window.setTimeout(() => {
+          if (decided.current) return;
+          decided.current = true;
+          try { sessionStorage.setItem('jb_post_auth_redirect', '/'); } catch {}
+          navigate('/auth', { replace: true });
+        }, 1500);
+      }
+    }).catch((e) => {
+      console.warn('[AuthGate] getSession failed:', e);
+      if (!decided.current) {
+        decided.current = true;
         navigate('/auth', { replace: true });
       }
-    })();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (timer) window.clearTimeout(timer);
+    };
   }, [navigate, onReady]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Redirecting to secure sign in...</div>
+      <div className="animate-pulse text-muted-foreground">Signing you in…</div>
     </div>
   );
 }

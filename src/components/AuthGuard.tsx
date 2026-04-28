@@ -36,31 +36,51 @@ export default function AuthGuard({ children, fallback, requiredRole }: AuthGuar
       return;
     }
 
-    // P1-3 FIX: Only update session state here — don't navigate on sign-out.
-    // Navigation is handled by Index.tsx's own auth listener to avoid race conditions.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    // CRITICAL: subscribe to onAuthStateChange BEFORE calling getSession() and
+    // give the OAuth callback a brief grace window before redirecting to /auth.
+    // Otherwise, returning from Google to a guarded route can race the session
+    // hydration and bounce the user back to login (the loop reported 2026-04-28).
+    let redirectTimer: number | undefined;
+    let decided = false;
+
+    const finalizeNoSession = () => {
+      if (decided) return;
+      decided = true;
+      navigate('/auth', { replace: true });
+    };
+
+    const onSession = (s: Session | null) => {
+      setSession(s);
       setLoading(false);
-      if (requiredRole && session) {
-        checkUserRole(session.user.id);
-      } else {
-        setIsAuthorized(!requiredRole);
+      if (s) {
+        if (redirectTimer) window.clearTimeout(redirectTimer);
+        decided = true;
+        if (requiredRole) {
+          checkUserRole(s.user.id);
+        } else {
+          setIsAuthorized(true);
+        }
+      } else if (requiredRole === undefined) {
+        setIsAuthorized(true);
       }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      onSession(session);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
+      onSession(session);
       if (!session) {
-        navigate('/auth', { replace: true });
-      } else if (requiredRole) {
-        checkUserRole(session.user.id);
-      } else {
-        setIsAuthorized(true);
+        // Wait briefly for OAuth callback to land via the listener above.
+        redirectTimer = window.setTimeout(finalizeNoSession, 1500);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (redirectTimer) window.clearTimeout(redirectTimer);
+    };
   }, [navigate, requiredRole]);
 
   const checkUserRole = async (userId: string) => {
