@@ -778,6 +778,44 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_events: {
+        Row: {
+          cost_inr_paise: number
+          created_at: string
+          function_name: string
+          id: string
+          note: string | null
+          provider: string
+          scan_id: string | null
+        }
+        Insert: {
+          cost_inr_paise: number
+          created_at?: string
+          function_name: string
+          id?: string
+          note?: string | null
+          provider: string
+          scan_id?: string | null
+        }
+        Update: {
+          cost_inr_paise?: number
+          created_at?: string
+          function_name?: string
+          id?: string
+          note?: string | null
+          provider?: string
+          scan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_events_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crc_learning_resources: {
         Row: {
           created_at: string
