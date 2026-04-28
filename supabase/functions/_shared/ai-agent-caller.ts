@@ -144,6 +144,7 @@ async function callAgentCore(
       if (paise > 0) {
         logCostEvent({
           function_name: "process-scan",
+          scan_id: getCurrentScanId(),
           provider: "lovable_ai",
           cost_inr_paise: paise,
           note: agentName,
