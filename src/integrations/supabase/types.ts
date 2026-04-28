@@ -1511,6 +1511,42 @@ export type Database = {
         }
         Relationships: []
       }
+      linkedin_snapshots: {
+        Row: {
+          created_at: string
+          data_retention_consent: boolean
+          id: string
+          linkedin_url: string
+          raw_payload: Json
+          scan_id: string
+          scrape_confidence: string | null
+          source_provider: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_retention_consent?: boolean
+          id?: string
+          linkedin_url: string
+          raw_payload?: Json
+          scan_id: string
+          scrape_confidence?: string | null
+          source_provider?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_retention_consent?: boolean
+          id?: string
+          linkedin_url?: string
+          raw_payload?: Json
+          scan_id?: string
+          scrape_confidence?: string | null
+          source_provider?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       market_signals: {
         Row: {
           ai_job_mentions_pct: number | null
@@ -1782,6 +1818,54 @@ export type Database = {
         }
         Relationships: []
       }
+      resume_artifacts: {
+        Row: {
+          created_at: string
+          data_retention_consent: boolean
+          extracted_years_experience: number | null
+          extraction_confidence: string | null
+          extraction_model: string | null
+          id: string
+          missing_fields: Json | null
+          parsed_json: Json | null
+          parser_version: string | null
+          raw_text: string | null
+          resume_file_path: string | null
+          scan_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_retention_consent?: boolean
+          extracted_years_experience?: number | null
+          extraction_confidence?: string | null
+          extraction_model?: string | null
+          id?: string
+          missing_fields?: Json | null
+          parsed_json?: Json | null
+          parser_version?: string | null
+          raw_text?: string | null
+          resume_file_path?: string | null
+          scan_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_retention_consent?: boolean
+          extracted_years_experience?: number | null
+          extraction_confidence?: string | null
+          extraction_model?: string | null
+          id?: string
+          missing_fields?: Json | null
+          parsed_json?: Json | null
+          parser_version?: string | null
+          raw_text?: string | null
+          resume_file_path?: string | null
+          scan_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       scan_feedback: {
         Row: {
           accuracy_rating: number | null
@@ -1929,6 +2013,7 @@ export type Database = {
           career_reality_check_data: Json | null
           country: string | null
           created_at: string
+          data_retention_consent: boolean
           determinism_index: number | null
           dpdp_consent_at: string | null
           dpdp_consent_given: boolean | null
@@ -1957,6 +2042,7 @@ export type Database = {
           career_reality_check_data?: Json | null
           country?: string | null
           created_at?: string
+          data_retention_consent?: boolean
           determinism_index?: number | null
           dpdp_consent_at?: string | null
           dpdp_consent_given?: boolean | null
@@ -1985,6 +2071,7 @@ export type Database = {
           career_reality_check_data?: Json | null
           country?: string | null
           created_at?: string
+          data_retention_consent?: boolean
           determinism_index?: number | null
           dpdp_consent_at?: string | null
           dpdp_consent_given?: boolean | null
