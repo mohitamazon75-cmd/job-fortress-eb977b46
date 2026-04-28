@@ -387,7 +387,7 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
                         {/* Referral templates drawer */}
                         <AnimatePresence>
                           {referralOpenIdx === i && (() => {
-                            const templates = buildReferralTemplates(job);
+                            const templates = buildReferralTemplates(job, role);
                             return (
                               <motion.div
                                 initial={{ height: 0, opacity: 0 }}
