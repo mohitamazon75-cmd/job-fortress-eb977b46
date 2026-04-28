@@ -393,12 +393,83 @@ Totally understand if it's not a fit — would also appreciate any pointer on wh
                           const targetUrl = buildTargetedUrl(job.url, job.title, job.company);
                           const isDirectLink = targetUrl === job.url;
                           return (
-                            <a href={targetUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-black hover:bg-primary/90 transition-colors">
-                              {isDirectLink ? 'Apply Now' : 'Search This Role'} <ExternalLink className="w-3 h-3" />
-                            </a>
+                            <div className="flex flex-wrap gap-2 items-center">
+                              <a href={targetUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-black hover:bg-primary/90 transition-colors">
+                                {isDirectLink ? 'Apply Now' : 'Search This Role'} <ExternalLink className="w-3 h-3" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setReferralOpenIdx(referralOpenIdx === i ? null : i); }}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-prophet-cyan/30 bg-prophet-cyan/5 text-prophet-cyan text-xs font-black hover:bg-prophet-cyan/10 transition-colors"
+                                title="Generate a referral ask message"
+                              >
+                                <MessageCircle className="w-3 h-3" /> Ask for Referral
+                              </button>
+                            </div>
                           );
                         })()}
+
+                        {/* Referral templates drawer */}
+                        <AnimatePresence>
+                          {referralOpenIdx === i && (() => {
+                            const templates = buildReferralTemplates(job);
+                            return (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="mt-3 p-3 rounded-lg border border-prophet-cyan/20 bg-prophet-cyan/5 space-y-3">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-prophet-cyan/80">
+                                    Referral Asks · Replace [Name] before sending
+                                  </p>
+
+                                  {/* WhatsApp template */}
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[10px] font-bold text-foreground/70">WhatsApp</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyReferral(templates.whatsapp, `${i}-wa`)}
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-prophet-cyan hover:text-prophet-cyan/80"
+                                      >
+                                        {copiedKey === `${i}-wa` ? (<><Check className="w-3 h-3" /> Copied</>) : (<><Copy className="w-3 h-3" /> Copy</>)}
+                                      </button>
+                                    </div>
+                                    <pre className="whitespace-pre-wrap text-[11px] leading-relaxed text-foreground/85 font-sans bg-background/50 rounded p-2 border border-border/40">
+{templates.whatsapp}
+                                    </pre>
+                                  </div>
+
+                                  {/* LinkedIn template */}
+                                  <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[10px] font-bold text-foreground/70">LinkedIn DM</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCopyReferral(templates.linkedin, `${i}-li`)}
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-prophet-cyan hover:text-prophet-cyan/80"
+                                      >
+                                        {copiedKey === `${i}-li` ? (<><Check className="w-3 h-3" /> Copied</>) : (<><Copy className="w-3 h-3" /> Copy</>)}
+                                      </button>
+                                    </div>
+                                    <pre className="whitespace-pre-wrap text-[11px] leading-relaxed text-foreground/85 font-sans bg-background/50 rounded p-2 border border-border/40">
+{templates.linkedin}
+                                    </pre>
+                                  </div>
+
+                                  <p className="text-[10px] text-muted-foreground italic">
+                                    Tip: Search "{job.company}" on LinkedIn → filter by 2nd-degree connections → message someone in a relevant team.
+                                  </p>
+                                </div>
+                              </motion.div>
+                            );
+                          })()}
+                        </AnimatePresence>
                       </div>
                     </motion.div>
                   )}
