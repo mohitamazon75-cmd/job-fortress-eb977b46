@@ -18,6 +18,7 @@ const GeoArbitrageWidget = lazy(() => import('@/components/dashboard/GeoArbitrag
 const ObsolescenceTimelineWidget = lazy(() => import('@/components/dashboard/ObsolescenceTimelineWidget'));
 const SkillArbitrageWidget = lazy(() => import('@/components/dashboard/SkillArbitrageWidget'));
 const ResumeWeaponizerWidget = lazy(() => import('@/components/dashboard/ResumeWeaponizerWidget'));
+const StoryBankWidget = lazy(() => import('@/components/dashboard/StoryBankWidget'));
 
 export default function DefenseTab({ props }: { props: DashboardSharedProps }) {
   const {
