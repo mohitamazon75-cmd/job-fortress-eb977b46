@@ -303,11 +303,14 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════════════
     const enrichment = await gatherEnrichmentData({
       scan: {
+        id: scan.id,
+        user_id: scan.user_id,
         linkedin_url: scan.linkedin_url,
         resume_file_path: scan.resume_file_path,
         years_experience: scan.years_experience,
         metro_tier: scan.metro_tier,
         industry: scan.industry,
+        data_retention_consent: (scan as any).data_retention_consent ?? false,
       },
       hasResume,
       activeModel,
