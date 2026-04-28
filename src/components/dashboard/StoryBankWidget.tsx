@@ -35,6 +35,11 @@ export default function StoryBankWidget({ userId, scanId }: StoryBankWidgetProps
   const [saving, setSaving] = useState(false);
   const [showProModal, setShowProModal] = useState(false);
 
+  // Drill mode state — pure client-side, no LLM, no persistence
+  const [drillActive, setDrillActive] = useState(false);
+  const [drillStoryId, setDrillStoryId] = useState<string | null>(null);
+  const [drillReveal, setDrillReveal] = useState<{ task: boolean; action: boolean; result: boolean }>({ task: false, action: false, result: false });
+
   // Form state
   const [form, setForm] = useState({
     title: '',
