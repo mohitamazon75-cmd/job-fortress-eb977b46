@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Copy, Check, ArrowUpRight, Calendar, AlertTriangle, Zap, Briefcase, Crosshair, X, Star, Handshake } from 'lucide-react';
+import { TrendingUp, TrendingDown, Copy, Check, ArrowUpRight, Calendar, AlertTriangle, Zap, Briefcase, Crosshair, X, Star, Handshake, MapPin } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { useState } from 'react';
 
