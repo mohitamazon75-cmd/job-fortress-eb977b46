@@ -373,6 +373,8 @@ export async function createScan(params: {
         userId: user?.id || null,
         // VibeSec: server-side clamp enforced in create-scan edge fn (5k–5M INR/month)
         estimatedMonthlySalaryInr: params.estimatedMonthlySalaryInr ?? null,
+        // DPDP Phase B: explicit opt-in for indefinite retention. Default false.
+        dataRetentionConsent: params.dataRetentionConsent === true,
       },
     });
 
