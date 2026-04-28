@@ -284,6 +284,11 @@ const Index = () => {
     handleMoneyShotComplete,
   } = scanFlow;
 
+  // DPDP Phase B: carry data-retention consent across the auth-gate redirect.
+  // Default false. Forwarded to createScan → scans.data_retention_consent →
+  // governs resume_artifacts / linkedin_snapshots retention beyond 90 days.
+  const dataRetentionConsentRef = useRef<boolean>(false);
+
 
   // On mount: capture ?ref= referral code, log click, store for conversion tracking
   useEffect(() => {
