@@ -120,7 +120,9 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
 
   // A–F Fit Grade — deterministic derivation from skill_match_pct.
   // Calibrated to align with fit_level cutoffs (STRONG ≥80, GOOD 60–79, STRETCH <60).
-  const fitGrade = (pct: number): { letter: string; label: string; bg: string; text: string; ring: string } => {
+  // Returns null when pct is missing/invalid — hides the chip rather than hallucinating "D".
+  const fitGrade = (pct: number | null | undefined): { letter: string; label: string; bg: string; text: string; ring: string } | null => {
+    if (typeof pct !== 'number' || !Number.isFinite(pct) || pct < 0) return null;
     if (pct >= 85) return { letter: 'A',  label: 'Apply now',        bg: 'bg-prophet-green/15', text: 'text-prophet-green', ring: 'ring-prophet-green/40' };
     if (pct >= 75) return { letter: 'A−', label: 'Strong shot',       bg: 'bg-prophet-green/10', text: 'text-prophet-green', ring: 'ring-prophet-green/30' };
     if (pct >= 65) return { letter: 'B',  label: 'Worth applying',    bg: 'bg-prophet-cyan/15',  text: 'text-prophet-cyan',  ring: 'ring-prophet-cyan/40'  };
@@ -252,6 +254,7 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
                     <div className="flex items-center gap-2 flex-wrap">
                       {(() => {
                         const g = fitGrade(job.skill_match_pct);
+                        if (!g) return null;
                         return (
                           <span
                             className={`inline-flex flex-col items-center justify-center min-w-[34px] h-[34px] rounded-md ring-1 ${g.bg} ${g.text} ${g.ring} leading-none`}
