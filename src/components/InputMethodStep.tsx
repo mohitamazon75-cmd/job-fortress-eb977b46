@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { Linkedin, FileText, ArrowRight, Upload, Link2, Sparkles, Shield, Lock, ChevronRight, Zap } from 'lucide-react';
 
 interface InputMethodStepProps {
-  onSubmitLinkedin: (url: string) => void;
-  onSubmitResume: (file: File) => void;
+  onSubmitLinkedin: (url: string, dataRetentionConsent: boolean) => void;
+  onSubmitResume: (file: File, dataRetentionConsent: boolean) => void;
   onSkip: () => void;
 }
 
@@ -16,6 +16,11 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
   const [linkedinError, setLinkedinError] = useState('');
 
   const [fileError, setFileError] = useState('');
+
+  // DPDP Phase B: explicit, opt-in consent for indefinite retention of raw resume
+  // text + LinkedIn snapshot in resume_artifacts / linkedin_snapshots.
+  // Default OFF — when unchecked, those rows are eligible for the 90-day purge cron.
+  const [dataRetentionConsent, setDataRetentionConsent] = useState(false);
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
   const ALLOWED_MIME_TYPES = ['application/pdf'];
