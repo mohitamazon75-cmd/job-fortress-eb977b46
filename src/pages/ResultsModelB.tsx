@@ -1043,23 +1043,24 @@ export default function ResultsModelB() {
 
             {/* Bottom action buttons — hidden on Verdict (own CTAs) and Tools (utility tab) */}
             {!ACTION_BUTTONS_HIDDEN_TABS.has(currentCard) && actionPrompts.length > 0 && (
-              <div style={{ marginTop: 24 }}>
+              <div style={{ marginTop: 28 }}>
                 <div
                   style={{
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: 11,
-                    fontWeight: 800,
-                    color: "var(--mb-navy)",
-                    letterSpacing: "0.14em",
+                    fontWeight: 700,
+                    color: "var(--mb-ink3)",
+                    letterSpacing: "0.18em",
                     textTransform: "uppercase",
-                    marginBottom: 10,
+                    marginBottom: 12,
                     display: "flex",
                     alignItems: "center",
-                    gap: 6,
+                    gap: 8,
                   }}
                 >
-                  <span aria-hidden>⚡</span>
-                  <span>Generate with AI</span>
+                  <span style={{ flex: "0 0 auto" }} aria-hidden>⚡</span>
+                  <span>Quick actions</span>
+                  <span style={{ flex: 1, height: 1, background: "var(--mb-rule)" }} />
                 </div>
                 <div className="mb-action-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   {actionPrompts.map((action, i) => (
@@ -1080,24 +1081,25 @@ export default function ResultsModelB() {
                         fontFamily: "'DM Sans', sans-serif",
                         fontSize: 13,
                         fontWeight: 700,
-                        padding: "16px 12px",
-                        borderRadius: 14,
+                        padding: "14px 14px",
+                        borderRadius: 12,
                         cursor: "pointer",
-                        border: "1.5px solid var(--mb-navy)",
-                        background: "var(--mb-navy)",
-                        color: "white",
+                        border: "1.5px solid var(--mb-navy-tint2)",
+                        background: "var(--mb-navy-tint)",
+                        color: "var(--mb-navy)",
                         display: "flex",
                         alignItems: "center",
                         gap: 10,
                         transition: "all 150ms",
                         minHeight: 56,
                         boxShadow: "var(--mb-shadow-sm)",
-                        WebkitTapHighlightColor: "rgba(255,255,255,0.2)",
+                        WebkitTapHighlightColor: "rgba(27,47,85,0.15)",
+                        textAlign: "left",
                       }}
                     >
-                      <span style={{ fontSize: 18 }}>{action.icon}</span>
-                      <span style={{ flex: 1, textAlign: "left" }}>{action.label}</span>
-                      <span style={{ fontSize: 14, opacity: 0.7 }}>→</span>
+                      <span style={{ fontSize: 18, flexShrink: 0 }}>{action.icon}</span>
+                      <span style={{ flex: 1, textAlign: "left", lineHeight: 1.3 }}>{action.label}</span>
+                      <span style={{ fontSize: 14, opacity: 0.55, flexShrink: 0 }}>→</span>
                     </button>
                   ))}
                 </div>
