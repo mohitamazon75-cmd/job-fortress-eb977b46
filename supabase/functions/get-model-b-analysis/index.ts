@@ -486,6 +486,19 @@ async function processAnalysis(
 
       const data = await aiResponse.json();
       geminiRaw = data;
+      // Fire-and-forget COGS tracking — analysisId IS the scan id (model-b is keyed off scan).
+      try {
+        const paise = estimateLlmCostInrPaise(model, data);
+        if (paise > 0) {
+          logCostEvent({
+            function_name: "get-model-b-analysis",
+            scan_id: analysisId,
+            provider: "lovable_ai",
+            cost_inr_paise: paise,
+            note: `model-b:${model.split("/").pop()}:attempt${attempt + 1}`,
+          });
+        }
+      } catch { /* never propagate */ }
       const rawText = data?.choices?.[0]?.message?.content;
 
       if (!rawText) {
