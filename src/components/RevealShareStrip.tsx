@@ -88,16 +88,16 @@ export default function RevealShareStrip({ ctx, firstName, shareUrl }: RevealSha
   };
 
   return (
-    <div className="mb-3 flex items-center gap-2 rounded-xl border border-border/40 bg-card/60 px-3 py-2 backdrop-blur">
-      <span className="text-xs font-semibold text-muted-foreground">
-        Send this to a friend who needs it →
+    <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border/30 bg-transparent px-1 py-1">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
+        Know someone who needs this?
       </span>
       <div className="ml-auto flex items-center gap-1.5">
         <button
           type="button"
           onClick={handleWhatsApp}
           aria-label="Share on WhatsApp"
-          className="rounded-lg bg-[hsl(142_70%_45%)] px-2.5 py-1.5 text-xs font-bold text-white hover:opacity-90 active:scale-95 transition"
+          className="rounded-full bg-[hsl(142_70%_42%)] px-3 py-1.5 text-[12px] font-bold text-white hover:opacity-90 active:scale-95 transition"
         >
           WhatsApp
         </button>
@@ -105,7 +105,7 @@ export default function RevealShareStrip({ ctx, firstName, shareUrl }: RevealSha
           type="button"
           onClick={handleNativeShare}
           aria-label="Share"
-          className="rounded-lg border border-border/60 bg-background px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted active:scale-95 transition flex items-center gap-1"
+          className="rounded-full border border-border/50 bg-background/60 px-2.5 py-1.5 text-[12px] font-semibold text-foreground/80 hover:bg-muted active:scale-95 transition flex items-center gap-1"
         >
           <Share2 className="h-3.5 w-3.5" />
           Share
@@ -114,7 +114,7 @@ export default function RevealShareStrip({ ctx, firstName, shareUrl }: RevealSha
           type="button"
           onClick={handleCopy}
           aria-label="Copy link"
-          className="rounded-lg border border-border/60 bg-background px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted active:scale-95 transition flex items-center gap-1"
+          className="rounded-full border border-border/50 bg-background/60 px-2.5 py-1.5 text-[12px] font-semibold text-foreground/80 hover:bg-muted active:scale-95 transition flex items-center gap-1"
         >
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? "Copied" : "Copy"}
