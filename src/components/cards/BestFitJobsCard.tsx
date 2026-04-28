@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Briefcase, ChevronDown, ExternalLink, Loader2, RefreshCw, Shield, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Briefcase, ChevronDown, ExternalLink, Loader2, RefreshCw, Shield, TrendingUp, MessageCircle, Copy, Check } from 'lucide-react';
 import { type ScanReport } from '@/lib/scan-engine';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/lib/supabase-config';
