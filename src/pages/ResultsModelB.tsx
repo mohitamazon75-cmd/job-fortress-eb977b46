@@ -6,6 +6,7 @@ import "@/styles/model-b-tokens.css";
 import Card1RiskMirror from "@/components/model-b/Card1RiskMirror";
 import LiveMarketCard from "@/components/model-b/LiveMarketCard";
 import Card2MarketRadar from "@/components/model-b/Card2MarketRadar";
+import IntelligenceMapCard from "@/components/model-b/IntelligenceMapCard";
 import Card3SkillShield from "@/components/model-b/Card3SkillShield";
 import Card4PivotPaths from "@/components/model-b/Card4PivotPaths";
 import Card5JobsTracker from "@/components/model-b/Card5JobsTracker";
@@ -938,7 +939,31 @@ export default function ResultsModelB() {
                     /* onNext intentionally omitted — single nav lives on the Trends section below */
                   />
                   <div style={{ height: 24 }} />
-                  <Card2MarketRadar cardData={cardData} onNext={() => handleTabChange(3)} />
+                  <Card2MarketRadar cardData={cardData} />
+                  <div style={{ height: 24 }} />
+                  {/* Sprint 4 (2026-04-29): KG IP surfaced in Live Market tab. Self-hides if data is too thin. */}
+                  <IntelligenceMapCard cardData={cardData} />
+                  <div style={{ height: 24 }} />
+                  {/* Single forward nav for the merged tab */}
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <button
+                      onClick={() => handleTabChange(3)}
+                      style={{
+                        background: "var(--mb-navy)",
+                        color: "var(--mb-paper)",
+                        border: "none",
+                        borderRadius: 10,
+                        padding: "10px 18px",
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontWeight: 800,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        boxShadow: "var(--mb-shadow-md)",
+                      }}
+                    >
+                      Continue → Skill Shield
+                    </button>
+                  </div>
                 </>
               );
             })()}
