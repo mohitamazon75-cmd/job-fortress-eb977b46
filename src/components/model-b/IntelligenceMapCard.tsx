@@ -311,7 +311,10 @@ export default function IntelligenceMapCard({ cardData }: Props) {
             gap: 6,
           }}
         >
-          <span>📊 Mapped from your resume against our skill × AI-tool intelligence graph</span>
+          <span>
+            📊 Mapped from your resume against our skill × AI-tool intelligence graph
+            {source === "engine_fallback" ? " · classified by deterministic engine" : ""}
+          </span>
           <span style={{ fontWeight: 700, color: "var(--mb-ink2)" }}>
             {hoveredSkill ? `Highlighting: ${hoveredSkill}` : "Hover any skill to trace its threat path"}
           </span>
