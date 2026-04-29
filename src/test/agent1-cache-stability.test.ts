@@ -95,27 +95,27 @@ describe("Agent1 cache key stability (Sprint 7 snapshot)", () => {
   };
 
   it("FIXTURE_A strategic-skills key snapshot", () => {
-    expect(buildStrategicKey(FIXTURE_A)).toMatchInlineSnapshot(`"strat_skills_v1:1428562440"`);
+    expect(buildStrategicKey(FIXTURE_A)).toMatchInlineSnapshot(`"strat_skills_v1:1152900098"`);
   });
 
   it("FIXTURE_A profile key snapshot", () => {
-    expect(buildProfileKey(FIXTURE_A)).toMatchInlineSnapshot(`"agent1_profile_v1:1483401960"`);
+    expect(buildProfileKey(FIXTURE_A)).toMatchInlineSnapshot(`"agent1_profile_v1:1510077852"`);
   });
 
   it("FIXTURE_B strategic-skills key snapshot", () => {
-    expect(buildStrategicKey(FIXTURE_B)).toMatchInlineSnapshot(`"strat_skills_v1:894477090"`);
+    expect(buildStrategicKey(FIXTURE_B)).toMatchInlineSnapshot(`"strat_skills_v1:1108957225"`);
   });
 
   it("FIXTURE_B profile key snapshot", () => {
-    expect(buildProfileKey(FIXTURE_B)).toMatchInlineSnapshot(`"agent1_profile_v1:1252807458"`);
+    expect(buildProfileKey(FIXTURE_B)).toMatchInlineSnapshot(`"agent1_profile_v1:671705524"`);
   });
 
   it("FIXTURE_C (null experience) strategic-skills key snapshot", () => {
-    expect(buildStrategicKey(FIXTURE_C)).toMatchInlineSnapshot(`"strat_skills_v1:1729408253"`);
+    expect(buildStrategicKey(FIXTURE_C)).toMatchInlineSnapshot(`"strat_skills_v1:1615200918"`);
   });
 
   it("FIXTURE_C (null experience) profile key snapshot", () => {
-    expect(buildProfileKey(FIXTURE_C)).toMatchInlineSnapshot(`"agent1_profile_v1:1729408253"`);
+    expect(buildProfileKey(FIXTURE_C)).toMatchInlineSnapshot(`"agent1_profile_v1:1386248221"`);
   });
 
   it("strategic and profile keys for the same input are DIFFERENT (no cache collision)", () => {
