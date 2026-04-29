@@ -82,7 +82,14 @@ CRITICAL ACCURACY RULES:
 - NEVER invent funding amounts, hiring numbers, or statistics
 - NEVER fabricate percentage changes (use directional language: "Rising fast", "Growing", "Stable", "Declining")
 - For companies hiring: ONLY list companies found in the search results. If none found, say "Check Naukri and LinkedIn for latest openings"
-- ${region}-specific data only — do not default to Bangalore or any other city unless search results mention it`;
+- ${region}-specific data only — do not default to Bangalore or any other city unless search results mention it
+
+ZERO-HALLUCINATION SALARY POLICY (HARD RULE — non-negotiable):
+- NEVER write specific rupee amounts, lakh figures, or salary deltas (e.g. "₹8L", "₹8-12L on the table", "₹35-60L roles", "earning ₹X less", "leaving ₹Y on the table") UNLESS that exact figure appears verbatim in the SALARY & AI DISRUPTION search context above with a named source.
+- If you have NO sourced ₹ figure: use directional, source-free language only — "compensation trending up for senior roles", "level-matched roles command a meaningful premium", "negotiation room exists at this seniority". Never invent the number.
+- If you DO cite a sourced figure: include the source name in the body (e.g. "per Mercer 2026 India Compensation Report").
+- Banned phrases (these always indicate a fabrication): "leaving ₹X on the table", "you're earning ₹X less", "₹X-Y as [role title]", "₹X premium for [skill]" — unless the bracketed figure is sourced.
+- This rule overrides any other instruction. When in doubt, omit the number.`;
 
     const userPrompt = `Generate a personalized career intelligence briefing for:
 - Role: ${role}
@@ -196,6 +203,50 @@ RULES:
     if (!parsed) {
       console.error("[market-radar] Failed to parse AI response:", raw.slice(0, 500));
       return json({ error: "Failed to parse AI response" }, 500);
+    }
+
+    // ── ZERO-HALLUCINATION SALARY GUARD ────────────────────────────────────
+    // Even with the prompt rule, Gemini occasionally writes phrases like
+    // "₹8L–12L on the table as RevOps Architect". This is a credibility-killer
+    // because the figure is fabricated — we have no source for it. Strip any
+    // sentence that contains a ₹/lakh/L figure UNLESS the body also names a
+    // source. We replace, not redact, so the signal still reads naturally.
+    const hasSourceCitation = (text: string): boolean => {
+      const t = text.toLowerCase();
+      // Source markers: "per X", "according to", "X report", "(source)", named outlets
+      return /\b(per |according to |as per |source: |sources?:|report\b|study\b|survey\b|index\b)/i.test(text)
+        || /\b(mercer|aon|deloitte|naukri|linkedin|economic times|et\b|business standard|mint\b|nasscom|aim\b|inc42|moneycontrol|reuters|bloomberg|forbes|techcrunch)\b/i.test(t);
+    };
+    const stripFabricatedRupeeFigures = (text: string | undefined): string => {
+      if (!text || typeof text !== "string") return text || "";
+      // Split into sentences, drop ones with un-sourced ₹/lakh/L figures.
+      const sentences = text.split(/(?<=[.!?])\s+/);
+      const kept = sentences.filter((s) => {
+        const hasRupeeFigure = /(₹\s*\d|\d+\s*(?:L|lakh|lakhs|cr|crore|crores)\b)/i.test(s);
+        if (!hasRupeeFigure) return true;
+        return hasSourceCitation(s);
+      });
+      // If everything was stripped, return a safe directional fallback rather than empty.
+      if (kept.length === 0) {
+        return "Compensation signals are mixed at this seniority; check the Negotiation Anchors in your action plan for level-matched ranges.";
+      }
+      return kept.join(" ").trim();
+    };
+
+    if (Array.isArray(parsed.signals)) {
+      parsed.signals = parsed.signals.map((sig: Record<string, unknown>) => {
+        const cleaned = { ...sig };
+        if (typeof cleaned.body === "string") cleaned.body = stripFabricatedRupeeFigures(cleaned.body);
+        if (typeof cleaned.headline === "string") cleaned.headline = stripFabricatedRupeeFigures(cleaned.headline);
+        if (typeof cleaned.action_item === "string") cleaned.action_item = stripFabricatedRupeeFigures(cleaned.action_item);
+        return cleaned;
+      });
+    }
+    if (parsed.closing_verdict?.message) {
+      parsed.closing_verdict.message = stripFabricatedRupeeFigures(parsed.closing_verdict.message);
+    }
+    if (typeof parsed.one_liner === "string") {
+      parsed.one_liner = stripFabricatedRupeeFigures(parsed.one_liner);
     }
 
     return json({
