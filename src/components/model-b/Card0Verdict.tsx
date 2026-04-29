@@ -101,26 +101,30 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
   // Use ?? not || so legitimate 0 values aren't skipped
   const tasksAtRisk: string[] = Array.isArray(c1?.tasks_at_risk) ? c1.tasks_at_risk.slice(0, 3) : [];
   const threatTask = tasksAtRisk[0];
-  const threatPct = c1?.ai_coverage_pct ?? c1?.exposure_pct
-    ?? (typeof c1?.risk_score === "number" ? Math.min(95, Math.max(40, c1.risk_score + 10)) : null);
+  // L2 fix (round-4): only display a % when the LLM/server actually returned one.
+  // Previously we synthesized `risk_score + 10` clamped 40-95 — that was fabricated.
+  // If neither ai_coverage_pct nor exposure_pct is present, the fear line falls back
+  // to a qualitative phrasing instead of inventing a number.
+  const threatPct: number | null =
+    typeof c1?.ai_coverage_pct === "number" ? c1.ai_coverage_pct
+    : typeof c1?.exposure_pct === "number" ? c1.exposure_pct
+    : null;
   const threatTool = c1?.ai_tools_replacing?.[0]
     || cardData?.ai_tools_replacing?.[0]?.tool_name
     || cardData?.ai_tools_replacing?.[0];
   // (Moat skill names intentionally NOT extracted here — they're locked behind the paywall.
   // moatCount is computed below for the teased "X unfair edges" hope line.)
 
-  // Build per-task auto-coverage % for the disappearance bars (deterministic, no extra LLM cost)
-  // High-risk tasks deterministically map to 55–85% based on score position; safer tasks 35–55%.
-  const taskRows = tasksAtRisk.map((task, i) => {
-    const base = typeof threatPct === "number" ? threatPct : 60;
-    const pct = Math.max(35, Math.min(88, base - i * 8));
-    return { task: cap(task), pct };
-  });
+  // NOTE (round-4 2B fix): the "disappearance bars" used to fabricate per-task percentages
+  // via `base - i * 8`. Those bars were decorative, not data. Removed entirely.
+  // Task names are still shown as a plain list under the fear line.
 
   // Build the visceral fear→hope couplet — the threat is named, the edge is TEASED
   const threatToolStr = typeof threatTool === "string" ? threatTool : null;
-  const baseFearLine = threatTask && threatPct
+  const baseFearLine = threatTask && threatPct !== null
     ? `${cap(threatTask)} — ${threatPct}% of it${threatToolStr ? ` is already done by ${threatToolStr}` : " can be automated"} today.`
+    : threatTask && threatToolStr
+    ? `${cap(threatTask)} is being automated by ${threatToolStr} — today, not in five years.`
     : threatTask
     ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
     : "Your top execution skills are being automated today — not in five years.";
