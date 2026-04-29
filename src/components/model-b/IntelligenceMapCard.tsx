@@ -77,23 +77,70 @@ export default function IntelligenceMapCard({ cardData }: Props) {
 
   const { skillNodes, tools, pivots, role, totalSkills, source } = useMemo(() => {
     const c3Skills: Skill[] = Array.isArray(cardData?.card3_shield?.skills) ? cardData.card3_shield.skills : [];
-    const tools = normalizeTools(cardData?.ai_tools_replacing || cardData?.card1_risk?.ai_tools_replacing || []).slice(0, 6);
+
+    // ─── Round-5 fix (BL: KG "0 tools mapped" trust killer, 2026-04-29) ───
+    // Primary tool source is now scan_skill_threats (the same array driving the
+    // "Live threat signals" strip on Card2). Previous code read
+    // cardData.ai_tools_replacing which get-model-b-analysis never populates,
+    // so the KG always showed "0 tools" and contradicted Card2.
+    const threatRows: Array<{ skill?: string; threat_tool?: string; risk_level?: string }> =
+      Array.isArray(cardData?.scan_skill_threats) ? cardData.scan_skill_threats : [];
+    const threatToolByLowerSkill = new Map<string, string>();
+    const automatedSkillsLower = new Set<string>();
+    for (const t of threatRows) {
+      if (t?.skill && t?.threat_tool) {
+        threatToolByLowerSkill.set(t.skill.toLowerCase(), t.threat_tool);
+      }
+      // HIGH/MEDIUM threats override the KG bucket so we never claim a skill
+      // is "human-only" when Card2's threat strip flags it as actively dying.
+      if (t?.skill && (t.risk_level === "HIGH" || t.risk_level === "MEDIUM")) {
+        automatedSkillsLower.add(t.skill.toLowerCase());
+      }
+    }
+    const toolsFromThreats: Tool[] = Array.from(
+      new Map(
+        threatRows
+          .filter((t) => t.threat_tool)
+          .map((t) => [t.threat_tool as string, { tool_name: t.threat_tool as string, automates_task: t.skill || "", adoption_stage: "growing" }])
+      ).values()
+    );
+    const legacyTools = normalizeTools(cardData?.ai_tools_replacing || cardData?.card1_risk?.ai_tools_replacing || []);
+    // Merge, dedupe by tool_name (case-insensitive).
+    const toolsMerged = new Map<string, Tool>();
+    for (const t of [...toolsFromThreats, ...legacyTools]) {
+      const k = (t.tool_name || "").toLowerCase();
+      if (k && !toolsMerged.has(k)) toolsMerged.set(k, t);
+    }
+    const tools = Array.from(toolsMerged.values()).slice(0, 6);
+
     const pivots = normalizePivots(cardData?.card4_pivot?.adjacent_roles || cardData?.card4_pivot?.pivots || []).slice(0, 4);
     const role: string = cardData?.user?.current_title || cardData?.role || "Your Role";
 
-    const linkTool = (name: string, bucket: RiskBucket): string | undefined => {
-      if (bucket === "human-only" || !name) return undefined;
+    const linkTool = (name: string): string | undefined => {
+      if (!name) return undefined;
+      // 1) direct hit from scan_skill_threats
+      const direct = threatToolByLowerSkill.get(name.toLowerCase());
+      if (direct) return direct;
+      // 2) fallback substring match against legacy automates_task
       const head = name.toLowerCase().split(/[\s/]/)[0];
       return tools.find((t) =>
         t.automates_task && head && t.automates_task.toLowerCase().includes(head)
       )?.tool_name;
     };
 
+    // Reconcile bucket: if engine said human-only but threats list it, flip to automated.
+    const reconcile = (name: string, bucket: RiskBucket): RiskBucket => {
+      if (automatedSkillsLower.has(name.toLowerCase()) && bucket === "human-only") {
+        return "automated";
+      }
+      return bucket;
+    };
+
     // Primary source: card3_shield.skills with level enums (richest signal).
     if (c3Skills.length >= 2) {
       const all: SkillNode[] = c3Skills.slice(0, 12).map((s) => {
-        const bucket = classifySkill(s.level);
-        return { name: s.name, bucket, threatenedBy: linkTool(s.name, bucket) };
+        const bucket = reconcile(s.name, classifySkill(s.level));
+        return { name: s.name, bucket, threatenedBy: bucket === "human-only" ? undefined : linkTool(s.name) };
       });
       return { skillNodes: all, tools, pivots, role, totalSkills: c3Skills.length, source: "card3_shield" as const };
     }
