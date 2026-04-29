@@ -694,7 +694,10 @@ function SnapshotView({
               velocityLabel = "HOT";
               velocityColor = "#B8341C";
               velocityVerdict = `${displayRole} is in active hiring right now — move this week, not next month.`;
-              velocityNote = `${freshPct}% of dated postings are <7 days old — recruiters are actively listing this role. Note Naukri can't distinguish new requisitions from reposts.`;
+              // Round-6 fix (K): the prior copy added a "but reposts" disclaimer
+              // that contradicted the HOT badge. If we're genuinely in HOT (passed
+              // the repost-noise guard above), don't whisper "actually maybe not".
+              velocityNote = `${freshPct}% of dated postings are <7 days old — recruiters are actively listing this role.`;
             } else if (freshPct >= 40) {
               velocityLabel = "ACTIVE";
               velocityColor = "#8B6F1F";
