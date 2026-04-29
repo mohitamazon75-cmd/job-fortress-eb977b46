@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import { CardShell, CardHead, CardBody, Badge, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import BossPerceptionSimulator from "./BossPerceptionSimulator";
+import CopyKeywordsButton from "./CopyKeywordsButton";
 import { useTrack } from "@/hooks/use-track";
 import { personalizeCard1 } from "@/lib/card1-personalization";
 
@@ -20,6 +21,8 @@ interface Props {
   monthlyScanCount?: number | null;
   /** Estimated monthly salary in INR (from scans table) for rupee-anchored cost framing. */
   monthlySalaryInr?: number | null;
+  /** Reveal-side first name for personalized copy-paste artifacts. */
+  firstName?: string | null;
 }
 
 /**
