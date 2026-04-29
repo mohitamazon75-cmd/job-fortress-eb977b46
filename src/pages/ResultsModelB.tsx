@@ -957,7 +957,7 @@ export default function ResultsModelB() {
                 <Card6BlindSpots
                   cardData={cardData}
                   onBack={() => handleTabChange(5)}
-                  /* onNext omitted — single forward nav on the Human section below */
+                  onNext={() => { /* forward nav lives on the Human section below */ }}
                   scanId={analysisId ?? undefined}
                   firstName={revealFirstName}
                 />
