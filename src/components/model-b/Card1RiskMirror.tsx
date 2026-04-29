@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import { CardShell, CardHead, CardBody, Badge, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import BossPerceptionSimulator from "./BossPerceptionSimulator";
+import CopyKeywordsButton from "./CopyKeywordsButton";
 import { useTrack } from "@/hooks/use-track";
 import { personalizeCard1 } from "@/lib/card1-personalization";
 
@@ -20,6 +21,8 @@ interface Props {
   monthlyScanCount?: number | null;
   /** Estimated monthly salary in INR (from scans table) for rupee-anchored cost framing. */
   monthlySalaryInr?: number | null;
+  /** Reveal-side first name for personalized copy-paste artifacts. */
+  firstName?: string | null;
 }
 
 /**
@@ -114,7 +117,7 @@ export function deriveMonthlyFromBands(
   return Math.round(annual / 12);
 }
 
-export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanCount, monthlySalaryInr }: Props) {
+export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanCount, monthlySalaryInr, firstName }: Props) {
   const c1 = cardData.card1_risk;
   const u = cardData.user || {};
   const disruptionYear = c1?.disruption_year || "2027";
@@ -510,6 +513,9 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
                     {c1.ats_missing_keywords.map((kw: string, i: number) => (
                       <span key={i}><strong style={{ color: "var(--mb-red)", fontWeight: 800 }}>{kw}</strong>{i < c1.ats_missing_keywords.length - 1 ? " · " : ""}</span>
                     ))}
+                    <div>
+                      <CopyKeywordsButton keywords={c1.ats_missing_keywords} firstName={firstName} />
+                    </div>
                   </div>
                 )}
               </div>
