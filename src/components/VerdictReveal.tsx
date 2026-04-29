@@ -17,41 +17,52 @@ function getPlainEnglishVerdict(score: number, report: ScanReport, isExec: boole
   const displayRole = (!roleName || roleName === 'Unknown') ? `${report.industry || 'IT'} Professional` : roleName;
   const firstName = report.linkedin_name?.split(' ')[0] || '';
 
+  // Sharp + softened personalisation (Farheen feedback, 2026-04-29):
+  // Name prefix carries empathy frame ("this is uncomfortable but real"),
+  // body keeps the sharp specific number. Empty-name guard preserves
+  // grammatical sentences for resume-only scans where extraction failed.
+  const namePrefix = firstName ? `${firstName} — ` : '';
+  const nameSoftPrefix = firstName ? `${firstName}, ` : '';
+
   if (score >= 70) return {
-    headline: `You're in the safe zone.`,
+    headline: `${namePrefix}you're in the safe zone.`,
     body: `${score}% probability — no immediate threat to your job from AI. Your ${displayRole} role has strong human-only components that are hard to automate.`,
     hope: `Your unique skills put you ahead of most professionals. Now's the time to turn this advantage into a package upgrade.`,
-    papa: `${firstName ? firstName + ', ' : ''}tumhara job safe hai. AI se filhaal koi khatra nahi. Tumhare paas aise skills hain jo machine nahi kar sakti — like ${report.moat_skills?.[0] || 'strategic thinking'}. Bas aise hi strong rehna.`,
+    papa: `${nameSoftPrefix}tumhara job safe hai. AI se filhaal koi khatra nahi. Tumhare paas aise skills hain jo machine nahi kar sakti — like ${report.moat_skills?.[0] || 'strategic thinking'}. Bas aise hi strong rehna.`,
     color: 'text-prophet-green',
     glow: 'hsl(var(--prophet-green))',
     label: 'SAFE ZONE',
     labelClass: 'bg-prophet-green/20 text-prophet-green',
   };
   if (score >= 55) return {
-    headline: `You're in a decent spot, but stay sharp.`,
+    headline: `${namePrefix}you're in a decent spot, but stay sharp.`,
     body: `${score}% career position score — your ${displayRole} position is defensible today, but parts of your work are starting to overlap with AI. Now is the time to strengthen your edge.`,
     hope: `You're better positioned than most. A few targeted skill upgrades could push your score above 70 — and unlock a 10-15% package premium.`,
-    papa: `${firstName ? firstName + ', ' : ''}abhi job theek hai but dhyan rakhna padega. AI kuch kaam kar sakti hai jo tum karte ho. Lekin agar agle 3-6 months mein naye tools seekh lo, toh bahut aage nikal jaoge.`,
+    papa: `${nameSoftPrefix}abhi job theek hai but dhyan rakhna padega. AI kuch kaam kar sakti hai jo tum karte ho. Lekin agar agle 3-6 months mein naye tools seekh lo, toh bahut aage nikal jaoge.`,
     color: 'text-primary',
     glow: 'hsl(var(--primary))',
     label: 'MODERATE RISK',
     labelClass: 'bg-primary/20 text-primary',
   };
   if (score >= 40) return {
-    headline: `Your job has real exposure — but you have a clear path forward.`,
+    headline: firstName
+      ? `${firstName}, this is uncomfortable but real: your role has real exposure.`
+      : `Your job has real exposure — but you have a clear path forward.`,
     body: `Only ${score}% safety score — a significant chunk of ${displayRole} tasks can already be done by AI tools. The good news? Knowing this now puts you ahead of most people.`,
     hope: `90% of people in your position don't even know this yet. Your awareness is your biggest edge — and the action plan below is built specifically for your profile.`,
-    papa: `${firstName ? firstName + ', ' : ''}kuch kaam hai jo AI already kar sakti hai, toh prepare rehna chahiye. But tension mat lo — tumhe pata chal gaya yeh baat, baaki logon ko abhi pata bhi nahi. Neeche action plan hai — follow karo.`,
+    papa: `${nameSoftPrefix}kuch kaam hai jo AI already kar sakti hai, toh prepare rehna chahiye. But tension mat lo — tumhe pata chal gaya yeh baat, baaki logon ko abhi pata bhi nahi. Neeche action plan hai — follow karo.`,
     color: 'text-prophet-gold',
     glow: 'hsl(var(--prophet-gold))',
     label: 'HIGH EXPOSURE',
     labelClass: 'bg-prophet-gold/20 text-prophet-gold',
   };
   return {
-    headline: `Your role is exposed — but this is your head start.`,
+    headline: firstName
+      ? `${firstName}, this is uncomfortable but real: your role is exposed — and this is your head start.`
+      : `Your role is exposed — but this is your head start.`,
     body: `${score}% safety score — most of what a ${displayRole} does daily already has AI alternatives. But knowing this puts you ahead of 90% of people who'll find out too late.`,
     hope: `Most people won't know until it's too late. You found out today — and your personalized defense plan is ready below. Awareness + action is the formula.`,
-    papa: `${firstName ? firstName + ', ' : ''}seedhi baat — AI bahut kuch kar sakti hai jo tum abhi karte ho. But yeh bura news nahi hai, yeh early warning hai. Jo log aaj prepare hote hain, unka career sabse strong hota hai. Neeche poora plan ready hai.`,
+    papa: `${nameSoftPrefix}seedhi baat — AI bahut kuch kar sakti hai jo tum abhi karte ho. But yeh bura news nahi hai, yeh early warning hai. Jo log aaj prepare hote hain, unka career sabse strong hota hai. Neeche poora plan ready hai.`,
     color: 'text-prophet-red',
     glow: 'hsl(var(--prophet-red))',
     label: 'TAKE ACTION',
