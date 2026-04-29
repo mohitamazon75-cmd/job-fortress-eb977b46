@@ -629,7 +629,12 @@ function SnapshotView({
                   fontStyle: "italic",
                 }}
               >
-                Skill-match not shown — this market's top tags don't cleanly reflect {displayRole} skills. We hide the column rather than show misleading matches.
+                {/* Round-9 fix (2026-04-29): previous copy left the table feeling
+                    orphaned — these tags are real, but their relationship to the
+                    user's profile was unclear. Make it explicit. */}
+                These are what employers ARE asking for in this market — but the
+                tags don't cleanly map to {displayRole} skills, so we're not
+                showing a profile-match column rather than fake the comparison.
               </div>
             )}
           </div>
