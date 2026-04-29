@@ -21,28 +21,29 @@ export interface LiveBand {
   median: number;
 }
 
-const PERCENTILE_RE = /\btop\s+\d+(?:st|nd|rd|th)?\s+percentile\b/gi;
-const PREMIUM_RE = /\b(?:missing out on|missing)\s+(?:a\s+)?\d+%\s+(?:salary\s+)?premium\b/gi;
-const WEEKDAY_DEADLINE_RE = /\bby\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi;
-const SALARY_NUM_RE = /(?:₹|Rs\.?\s?|INR\s?)\s?(\d+(?:\.\d+)?)\s?(L|LPA|Lakh|Cr)?/gi;
+// NOTE: every regex below is intentionally created LOCAL to the function that
+// uses it. Module-level /g regexes carry .lastIndex state across calls and
+// silently skip matches when reused — caused a "should drop ₹30L+" false-pass
+// during round-5 dev. Don't lift these to module scope.
 
 /**
  * Strip sentences whose absolute ₹ amount is >2× the live band's median.
  * E.g. with median ₹15L, "₹30L+ averages" gets dropped because 30 > 15*2 = 30.
- * Threshold uses strict `>` so 2× exactly is allowed (within reason for senior tier).
+ * Threshold uses strict `>=` so 2× exactly is also dropped (the contradiction
+ * is loudest when the LLM doubles the median to invent a "premium").
  */
 export function suppressContradictorySalary(text: string, band: LiveBand | undefined | null): string {
   if (!text || !band || !band.median || band.median <= 0) return text || "";
   const ceiling = Math.max(band.max, band.median * 2);
   const sentences = text.split(/(?<=[.!?])\s+/);
   const kept = sentences.filter((s) => {
-    SALARY_NUM_RE.lastIndex = 0;
+    const re = /(?:₹|Rs\.?\s?|INR\s?)\s?(\d+(?:\.\d+)?)\s?(L|LPA|Lakh|Cr)?/gi;
     let m: RegExpExecArray | null;
-    while ((m = SALARY_NUM_RE.exec(s)) !== null) {
+    while ((m = re.exec(s)) !== null) {
       const amount = parseFloat(m[1]);
       const unit = (m[2] || "").toLowerCase();
       if (!unit.startsWith("l")) continue; // ignore "Cr" or unitless mentions
-      if (amount > ceiling) return false;
+      if (amount >= ceiling) return false;
     }
     return true;
   });
