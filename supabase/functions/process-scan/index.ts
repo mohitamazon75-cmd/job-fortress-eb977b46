@@ -668,6 +668,15 @@ Deno.serve(async (req) => {
               moat_indicators: cachedReport.moat_indicators,
             };
             console.log(`[Agent1:Cache] HIT — reusing skills from previous scan (confidence=${cachedConfidence}, skills=${cachedSkillCount}, role="${cachedRole}", subSector="${cachedReport.industry_sub_sector || 'none'}")`);
+            profilerStratSkillsSource = "agent1_cache";
+            profilerMeta = {
+              model_used: "cache",
+              latency_ms: 0,
+              fallback_chain: [],
+              strategic_skills_count: Array.isArray(agent1?.strategic_skills) ? agent1.strategic_skills.length : 0,
+              all_skills_count: Array.isArray(agent1?.all_skills) ? agent1.all_skills.length : 0,
+              strategic_skills_source: "agent1_cache",
+            };
           } else if (cachedReport) {
             console.warn(`[Agent1:Cache] SKIP — cached report failed quality gates (confidence=${cachedConfidence}, skills=${cachedSkillCount}, role="${cachedRole}")`);
           }
