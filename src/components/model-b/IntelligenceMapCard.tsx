@@ -159,9 +159,9 @@ export default function IntelligenceMapCard({ cardData }: Props) {
     const atRisk = allSkills.filter((s) => !moatSet.has(s.toLowerCase()) && !deadSet.has(s.toLowerCase()));
 
     const fallbackNodes: SkillNode[] = [
-      ...moats.slice(0, 4).map((name) => ({ name, bucket: "human-only" as RiskBucket, threatenedBy: undefined })),
-      ...atRisk.slice(0, 4).map((name) => ({ name, bucket: "at-risk" as RiskBucket, threatenedBy: linkTool(name, "at-risk") })),
-      ...dead.slice(0, 4).map((name) => ({ name, bucket: "automated" as RiskBucket, threatenedBy: linkTool(name, "automated") })),
+      ...moats.slice(0, 4).map((name) => ({ name, bucket: reconcile(name, "human-only" as RiskBucket), threatenedBy: linkTool(name) })),
+      ...atRisk.slice(0, 4).map((name) => ({ name, bucket: "at-risk" as RiskBucket, threatenedBy: linkTool(name) })),
+      ...dead.slice(0, 4).map((name) => ({ name, bucket: "automated" as RiskBucket, threatenedBy: linkTool(name) })),
     ];
 
     const total = moats.length + atRisk.length + dead.length;
