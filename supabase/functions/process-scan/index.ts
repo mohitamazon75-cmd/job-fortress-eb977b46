@@ -41,6 +41,11 @@ import {
   applyFunctionalIndustryOverride,
 } from "../_shared/scan-helpers.ts";
 import { computeProfileCompleteness, deterministicSeedFromString } from "../_shared/scan-utils.ts";
+import {
+  buildProfileCacheKey,
+  getCachedStrategicSkills,
+  cacheStrategicSkills,
+} from "../_shared/strategic-skills-cache.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
 import { orchestrateAgents } from "./scan-agents.ts";
 import { runScanPipeline } from "./scan-pipeline.ts";
@@ -574,6 +579,17 @@ Deno.serve(async (req) => {
 
     // Check for cached Agent1 output to ensure consistency across repeat scans
     let agent1: any = null;
+    // Round 9 (2026-04-29): Profiler metadata + strategic-skills cache source.
+    // Persisted into determinism_meta so admin can diagnose score variance.
+    let profilerMeta: {
+      model_used: string;
+      latency_ms: number | null;
+      fallback_chain: string[];
+      strategic_skills_count: number;
+      all_skills_count: number;
+      strategic_skills_source: "fresh" | "fresh_cached" | "cache" | "fallback" | "agent1_cache";
+    } | null = null;
+    let profilerStratSkillsSource: "fresh" | "fresh_cached" | "cache" | "fallback" | "agent1_cache" = "fresh";
     {
       // CRITICAL FIX: Skip Agent1 cache when a resume is present OR forceRefresh is true.
       // Previously: only forceRefresh bypassed the Agent1 cache. This meant uploading a
@@ -652,6 +668,15 @@ Deno.serve(async (req) => {
               moat_indicators: cachedReport.moat_indicators,
             };
             console.log(`[Agent1:Cache] HIT — reusing skills from previous scan (confidence=${cachedConfidence}, skills=${cachedSkillCount}, role="${cachedRole}", subSector="${cachedReport.industry_sub_sector || 'none'}")`);
+            profilerStratSkillsSource = "agent1_cache";
+            profilerMeta = {
+              model_used: "cache",
+              latency_ms: 0,
+              fallback_chain: [],
+              strategic_skills_count: Array.isArray(agent1?.strategic_skills) ? agent1.strategic_skills.length : 0,
+              all_skills_count: Array.isArray(agent1?.all_skills) ? agent1.all_skills.length : 0,
+              strategic_skills_source: "agent1_cache",
+            };
           } else if (cachedReport) {
             console.warn(`[Agent1:Cache] SKIP — cached report failed quality gates (confidence=${cachedConfidence}, skills=${cachedSkillCount}, role="${cachedRole}")`);
           }
@@ -715,6 +740,53 @@ Deno.serve(async (req) => {
       if (profilerResult.model_used !== "none") {
         console.log(`[Agent1:Profiler] Completed on ${profilerResult.model_used.split("/").pop()} (${profilerResult.latency_ms}ms, chain: ${profilerResult.fallback_chain.map(m => m.split("/").pop()).join(" → ")})`);
       }
+
+      // ── Round 9 (2026-04-29): Strategic-skills stabilizer ──────────────
+      // The deterministic engine is mathematically stable, but Agent1 (LLM)
+      // is not — we observed strategic_skills.length swing 2↔5 across
+      // re-scans of the same resume, producing 13-point Survivability swings.
+      // Cache the first run's classification, keyed on resume content + role
+      // + industry + experience_years. Subsequent re-scans of the same
+      // resume reuse the cached strategic_skills so the score-affecting
+      // field is deterministic. See _shared/strategic-skills-cache.ts.
+      try {
+        if (agent1 && Array.isArray(agent1.strategic_skills)) {
+          const cacheKey = buildProfileCacheKey({
+            rawProfileText,
+            role: agent1.current_role || resolvedRoleHint || "",
+            industry: agent1.industry || resolvedIndustry || "",
+            experienceYears: normalizedExperienceYears,
+          });
+          const cached = await getCachedStrategicSkills(supabase, cacheKey);
+          if (cached) {
+            const before = agent1.strategic_skills.length;
+            agent1.strategic_skills = cached.strategic_skills;
+            console.log(`[Agent1:StratSkills] CACHE HIT — reused ${cached.strategic_skills.length} strategic skills (live LLM had ${before}). Stabilises Survivability score across re-scans.`);
+            profilerStratSkillsSource = "cache";
+          } else if (agent1.strategic_skills.length > 0) {
+            await cacheStrategicSkills(supabase, cacheKey, agent1.strategic_skills, profilerResult.model_used || null);
+            console.log(`[Agent1:StratSkills] CACHE STORE — first scan, persisted ${agent1.strategic_skills.length} strategic skills for re-scan stability.`);
+            profilerStratSkillsSource = "fresh_cached";
+          }
+        }
+      } catch (e) {
+        console.warn("[Agent1:StratSkills] Cache pass failed (non-fatal):", e);
+      }
+
+      // Capture profiler metadata so /admin/scan/:scanId can diagnose score
+      // variance without trawling logs. This was the instrumentation gap
+      // that hid the 2↔5 strategic_skills swing in the first place — Agent1
+      // is the ONLY score-affecting LLM call but its model_used / latency
+      // / fallback chain were never persisted to determinism_meta.
+      profilerMeta = {
+        model_used: profilerResult.model_used || "none",
+        latency_ms: profilerResult.latency_ms ?? null,
+        fallback_chain: profilerResult.fallback_chain || [],
+        strategic_skills_count: Array.isArray(agent1?.strategic_skills) ? agent1.strategic_skills.length : 0,
+        all_skills_count: Array.isArray(agent1?.all_skills) ? agent1.all_skills.length : 0,
+        strategic_skills_source: profilerStratSkillsSource,
+      };
+
       if (!agent1) {
         // P0 fix (2026-04-17): When the profiler agent fails entirely, prefer the
         // verbatim parsed LinkedIn/resume title if we have one. If not, mark the
@@ -775,6 +847,15 @@ Deno.serve(async (req) => {
           geo_advantage: null,
           adaptability_signals: manualMatchedSkills.length > 0 ? 2 : 1,
           estimated_monthly_salary_inr: null,
+        };
+        profilerStratSkillsSource = "fallback";
+        profilerMeta = {
+          model_used: "fallback",
+          latency_ms: null,
+          fallback_chain: [],
+          strategic_skills_count: strategicFallback.length,
+          all_skills_count: fallbackSkills.length,
+          strategic_skills_source: "fallback",
         };
       }
     }
@@ -1157,7 +1238,7 @@ Deno.serve(async (req) => {
           (finalReport as any)?.computation_method?.kg_skills_matched ?? null,
         ml_used: (finalReport as any)?.computation_method?.ml_used ?? false,
       },
-      agents: agentMeta,
+      agents: { ...agentMeta, profiler: profilerMeta },
     };
 
     // Diagnostics: record final timing and timeout state, then embed in report.
