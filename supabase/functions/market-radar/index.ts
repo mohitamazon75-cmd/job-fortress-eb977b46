@@ -82,7 +82,14 @@ CRITICAL ACCURACY RULES:
 - NEVER invent funding amounts, hiring numbers, or statistics
 - NEVER fabricate percentage changes (use directional language: "Rising fast", "Growing", "Stable", "Declining")
 - For companies hiring: ONLY list companies found in the search results. If none found, say "Check Naukri and LinkedIn for latest openings"
-- ${region}-specific data only — do not default to Bangalore or any other city unless search results mention it`;
+- ${region}-specific data only — do not default to Bangalore or any other city unless search results mention it
+
+ZERO-HALLUCINATION SALARY POLICY (HARD RULE — non-negotiable):
+- NEVER write specific rupee amounts, lakh figures, or salary deltas (e.g. "₹8L", "₹8-12L on the table", "₹35-60L roles", "earning ₹X less", "leaving ₹Y on the table") UNLESS that exact figure appears verbatim in the SALARY & AI DISRUPTION search context above with a named source.
+- If you have NO sourced ₹ figure: use directional, source-free language only — "compensation trending up for senior roles", "level-matched roles command a meaningful premium", "negotiation room exists at this seniority". Never invent the number.
+- If you DO cite a sourced figure: include the source name in the body (e.g. "per Mercer 2026 India Compensation Report").
+- Banned phrases (these always indicate a fabrication): "leaving ₹X on the table", "you're earning ₹X less", "₹X-Y as [role title]", "₹X premium for [skill]" — unless the bracketed figure is sourced.
+- This rule overrides any other instruction. When in doubt, omit the number.`;
 
     const userPrompt = `Generate a personalized career intelligence briefing for:
 - Role: ${role}
