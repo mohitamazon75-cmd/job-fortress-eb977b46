@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CardShell, CardHead, CardBody, Badge, LivePill, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import { supabase } from "@/integrations/supabase/client";
 import SalaryFitWidget from "./SalaryFitWidget";
 import SectorNewsFeed from "./SectorNewsFeed";
 import { decideAttribution } from "./quote-attribution";
+import { sanitiseMarketCopy, filterFreshSectorNews } from "@/lib/market-copy-sanitizer";
 
 interface NewsItem {
   headline: string;
