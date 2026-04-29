@@ -830,6 +830,26 @@ export default function ResultsModelB() {
           const isAuthRequired = /please sign in|auth_required|401/i.test(error);
           const isScanIncomplete = !isForbidden && !isAuthRequired &&
             /didn't complete|not ready|scan_not_ready/i.test(error);
+          const isDailyLimit = /daily.*limit|try again tomorrow|429/i.test(error);
+          if (isDailyLimit) {
+            return (
+              <div style={{ textAlign: "center", padding: "60px 20px", maxWidth: 440, margin: "0 auto" }}>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>🛑</div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8 }}>
+                  Daily analysis limit reached
+                </div>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink3)", marginBottom: 24, lineHeight: 1.7 }}>
+                  You've run several fresh Model B analyses in the last 24 hours. This cap protects engine cost. Your previous reports are still saved in your dashboard — try again tomorrow.
+                </div>
+                <button
+                  onClick={() => { window.location.href = "/"; }}
+                  style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "white", background: "var(--mb-navy)", border: "none", borderRadius: 12, padding: "14px 32px", cursor: "pointer", minHeight: 48 }}
+                >
+                  Back to home
+                </button>
+              </div>
+            );
+          }
           if (isForbidden) {
             // Render forbidden branch (defined below) by falling through
           }

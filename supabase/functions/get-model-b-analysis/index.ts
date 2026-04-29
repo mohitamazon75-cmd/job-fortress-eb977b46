@@ -249,7 +249,9 @@ Deno.serve(async (req) => {
     }
 
     // ─── P1: Per-user daily cap (cost guardrail) ───
-    // Block if this user has triggered >5 fresh model-b generations in the last 24h.
+    // Block if this user has triggered >20 fresh model-b generations in the last 24h.
+    // Raised from 6 → 20 on 2026-04-29: 6 was too tight for active iteration/QA.
+    // Cost guardrail still holds (Model B is ~$0.02/run on Flash).
     try {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count } = await supabase
@@ -257,7 +259,7 @@ Deno.serve(async (req) => {
         .select("id", { count: "exact", head: true })
         .eq("user_id", user_id)
         .gte("updated_at", since);
-      if ((count ?? 0) > 5) {
+      if ((count ?? 0) > 20) {
         console.warn(`[model-b] Daily cap exceeded for user ${user_id}: ${count} runs in 24h`);
         return new Response(
           JSON.stringify({ success: false, error: "Daily analysis limit reached. Please try again tomorrow." }),
