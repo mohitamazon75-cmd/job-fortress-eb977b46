@@ -588,28 +588,16 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
                 {fearLine}
               </div>
 
-              {/* Disappearance bars — top tasks AI does today */}
-              {taskRows.length > 1 && (
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 7 }}>
+              {/* Tasks-at-risk list — names only, no fabricated % bars (round-4 2B fix) */}
+              {tasksAtRisk.length > 1 && (
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
                   <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#6b7280", marginBottom: 2 }}>
-                    What you do daily — AI now does in seconds
+                    Other tasks AI is taking on in your role
                   </div>
-                  {taskRows.map((row, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: "#374151", lineHeight: 1.3 }}>
-                        {row.task}
-                      </div>
-                      <div style={{ width: 90, height: 6, borderRadius: 999, background: "rgba(220,38,38,0.12)", overflow: "hidden" }}>
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${row.pct}%` }}
-                          transition={{ delay: 0.9 + i * 0.12, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                          style={{ height: "100%", background: "linear-gradient(90deg, #dc2626, #ef4444)" }}
-                        />
-                      </div>
-                      <div style={{ width: 32, fontSize: 12, fontWeight: 800, color: "#b91c1c", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                        {row.pct}%
-                      </div>
+                  {tasksAtRisk.slice(1).map((task, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, fontWeight: 600, color: "#374151", lineHeight: 1.35 }}>
+                      <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#dc2626", flexShrink: 0 }} />
+                      <span>{cap(task)}</span>
                     </div>
                   ))}
                 </div>
