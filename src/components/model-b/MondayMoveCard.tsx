@@ -115,8 +115,13 @@ function pickMondayMove(cardData: CardData): Move {
   };
 }
 
-export default function MondayMoveCard({ cardData }: { cardData: CardData }) {
+export default function MondayMoveCard({ cardData, firstName }: { cardData: CardData; firstName?: string | null }) {
   const move = useMemo(() => pickMondayMove(cardData), [cardData]);
+  // Personalisation (Farheen feedback, 2026-04-29): name in label gives the
+  // user ownership of the action — "Farheen's move" reads as accountability,
+  // not advice. Fallback preserves grammar when name is missing.
+  const trimmedName = firstName?.trim();
+  const labelText = trimmedName ? `📌 ${trimmedName}'s Monday Move` : "📌 Your Monday Move";
 
   return (
     <div
@@ -153,7 +158,7 @@ export default function MondayMoveCard({ cardData }: { cardData: CardData }) {
             border: "1px solid var(--mb-navy-tint2)",
           }}
         >
-          📌 Your Monday Move
+          {labelText}
         </span>
         <span
           style={{
