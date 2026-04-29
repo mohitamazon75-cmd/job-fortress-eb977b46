@@ -141,9 +141,8 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
             <SectionLabel label={`Live market signals · ${new Date().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`} />
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
               {liveMarket.salary_range_lpa && (
-                <TierAwareSalaryBand
+                <LiveSalaryBand
                   baseRange={liveMarket.salary_range_lpa}
-                  userMetroTier={cardData.user?.metro_tier || "tier1"}
                   userCity={cardData.user?.location || ""}
                 />
               )}
