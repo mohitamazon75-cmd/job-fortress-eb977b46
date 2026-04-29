@@ -1238,7 +1238,7 @@ Deno.serve(async (req) => {
           (finalReport as any)?.computation_method?.kg_skills_matched ?? null,
         ml_used: (finalReport as any)?.computation_method?.ml_used ?? false,
       },
-      agents: agentMeta,
+      agents: { ...agentMeta, profiler: profilerMeta },
     };
 
     // Diagnostics: record final timing and timeout state, then embed in report.
