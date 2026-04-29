@@ -276,10 +276,13 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           color: "var(--mb-muted, #6b7280)",
         }}
       >
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#15803d" }} />
-          {displaySignals} signals analyzed
-        </span>
+        {displaySignals > 0 && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#15803d" }} />
+            {displaySignals} signal{displaySignals === 1 ? "" : "s"} analyzed
+          </span>
+        )}
+        {displaySignals > 0 && <span style={{ opacity: 0.4 }}>·</span>}
         <span style={{ opacity: 0.4 }}>·</span>
         <span>AIRMM™ framework</span>
         <span style={{ opacity: 0.4 }}>·</span>
