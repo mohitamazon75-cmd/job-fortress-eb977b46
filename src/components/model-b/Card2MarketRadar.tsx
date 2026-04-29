@@ -182,6 +182,11 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
               {liveMarket.job_postings_trend && (() => {
                 // Round-5 fix (E, 2026-04-29): "stable +5% YoY" is a contradiction.
                 // Override the server's label when the percentage disagrees with it.
+                // Round-8 fix (Y, 2026-04-29): the absolute YoY % is an LLM-supplied
+                // number with no verifiable source — and it contradicts the Hiring
+                // Velocity STEADY badge on the same page when repost waves dominate.
+                // Drop the numeric pill; keep only the directional label, which is
+                // grounded in posting-trend enums (growing/stable/declining).
                 const pct = liveMarket.posting_change_pct;
                 let trendLabel = liveMarket.job_postings_trend as string;
                 if (typeof pct === "number") {
@@ -195,11 +200,9 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
                     <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-ink)" }}>
                       Job postings are <strong style={{ fontWeight: 800 }}>{trendLabel}</strong>
                     </div>
-                    {pct !== undefined && (
-                      <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, fontWeight: 800, color: pct >= 0 ? "var(--mb-green)" : "var(--mb-red)" }}>
-                        {pct >= 0 ? "+" : ""}{pct}% YoY
-                      </span>
-                    )}
+                    <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: 700, color: "var(--mb-ink3)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
+                      directional
+                    </span>
                   </div>
                 );
               })()}
