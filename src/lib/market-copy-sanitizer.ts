@@ -53,19 +53,18 @@ export function suppressContradictorySalary(text: string, band: LiveBand | undef
 /** Strip known hallucination patterns. Returns sanitised text (may be empty). */
 export function stripHallucinations(text: string): string {
   if (!text) return "";
-  let out = text;
-  // Drop whole sentences that contain a banned pattern.
-  const sentences = out.split(/(?<=[.!?])\s+/);
+  // Patterns are local (not module-level) — /g regexes carry .lastIndex state
+  // across calls and silently skip matches. Don't lift them out.
+  const PERCENTILE = /\btop\s+\d+(?:st|nd|rd|th)?\s+percentile\b/i;
+  const PREMIUM = /\b(?:missing out on|missing)\s+(?:a\s+)?\d+%\s+(?:salary\s+)?premium\b/i;
+  const WEEKDAY_DEADLINE = /\bby\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
+  const sentences = text.split(/(?<=[.!?])\s+/);
   const kept = sentences.filter((s) => {
-    if (PERCENTILE_RE.test(s)) return false;
-    if (PREMIUM_RE.test(s)) return false;
-    if (WEEKDAY_DEADLINE_RE.test(s)) return false;
+    if (PERCENTILE.test(s)) return false;
+    if (PREMIUM.test(s)) return false;
+    if (WEEKDAY_DEADLINE.test(s)) return false;
     return true;
   });
-  // reset lastIndex after .test on /g regex
-  PERCENTILE_RE.lastIndex = 0;
-  PREMIUM_RE.lastIndex = 0;
-  WEEKDAY_DEADLINE_RE.lastIndex = 0;
   return kept.join(" ").trim();
 }
 
