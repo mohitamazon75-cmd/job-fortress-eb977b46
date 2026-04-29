@@ -27,8 +27,10 @@ interface LiveMarketData {
 
 interface Props {
   cardData: any;
-  onBack: () => void;
-  onNext: () => void;
+  // Sprint 3 (2026-04-29): both nav handlers optional so this card can be
+  // stacked under LiveMarketCard inside the merged "Live Market" tab.
+  onBack?: () => void;
+  onNext?: () => void;
 }
 
 export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {

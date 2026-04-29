@@ -261,7 +261,9 @@ function GapRow({
 }
 
 // ─── Main card ──────────────────────────────────────────────────
-export default function Card6BlindSpots({ cardData, onBack, onNext, scanId, firstName }: { cardData: any; onBack: () => void; onNext: () => void; scanId?: string; firstName?: string | null }) {
+// Sprint 3 (2026-04-29): onBack/onNext relaxed to optional so this card can be
+// stacked above Card7HumanAdvantage inside the merged "Blind spots" tab.
+export default function Card6BlindSpots({ cardData, onBack, onNext, scanId, firstName }: { cardData: any; onBack?: () => void; onNext?: () => void; scanId?: string; firstName?: string | null }) {
   const d = cardData.card6_blindspots;
   const role = cardData?.user?.current_title || "professional";
   const skills: string[] = useMemo(

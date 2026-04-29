@@ -118,7 +118,9 @@ function ScriptCard({ s, onCopy, onSave }: {
   );
 }
 
-export default function Card7HumanAdvantage({ cardData, onBack, onNext, copyFallback, analysisId }: { cardData: any; onBack: () => void; onNext?: () => void; copyFallback?: (text: string) => void; analysisId?: string | null }) {
+// Sprint 3 (2026-04-29): onBack relaxed to optional so this card can be
+// stacked under Card6BlindSpots inside the merged "Blind spots" tab.
+export default function Card7HumanAdvantage({ cardData, onBack, onNext, copyFallback, analysisId }: { cardData: any; onBack?: () => void; onNext?: () => void; copyFallback?: (text: string) => void; analysisId?: string | null }) {
   const d = cardData?.card7_human || {};
   const advantages = useMemo(() => Array.isArray(d?.advantages) ? d.advantages : [], [d]);
   const scoreTags: string[] = Array.isArray(d?.score_tags) ? d.score_tags : [];
