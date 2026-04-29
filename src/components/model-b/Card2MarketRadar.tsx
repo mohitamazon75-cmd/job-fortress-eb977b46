@@ -189,39 +189,33 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           </>
         )}
 
-        {/* T6: Cohort outcome strip — shows when calibration data exists (n≥30) */}
-        {cohortOutcome && (
-          <div style={{ background: cohortOutcome.calibrated ? "var(--mb-green-tint)" : "var(--mb-paper)", border: `1.5px solid ${cohortOutcome.calibrated ? "rgba(26,107,60,0.2)" : "var(--mb-rule)"}`, borderRadius: 14, padding: "14px 18px", marginBottom: 22 }}>
-            {cohortOutcome.calibrated ? (
-              <>
-                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-green)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 6 }}>
-                  Your cohort · real outcomes
+        {/* T6: Cohort outcome strip — only render once we actually have calibrated data.
+            Round-5 fix (I, 2026-04-29): the "calibrating with real outcomes" placeholder
+            is permanent at pre-PMF traffic. Hide entirely until n≥30 calibration fires. */}
+        {cohortOutcome?.calibrated && (
+          <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 22 }}>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-green)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 6 }}>
+              Your cohort · real outcomes
+            </div>
+            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 15, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.5 }}>
+              Of <strong>{cohortOutcome.sample_size?.toLocaleString()}</strong> professionals with DI {cohortOutcome.di_bucket_min}–{cohortOutcome.di_bucket_max}
+              {cohortOutcome.role_category ? ` in ${cohortOutcome.role_category}` : ""}:
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap" as const }}>
+              {(cohortOutcome.got_interview_rate ?? 0) > 0 && (
+                <div style={{ background: "var(--mb-green)", borderRadius: 10, padding: "8px 14px", color: "white", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700 }}>
+                  {Math.round((cohortOutcome.got_interview_rate ?? 0) * 100)}% got interviews
                 </div>
-                <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 15, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.5 }}>
-                  Of <strong>{cohortOutcome.sample_size?.toLocaleString()}</strong> professionals with DI {cohortOutcome.di_bucket_min}–{cohortOutcome.di_bucket_max}
-                  {cohortOutcome.role_category ? ` in ${cohortOutcome.role_category}` : ""}:
+              )}
+              {(cohortOutcome.upskilling_rate ?? 0) > 0 && (
+                <div style={{ background: "var(--mb-navy)", borderRadius: 10, padding: "8px 14px", color: "white", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700 }}>
+                  {Math.round((cohortOutcome.upskilling_rate ?? 0) * 100)}% started upskilling
                 </div>
-                <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap" as const }}>
-                  {(cohortOutcome.got_interview_rate ?? 0) > 0 && (
-                    <div style={{ background: "var(--mb-green)", borderRadius: 10, padding: "8px 14px", color: "white", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700 }}>
-                      {Math.round((cohortOutcome.got_interview_rate ?? 0) * 100)}% got interviews
-                    </div>
-                  )}
-                  {(cohortOutcome.upskilling_rate ?? 0) > 0 && (
-                    <div style={{ background: "var(--mb-navy)", borderRadius: 10, padding: "8px 14px", color: "white", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700 }}>
-                      {Math.round((cohortOutcome.upskilling_rate ?? 0) * 100)}% started upskilling
-                    </div>
-                  )}
-                </div>
-                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: "var(--mb-ink3)", marginTop: 8 }}>
-                  Based on 7-day follow-ups from JobBachao users.
-                </div>
-              </>
-            ) : (
-              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "var(--mb-ink3)" }}>
-                <strong>Calibrating with real outcomes.</strong> As more users with your profile report back, this card will show what % got interviews.
-              </div>
-            )}
+              )}
+            </div>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: "var(--mb-ink3)", marginTop: 8 }}>
+              Based on 7-day follow-ups from JobBachao users.
+            </div>
           </div>
         )}
 
