@@ -57,12 +57,22 @@ export function stripHallucinations(text: string): string {
   // across calls and silently skip matches. Don't lift them out.
   const PERCENTILE = /\btop\s+\d+(?:st|nd|rd|th)?\s+percentile\b/i;
   const PREMIUM = /\b(?:missing out on|missing)\s+(?:a\s+)?\d+%\s+(?:salary\s+)?premium\b/i;
-  const WEEKDAY_DEADLINE = /\bby\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
+  const WEEKDAY_DEADLINE = /\bby\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)(?:\s+(?:morning|afternoon|evening|night))?\b/i;
+  // Round-6: "Inaction costs you ₹5L in annual growth" — fabricated cost claim.
+  const INACTION_COST = /\b(?:inaction\s+costs?|costing\s+you|losing\s+you)\s+(?:you\s+)?(?:₹|Rs\.?\s?|INR\s?)?\s?\d+(?:\.\d+)?\s?(?:L|LPA|Lakh|Cr|crore|%)/i;
+  // Round-6: "missing out on the 67% growth in AI-integrated marketing roles"
+  // — fabricated growth-percentage claim. Only strip when paired with "missing".
+  const MISSING_GROWTH = /\bmissing(?:\s+out)?\s+(?:on\s+)?(?:the\s+)?\d+%\s+growth\b/i;
+  // Round-6: "command(s) a (significant) premium" — qualitative invented claim.
+  const QUALITATIVE_PREMIUM = /\bcommand[s]?\s+(?:a\s+)?(?:significant\s+|substantial\s+|notable\s+)?premium\b/i;
   const sentences = text.split(/(?<=[.!?])\s+/);
   const kept = sentences.filter((s) => {
     if (PERCENTILE.test(s)) return false;
     if (PREMIUM.test(s)) return false;
     if (WEEKDAY_DEADLINE.test(s)) return false;
+    if (INACTION_COST.test(s)) return false;
+    if (MISSING_GROWTH.test(s)) return false;
+    if (QUALITATIVE_PREMIUM.test(s)) return false;
     return true;
   });
   return kept.join(" ").trim();
