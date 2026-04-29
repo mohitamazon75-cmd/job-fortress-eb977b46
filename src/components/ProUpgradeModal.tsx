@@ -92,6 +92,21 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  const unlockTesterPreview = useCallback(() => {
+    try {
+      window.localStorage.setItem('jb_dev_pro_bypass', '1');
+      window.dispatchEvent(new Event('subscription-updated'));
+      toast.success('Tester preview unlocked', {
+        description: 'Payment skipped for friendly feedback testing.',
+        duration: 4000,
+      });
+      onSuccess?.(TIER_CONFIG[selected].tier);
+      onClose();
+    } catch {
+      setPaymentError('Could not unlock tester preview.');
+    }
+  }, [selected, onClose, onSuccess]);
+
   // Update selected tier when modal opens or defaultTier changes
   useEffect(() => {
     if (isOpen) setSelected(defaultTier);
@@ -314,32 +329,15 @@ export default function ProUpgradeModal({ isOpen, onClose, onSuccess, defaultTie
             )}
 
             <button
-              onClick={(e) => {
-                if (e.shiftKey) {
-                  try {
-                    window.localStorage.setItem('jb_dev_pro_bypass', '1');
-                    window.dispatchEvent(new Event('subscription-updated'));
-                    toast.success('Dev bypass: Pro unlocked locally', {
-                      description: 'Razorpay skipped. Clear with localStorage.removeItem("jb_dev_pro_bypass").',
-                      duration: 4000,
-                    });
-                    onSuccess?.(TIER_CONFIG[selected].tier);
-                    onClose();
-                  } catch {
-                    setPaymentError('Could not enable dev bypass.');
-                  }
-                  return;
-                }
-                handleUpgrade();
-              }}
+              onClick={unlockTesterPreview}
               disabled={loading}
-              title="Tip: Shift+Click to bypass payment for testing"
+              title="Unlocks the Pro preview for friendly testing"
               className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-70 text-primary-foreground text-sm font-black transition-colors flex items-center justify-center gap-2 min-h-[48px]"
             >
               {loading ? (
                 <><Loader2 className="w-4 h-4 animate-spin" />Processing...</>
               ) : (
-                selected === 'year' ? 'Best Value — ₹5.5/day' : 'Protect My Career — ₹10/day'
+                'Unlock Preview — Skip Payment'
               )}
             </button>
             <p className="text-center text-xs text-foreground/40 mt-2">
