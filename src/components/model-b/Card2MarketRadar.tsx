@@ -257,18 +257,20 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           </>
         )}
 
-        {c2.key_insight && (
+        {sanitisedC2.key_insight && (
           <InfoBox variant="green" title="What your resume signals to this market">
-            <div>{c2.key_insight}</div>
+            <div>{sanitisedC2.key_insight}</div>
             <div style={{ marginTop: 8, fontSize: 11, opacity: 0.7, fontStyle: "italic" }}>
               Achievements pulled from your resume. Market figures from NASSCOM/WEF where cited. Salary not used — you didn't share it.
             </div>
           </InfoBox>
         )}
 
-        {/* Sector news feed — dated headlines for user's industry */}
-        {liveMarket?.sector_news && liveMarket.sector_news.length > 0 && (
-          <SectorNewsFeed items={liveMarket.sector_news} industry={cardData.user?.industry} />
+        {/* Sector news feed — dated headlines for user's industry. Round-5 fix (G):
+            filter out items whose headline carries an outdated year marker so we
+            don't stuff "(2024)" articles under a "LAST 21 DAYS" label. */}
+        {liveMarket?.sector_news && filterFreshSectorNews(liveMarket.sector_news).length > 0 && (
+          <SectorNewsFeed items={filterFreshSectorNews(liveMarket.sector_news)} industry={cardData.user?.industry} />
         )}
 
         {/* Live skill threat intel — capped at 4 to match Card 1's pill discipline */}
