@@ -104,9 +104,15 @@ export default function SectorPulse({ role, city, pulseOverride }: SectorPulsePr
 
   // Defense-in-depth: drop any beat whose URL isn't trusted, even if the
   // server already filtered. Caps at 4 visible beats, dedup by URL.
+  // Round-8 fix (X, 2026-04-29): also drop beats older than 21 days so the
+  // pulse never anchors on stale items (was letting 29-day-old layoff articles
+  // render under "last 29 days" — technically honest, but stale != live).
+  const MAX_AGE_MS = 21 * 24 * 60 * 60 * 1000;
   const seen = new Set<string>();
   const safeBeats = pulse.beats.filter(b => {
     if (!isTrustedNewsUrl(b.source_url)) return false;
+    const ts = new Date(b.published_at).getTime();
+    if (Number.isFinite(ts) && Date.now() - ts > MAX_AGE_MS) return false;
     let key = b.source_url;
     try { const u = new URL(b.source_url); key = `${u.hostname.replace(/^www\./, "")}${u.pathname}`.toLowerCase(); } catch { /* ignore */ }
     if (seen.has(key)) return false;
@@ -117,7 +123,7 @@ export default function SectorPulse({ role, city, pulseOverride }: SectorPulsePr
 
   // Compute the actual window from the oldest beat shown — keeps the label honest.
   const oldestDays = Math.max(0, ...safeBeats.map(b => Math.round((Date.now() - new Date(b.published_at).getTime()) / (1000 * 60 * 60 * 24))));
-  const displayWindow = Math.min(pulse.window_days || 30, Math.max(7, oldestDays));
+  const displayWindow = Math.min(pulse.window_days || 21, Math.max(7, oldestDays));
 
   return (
     <div data-testid="sector-pulse" style={{ marginBottom: 22 }}>
