@@ -277,7 +277,9 @@ export default function MoneyShotCard({ report, onContinue, scanId }: MoneyShotC
         .single();
       if (error) throw error;
       const url = `${window.location.origin}/share/challenge/${data.challenge_code}`;
-      const msg = `I scored ${careerScore}/100 on my AI Career Safety test. Think you can beat me? 💪 ${url}`;
+      const msg = firstName
+        ? `${firstName} scored ${careerScore}/100 on the JobBachao AI Career Safety test. Think you can beat me? 💪 ${url}`
+        : `I scored ${careerScore}/100 on my AI Career Safety test. Think you can beat me? 💪 ${url}`;
       window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
     } catch (err) {
       console.error('Challenge failed:', err);
