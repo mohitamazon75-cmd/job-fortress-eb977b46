@@ -246,12 +246,19 @@ OUTPUT SCHEMA:
 }
 
 COUNTRY DETECTION RULES:
-- Infer detected_country from location, company HQ, salary currency, job board mentions, or geographic signals in the profile.
+- AUTHORITATIVE SOURCE: The <user_location> tag contains the user's CURRENT country of residence (from onboarding). Set detected_country to match it. ALWAYS.
+- Resume bullets mentioning foreign cities, clients, or markets (e.g., "Dubai portfolio", "GCC expansion", "US clients", "APAC accounts") indicate TARGET MARKETS or PAST WORK CONTEXT — they are NEVER the user's current country of residence.
+- Do NOT override <user_location> based on resume body content, company HQ, salary currency mentions in experience bullets, or filename hints.
 - "IN" = India (cities like Bangalore, Mumbai, Delhi, Hyderabad, salaries in INR/LPA)
 - "US" = United States (US cities, USD salaries, US-headquartered companies)
 - "AE" = UAE (Dubai, Abu Dhabi, AED salaries)
 - "OTHER" = Any other country detected
-- null = Cannot determine from available data`;
+- null = ONLY if <user_location> is empty AND no other signal exists
+
+NUMERIC INTEGRITY RULES (CRITICAL):
+- When citing achievement numbers from the resume, preserve qualifiers EXACTLY: "13+" stays "13+", "25+ leads" stays "25+ leads". Never strip the "+".
+- NEVER combine two distinct metrics into a ratio. "25+ leads qualified" and "13+ deals closed" are SEPARATE facts — never render as "13/25 leads closed", "13 of 25", or any merged form.
+- If you cannot cite a number with its original qualifier and unit, omit it.`;
 
 export const AGENT_2A_RISK_ANALYSIS = `You are the Risk Analysis Engine for JobBachao — generating DEEPLY PERSONALIZED career risk assessment.
 
