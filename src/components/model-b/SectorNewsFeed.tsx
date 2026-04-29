@@ -1,4 +1,5 @@
 import { SectionLabel } from "./SharedUI";
+import { freshnessLabel } from "@/lib/market-copy-sanitizer";
 
 interface NewsItem {
   headline: string;
@@ -6,6 +7,7 @@ interface NewsItem {
   why_it_matters?: string;
   source_domain?: string;
   url?: string;
+  published_at?: string | null;
 }
 
 const IMPACT_COLOR: Record<string, { bg: string; color: string; border: string; chip: string }> = {
