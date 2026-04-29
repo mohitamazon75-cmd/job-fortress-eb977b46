@@ -102,6 +102,16 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
     };
   }, [c2, liveMarket?.salary_range_lpa]);
 
+  // Round-7 fix (Q, 2026-04-29): liveMarket.key_findings rendered raw bypassed
+  // the sanitiser entirely — leaked "command a significant premium" + LPA
+  // ceilings in fresh scan despite round-6 regex existing. Sanitise here too.
+  // Drop empty strings (sanitiser returns "" when entire field is hallucination).
+  const sanitisedKeyFindings = useMemo(() => {
+    const band = liveMarket?.salary_range_lpa;
+    const arr = liveMarket?.key_findings || [];
+    return arr.map((f) => sanitiseMarketCopy(f, band)).filter((f) => f && f.length > 0);
+  }, [liveMarket?.key_findings, liveMarket?.salary_range_lpa]);
+
   if (!c2) return null;
 
   return (
@@ -193,7 +203,7 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
                   </div>
                 );
               })()}
-              {liveMarket.key_findings?.slice(0, 2).map((finding, i) => (
+              {sanitisedKeyFindings.slice(0, 2).map((finding, i) => (
                 <div key={i} style={{ background: "var(--mb-paper)", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "10px 14px", fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.6 }}>
                   {finding}
                 </div>

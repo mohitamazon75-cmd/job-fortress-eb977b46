@@ -98,7 +98,10 @@ export function sanitiseMarketCopy(text: string | undefined | null, band?: LiveB
 export function filterFreshSectorNews<T extends { headline?: string; published_at?: string | null }>(
   items: T[] | undefined | null,
   nowYear: number = new Date().getUTCFullYear(),
-  maxAgeDays: number = 30,
+  // Round-7 fix (R, 2026-04-29): tightened from 30 → 21 days. A 29-day-old
+  // layoff article anchoring "Sector Pulse · LAST 29 DAYS" reads as stale,
+  // not live. 21 days matches the original "last 21 days" UX promise.
+  maxAgeDays: number = 21,
   now: Date = new Date(),
 ): T[] {
   if (!Array.isArray(items)) return [];
