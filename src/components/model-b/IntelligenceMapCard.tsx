@@ -34,15 +34,23 @@ interface SkillNode {
 }
 
 function classifySkill(level: string | undefined): RiskBucket {
+  // Explicit mapping — never default unknown levels to "human-only" (false reassurance).
+  // Decay-family levels MUST land in "automated" so the visualization agrees with Card0Verdict's
+  // `decayingSkillsCount` threat metric. (BL: round-4 decay-enum mismatch fix.)
   switch ((level || "").toLowerCase()) {
-    case "critical-gap":
-      return "automated";
-    case "buildable":
-      return "at-risk";
     case "best-in-class":
     case "strong":
-    default:
       return "human-only";
+    case "buildable":
+      return "at-risk";
+    case "critical-gap":
+    case "decaying":
+    case "weak":
+    case "obsolete":
+      return "automated";
+    default:
+      // Unknown level → honest "at-risk" (not falsely safe).
+      return "at-risk";
   }
 }
 

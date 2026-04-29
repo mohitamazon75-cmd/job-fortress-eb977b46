@@ -101,26 +101,30 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
   // Use ?? not || so legitimate 0 values aren't skipped
   const tasksAtRisk: string[] = Array.isArray(c1?.tasks_at_risk) ? c1.tasks_at_risk.slice(0, 3) : [];
   const threatTask = tasksAtRisk[0];
-  const threatPct = c1?.ai_coverage_pct ?? c1?.exposure_pct
-    ?? (typeof c1?.risk_score === "number" ? Math.min(95, Math.max(40, c1.risk_score + 10)) : null);
+  // L2 fix (round-4): only display a % when the LLM/server actually returned one.
+  // Previously we synthesized `risk_score + 10` clamped 40-95 — that was fabricated.
+  // If neither ai_coverage_pct nor exposure_pct is present, the fear line falls back
+  // to a qualitative phrasing instead of inventing a number.
+  const threatPct: number | null =
+    typeof c1?.ai_coverage_pct === "number" ? c1.ai_coverage_pct
+    : typeof c1?.exposure_pct === "number" ? c1.exposure_pct
+    : null;
   const threatTool = c1?.ai_tools_replacing?.[0]
     || cardData?.ai_tools_replacing?.[0]?.tool_name
     || cardData?.ai_tools_replacing?.[0];
   // (Moat skill names intentionally NOT extracted here — they're locked behind the paywall.
   // moatCount is computed below for the teased "X unfair edges" hope line.)
 
-  // Build per-task auto-coverage % for the disappearance bars (deterministic, no extra LLM cost)
-  // High-risk tasks deterministically map to 55–85% based on score position; safer tasks 35–55%.
-  const taskRows = tasksAtRisk.map((task, i) => {
-    const base = typeof threatPct === "number" ? threatPct : 60;
-    const pct = Math.max(35, Math.min(88, base - i * 8));
-    return { task: cap(task), pct };
-  });
+  // NOTE (round-4 2B fix): the "disappearance bars" used to fabricate per-task percentages
+  // via `base - i * 8`. Those bars were decorative, not data. Removed entirely.
+  // Task names are still shown as a plain list under the fear line.
 
   // Build the visceral fear→hope couplet — the threat is named, the edge is TEASED
   const threatToolStr = typeof threatTool === "string" ? threatTool : null;
-  const baseFearLine = threatTask && threatPct
+  const baseFearLine = threatTask && threatPct !== null
     ? `${cap(threatTask)} — ${threatPct}% of it${threatToolStr ? ` is already done by ${threatToolStr}` : " can be automated"} today.`
+    : threatTask && threatToolStr
+    ? `${cap(threatTask)} is being automated by ${threatToolStr} — today, not in five years.`
     : threatTask
     ? `${cap(threatTask)} is being automated in your stack — today, not in five years.`
     : "Your top execution skills are being automated today — not in five years.";
@@ -201,10 +205,15 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
     ? "Unlock the 90-day transition plan, salary delta, and exact next steps."
     : "Unlock the full report to see them.";
 
-  // Signal count — real number for trust band (no fabrication).
-  // Each card represents a multi-signal analysis; deterministic floor of 47 minimum.
-  const signalCount = 24 + (c1?.tasks_at_risk?.length || 0) * 3 + (c3?.skills?.length || 0) * 2 + (c4?.pivots?.length || 0) * 4;
-  const displaySignals = Math.max(47, signalCount);
+  // Signal count — grounded sum of actual data points pulled from this scan.
+  // Round-4 2C fix: removed `Math.max(47, …)` floor and `24 +` magic base — those existed
+  // only to inflate the trust band. Now we count exactly what we have.
+  const realSignalCount =
+    (Array.isArray(c1?.tasks_at_risk) ? c1.tasks_at_risk.length : 0) +
+    (Array.isArray(c1?.ai_tools_replacing) ? c1.ai_tools_replacing.length : 0) +
+    (Array.isArray(c3?.skills) ? c3.skills.length : 0) +
+    (Array.isArray(c4?.pivots) ? c4.pivots.length : 0);
+  const displaySignals = realSignalCount;
 
   // Conic-gradient ring percentage
   const ringPct = Math.max(0, Math.min(100, rawScore));
@@ -267,11 +276,13 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           color: "var(--mb-muted, #6b7280)",
         }}
       >
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#15803d" }} />
-          {displaySignals} signals analyzed
-        </span>
-        <span style={{ opacity: 0.4 }}>·</span>
+        {displaySignals > 0 && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#15803d" }} />
+            {displaySignals} signal{displaySignals === 1 ? "" : "s"} analyzed
+          </span>
+        )}
+        {displaySignals > 0 && <span style={{ opacity: 0.4 }}>·</span>}
         <span>AIRMM™ framework</span>
         <span style={{ opacity: 0.4 }}>·</span>
         <span>Live market data</span>
@@ -584,28 +595,16 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
                 {fearLine}
               </div>
 
-              {/* Disappearance bars — top tasks AI does today */}
-              {taskRows.length > 1 && (
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 7 }}>
+              {/* Tasks-at-risk list — names only, no fabricated % bars (round-4 2B fix) */}
+              {tasksAtRisk.length > 1 && (
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
                   <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "#6b7280", marginBottom: 2 }}>
-                    What you do daily — AI now does in seconds
+                    Other tasks AI is taking on in your role
                   </div>
-                  {taskRows.map((row, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: "#374151", lineHeight: 1.3 }}>
-                        {row.task}
-                      </div>
-                      <div style={{ width: 90, height: 6, borderRadius: 999, background: "rgba(220,38,38,0.12)", overflow: "hidden" }}>
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${row.pct}%` }}
-                          transition={{ delay: 0.9 + i * 0.12, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                          style={{ height: "100%", background: "linear-gradient(90deg, #dc2626, #ef4444)" }}
-                        />
-                      </div>
-                      <div style={{ width: 32, fontSize: 12, fontWeight: 800, color: "#b91c1c", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                        {row.pct}%
-                      </div>
+                  {tasksAtRisk.slice(1).map((task, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, fontWeight: 600, color: "#374151", lineHeight: 1.35 }}>
+                      <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#dc2626", flexShrink: 0 }} />
+                      <span>{cap(task)}</span>
                     </div>
                   ))}
                 </div>
