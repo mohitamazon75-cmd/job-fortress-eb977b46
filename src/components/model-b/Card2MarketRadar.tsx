@@ -235,7 +235,12 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         )}
 
         {c2.key_insight && (
-          <InfoBox variant="green" title="Your numbers vs. the market" body={c2.key_insight} />
+          <InfoBox
+            variant="green"
+            title="What your resume signals to this market"
+            body={c2.key_insight}
+            footnote="Achievements pulled from your resume. Market figures from NASSCOM/WEF where cited."
+          />
         )}
 
         {/* Sector news feed — dated headlines for user's industry */}
