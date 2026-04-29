@@ -677,8 +677,11 @@ function SnapshotView({
 
           if (hasSignal) {
             if (repostNoiseSuspected) {
-              velocityLabel = "ACTIVE";
-              velocityColor = "#8B6F1F";
+              // Round-5 fix (BL: badge contradicting body, 2026-04-29):
+              // Saying "ACTIVE" while the body says "treat as steady" is a lie.
+              // Use STEADY label so badge matches the verdict text.
+              velocityLabel = "STEADY";
+              velocityColor = "var(--mb-ink2)";
               velocityVerdict = `Looks busy on the surface, but most "today" postings on a pool this small are recruiter reposts of older requisitions. Treat as steady, not urgent.`;
               velocityNote = `${sameDay} of ${categorized} dated postings show "today" — on a small pool this usually reflects recruiter reposts of older requisitions, not new openings. Treat as steady, not urgent.`;
             } else if (freshPct >= 70) {
