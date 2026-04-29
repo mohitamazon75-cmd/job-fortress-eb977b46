@@ -26,6 +26,24 @@ CITATION STANDARD (CRITICAL — every claim must be traceable):
 - When referencing AI tool capabilities, cite the specific tool version and year.
 `;
 
+// ── Salary Grounding Rule — injected into every agent that emits ₹ figures.
+// Root cause of ₹3L/₹5L/₹10L hallucinations across Card 1, Pivot, Blind Spots,
+// Leverage Scripts and Evidence: prompt was given an ESTIMATED salary line
+// and told "₹ amounts beat percentages" with no provenance check.
+// This rule forces the LLM to honour the [USER-PROVIDED] / [ESTIMATED] tag
+// that scan-agents.ts now emits on the Monthly Salary line.
+export const SALARY_GROUNDING_RULE = `
+SALARY GROUNDING (CRITICAL — zero tolerance for fabricated rupee figures):
+- The "Monthly Salary" line in the profile context is tagged either [USER-PROVIDED] or [ESTIMATED — DO NOT QUOTE].
+- If the tag is [USER-PROVIDED]: you MAY cite the annual ₹ figure verbatim (e.g. "₹18L package").
+- If the tag is [ESTIMATED — DO NOT QUOTE]: you MUST NOT cite any absolute ₹ figure for this person's salary, replacement cost, gap, value-add, or negotiation anchor. Use band/percentage language only:
+    GOOD: "your specialist tier", "top 15% of your cohort", "20-30% above mid-band", "a meaningful share of your package"
+    BAD: "₹3L gap", "₹5L at risk", "adds ₹10L to your value", "replacement cost of ₹3L"
+- This rule applies to EVERY field: dead_end_narrative, free_advice, urgency_horizon, salary_anchor_line, recruiter_dm, closing_meeting_one_liner, stay_or_jump_frame, blindspots, evidence cards, action plans — no exceptions.
+- Fabricating a ₹ figure when salary is [ESTIMATED] is a CRITICAL error. The user will use these scripts with real recruiters; a wrong ₹3L anchor damages their reputation.
+- Months/years and percentages do NOT need this guard — they remain encouraged.
+`;
+
 // Shared tool currency rule injected into all agent prompts.
 // {{TOOL_CATALOG}} is substituted at call-time with the live DB-backed
 // catalog (see _shared/tool-catalog.ts). If no substitution happens
@@ -278,7 +296,7 @@ NARRATION RULES (CRITICAL — every output field must follow these):
 - Short sentences only. Maximum 12 words per sentence.
 - Present tense. Not "will be displaced" — "is being replaced."
 - Name the specific skill. Not "execution tasks" — "copywriting" or "email writing."
-- Stakes over abstractions. ₹ amounts and months beat percentages.
+- Stakes over abstractions. Months and percentages beat vague adjectives. Absolute ₹ figures are allowed ONLY when the salary line is tagged [USER-PROVIDED] (see SALARY GROUNDING rule below) — never invent ₹ amounts when salary is [ESTIMATED].
 - Statements only. No trailing questions. No rhetorical questions.
 - End every insight on a consequence or action, not an observation.
 - BANNED words/phrases (zero tolerance):
