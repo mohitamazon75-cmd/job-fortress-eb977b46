@@ -720,6 +720,53 @@ Deno.serve(async (req) => {
       if (profilerResult.model_used !== "none") {
         console.log(`[Agent1:Profiler] Completed on ${profilerResult.model_used.split("/").pop()} (${profilerResult.latency_ms}ms, chain: ${profilerResult.fallback_chain.map(m => m.split("/").pop()).join(" → ")})`);
       }
+
+      // ── Round 9 (2026-04-29): Strategic-skills stabilizer ──────────────
+      // The deterministic engine is mathematically stable, but Agent1 (LLM)
+      // is not — we observed strategic_skills.length swing 2↔5 across
+      // re-scans of the same resume, producing 13-point Survivability swings.
+      // Cache the first run's classification, keyed on resume content + role
+      // + industry + experience_years. Subsequent re-scans of the same
+      // resume reuse the cached strategic_skills so the score-affecting
+      // field is deterministic. See _shared/strategic-skills-cache.ts.
+      try {
+        if (agent1 && Array.isArray(agent1.strategic_skills)) {
+          const cacheKey = buildProfileCacheKey({
+            rawProfileText,
+            role: agent1.current_role || resolvedRoleHint || "",
+            industry: agent1.industry || resolvedIndustry || "",
+            experienceYears: normalizedExperienceYears,
+          });
+          const cached = await getCachedStrategicSkills(supabase, cacheKey);
+          if (cached) {
+            const before = agent1.strategic_skills.length;
+            agent1.strategic_skills = cached.strategic_skills;
+            console.log(`[Agent1:StratSkills] CACHE HIT — reused ${cached.strategic_skills.length} strategic skills (live LLM had ${before}). Stabilises Survivability score across re-scans.`);
+            profilerStratSkillsSource = "cache";
+          } else if (agent1.strategic_skills.length > 0) {
+            await cacheStrategicSkills(supabase, cacheKey, agent1.strategic_skills, profilerResult.model_used || null);
+            console.log(`[Agent1:StratSkills] CACHE STORE — first scan, persisted ${agent1.strategic_skills.length} strategic skills for re-scan stability.`);
+            profilerStratSkillsSource = "fresh_cached";
+          }
+        }
+      } catch (e) {
+        console.warn("[Agent1:StratSkills] Cache pass failed (non-fatal):", e);
+      }
+
+      // Capture profiler metadata so /admin/scan/:scanId can diagnose score
+      // variance without trawling logs. This was the instrumentation gap
+      // that hid the 2↔5 strategic_skills swing in the first place — Agent1
+      // is the ONLY score-affecting LLM call but its model_used / latency
+      // / fallback chain were never persisted to determinism_meta.
+      profilerMeta = {
+        model_used: profilerResult.model_used || "none",
+        latency_ms: profilerResult.latency_ms ?? null,
+        fallback_chain: profilerResult.fallback_chain || [],
+        strategic_skills_count: Array.isArray(agent1?.strategic_skills) ? agent1.strategic_skills.length : 0,
+        all_skills_count: Array.isArray(agent1?.all_skills) ? agent1.all_skills.length : 0,
+        strategic_skills_source: profilerStratSkillsSource,
+      };
+
       if (!agent1) {
         // P0 fix (2026-04-17): When the profiler agent fails entirely, prefer the
         // verbatim parsed LinkedIn/resume title if we have one. If not, mark the
