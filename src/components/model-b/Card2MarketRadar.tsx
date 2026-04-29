@@ -235,12 +235,12 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
         )}
 
         {c2.key_insight && (
-          <InfoBox
-            variant="green"
-            title="What your resume signals to this market"
-            body={c2.key_insight}
-            footnote="Achievements pulled from your resume. Market figures from NASSCOM/WEF where cited."
-          />
+          <InfoBox variant="green" title="What your resume signals to this market">
+            <div>{c2.key_insight}</div>
+            <div style={{ marginTop: 8, fontSize: 11, opacity: 0.7, fontStyle: "italic" }}>
+              Achievements pulled from your resume. Market figures from NASSCOM/WEF where cited. Salary not used — you didn't share it.
+            </div>
+          </InfoBox>
         )}
 
         {/* Sector news feed — dated headlines for user's industry */}
