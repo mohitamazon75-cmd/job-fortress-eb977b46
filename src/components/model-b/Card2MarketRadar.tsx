@@ -85,15 +85,20 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
   // Strips contradictions ("₹30L+ averages" when median is ₹15L) and known
   // hallucination patterns ("top X percentile", "X% premium", "by Wednesday").
   // Conservative: keeps original text whenever inputs are missing.
+  // Round-6 fix (L, 2026-04-29): NEVER fall back to dirty text.
+  // The previous `clean(x) || c2?.x` pattern silently restored hallucinations
+  // whenever the sanitiser stripped the entire field — defeating the whole
+  // sanitiser. If the LLM produced only-bad-content, we render NOTHING for
+  // that field. The card body already conditionally renders each line.
   const sanitisedC2 = useMemo(() => {
     const band = liveMarket?.salary_range_lpa;
-    const clean = (t: string | undefined) => sanitiseMarketCopy(t, band) || "";
+    const clean = (t: string | undefined) => sanitiseMarketCopy(t, band);
     return {
-      key_insight: clean(c2?.key_insight) || c2?.key_insight || "",
-      fear_hook: clean(c2?.fear_hook) || c2?.fear_hook || "",
-      tough_love: clean(c2?.tough_love) || c2?.tough_love || "",
-      confrontation: clean(c2?.confrontation) || c2?.confrontation || "",
-      hope_bridge: clean(c2?.hope_bridge) || c2?.hope_bridge || "",
+      key_insight: clean(c2?.key_insight),
+      fear_hook: clean(c2?.fear_hook),
+      tough_love: clean(c2?.tough_love),
+      confrontation: clean(c2?.confrontation),
+      hope_bridge: clean(c2?.hope_bridge),
     };
   }, [c2, liveMarket?.salary_range_lpa]);
 
