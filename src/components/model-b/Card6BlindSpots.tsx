@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CardShell, CardHead, CardBody, SectionLabel, CardNav, Badge } from "./SharedUI";
+import CopyInterviewAnswer from "./CopyInterviewAnswer";
 
 // ─── Types ─────────────────────────────────────────────────────
 type Severity = "CRITICAL" | "SERIOUS" | "MODERATE";
@@ -40,6 +41,7 @@ function GapRow({
   skills,
   onComplete,
   isComplete,
+  firstName,
 }: {
   bs: BlindSpot;
   index: number;
@@ -48,6 +50,7 @@ function GapRow({
   skills: string[];
   onComplete: (gapKey: string, gapTitle: string, severity: string) => void;
   isComplete: boolean;
+  firstName?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [bundle, setBundle] = useState<Bundle | null>(null);
@@ -149,6 +152,10 @@ function GapRow({
               ✅ {bs.fix}
             </div>
           )}
+
+          {/* Tangible takeaway: STAR interview answer the user can paste into Notes */}
+          <CopyInterviewAnswer gapTitle={title} role={role} firstName={firstName} />
+
 
           {/* The Action Bar — full width, impossible to miss */}
           <button
