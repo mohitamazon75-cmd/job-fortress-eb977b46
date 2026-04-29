@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense } from "react";
 import { CardShell, CardHead, CardBody, Badge, SectionLabel, CardNav } from "./SharedUI";
+import SkillTutorialLink from "./SkillTutorialLink";
 
 // Skill Arbitrage Engine — already-built widget previously only on the dashboard.
 // Lazy-loaded so the Shield tab stays fast and only pays the cost when the user
@@ -128,9 +129,12 @@ export default function Card3SkillShield({ cardData, onBack, onNext, onUpgradePl
                         <span>{g.emoji} {g.label}</span>
                         <span style={{ background: g.tint, padding: "1px 8px", borderRadius: 10, fontSize: 10 }}>{items.length}</span>
                       </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                         {items.map((s: any, i: number) => (
-                          <span key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--mb-ink)", background: g.tint, border: `1px solid ${g.color}33`, padding: "5px 11px", borderRadius: 8 }}>{s.name}</span>
+                          <span key={i} style={{ display: "inline-flex", alignItems: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: "var(--mb-ink)", background: g.tint, border: `1px solid ${g.color}33`, padding: "5px 11px", borderRadius: 8 }}>
+                            {s.name}
+                            {(g.key === "critical-gap" || g.key === "buildable") && <SkillTutorialLink skill={s.name} />}
+                          </span>
                         ))}
                       </div>
                     </div>
