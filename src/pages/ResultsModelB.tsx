@@ -76,20 +76,24 @@ function handleCopyFallback(text: string) {
   }
 }
 
-const TAB_LABELS = ["Verdict", "Risk", "Live Market", "Trends", "Shield", "Pivot", "Jobs", "Blind spots", "Human", "🛠 Tools"];
+// Sprint 3 (2026-04-29) — tab merge surgery:
+//   • Trends (Card2MarketRadar) merged INTO Live Market tab (stacked below)
+//   • Human (Card7HumanAdvantage) merged INTO Blind spots tab (stacked below)
+// Tab count: 10 → 8. All downstream indices shift accordingly.
+const TAB_LABELS = ["Verdict", "Risk", "Live Market", "Shield", "Pivot", "Jobs", "Blind spots", "🛠 Tools"];
+const TOOLS_TAB_INDEX = 7;
 
 // Tabs where the header "Career Safety" score is hidden.
-// 0 = Verdict, 4 = Shield (sub-score conflict), 9 = Tools.
-// (Indices shifted +1 from index 2 onward after Live Market splice.)
-const HEADER_SCORE_HIDDEN_TABS = new Set([0, 4, 9]);
+// 0 = Verdict, 3 = Shield (sub-score conflict), 7 = Tools.
+const HEADER_SCORE_HIDDEN_TABS = new Set([0, 3, TOOLS_TAB_INDEX]);
 // Tabs where the bottom action button grid is hidden — these tabs have their own
 // dedicated CTAs and the grid would clutter the emotional/utility frame.
-const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, 9]);
+const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, TOOLS_TAB_INDEX]);
 // Friendly #2 (Farheen) feedback (2026-04-28):
 //   • Verdict tab must be score-only — no Share Strip, no Monday Move on first frame.
 //   • Monday Move felt redundant on every screen — restrict to the two action-y tabs.
 const SHARE_STRIP_HIDDEN_TABS = new Set([0]);
-const MONDAY_MOVE_VISIBLE_TABS = new Set([1, 5]); // Risk + Pivot Paths
+const MONDAY_MOVE_VISIBLE_TABS = new Set([1, 4]); // Risk + Pivot Paths (post-Sprint-3 indices)
 // P0 polish (2026-04-28): Tab 0 = pure verdict moment.
 // Hide streak bar, progress bar and tab nav above the score so the
 // first frame is exactly: logo → score card. Card0Verdict's onNext
