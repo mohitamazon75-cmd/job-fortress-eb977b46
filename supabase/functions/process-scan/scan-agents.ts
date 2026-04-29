@@ -242,7 +242,8 @@ PROFILE:
 - Current Company: ${wrapUserData("user_company", displayCompany)}${companyTier ? ` (${companyTier} tier)` : ""}
 - Industry: ${wrapUserData("user_industry", agent1?.industry || resolvedIndustry)}${detectedSubSector ? ` → Sub-sector: ${wrapUserData("user_subsector", detectedSubSector)}` : ""}
 - Experience: ${profileInput.experience_years || "Unknown"} years
-- Location: ${wrapUserData("user_location", agent1?.location || scan.metro_tier || "Unknown")}
+- Country of Residence (AUTHORITATIVE — from onboarding, NOT inferred from resume): ${wrapUserData("user_location", scan.country || "IN")}
+- City/Region (from profile): ${agent1?.location || "Unknown"}
 - Metro Tier: ${scan.metro_tier || "tier1"}
 - Monthly Salary: ${locale.currencySymbol}${monthlySalary.toLocaleString("en-IN")} (${locale.currencySymbol}${Math.round(monthlySalary * 12 / 100000 * 10) / 10}L annual CTC)
 - Salary Band: ${
