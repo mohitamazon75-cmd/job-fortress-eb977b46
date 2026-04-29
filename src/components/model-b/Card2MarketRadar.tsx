@@ -305,106 +305,40 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// P0-5: Tier-aware salary band
-// Server returns one base range (already metro-aware on backend), but
-// the user has no visible signal that the number reflects THEIR tier.
-// Tier-2/3 users seeing Tier-1-shaped numbers feel excluded.
-// We surface the user's tier explicitly + let them toggle context.
-// Multipliers are standard Indian market approximations applied
-// client-side for context only — purely a presentation layer.
 // ─────────────────────────────────────────────────────────────────────
-type TierKey = "tier1" | "tier2" | "tier3";
-const TIER_META: Record<TierKey, { label: string; cities: string; mult: number }> = {
-  tier1: { label: "Tier 1", cities: "Bangalore · Mumbai · Delhi NCR · Pune · Hyderabad", mult: 1.0 },
-  tier2: { label: "Tier 2", cities: "Jaipur · Indore · Kochi · Coimbatore · Chandigarh", mult: 0.75 },
-  tier3: { label: "Tier 3", cities: "Bhopal · Nagpur · Vizag · Lucknow · smaller metros", mult: 0.55 },
-};
-
-function normaliseTier(raw: string): TierKey {
-  const t = (raw || "").toLowerCase();
-  if (t.includes("3") || t === "tier3") return "tier3";
-  if (t.includes("2") || t === "tier2") return "tier2";
-  return "tier1";
-}
-
-function TierAwareSalaryBand({
+// Live salary band — round-4 fix (Option A, CTO call 2026-04-29):
+// Previous TierAwareSalaryBand applied client-side tier multipliers
+// (tier1 1.0 / tier2 0.75 / tier3 0.55) that were ungrounded magic
+// numbers. Removed entirely — we now show ONLY what the server returned,
+// labelled with the user's city. No fabrication, no toggle that pretends
+// we have tier-aware salary data we don't have.
+// ─────────────────────────────────────────────────────────────────────
+function LiveSalaryBand({
   baseRange,
-  userMetroTier,
   userCity,
 }: {
   baseRange: { min: number; max: number; median: number };
-  userMetroTier: string;
   userCity: string;
 }) {
-  // Treat the live server number as the Tier-1 anchor (national benchmark).
-  // Then present user's tier first, with toggle to see the others.
-  const userTier = normaliseTier(userMetroTier);
-  const [activeTier, setActiveTier] = useState<TierKey>(userTier);
-
-  const meta = TIER_META[activeTier];
-  const min = Math.round(baseRange.min * meta.mult * 10) / 10;
-  const max = Math.round(baseRange.max * meta.mult * 10) / 10;
-  const median = Math.round(baseRange.median * meta.mult * 10) / 10;
-  const isUserTier = activeTier === userTier;
-
+  const { min, max, median } = baseRange;
+  const cityLabel = userCity && userCity.length > 0 && userCity.length < 30 ? userCity : null;
   return (
     <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
         <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 800, color: "var(--mb-green)", letterSpacing: "0.04em" }}>
-          💰 LIVE SALARY RANGE — {isUserTier ? "YOUR TIER" : meta.label.toUpperCase()}
+          💰 LIVE SALARY RANGE
         </div>
-        {isUserTier && userCity && (
+        {cityLabel && (
           <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 6, background: "var(--mb-green)", color: "white", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            📍 {userCity}
+            📍 {cityLabel}
           </span>
         )}
       </div>
       <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 16, fontWeight: 800, color: "var(--mb-ink)" }}>
         ₹{min}–{max}L · median ₹{median}L
       </div>
-
-      {/* Tier toggle — lets users sanity-check across city tiers */}
-      <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-        {(Object.keys(TIER_META) as TierKey[]).map((t) => {
-          const isActive = t === activeTier;
-          const isUser = t === userTier;
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setActiveTier(t)}
-              style={{
-                fontFamily: "'DM Sans',sans-serif",
-                fontSize: 11,
-                fontWeight: 800,
-                padding: "5px 10px",
-                borderRadius: 8,
-                border: `1.5px solid ${isActive ? "var(--mb-green)" : "var(--mb-rule)"}`,
-                background: isActive ? "var(--mb-green)" : "white",
-                color: isActive ? "white" : "var(--mb-ink2)",
-                cursor: "pointer",
-                letterSpacing: "0.04em",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                transition: "all 150ms ease",
-              }}
-            >
-              {TIER_META[t].label}
-              {isUser && (
-                <span style={{ fontSize: 9, opacity: isActive ? 1 : 0.7 }}>· you</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginTop: 8, lineHeight: 1.5 }}>
-        {meta.cities}
-        <br />
-        <span style={{ fontStyle: "italic" }}>
-          Tier multipliers reflect typical Indian market spreads — your actual offer depends on company, stage and negotiation.
-        </span>
+      <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginTop: 8, lineHeight: 1.5, fontStyle: "italic" }}>
+        Live national benchmark from current job postings — your offer depends on company, stage and negotiation.
       </div>
     </div>
   );
