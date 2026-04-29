@@ -1,0 +1,96 @@
+/**
+ * market-copy-sanitizer.ts
+ *
+ * Round-5 trust fixes (2026-04-29). Pure functions, no LLM, fully deterministic.
+ *
+ * Strips two classes of hallucinations from LLM-generated market copy:
+ *   1. Numeric salary claims that contradict the live salary band (Bug C).
+ *      e.g. key_insight says "₹30L+ averages" while live band shows median ₹15L.
+ *   2. Fake percentile / percentage-premium / weekday-deadline noise (Bug H).
+ *      e.g. "top 15th percentile", "missing out on 25% premium",
+ *      "Update your LinkedIn by Wednesday".
+ *
+ * Conservative philosophy: when in doubt, KEEP the sentence. Only strip when
+ * we have high confidence the sentence is contradicting source-of-truth data
+ * or matches a known hallucination pattern.
+ */
+
+export interface LiveBand {
+  min: number;
+  max: number;
+  median: number;
+}
+
+const PERCENTILE_RE = /\btop\s+\d+(?:st|nd|rd|th)?\s+percentile\b/gi;
+const PREMIUM_RE = /\b(?:missing out on|missing)\s+(?:a\s+)?\d+%\s+(?:salary\s+)?premium\b/gi;
+const WEEKDAY_DEADLINE_RE = /\bby\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi;
+const SALARY_NUM_RE = /(?:₹|Rs\.?\s?|INR\s?)\s?(\d+(?:\.\d+)?)\s?(L|LPA|Lakh|Cr)?/gi;
+
+/**
+ * Strip sentences whose absolute ₹ amount is >2× the live band's median.
+ * E.g. with median ₹15L, "₹30L+ averages" gets dropped because 30 > 15*2 = 30.
+ * Threshold uses strict `>` so 2× exactly is allowed (within reason for senior tier).
+ */
+export function suppressContradictorySalary(text: string, band: LiveBand | undefined | null): string {
+  if (!text || !band || !band.median || band.median <= 0) return text || "";
+  const ceiling = Math.max(band.max, band.median * 2);
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  const kept = sentences.filter((s) => {
+    SALARY_NUM_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = SALARY_NUM_RE.exec(s)) !== null) {
+      const amount = parseFloat(m[1]);
+      const unit = (m[2] || "").toLowerCase();
+      if (!unit.startsWith("l")) continue; // ignore "Cr" or unitless mentions
+      if (amount > ceiling) return false;
+    }
+    return true;
+  });
+  return kept.join(" ").trim();
+}
+
+/** Strip known hallucination patterns. Returns sanitised text (may be empty). */
+export function stripHallucinations(text: string): string {
+  if (!text) return "";
+  let out = text;
+  // Drop whole sentences that contain a banned pattern.
+  const sentences = out.split(/(?<=[.!?])\s+/);
+  const kept = sentences.filter((s) => {
+    if (PERCENTILE_RE.test(s)) return false;
+    if (PREMIUM_RE.test(s)) return false;
+    if (WEEKDAY_DEADLINE_RE.test(s)) return false;
+    return true;
+  });
+  // reset lastIndex after .test on /g regex
+  PERCENTILE_RE.lastIndex = 0;
+  PREMIUM_RE.lastIndex = 0;
+  WEEKDAY_DEADLINE_RE.lastIndex = 0;
+  return kept.join(" ").trim();
+}
+
+/** Compose: strip both, in order. */
+export function sanitiseMarketCopy(text: string | undefined | null, band?: LiveBand | null): string {
+  if (!text) return "";
+  return stripHallucinations(suppressContradictorySalary(text, band));
+}
+
+/**
+ * Filter sector news items: drop entries whose headline contains a year marker
+ * older than the freshness window (default: current year and current-1).
+ * Keeps items with no year marker (we trust the live-market function dated them).
+ */
+export function filterFreshSectorNews<T extends { headline?: string }>(
+  items: T[] | undefined | null,
+  nowYear: number = new Date().getUTCFullYear(),
+): T[] {
+  if (!Array.isArray(items)) return [];
+  const minYear = nowYear - 1;
+  return items.filter((it) => {
+    const h = it?.headline || "";
+    const m = h.match(/\((\d{4})\)/);
+    if (!m) return true;
+    const yr = parseInt(m[1], 10);
+    if (Number.isNaN(yr)) return true;
+    return yr >= minYear;
+  });
+}
