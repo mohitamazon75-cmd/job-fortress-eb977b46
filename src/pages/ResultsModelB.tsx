@@ -935,8 +935,7 @@ export default function ResultsModelB() {
                     role={role}
                     city={city}
                     all_skills={skills}
-                    onPrev={() => handleTabChange(1)}
-                    /* onNext intentionally omitted — single nav lives on the Trends section below */
+                    /* nav props intentionally omitted — single nav lives at the bottom of the merged tab (Sprint 3 fix 2026-04-29) */
                   />
                   <div style={{ height: 24 }} />
                   <Card2MarketRadar cardData={cardData} />
@@ -944,21 +943,40 @@ export default function ResultsModelB() {
                   {/* Sprint 4 (2026-04-29): KG IP surfaced in Live Market tab. Self-hides if data is too thin. */}
                   <IntelligenceMapCard cardData={cardData} />
                   <div style={{ height: 24 }} />
-                  {/* Single forward nav for the merged tab */}
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  {/* Single nav bar for the merged tab — Back to Risk + Forward to Skill Shield */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 18, borderTop: "2px solid var(--mb-rule)" }}>
+                    <button
+                      onClick={() => handleTabChange(1)}
+                      style={{
+                        background: "none",
+                        color: "var(--mb-ink2)",
+                        border: "1.5px solid var(--mb-rule)",
+                        borderRadius: 12,
+                        padding: "12px 22px",
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontWeight: 700,
+                        fontSize: 14,
+                        cursor: "pointer",
+                        minHeight: 48,
+                      }}
+                    >
+                      ← Back
+                    </button>
                     <button
                       onClick={() => handleTabChange(3)}
                       style={{
                         background: "var(--mb-navy)",
-                        color: "var(--mb-paper)",
+                        color: "white",
                         border: "none",
-                        borderRadius: 10,
-                        padding: "10px 18px",
+                        borderRadius: 12,
+                        padding: "12px 24px",
                         fontFamily: "'DM Sans', sans-serif",
                         fontWeight: 800,
-                        fontSize: 13,
+                        fontSize: 14,
                         cursor: "pointer",
-                        boxShadow: "var(--mb-shadow-md)",
+                        boxShadow: "0 3px 12px rgba(27,47,85,0.25)",
+                        letterSpacing: "0.02em",
+                        minHeight: 48,
                       }}
                     >
                       Continue → Skill Shield
