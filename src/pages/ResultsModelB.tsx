@@ -889,15 +889,10 @@ export default function ResultsModelB() {
                       : null,
                   scanCity: cardData?.user?.location ?? null,
                 }}
-                firstName={
-                  (cardData?.user?.full_name || cardData?.user?.name || "")
-                    .toString()
-                    .trim()
-                    .split(/\s+/)[0] || null
-                }
+                firstName={revealFirstName}
               />
             )}
-            {MONDAY_MOVE_VISIBLE_TABS.has(currentCard) && <MondayMoveCard cardData={cardData} />}
+            {MONDAY_MOVE_VISIBLE_TABS.has(currentCard) && <MondayMoveCard cardData={cardData} firstName={revealFirstName} />}
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
             {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} />}
             {currentCard === 2 && (() => {
