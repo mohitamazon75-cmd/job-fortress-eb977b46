@@ -661,12 +661,15 @@ function SnapshotView({
           const sameDayShare = categorized > 0 ? sameDay / categorized : 0;
           // #2 Loosen guard: flag obvious recruiter spam regardless of pool size.
           //   - Original: only when totalPool ≤10 and sameDay ≥3 and share ≥50%.
-          //   - New: ALSO flag when sameDay/categorized ≥85% (e.g. 28 today / 0
-          //     this week — clear repost wave). Catches the loud cases the
-          //     small-pool branch missed.
+          //   - Round-5 fix (D, 2026-04-29): flag mid-sized pools (5–25) where
+          //     same-day dominates AND nothing showed up in the rest of the
+          //     week — that pattern (28 today / 0 this week, screenshot 2) is
+          //     the repost wave the original guard missed.
+          //     LARGE pools (>25 postings) are NOT flagged: 50 dated postings
+          //     in a single day is real hiring signal, not spam.
           const repostNoiseSuspected =
             (totalPool <= 10 && sameDay >= 3 && sameDayShare >= 0.5) ||
-            (categorized >= 5 && sameDayShare >= 0.85 && within7d === 0);
+            (categorized >= 5 && categorized <= 25 && sameDayShare >= 0.85 && within7d === 0);
 
           let velocityLabel = "—";
           let velocityColor = "var(--mb-ink2)";
