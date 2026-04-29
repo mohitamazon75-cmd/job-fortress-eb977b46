@@ -205,10 +205,15 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
     ? "Unlock the 90-day transition plan, salary delta, and exact next steps."
     : "Unlock the full report to see them.";
 
-  // Signal count — real number for trust band (no fabrication).
-  // Each card represents a multi-signal analysis; deterministic floor of 47 minimum.
-  const signalCount = 24 + (c1?.tasks_at_risk?.length || 0) * 3 + (c3?.skills?.length || 0) * 2 + (c4?.pivots?.length || 0) * 4;
-  const displaySignals = Math.max(47, signalCount);
+  // Signal count — grounded sum of actual data points pulled from this scan.
+  // Round-4 2C fix: removed `Math.max(47, …)` floor and `24 +` magic base — those existed
+  // only to inflate the trust band. Now we count exactly what we have.
+  const realSignalCount =
+    (Array.isArray(c1?.tasks_at_risk) ? c1.tasks_at_risk.length : 0) +
+    (Array.isArray(c1?.ai_tools_replacing) ? c1.ai_tools_replacing.length : 0) +
+    (Array.isArray(c3?.skills) ? c3.skills.length : 0) +
+    (Array.isArray(c4?.pivots) ? c4.pivots.length : 0);
+  const displaySignals = realSignalCount;
 
   // Conic-gradient ring percentage
   const ringPct = Math.max(0, Math.min(100, rawScore));
