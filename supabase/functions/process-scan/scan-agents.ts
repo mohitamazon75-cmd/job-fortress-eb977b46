@@ -245,7 +245,7 @@ PROFILE:
 - Country of Residence (AUTHORITATIVE — from onboarding, NOT inferred from resume): ${wrapUserData("user_location", scan.country || "IN")}
 - City/Region (from profile): ${agent1?.location || "Unknown"}
 - Metro Tier: ${scan.metro_tier || "tier1"}
-- Monthly Salary: ${locale.currencySymbol}${monthlySalary.toLocaleString("en-IN")} (${locale.currencySymbol}${Math.round(monthlySalary * 12 / 100000 * 10) / 10}L annual CTC)
+- Monthly Salary: ${locale.currencySymbol}${monthlySalary.toLocaleString("en-IN")} (${locale.currencySymbol}${Math.round(monthlySalary * 12 / 100000 * 10) / 10}L annual CTC) ${profileInput.estimated_monthly_salary_inr ? "[USER-PROVIDED — safe to quote verbatim in narratives, scripts, and anchors]" : "[ESTIMATED FROM MARKET DATA — DO NOT QUOTE as the user's actual salary, replacement cost, gap, or anchor. Use band/percentage language only. See SALARY GROUNDING rule.]"}
 - Salary Band: ${
   monthlySalary < 40_000 ? "Entry/Junior (< ₹5L CTC) — highly cost-sensitive, every rupee counts, survival mode thinking" :
   monthlySalary < 85_000 ? "Mid-level (₹5–10L CTC) — building financial buffer, career pivots carry moderate risk" :
@@ -253,7 +253,7 @@ PROFILE:
   monthlySalary < 333_000 ? "Lead / Principal / Director (₹20–40L CTC) — high-stakes decision-making, brand equity matters as much as skills" :
   "Executive / VP+ (₹40L+ CTC) — replacement cost to employer is enormous, AI risk manifests as strategic de-prioritisation not direct job loss"
 }
-- AI Replacement Cost Delta: ${locale.currencySymbol}${Math.max(0, monthlySalary - Math.round(monthlySalary * 0.03)).toLocaleString("en-IN")}/month potential AI savings for employer (use this to calibrate urgency)
+- AI Replacement Cost Delta: ${profileInput.estimated_monthly_salary_inr ? `${locale.currencySymbol}${Math.max(0, monthlySalary - Math.round(monthlySalary * 0.03)).toLocaleString("en-IN")}/month potential AI savings for employer` : "(salary unverified — use percentage framing only, e.g. '~95-97% of monthly salary potentially automatable')"} (use this to calibrate urgency)
 - Strategic Skills: ${wrapUserData("user_strategic_skills", profileInput.strategic_skills)}
 - Execution Skills: ${wrapUserData("user_execution_skills", profileInput.execution_skills)}
 - All Skills: ${wrapUserData("user_all_skills", profileInput.all_skills)}
