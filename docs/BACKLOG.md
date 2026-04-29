@@ -256,3 +256,8 @@ Bump the next ID monotonically. **Never reuse IDs.** Closed entries stay in the 
 - **Why not option (b)**: Updating the test to accept "Looks busy on the surface" would have gutted the entire HOT regression net. The product copy is correct; the fixture drifted.
 - **Verification**: full suite 328/328 green.
 - **Status**: closed.
+
+## 2026-04-29 (Sprint 0 deferrals)
+- **Structured logging sweep on top 10 hot edge functions.** `_shared/logger.ts` already exists & tested. Wrapping process-scan + get-model-b-analysis + verdict-enrichment + cohort-match + chat-report + score-drift + compute-trajectory + capture-outcome + ai-dossier + career-genome would touch 10+ files. Defer to dedicated PR — risk/regression budget exceeds Sprint 0 scope.
+- **Cohort UI "estimated" label.** Investigated: `CohortRankCard` already gates at N≥50 with "Building your cohort" message. `get-cohort-rank` returns `has_enough_data: false` when sparse. Honesty already present; no change needed unless operator wants stronger framing.
+- **role_detected normalization wiring.** Helper `_shared/role-normalizer.ts` shipped + 17 tests. Call-site wiring (process-scan, cohort-match, KG joins) deferred — touches god-file plus 4-5 query sites. Need a focused PR with KG enum dump first to validate `knownEnums` set.

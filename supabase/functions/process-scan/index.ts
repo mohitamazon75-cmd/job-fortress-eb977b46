@@ -45,6 +45,9 @@ import {
   buildProfileCacheKey,
   getCachedStrategicSkills,
   cacheStrategicSkills,
+  buildAgent1ProfileCacheKey,
+  getCachedAgent1Profile,
+  cacheAgent1Profile,
 } from "../_shared/strategic-skills-cache.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
 import { orchestrateAgents } from "./scan-agents.ts";
@@ -771,6 +774,42 @@ Deno.serve(async (req) => {
         }
       } catch (e) {
         console.warn("[Agent1:StratSkills] Cache pass failed (non-fatal):", e);
+      }
+
+      // ── Sprint 0 (2026-04-29): Broader Agent1 profile cache ──────────────
+      // Strategic_skills cache (Round 9) only stabilises the headline score.
+      // execution_skills, all_skills, and role_detected still drift across
+      // re-scans, causing UI churn (KG chips change), wrong cohort buckets
+      // (role_detected drift), and inconsistent side-hustle / pivot prompts.
+      // Cache these fields too — same TTL, separate prefix, same table.
+      try {
+        if (agent1) {
+          const profileCacheKey = buildAgent1ProfileCacheKey({
+            rawProfileText,
+            role: agent1.current_role || resolvedRoleHint || "",
+            industry: agent1.industry || resolvedIndustry || "",
+            experienceYears: normalizedExperienceYears,
+          });
+          const cachedProfile = await getCachedAgent1Profile(supabase, profileCacheKey);
+          if (cachedProfile) {
+            const beforeExec = Array.isArray(agent1.execution_skills) ? agent1.execution_skills.length : 0;
+            const beforeAll = Array.isArray(agent1.all_skills) ? agent1.all_skills.length : 0;
+            if (cachedProfile.execution_skills.length > 0) agent1.execution_skills = cachedProfile.execution_skills;
+            if (cachedProfile.all_skills.length > 0) agent1.all_skills = cachedProfile.all_skills;
+            if (cachedProfile.role_detected) agent1.current_role = cachedProfile.role_detected;
+            console.log(`[Agent1:Profile] CACHE HIT — exec ${beforeExec}→${agent1.execution_skills?.length ?? 0}, all ${beforeAll}→${agent1.all_skills?.length ?? 0}, role="${cachedProfile.role_detected ?? "(unchanged)"}"`);
+          } else {
+            await cacheAgent1Profile(supabase, profileCacheKey, {
+              execution_skills: Array.isArray(agent1.execution_skills) ? agent1.execution_skills : [],
+              all_skills: Array.isArray(agent1.all_skills) ? agent1.all_skills : [],
+              role_detected: typeof agent1.current_role === "string" ? agent1.current_role : null,
+              profiler_model: profilerResult.model_used || null,
+            });
+            console.log(`[Agent1:Profile] CACHE STORE — exec=${agent1.execution_skills?.length ?? 0}, all=${agent1.all_skills?.length ?? 0}, role="${agent1.current_role ?? "(none)"}"`);
+          }
+        }
+      } catch (e) {
+        console.warn("[Agent1:Profile] Cache pass failed (non-fatal):", e);
       }
 
       // Capture profiler metadata so /admin/scan/:scanId can diagnose score

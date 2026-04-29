@@ -118,3 +118,122 @@ export async function cacheStrategicSkills(
     /* non-fatal */
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Sprint 0 (2026-04-29): Broader Agent1 profile cache
+// ═══════════════════════════════════════════════════════════════
+// Round 9 cached strategic_skills only — that fixed the 13-pt Survivability
+// swing but execution_skills, all_skills, and role_detected still drift
+// across re-scans (Agent1 is non-deterministic via the LLM gateway). They
+// don't drive the headline score, but they DO drive:
+//   • Knowledge Graph skill chips (UI churn — same resume, different chips)
+//   • Cohort matching (role_detected drift → wrong percentile bucket)
+//   • Side-hustle / pivot prompts (skill set changes → different suggestions)
+//
+// Strategy: parallel cache entry under key prefix "agent1_profile_v1" in the
+// SAME enrichment_cache table. Separate prefix so it can be invalidated
+// independently. Same 7-day TTL to align with cleanup_expired_cache().
+// Empty arrays / blank role_detected are NOT cached (don't poison the cache).
+
+const PROFILE_CACHE_KEY_PREFIX = "agent1_profile_v1";
+
+export interface CachedAgent1Profile {
+  execution_skills: string[];
+  all_skills: string[];
+  role_detected: string | null;
+  cached_at: string;
+  profiler_model: string | null;
+}
+
+export function buildAgent1ProfileCacheKey(args: {
+  rawProfileText: string;
+  role: string;
+  industry: string;
+  experienceYears: number | null;
+}): string {
+  const norm = [
+    args.rawProfileText || "",
+    (args.role || "").trim().toLowerCase(),
+    (args.industry || "").trim().toLowerCase(),
+    args.experienceYears == null ? "" : String(args.experienceYears),
+  ].join("\n--a1p--\n");
+  return `${PROFILE_CACHE_KEY_PREFIX}:${fnv1a(norm)}`;
+}
+
+/** Returns null on miss, error, expiry, or unusable shape. Never throws. */
+export async function getCachedAgent1Profile(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  cacheKey: string,
+): Promise<CachedAgent1Profile | null> {
+  try {
+    const cutoff = new Date(Date.now() - TTL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabase
+      .from("enrichment_cache")
+      .select("data, cached_at")
+      .eq("cache_key", cacheKey)
+      .gte("cached_at", cutoff)
+      .maybeSingle();
+    if (error || !data) return null;
+    const payload = data.data as {
+      execution_skills?: unknown;
+      all_skills?: unknown;
+      role_detected?: unknown;
+      profiler_model?: unknown;
+    };
+    const exec = Array.isArray(payload?.execution_skills)
+      ? payload.execution_skills.filter((s): s is string => typeof s === "string" && s.trim().length > 0)
+      : [];
+    const all = Array.isArray(payload?.all_skills)
+      ? payload.all_skills.filter((s): s is string => typeof s === "string" && s.trim().length > 0)
+      : [];
+    const role = typeof payload.role_detected === "string" && payload.role_detected.trim().length > 0
+      ? payload.role_detected.trim()
+      : null;
+    // Require at least all_skills OR role to be useful — otherwise treat as miss.
+    if (all.length === 0 && !role) return null;
+    return {
+      execution_skills: exec,
+      all_skills: all,
+      role_detected: role,
+      cached_at: data.cached_at,
+      profiler_model: typeof payload.profiler_model === "string" ? payload.profiler_model : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Best-effort upsert. Never throws. Skips entries with no usable data. */
+export async function cacheAgent1Profile(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  cacheKey: string,
+  payload: {
+    execution_skills: string[];
+    all_skills: string[];
+    role_detected: string | null;
+    profiler_model: string | null;
+  },
+): Promise<void> {
+  try {
+    const exec = (payload.execution_skills || []).filter((s) => typeof s === "string" && s.trim().length > 0);
+    const all = (payload.all_skills || []).filter((s) => typeof s === "string" && s.trim().length > 0);
+    const role = typeof payload.role_detected === "string" && payload.role_detected.trim().length > 0
+      ? payload.role_detected.trim()
+      : null;
+    if (all.length === 0 && !role) return; // Don't cache junk.
+    await supabase.from("enrichment_cache").upsert({
+      cache_key: cacheKey,
+      data: {
+        execution_skills: exec,
+        all_skills: all,
+        role_detected: role,
+        profiler_model: payload.profiler_model,
+      },
+      cached_at: new Date().toISOString(),
+    });
+  } catch {
+    /* non-fatal */
+  }
+}
