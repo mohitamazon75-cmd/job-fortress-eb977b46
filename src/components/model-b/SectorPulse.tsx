@@ -75,17 +75,33 @@ export default function SectorPulse({ role, city, pulseOverride }: SectorPulsePr
     },
   });
 
+  // Round-9 fix (2026-04-29): "scanning…" looked stuck because Perplexity needs
+  // 8–15s. We now (a) tell users WHY it's slow, and (b) hide the strip if the
+  // call hasn't returned within ~14s — better to silently omit than to anchor
+  // the page on a permanent skeleton. The query keeps running in the
+  // background; if data arrives later the strip just appears.
+  const SLOW_HIDE_MS = 14000;
+  const [hideSlow, setHideSlow] = useState(false);
+  useEffect(() => {
+    if (!enabled) return;
+    setHideSlow(false);
+    const t = setTimeout(() => setHideSlow(true), SLOW_HIDE_MS);
+    return () => clearTimeout(t);
+  }, [enabled, sector?.query_fragment, city]);
+
   // No sector → silent (founder/exec/creator/generic)
   if (!sector) return null;
 
   const pulse = pulseOverride ?? query.data;
 
-  // Loading state — show a slim skeleton so users know something is coming.
+  // Loading state — slim skeleton with HONEST copy about live news fetch.
+  // Hides itself after SLOW_HIDE_MS so the page doesn't appear stuck.
   if (!pulse && query.isLoading) {
+    if (hideSlow) return null;
     return (
       <div data-testid="sector-pulse-loading" style={{ marginBottom: 22 }}>
         <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--mb-ink3)", marginBottom: 10 }}>
-          Sector Pulse · {sector.label} · scanning…
+          Sector Pulse · {sector.label} · pulling live news (~10s)
         </div>
         <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 14, padding: 16 }}>
           {[0, 1].map(i => (
