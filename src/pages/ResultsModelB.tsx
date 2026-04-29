@@ -957,14 +957,14 @@ export default function ResultsModelB() {
                 <Card6BlindSpots
                   cardData={cardData}
                   onBack={() => handleTabChange(5)}
-                  onNext={() => { /* forward nav lives on the Human section below */ }}
+                  /* onNext omitted — forward nav lives on the Human section below */
                   scanId={analysisId ?? undefined}
                   firstName={revealFirstName}
                 />
                 <div style={{ height: 24 }} />
                 <Card7HumanAdvantage
                   cardData={cardData}
-                  onBack={() => { /* back handled above */ }}
+                  onBack={() => { /* back handled by Card6BlindSpots above */ }}
                   onNext={() => handleTabChange(TOOLS_TAB_INDEX)}
                   copyFallback={handleCopyFallback}
                   analysisId={analysisId}
