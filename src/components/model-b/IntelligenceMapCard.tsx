@@ -67,25 +67,50 @@ function normalizePivots(raw: any[]): string[] {
 export default function IntelligenceMapCard({ cardData }: Props) {
   const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
 
-  const { skillNodes, tools, pivots, role, totalSkills } = useMemo(() => {
-    const c3Skills: Skill[] = cardData?.card3_shield?.skills || [];
+  const { skillNodes, tools, pivots, role, totalSkills, source } = useMemo(() => {
+    const c3Skills: Skill[] = Array.isArray(cardData?.card3_shield?.skills) ? cardData.card3_shield.skills : [];
     const tools = normalizeTools(cardData?.ai_tools_replacing || cardData?.card1_risk?.ai_tools_replacing || []).slice(0, 6);
     const pivots = normalizePivots(cardData?.card4_pivot?.adjacent_roles || cardData?.card4_pivot?.pivots || []).slice(0, 4);
     const role: string = cardData?.user?.current_title || cardData?.role || "Your Role";
 
-    // Build skill nodes; only first 9 to keep visual density manageable.
-    const all: SkillNode[] = c3Skills.slice(0, 12).map((s) => {
-      const bucket = classifySkill(s.level);
-      const threatenedBy = bucket !== "human-only"
-        ? tools.find((t) =>
-            t.automates_task && s.name &&
-            t.automates_task.toLowerCase().includes(s.name.toLowerCase().split(" ")[0])
-          )?.tool_name
-        : undefined;
-      return { name: s.name, bucket, threatenedBy };
-    });
+    const linkTool = (name: string, bucket: RiskBucket): string | undefined => {
+      if (bucket === "human-only" || !name) return undefined;
+      const head = name.toLowerCase().split(/[\s/]/)[0];
+      return tools.find((t) =>
+        t.automates_task && head && t.automates_task.toLowerCase().includes(head)
+      )?.tool_name;
+    };
 
-    return { skillNodes: all, tools, pivots, role, totalSkills: c3Skills.length };
+    // Primary source: card3_shield.skills with level enums (richest signal).
+    if (c3Skills.length >= 2) {
+      const all: SkillNode[] = c3Skills.slice(0, 12).map((s) => {
+        const bucket = classifySkill(s.level);
+        return { name: s.name, bucket, threatenedBy: linkTool(s.name, bucket) };
+      });
+      return { skillNodes: all, tools, pivots, role, totalSkills: c3Skills.length, source: "card3_shield" as const };
+    }
+
+    // Fallback: deterministic engine outputs (works on ~100% of scans).
+    // moats → human-only; execution_skills_dead → automated; remaining all_skills → at-risk.
+    const moats: string[] = (Array.isArray(cardData?.moat_skills) ? cardData.moat_skills : [])
+      .filter((s: unknown): s is string => typeof s === "string" && s.length > 0);
+    const dead: string[] = (Array.isArray(cardData?.execution_skills_dead) ? cardData.execution_skills_dead : [])
+      .filter((s: unknown): s is string => typeof s === "string" && s.length > 0);
+    const allSkills: string[] = (Array.isArray(cardData?.all_skills) ? cardData.all_skills : [])
+      .filter((s: unknown): s is string => typeof s === "string" && s.length > 0);
+
+    const moatSet = new Set(moats.map((s) => s.toLowerCase()));
+    const deadSet = new Set(dead.map((s) => s.toLowerCase()));
+    const atRisk = allSkills.filter((s) => !moatSet.has(s.toLowerCase()) && !deadSet.has(s.toLowerCase()));
+
+    const fallbackNodes: SkillNode[] = [
+      ...moats.slice(0, 4).map((name) => ({ name, bucket: "human-only" as RiskBucket, threatenedBy: undefined })),
+      ...atRisk.slice(0, 4).map((name) => ({ name, bucket: "at-risk" as RiskBucket, threatenedBy: linkTool(name, "at-risk") })),
+      ...dead.slice(0, 4).map((name) => ({ name, bucket: "automated" as RiskBucket, threatenedBy: linkTool(name, "automated") })),
+    ];
+
+    const total = moats.length + atRisk.length + dead.length;
+    return { skillNodes: fallbackNodes, tools, pivots, role, totalSkills: total, source: "engine_fallback" as const };
   }, [cardData]);
 
   const safeNodes = skillNodes.filter((n) => n.bucket === "human-only").slice(0, 4);
