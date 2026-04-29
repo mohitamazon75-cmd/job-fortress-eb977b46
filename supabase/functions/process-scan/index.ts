@@ -45,6 +45,9 @@ import {
   buildProfileCacheKey,
   getCachedStrategicSkills,
   cacheStrategicSkills,
+  buildAgent1ProfileCacheKey,
+  getCachedAgent1Profile,
+  cacheAgent1Profile,
 } from "../_shared/strategic-skills-cache.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
 import { orchestrateAgents } from "./scan-agents.ts";
