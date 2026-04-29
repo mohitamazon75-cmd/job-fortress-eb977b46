@@ -661,15 +661,18 @@ function SnapshotView({
           const sameDayShare = categorized > 0 ? sameDay / categorized : 0;
           // #2 Loosen guard: flag obvious recruiter spam regardless of pool size.
           //   - Original: only when totalPool ≤10 and sameDay ≥3 and share ≥50%.
-          //   - Round-5 fix (D, 2026-04-29): flag mid-sized pools (5–25) where
-          //     same-day dominates AND nothing showed up in the rest of the
-          //     week — that pattern (28 today / 0 this week, screenshot 2) is
-          //     the repost wave the original guard missed.
-          //     LARGE pools (>25 postings) are NOT flagged: 50 dated postings
-          //     in a single day is real hiring signal, not spam.
+          //   - Round-5 fix (D): also flag mid-sized pools (5–25) where same-day
+          //     dominates AND nothing showed up in the rest of the week.
+          //   - Round-6 fix (K, 2026-04-29): the prior ≤25 cap let "28 today /
+          //     0 this week / 0 older" fall into HOT — yet the body still warned
+          //     "Naukri can't distinguish new requisitions from reposts". Badge
+          //     contradicted disclaimer. Now: any pool ≤40 with within7d===0 and
+          //     sameDayShare ≥0.85 is treated as a repost wave. >40 only if the
+          //     within7d=0 + sameDayShare=1 pattern STILL holds (truly all-today).
           const repostNoiseSuspected =
             (totalPool <= 10 && sameDay >= 3 && sameDayShare >= 0.5) ||
-            (categorized >= 5 && categorized <= 25 && sameDayShare >= 0.85 && within7d === 0);
+            (categorized >= 5 && categorized <= 40 && sameDayShare >= 0.85 && within7d === 0) ||
+            (categorized > 40 && sameDayShare >= 0.95 && within7d === 0);
 
           let velocityLabel = "—";
           let velocityColor = "var(--mb-ink2)";
