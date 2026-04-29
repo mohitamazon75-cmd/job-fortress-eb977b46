@@ -64,12 +64,14 @@ describe("LiveMarketCard — Layer B#6: hiring-velocity benchmark", () => {
     expect(bench.textContent).toMatch(/typical daily band/i);
   });
 
-  it("still renders the benchmark on suppressed-tag corpora when freshness is real (puts '6 today' in context)", () => {
-    // tinyFlatPartialFixture: 6 same-day postings → hasSignal=true.
-    // Tag table is suppressed but velocity strip is intact, so the
-    // benchmark line is exactly the place that adds value.
+  it("suppresses the benchmark on repost-noise corpora to avoid contradicting the STEADY verdict", () => {
+    // Round-5 fix (D, 2026-04-29): tinyFlatPartialFixture is 6 same-day / 0
+    // within-7d / 0 older — sameDayShare=100%, our new repost-noise rule
+    // (sameDayShare ≥85% AND within7d===0) flags this as recruiter spam and
+    // shows "STEADY · treat as steady, not urgent". Rendering "above typical
+    // band" alongside "treat as steady" was the contradiction the bug report
+    // (Bug D, screenshot 2) flagged. Benchmark is intentionally hidden here.
     renderCard(tinyFlatPartialFixture);
-    const bench = screen.getByTestId("velocity-benchmark");
-    expect(bench.textContent).toMatch(/well below the typical daily band/i);
+    expect(screen.queryByTestId("velocity-benchmark")).toBeNull();
   });
 });

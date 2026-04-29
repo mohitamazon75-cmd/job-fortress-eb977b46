@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CardShell, CardHead, CardBody, Badge, LivePill, SectionLabel, InfoBox, CardNav, variantColor } from "./SharedUI";
 import { supabase } from "@/integrations/supabase/client";
 import SalaryFitWidget from "./SalaryFitWidget";
 import SectorNewsFeed from "./SectorNewsFeed";
 import { decideAttribution } from "./quote-attribution";
+import { sanitiseMarketCopy, filterFreshSectorNews } from "@/lib/market-copy-sanitizer";
 
 interface NewsItem {
   headline: string;
@@ -79,6 +80,23 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
       }).catch(() => {}); // non-fatal
     }
   }, []);
+
+  // ─── Round-5 fix (C+H+G, 2026-04-29): client-side sanitiser ───
+  // Strips contradictions ("₹30L+ averages" when median is ₹15L) and known
+  // hallucination patterns ("top X percentile", "X% premium", "by Wednesday").
+  // Conservative: keeps original text whenever inputs are missing.
+  const sanitisedC2 = useMemo(() => {
+    const band = liveMarket?.salary_range_lpa;
+    const clean = (t: string | undefined) => sanitiseMarketCopy(t, band) || "";
+    return {
+      key_insight: clean(c2?.key_insight) || c2?.key_insight || "",
+      fear_hook: clean(c2?.fear_hook) || c2?.fear_hook || "",
+      tough_love: clean(c2?.tough_love) || c2?.tough_love || "",
+      confrontation: clean(c2?.confrontation) || c2?.confrontation || "",
+      hope_bridge: clean(c2?.hope_bridge) || c2?.hope_bridge || "",
+    };
+  }, [c2, liveMarket?.salary_range_lpa]);
+
   if (!c2) return null;
 
   return (
@@ -104,30 +122,30 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
             Replaces the previous 3 separate full-width banners (fear/confront/hope) which
             duplicated Card 1's pattern poorly. One container, three colored-rule beats —
             keeps the psychological arc, drops the 🚨/⚔️/✅ emoji triple ("AI slop" per audit). */}
-        {(c2.fear_hook || c2.tough_love || c2.confrontation || c2.hope_bridge) && (
+        {(sanitisedC2.fear_hook || sanitisedC2.tough_love || sanitisedC2.confrontation || sanitisedC2.hope_bridge) && (
           <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 16, padding: "16px 18px", marginBottom: 22, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--mb-ink3)", marginBottom: 12 }}>
               Market pulse · what's moving against you, with you
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {c2.fear_hook && (
+              {sanitisedC2.fear_hook && (
                 <div style={{ borderLeft: "3px solid var(--mb-red)", paddingLeft: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-red)", lineHeight: 1.6, whiteSpace: "pre-line" as const }}>
-                  {c2.fear_hook}
+                  {sanitisedC2.fear_hook}
                 </div>
               )}
-              {c2.tough_love && (
+              {sanitisedC2.tough_love && (
                 <div style={{ borderLeft: "3px solid var(--mb-amber)", paddingLeft: 12, fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 600, color: "var(--mb-ink2)", fontStyle: "italic" as const, lineHeight: 1.6 }}>
-                  {c2.tough_love}
+                  {sanitisedC2.tough_love}
                 </div>
               )}
-              {c2.confrontation && (
+              {sanitisedC2.confrontation && (
                 <div style={{ borderLeft: "3px solid var(--mb-amber)", paddingLeft: 12, fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700, color: "var(--mb-ink)", fontStyle: "italic" as const, lineHeight: 1.6 }}>
-                  {c2.confrontation}
+                  {sanitisedC2.confrontation}
                 </div>
               )}
-              {c2.hope_bridge && (
+              {sanitisedC2.hope_bridge && (
                 <div style={{ borderLeft: "3px solid var(--mb-green)", paddingLeft: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, color: "var(--mb-green)", lineHeight: 1.6 }}>
-                  {c2.hope_bridge}
+                  {sanitisedC2.hope_bridge}
                 </div>
               )}
             </div>
@@ -146,18 +164,30 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
                   userCity={cardData.user?.location || ""}
                 />
               )}
-              {liveMarket.job_postings_trend && (
-                <div style={{ background: liveMarket.job_postings_trend === "growing" ? "var(--mb-green-tint)" : liveMarket.job_postings_trend === "declining" ? "var(--mb-red-tint)" : "var(--mb-amber-tint)", border: "1.5px solid rgba(0,0,0,0.1)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-ink)" }}>
-                    Job postings are <strong style={{ fontWeight: 800 }}>{liveMarket.job_postings_trend}</strong>
+              {liveMarket.job_postings_trend && (() => {
+                // Round-5 fix (E, 2026-04-29): "stable +5% YoY" is a contradiction.
+                // Override the server's label when the percentage disagrees with it.
+                const pct = liveMarket.posting_change_pct;
+                let trendLabel = liveMarket.job_postings_trend as string;
+                if (typeof pct === "number") {
+                  if (pct >= 5) trendLabel = "growing";
+                  else if (pct <= -5) trendLabel = "declining";
+                  else trendLabel = "stable";
+                }
+                const tint = trendLabel === "growing" ? "var(--mb-green-tint)" : trendLabel === "declining" ? "var(--mb-red-tint)" : "var(--mb-amber-tint)";
+                return (
+                  <div style={{ background: tint, border: "1.5px solid rgba(0,0,0,0.1)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-ink)" }}>
+                      Job postings are <strong style={{ fontWeight: 800 }}>{trendLabel}</strong>
+                    </div>
+                    {pct !== undefined && (
+                      <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, fontWeight: 800, color: pct >= 0 ? "var(--mb-green)" : "var(--mb-red)" }}>
+                        {pct >= 0 ? "+" : ""}{pct}% YoY
+                      </span>
+                    )}
                   </div>
-                  {liveMarket.posting_change_pct !== undefined && (
-                    <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, fontWeight: 800, color: liveMarket.posting_change_pct >= 0 ? "var(--mb-green)" : "var(--mb-red)" }}>
-                      {liveMarket.posting_change_pct >= 0 ? "+" : ""}{liveMarket.posting_change_pct}% YoY
-                    </span>
-                  )}
-                </div>
-              )}
+                );
+              })()}
               {liveMarket.key_findings?.slice(0, 2).map((finding, i) => (
                 <div key={i} style={{ background: "var(--mb-paper)", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "10px 14px", fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.6 }}>
                   {finding}
@@ -177,39 +207,33 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           </>
         )}
 
-        {/* T6: Cohort outcome strip — shows when calibration data exists (n≥30) */}
-        {cohortOutcome && (
-          <div style={{ background: cohortOutcome.calibrated ? "var(--mb-green-tint)" : "var(--mb-paper)", border: `1.5px solid ${cohortOutcome.calibrated ? "rgba(26,107,60,0.2)" : "var(--mb-rule)"}`, borderRadius: 14, padding: "14px 18px", marginBottom: 22 }}>
-            {cohortOutcome.calibrated ? (
-              <>
-                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-green)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 6 }}>
-                  Your cohort · real outcomes
+        {/* T6: Cohort outcome strip — only render once we actually have calibrated data.
+            Round-5 fix (I, 2026-04-29): the "calibrating with real outcomes" placeholder
+            is permanent at pre-PMF traffic. Hide entirely until n≥30 calibration fires. */}
+        {cohortOutcome?.calibrated && (
+          <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 22 }}>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-green)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 6 }}>
+              Your cohort · real outcomes
+            </div>
+            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 15, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.5 }}>
+              Of <strong>{cohortOutcome.sample_size?.toLocaleString()}</strong> professionals with DI {cohortOutcome.di_bucket_min}–{cohortOutcome.di_bucket_max}
+              {cohortOutcome.role_category ? ` in ${cohortOutcome.role_category}` : ""}:
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap" as const }}>
+              {(cohortOutcome.got_interview_rate ?? 0) > 0 && (
+                <div style={{ background: "var(--mb-green)", borderRadius: 10, padding: "8px 14px", color: "white", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700 }}>
+                  {Math.round((cohortOutcome.got_interview_rate ?? 0) * 100)}% got interviews
                 </div>
-                <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 15, fontWeight: 700, color: "var(--mb-ink)", lineHeight: 1.5 }}>
-                  Of <strong>{cohortOutcome.sample_size?.toLocaleString()}</strong> professionals with DI {cohortOutcome.di_bucket_min}–{cohortOutcome.di_bucket_max}
-                  {cohortOutcome.role_category ? ` in ${cohortOutcome.role_category}` : ""}:
+              )}
+              {(cohortOutcome.upskilling_rate ?? 0) > 0 && (
+                <div style={{ background: "var(--mb-navy)", borderRadius: 10, padding: "8px 14px", color: "white", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700 }}>
+                  {Math.round((cohortOutcome.upskilling_rate ?? 0) * 100)}% started upskilling
                 </div>
-                <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap" as const }}>
-                  {(cohortOutcome.got_interview_rate ?? 0) > 0 && (
-                    <div style={{ background: "var(--mb-green)", borderRadius: 10, padding: "8px 14px", color: "white", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700 }}>
-                      {Math.round((cohortOutcome.got_interview_rate ?? 0) * 100)}% got interviews
-                    </div>
-                  )}
-                  {(cohortOutcome.upskilling_rate ?? 0) > 0 && (
-                    <div style={{ background: "var(--mb-navy)", borderRadius: 10, padding: "8px 14px", color: "white", fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700 }}>
-                      {Math.round((cohortOutcome.upskilling_rate ?? 0) * 100)}% started upskilling
-                    </div>
-                  )}
-                </div>
-                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: "var(--mb-ink3)", marginTop: 8 }}>
-                  Based on 7-day follow-ups from JobBachao users.
-                </div>
-              </>
-            ) : (
-              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "var(--mb-ink3)" }}>
-                <strong>Calibrating with real outcomes.</strong> As more users with your profile report back, this card will show what % got interviews.
-              </div>
-            )}
+              )}
+            </div>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 10, color: "var(--mb-ink3)", marginTop: 8 }}>
+              Based on 7-day follow-ups from JobBachao users.
+            </div>
           </div>
         )}
 
@@ -233,18 +257,20 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           </>
         )}
 
-        {c2.key_insight && (
+        {sanitisedC2.key_insight && (
           <InfoBox variant="green" title="What your resume signals to this market">
-            <div>{c2.key_insight}</div>
+            <div>{sanitisedC2.key_insight}</div>
             <div style={{ marginTop: 8, fontSize: 11, opacity: 0.7, fontStyle: "italic" }}>
               Achievements pulled from your resume. Market figures from NASSCOM/WEF where cited. Salary not used — you didn't share it.
             </div>
           </InfoBox>
         )}
 
-        {/* Sector news feed — dated headlines for user's industry */}
-        {liveMarket?.sector_news && liveMarket.sector_news.length > 0 && (
-          <SectorNewsFeed items={liveMarket.sector_news} industry={cardData.user?.industry} />
+        {/* Sector news feed — dated headlines for user's industry. Round-5 fix (G):
+            filter out items whose headline carries an outdated year marker so we
+            don't stuff "(2024)" articles under a "LAST 21 DAYS" label. */}
+        {liveMarket?.sector_news && filterFreshSectorNews(liveMarket.sector_news).length > 0 && (
+          <SectorNewsFeed items={filterFreshSectorNews(liveMarket.sector_news)} industry={cardData.user?.industry} />
         )}
 
         {/* Live skill threat intel — capped at 4 to match Card 1's pill discipline */}
@@ -321,7 +347,12 @@ function LiveSalaryBand({
   userCity: string;
 }) {
   const { min, max, median } = baseRange;
-  const cityLabel = userCity && userCity.length > 0 && userCity.length < 30 ? userCity : null;
+  // Round-5 fix (F, 2026-04-29): suppress the 📍 city pin when value is a
+  // country/region name. Previously rendered "📍 INDIA" which contradicts a
+  // pin glyph (a pin marks a city, not a country).
+  const COUNTRY_OR_REGION = /^(india|in|bharat|asia|apac|global|world|remote|na|n\/a|none|unknown)$/i;
+  const trimmed = (userCity || "").trim();
+  const cityLabel = trimmed && trimmed.length < 30 && !COUNTRY_OR_REGION.test(trimmed) ? trimmed : null;
   return (
     <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
