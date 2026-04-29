@@ -938,7 +938,7 @@ export default function ResultsModelB() {
                     /* onNext intentionally omitted — single nav lives on the Trends section below */
                   />
                   <div style={{ height: 24 }} />
-                  <Card2MarketRadar cardData={cardData} onNext={() => handleTabChange(3)} onBack={() => { /* back handled by LiveMarketCard above */ }} />
+                  <Card2MarketRadar cardData={cardData} onNext={() => handleTabChange(3)} />
                 </>
               );
             })()}
