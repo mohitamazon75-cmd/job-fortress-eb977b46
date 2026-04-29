@@ -848,6 +848,15 @@ Deno.serve(async (req) => {
           adaptability_signals: manualMatchedSkills.length > 0 ? 2 : 1,
           estimated_monthly_salary_inr: null,
         };
+        profilerStratSkillsSource = "fallback";
+        profilerMeta = {
+          model_used: "fallback",
+          latency_ms: null,
+          fallback_chain: [],
+          strategic_skills_count: strategicFallback.length,
+          all_skills_count: fallbackSkills.length,
+          strategic_skills_source: "fallback",
+        };
       }
     }
 
