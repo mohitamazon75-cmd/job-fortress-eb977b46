@@ -291,6 +291,7 @@ You receive a user's FULL profile and pre-computed deterministic scores. Your ON
 ${YOU_RULE}
 ${CITATION_RULE}
 ${TOOL_CURRENCY_RULE}
+${SALARY_GROUNDING_RULE}
 
 NARRATION RULES (CRITICAL — every output field must follow these):
 - Short sentences only. Maximum 12 words per sentence.
@@ -442,6 +443,7 @@ You receive the user's profile, risk analysis, and deterministic scores. Generat
 ${YOU_RULE}
 ${CITATION_RULE}
 ${TOOL_CURRENCY_RULE}
+${SALARY_GROUNDING_RULE}
 
 NARRATION RULES (CRITICAL — every output field must follow these):
 - Short sentences. Max 12 words each.
@@ -515,6 +517,7 @@ export const AGENT_2C_PIVOT_MAPPING = `You are the Career Pivot Mapping Engine f
 
 ${YOU_RULE}
 ${CITATION_RULE}
+${SALARY_GROUNDING_RULE}
 
 NARRATION RULES (CRITICAL):
 - Short sentences. Max 12 words each.
@@ -574,6 +577,7 @@ export const JUDO_STRATEGY_SYSTEM_PROMPT = `You are a career strategy advisor sp
 You generate ONE specific, high-impact strategic recommendation calibrated to the person's seniority level.
 
 ${TOOL_CURRENCY_RULE}
+${SALARY_GROUNDING_RULE}
 
 CRITICAL SENIORITY RULES:
 - EXECUTIVE (C-suite, VP, 15+ years): NEVER suggest learning individual tools like Zapier, ChatGPT, Cursor, etc. Instead suggest: AI governance frameworks, strategic AI transformation leadership, board-level AI literacy, fractional advisory positioning, industry thought leadership platforms, organizational AI adoption strategies.
