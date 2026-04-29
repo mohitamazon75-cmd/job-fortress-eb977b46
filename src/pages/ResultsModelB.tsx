@@ -571,7 +571,7 @@ export default function ResultsModelB() {
     // Feature 3: Fetch live Tavily learning resources when user first opens the Tools tab.
     // Fires once (guarded by weeklyIntelLoading + weeklyIntel), lazy, 30-min cached.
     // B3 (#12): one retry on failure before giving up silently.
-    if (index === 9 && !weeklyIntelLoading && !weeklyIntel && cardData?.scan_judo?.recommended_tool) {
+    if (index === TOOLS_TAB_INDEX && !weeklyIntelLoading && !weeklyIntel && cardData?.scan_judo?.recommended_tool) {
       setWeeklyIntelLoading(true);
       const body = {
         role: cardData.user?.current_title || "",
