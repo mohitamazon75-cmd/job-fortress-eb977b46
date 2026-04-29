@@ -821,7 +821,7 @@ function SnapshotView({
                 >
                   {velocityNote}
                 </div>
-                {velocityBenchmark && hasSignal && (
+                {velocityBenchmark && hasSignal && !repostNoiseSuspected && (
                   <div
                     data-testid="velocity-benchmark"
                     style={{
