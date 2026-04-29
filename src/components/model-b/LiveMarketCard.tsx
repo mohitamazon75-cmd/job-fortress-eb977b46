@@ -629,7 +629,12 @@ function SnapshotView({
                   fontStyle: "italic",
                 }}
               >
-                Skill-match not shown — this market's top tags don't cleanly reflect {displayRole} skills. We hide the column rather than show misleading matches.
+                {/* Round-9 fix (2026-04-29): previous copy left the table feeling
+                    orphaned — these tags are real, but their relationship to the
+                    user's profile was unclear. Make it explicit. */}
+                These are what employers ARE asking for in this market — but the
+                tags don't cleanly map to {displayRole} skills, so we're not
+                showing a profile-match column rather than fake the comparison.
               </div>
             )}
           </div>
@@ -797,7 +802,12 @@ function SnapshotView({
                         color: "var(--mb-ink)",
                       }}
                     >
-                      {sameDay} <span style={{ fontSize: 13, color: "var(--mb-ink2)" }}>today</span>
+                      {/* Round-9 fix (2026-04-29): when STEADY badge fires because
+                          same-day stamps dominate, the bare "21 today · 0 this week ·
+                          0 older" line reads as a contradiction (busy, but flagged
+                          steady). Relabel "today" → "stamped today" so the number
+                          matches the verdict text immediately above. */}
+                      {sameDay} <span style={{ fontSize: 13, color: "var(--mb-ink2)" }}>{repostNoiseSuspected ? "stamped today" : "today"}</span>
                       {" · "}
                       {within7d} <span style={{ fontSize: 13, color: "var(--mb-ink2)" }}>this week</span>
                       {" · "}
@@ -847,20 +857,25 @@ function SnapshotView({
                     Today's <strong>{sameDay}</strong> sits <strong>{compareToBenchmark(sameDay, velocityBenchmark)}</strong>.
                   </div>
                 )}
-                <div
-                  style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 12,
-                    color: "var(--mb-ink3)",
-                    fontStyle: "italic",
-                    marginTop: 10,
-                    lineHeight: 1.55,
-                  }}
-                >
-                  Salary band hidden — Naukri's disclosed pay isn't filtered by seniority,
-                  and showing a junior-skewed range for your level would mislead. Use the
-                  Negotiation Anchors in your action plan for level-matched compensation.
-                </div>
+              </div>
+              {/* Round-9 fix (2026-04-29): the salary-band disclaimer used to live
+                  INSIDE the navy pulse box, where its weight competed with the
+                  main verdict. Moved out as a smaller, italic footnote below the
+                  box so the hierarchy is unambiguous. */}
+              <div
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11.5,
+                  color: "var(--mb-ink3)",
+                  fontStyle: "italic",
+                  marginTop: 10,
+                  lineHeight: 1.55,
+                  paddingLeft: 4,
+                }}
+              >
+                Salary band hidden — Naukri's disclosed pay isn't filtered by seniority,
+                and showing a junior-skewed range for your level would mislead. Use the
+                Negotiation Anchors in your action plan for level-matched compensation.
               </div>
             </div>
           );

@@ -403,7 +403,7 @@ export default function IntelligenceMapCard({ cardData }: Props) {
             {source === "engine_fallback" ? " · classified by deterministic engine" : ""}
           </span>
           <span style={{ fontWeight: 700, color: "var(--mb-ink2)" }}>
-            {hoveredSkill ? `Highlighting: ${hoveredSkill}` : "Hover any skill to trace its threat path"}
+            {hoveredSkill ? `Highlighting: ${hoveredSkill}` : "Tap or hover any skill to trace its threat path"}
           </span>
         </div>
       </CardBody>
