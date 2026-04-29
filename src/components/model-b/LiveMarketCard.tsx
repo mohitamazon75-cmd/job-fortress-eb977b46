@@ -852,20 +852,25 @@ function SnapshotView({
                     Today's <strong>{sameDay}</strong> sits <strong>{compareToBenchmark(sameDay, velocityBenchmark)}</strong>.
                   </div>
                 )}
-                <div
-                  style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 12,
-                    color: "var(--mb-ink3)",
-                    fontStyle: "italic",
-                    marginTop: 10,
-                    lineHeight: 1.55,
-                  }}
-                >
-                  Salary band hidden — Naukri's disclosed pay isn't filtered by seniority,
-                  and showing a junior-skewed range for your level would mislead. Use the
-                  Negotiation Anchors in your action plan for level-matched compensation.
-                </div>
+              </div>
+              {/* Round-9 fix (2026-04-29): the salary-band disclaimer used to live
+                  INSIDE the navy pulse box, where its weight competed with the
+                  main verdict. Moved out as a smaller, italic footnote below the
+                  box so the hierarchy is unambiguous. */}
+              <div
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11.5,
+                  color: "var(--mb-ink3)",
+                  fontStyle: "italic",
+                  marginTop: 10,
+                  lineHeight: 1.55,
+                  paddingLeft: 4,
+                }}
+              >
+                Salary band hidden — Naukri's disclosed pay isn't filtered by seniority,
+                and showing a junior-skewed range for your level would mislead. Use the
+                Negotiation Anchors in your action plan for level-matched compensation.
               </div>
             </div>
           );
