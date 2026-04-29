@@ -80,6 +80,23 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
       }).catch(() => {}); // non-fatal
     }
   }, []);
+
+  // ─── Round-5 fix (C+H+G, 2026-04-29): client-side sanitiser ───
+  // Strips contradictions ("₹30L+ averages" when median is ₹15L) and known
+  // hallucination patterns ("top X percentile", "X% premium", "by Wednesday").
+  // Conservative: keeps original text whenever inputs are missing.
+  const sanitisedC2 = useMemo(() => {
+    const band = liveMarket?.salary_range_lpa;
+    const clean = (t: string | undefined) => sanitiseMarketCopy(t, band) || "";
+    return {
+      key_insight: clean(c2?.key_insight) || c2?.key_insight || "",
+      fear_hook: clean(c2?.fear_hook) || c2?.fear_hook || "",
+      tough_love: clean(c2?.tough_love) || c2?.tough_love || "",
+      confrontation: clean(c2?.confrontation) || c2?.confrontation || "",
+      hope_bridge: clean(c2?.hope_bridge) || c2?.hope_bridge || "",
+    };
+  }, [c2, liveMarket?.salary_range_lpa]);
+
   if (!c2) return null;
 
   return (
