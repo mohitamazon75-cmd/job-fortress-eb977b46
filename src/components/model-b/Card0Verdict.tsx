@@ -283,7 +283,6 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
           </span>
         )}
         {displaySignals > 0 && <span style={{ opacity: 0.4 }}>·</span>}
-        <span style={{ opacity: 0.4 }}>·</span>
         <span>AIRMM™ framework</span>
         <span style={{ opacity: 0.4 }}>·</span>
         <span>Live market data</span>
