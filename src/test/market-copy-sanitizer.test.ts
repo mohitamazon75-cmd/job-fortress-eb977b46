@@ -66,6 +66,32 @@ describe("stripHallucinations", () => {
       .toBe("Real.");
   });
 
+  // Round-8 regressions — exact dirty strings observed in the 2026-04-29 fresh scan.
+  it("strips numeric % salary premium claims (round-8 Bug U)", () => {
+    expect(stripHallucinations("AI-native growth roles now command a 30% salary premium. Real."))
+      .toBe("Real.");
+  });
+
+  it("strips ranged % premium claims like '40-60% premium' (round-8 Bug W)", () => {
+    expect(stripHallucinations("Growth-focused roles command a 40-60% premium over general digital marketing managers. Real."))
+      .toBe("Real.");
+  });
+
+  it("strips 'staying in X costs you ₹YL annual growth' shape (round-8 Bug V)", () => {
+    expect(stripHallucinations("Staying in execution-only roles costs you ₹8L in annual growth potential. Real."))
+      .toBe("Real.");
+  });
+
+  it("strips 'highest salary density' superlative (round-8 Bug W)", () => {
+    expect(stripHallucinations("Tier-1 metros like Bangalore and Mumbai show the highest salary density for senior growth roles. Real."))
+      .toBe("Real.");
+  });
+
+  it("strips 'top-tier candidate' qualitative claim (round-8 Bug W)", () => {
+    expect(stripHallucinations("Your proven success in GCC markets makes you a top-tier candidate for Indian MNCs. Real."))
+      .toBe("Real.");
+  });
+
   it("preserves benign text", () => {
     const t = "Your skills align with India's growth roles.";
     expect(stripHallucinations(t)).toBe(t);
