@@ -261,7 +261,7 @@ function GapRow({
 }
 
 // ─── Main card ──────────────────────────────────────────────────
-export default function Card6BlindSpots({ cardData, onBack, onNext, scanId }: { cardData: any; onBack: () => void; onNext: () => void; scanId?: string }) {
+export default function Card6BlindSpots({ cardData, onBack, onNext, scanId, firstName }: { cardData: any; onBack: () => void; onNext: () => void; scanId?: string; firstName?: string | null }) {
   const d = cardData.card6_blindspots;
   const role = cardData?.user?.current_title || "professional";
   const skills: string[] = useMemo(
