@@ -922,36 +922,58 @@ export default function ResultsModelB() {
             {MONDAY_MOVE_VISIBLE_TABS.has(currentCard) && <MondayMoveCard cardData={cardData} firstName={revealFirstName} />}
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
             {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} firstName={revealFirstName} />}
+            {/* Sprint 3: Tab 2 = Live Market + Trends (Card2MarketRadar) stacked. */}
             {currentCard === 2 && (() => {
               const u = cardData.user || {};
               const role = u.current_title || cardData.role || "Professional";
               const city = u.location || u.city || cardData.country || "India";
               const skills = (cardData.card3_shield?.skills || []).map((s: any) => s.name).filter(Boolean);
               return (
-                <LiveMarketCard
-                  role={role}
-                  city={city}
-                  all_skills={skills}
-                  onPrev={() => handleTabChange(1)}
-                  onNext={() => handleTabChange(3)}
-                />
+                <>
+                  <LiveMarketCard
+                    role={role}
+                    city={city}
+                    all_skills={skills}
+                    onPrev={() => handleTabChange(1)}
+                    /* onNext intentionally omitted — single nav lives on the Trends section below */
+                  />
+                  <div style={{ height: 24 }} />
+                  <Card2MarketRadar cardData={cardData} onNext={() => handleTabChange(3)} onBack={() => { /* back handled by LiveMarketCard above */ }} />
+                </>
               );
             })()}
-            {currentCard === 3 && <Card2MarketRadar cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} />}
-            {currentCard === 4 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} overallScore={baseScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
+            {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} overallScore={baseScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
               logEvent("modal_opened", { source: "upgrade_plan" });
               setActionModal({
                 title: "60-Day Skill Upgrade Plan",
                 promptText: `Create a 60-day skill upgrade plan for ${cardData.user?.name} based on their resume.\n\nCurrent skills: ${(cardData.card3_shield?.skills || []).map((s: any) => s.name).join(", ")}\nSkill gaps: ${(cardData.card3_shield?.skills || []).filter((s: any) => s.level === "buildable" || s.level === "critical-gap").map((s: any) => s.name).join(", ")}\n\nFor each week:\n- Specific learning resources (free, India-accessible)\n- Practice exercises with measurable outcomes\n- Portfolio project milestones\n- Time estimates (assume 1hr/day on weekdays)`
               });
             }} />}
-            {currentCard === 5 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} scanId={analysisId ?? undefined} />}
-            {currentCard === 6 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} analysisId={analysisId} />}
-            {currentCard === 7 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(6)} onNext={() => handleTabChange(8)} scanId={analysisId ?? undefined} firstName={revealFirstName} />}
-            {currentCard === 8 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(7)} onNext={() => handleTabChange(9)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
+            {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} scanId={analysisId ?? undefined} />}
+            {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
+            {/* Sprint 3: Tab 6 = Blind spots + Human Advantage (Card7) stacked. */}
+            {currentCard === 6 && (
+              <>
+                <Card6BlindSpots
+                  cardData={cardData}
+                  onBack={() => handleTabChange(5)}
+                  /* onNext omitted — single forward nav on the Human section below */
+                  scanId={analysisId ?? undefined}
+                  firstName={revealFirstName}
+                />
+                <div style={{ height: 24 }} />
+                <Card7HumanAdvantage
+                  cardData={cardData}
+                  onBack={() => { /* back handled above */ }}
+                  onNext={() => handleTabChange(TOOLS_TAB_INDEX)}
+                  copyFallback={handleCopyFallback}
+                  analysisId={analysisId}
+                />
+              </>
+            )}
 
-            {/* ── Tools tab (index 9) ───────────────────────────────── */}
-            {currentCard === 9 && (() => {
+            {/* ── Tools tab (index 7, post-Sprint-3) ───────────────────── */}
+            {currentCard === TOOLS_TAB_INDEX && (() => {
               // Build a minimal ScanReport-shaped object from cardData so the
               // existing tool components (built for ScanReport) work without changes.
               // B4 (#24): country and seniority_tier now derived from cardData
