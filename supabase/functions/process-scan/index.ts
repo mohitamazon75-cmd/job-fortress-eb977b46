@@ -41,6 +41,11 @@ import {
   applyFunctionalIndustryOverride,
 } from "../_shared/scan-helpers.ts";
 import { computeProfileCompleteness, deterministicSeedFromString } from "../_shared/scan-utils.ts";
+import {
+  buildProfileCacheKey,
+  getCachedStrategicSkills,
+  cacheStrategicSkills,
+} from "../_shared/strategic-skills-cache.ts";
 import { gatherEnrichmentData } from "./scan-enrichment.ts";
 import { orchestrateAgents } from "./scan-agents.ts";
 import { runScanPipeline } from "./scan-pipeline.ts";
