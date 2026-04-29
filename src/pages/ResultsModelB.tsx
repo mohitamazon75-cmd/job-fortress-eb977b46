@@ -917,7 +917,7 @@ export default function ResultsModelB() {
             )}
             {MONDAY_MOVE_VISIBLE_TABS.has(currentCard) && <MondayMoveCard cardData={cardData} firstName={revealFirstName} />}
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
-            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} />}
+            {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(2)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} firstName={revealFirstName} />}
             {currentCard === 2 && (() => {
               const u = cardData.user || {};
               const role = u.current_title || cardData.role || "Professional";
@@ -943,7 +943,7 @@ export default function ResultsModelB() {
             }} />}
             {currentCard === 5 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} scanId={analysisId ?? undefined} />}
             {currentCard === 6 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(5)} onNext={() => handleTabChange(7)} analysisId={analysisId} />}
-            {currentCard === 7 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(6)} onNext={() => handleTabChange(8)} scanId={analysisId ?? undefined} />}
+            {currentCard === 7 && <Card6BlindSpots cardData={cardData} onBack={() => handleTabChange(6)} onNext={() => handleTabChange(8)} scanId={analysisId ?? undefined} firstName={revealFirstName} />}
             {currentCard === 8 && <Card7HumanAdvantage cardData={cardData} onBack={() => handleTabChange(7)} onNext={() => handleTabChange(9)} copyFallback={handleCopyFallback} analysisId={analysisId} />}
 
             {/* ── Tools tab (index 9) ───────────────────────────────── */}
