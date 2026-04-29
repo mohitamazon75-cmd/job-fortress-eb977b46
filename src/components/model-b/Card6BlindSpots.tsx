@@ -360,6 +360,7 @@ export default function Card6BlindSpots({ cardData, onBack, onNext, scanId, firs
             skills={skills}
             onComplete={handleComplete}
             isComplete={!!completed[`${i}_${(bs.title || bs.gap || "Gap").toLowerCase().slice(0, 40).replace(/\s+/g, "_")}`]}
+            firstName={firstName}
           />
         ))}
 
