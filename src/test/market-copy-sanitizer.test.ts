@@ -120,6 +120,18 @@ describe("filterFreshSectorNews", () => {
     expect(filterFreshSectorNews([{ headline: "no year here" }], 2026)).toHaveLength(1);
   });
 
+  it("uses 21-day default cutoff (round-7) — drops 29-day-old layoff items", () => {
+    // Round-7 fix (R): default tightened from 30 → 21 days so "Sector Pulse"
+    // never anchors on a 29-day-old article.
+    const now = new Date("2026-04-29T00:00:00Z");
+    const items = [
+      { headline: "29 days old", published_at: "2026-03-31T00:00:00Z" }, // 29 days → drop
+      { headline: "10 days old", published_at: "2026-04-19T00:00:00Z" }, // 10 days → keep
+    ];
+    const out = filterFreshSectorNews(items, 2026, undefined as any, now);
+    expect(out.map((i) => i.headline)).toEqual(["10 days old"]);
+  });
+
   it("handles null/empty arrays", () => {
     expect(filterFreshSectorNews(null, 2026)).toEqual([]);
     expect(filterFreshSectorNews(undefined, 2026)).toEqual([]);
