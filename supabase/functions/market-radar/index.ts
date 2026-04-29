@@ -205,6 +205,50 @@ RULES:
       return json({ error: "Failed to parse AI response" }, 500);
     }
 
+    // ── ZERO-HALLUCINATION SALARY GUARD ────────────────────────────────────
+    // Even with the prompt rule, Gemini occasionally writes phrases like
+    // "₹8L–12L on the table as RevOps Architect". This is a credibility-killer
+    // because the figure is fabricated — we have no source for it. Strip any
+    // sentence that contains a ₹/lakh/L figure UNLESS the body also names a
+    // source. We replace, not redact, so the signal still reads naturally.
+    const hasSourceCitation = (text: string): boolean => {
+      const t = text.toLowerCase();
+      // Source markers: "per X", "according to", "X report", "(source)", named outlets
+      return /\b(per |according to |as per |source: |sources?:|report\b|study\b|survey\b|index\b)/i.test(text)
+        || /\b(mercer|aon|deloitte|naukri|linkedin|economic times|et\b|business standard|mint\b|nasscom|aim\b|inc42|moneycontrol|reuters|bloomberg|forbes|techcrunch)\b/i.test(t);
+    };
+    const stripFabricatedRupeeFigures = (text: string | undefined): string => {
+      if (!text || typeof text !== "string") return text || "";
+      // Split into sentences, drop ones with un-sourced ₹/lakh/L figures.
+      const sentences = text.split(/(?<=[.!?])\s+/);
+      const kept = sentences.filter((s) => {
+        const hasRupeeFigure = /(₹\s*\d|\d+\s*(?:L|lakh|lakhs|cr|crore|crores)\b)/i.test(s);
+        if (!hasRupeeFigure) return true;
+        return hasSourceCitation(s);
+      });
+      // If everything was stripped, return a safe directional fallback rather than empty.
+      if (kept.length === 0) {
+        return "Compensation signals are mixed at this seniority; check the Negotiation Anchors in your action plan for level-matched ranges.";
+      }
+      return kept.join(" ").trim();
+    };
+
+    if (Array.isArray(parsed.signals)) {
+      parsed.signals = parsed.signals.map((sig: Record<string, unknown>) => {
+        const cleaned = { ...sig };
+        if (typeof cleaned.body === "string") cleaned.body = stripFabricatedRupeeFigures(cleaned.body);
+        if (typeof cleaned.headline === "string") cleaned.headline = stripFabricatedRupeeFigures(cleaned.headline);
+        if (typeof cleaned.action_item === "string") cleaned.action_item = stripFabricatedRupeeFigures(cleaned.action_item);
+        return cleaned;
+      });
+    }
+    if (parsed.closing_verdict?.message) {
+      parsed.closing_verdict.message = stripFabricatedRupeeFigures(parsed.closing_verdict.message);
+    }
+    if (typeof parsed.one_liner === "string") {
+      parsed.one_liner = stripFabricatedRupeeFigures(parsed.one_liner);
+    }
+
     return json({
       ...parsed,
       citations,
