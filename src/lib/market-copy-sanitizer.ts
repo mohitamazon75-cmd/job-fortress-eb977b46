@@ -65,6 +65,17 @@ export function stripHallucinations(text: string): string {
   const MISSING_GROWTH = /\bmissing(?:\s+out)?\s+(?:on\s+)?(?:the\s+)?\d+%\s+growth\b/i;
   // Round-6: "command(s) a (significant) premium" — qualitative invented claim.
   const QUALITATIVE_PREMIUM = /\bcommand[s]?\s+(?:a\s+)?(?:significant\s+|substantial\s+|notable\s+)?premium\b/i;
+  // Round-8 (U, 2026-04-29): numeric premium claims like "command a 30% salary
+  // premium" or "40-60% premium over X" — fabricated comparative numbers with
+  // no source. Catches both single ("30%") and range ("40-60%") forms.
+  const NUMERIC_PREMIUM = /\b\d{1,3}(?:[-–]\d{1,3})?%\s+(?:salary\s+)?premium\b/i;
+  // Round-8 (V, 2026-04-29): "costs you ₹8L in annual growth potential" —
+  // similar shape to INACTION_COST but uses "costs you" without "inaction".
+  const STAYING_COST = /\b(?:staying|remaining)\s+in\s+[^.!?]{1,80}\s+costs?\s+you\s+(?:₹|Rs\.?\s?|INR\s?)?\s?\d+(?:\.\d+)?\s?(?:L|LPA|Lakh|Cr|crore)/i;
+  // Round-8 (W, 2026-04-29): qualitative superlatives that sound like data
+  // but aren't ("highest salary density", "top-tier candidate").
+  const SUPERLATIVE_DENSITY = /\b(?:highest|greatest|biggest)\s+salary\s+density\b/i;
+  const TOP_TIER_CANDIDATE = /\btop[-\s]tier\s+candidate\b/i;
   const sentences = text.split(/(?<=[.!?])\s+/);
   const kept = sentences.filter((s) => {
     if (PERCENTILE.test(s)) return false;
@@ -73,6 +84,10 @@ export function stripHallucinations(text: string): string {
     if (INACTION_COST.test(s)) return false;
     if (MISSING_GROWTH.test(s)) return false;
     if (QUALITATIVE_PREMIUM.test(s)) return false;
+    if (NUMERIC_PREMIUM.test(s)) return false;
+    if (STAYING_COST.test(s)) return false;
+    if (SUPERLATIVE_DENSITY.test(s)) return false;
+    if (TOP_TIER_CANDIDATE.test(s)) return false;
     return true;
   });
   return kept.join(" ").trim();
