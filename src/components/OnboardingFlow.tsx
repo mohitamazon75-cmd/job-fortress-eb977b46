@@ -498,8 +498,17 @@ export default function OnboardingFlow({
                     />
                   </div>
                   {ctcError && <p className="text-xs text-destructive font-medium mt-1.5">{ctcError}</p>}
+                  {/* Live numeric hint — mirrors SalaryFitWidget so users see what we parsed before submit */}
+                  {!ctcError && ctcInput.trim() && (() => {
+                    const parsed = Number(ctcInput.trim().replace(/[^\d.]/g, ''));
+                    if (!Number.isFinite(parsed) || parsed <= 0) return <p className="text-[11px] text-muted-foreground mt-1.5">Enter a positive number</p>;
+                    if (parsed < currencyConfig.minValid) return <p className="text-[11px] text-amber-600 mt-1.5">That looks low for monthly take-home — double-check the number.</p>;
+                    if (parsed > currencyConfig.maxValid) return <p className="text-[11px] text-amber-600 mt-1.5">That looks very high — double-check zeros.</p>;
+                    const annualLakhs = Math.round((parsed * 12) / 100000 * 10) / 10;
+                    return <p className="text-[11px] text-prophet-green mt-1.5 font-medium">≈ {currencyConfig.symbol}{annualLakhs}L annual CTC — we use this verbatim in your scripts.</p>;
+                  })()}
                   <p className="text-[11px] text-muted-foreground mt-1.5">
-                    Stored privately, only used to compute your salary-at-risk number.
+                    Stored privately, only used to compute your salary-at-risk number. <span className="text-foreground font-medium">Skipping means we use a market estimate and avoid quoting any ₹ figure as your salary.</span>
                   </p>
                 </div>
 
