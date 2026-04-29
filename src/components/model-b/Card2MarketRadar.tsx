@@ -146,18 +146,30 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
                   userCity={cardData.user?.location || ""}
                 />
               )}
-              {liveMarket.job_postings_trend && (
-                <div style={{ background: liveMarket.job_postings_trend === "growing" ? "var(--mb-green-tint)" : liveMarket.job_postings_trend === "declining" ? "var(--mb-red-tint)" : "var(--mb-amber-tint)", border: "1.5px solid rgba(0,0,0,0.1)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-ink)" }}>
-                    Job postings are <strong style={{ fontWeight: 800 }}>{liveMarket.job_postings_trend}</strong>
+              {liveMarket.job_postings_trend && (() => {
+                // Round-5 fix (E, 2026-04-29): "stable +5% YoY" is a contradiction.
+                // Override the server's label when the percentage disagrees with it.
+                const pct = liveMarket.posting_change_pct;
+                let trendLabel = liveMarket.job_postings_trend as string;
+                if (typeof pct === "number") {
+                  if (pct >= 5) trendLabel = "growing";
+                  else if (pct <= -5) trendLabel = "declining";
+                  else trendLabel = "stable";
+                }
+                const tint = trendLabel === "growing" ? "var(--mb-green-tint)" : trendLabel === "declining" ? "var(--mb-red-tint)" : "var(--mb-amber-tint)";
+                return (
+                  <div style={{ background: tint, border: "1.5px solid rgba(0,0,0,0.1)", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mb-ink)" }}>
+                      Job postings are <strong style={{ fontWeight: 800 }}>{trendLabel}</strong>
+                    </div>
+                    {pct !== undefined && (
+                      <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, fontWeight: 800, color: pct >= 0 ? "var(--mb-green)" : "var(--mb-red)" }}>
+                        {pct >= 0 ? "+" : ""}{pct}% YoY
+                      </span>
+                    )}
                   </div>
-                  {liveMarket.posting_change_pct !== undefined && (
-                    <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, fontWeight: 800, color: liveMarket.posting_change_pct >= 0 ? "var(--mb-green)" : "var(--mb-red)" }}>
-                      {liveMarket.posting_change_pct >= 0 ? "+" : ""}{liveMarket.posting_change_pct}% YoY
-                    </span>
-                  )}
-                </div>
-              )}
+                );
+              })()}
               {liveMarket.key_findings?.slice(0, 2).map((finding, i) => (
                 <div key={i} style={{ background: "var(--mb-paper)", border: "1px solid var(--mb-rule)", borderRadius: 10, padding: "10px 14px", fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.6 }}>
                   {finding}
