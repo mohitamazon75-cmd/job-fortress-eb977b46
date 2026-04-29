@@ -579,6 +579,17 @@ Deno.serve(async (req) => {
 
     // Check for cached Agent1 output to ensure consistency across repeat scans
     let agent1: any = null;
+    // Round 9 (2026-04-29): Profiler metadata + strategic-skills cache source.
+    // Persisted into determinism_meta so admin can diagnose score variance.
+    let profilerMeta: {
+      model_used: string;
+      latency_ms: number | null;
+      fallback_chain: string[];
+      strategic_skills_count: number;
+      all_skills_count: number;
+      strategic_skills_source: "fresh" | "fresh_cached" | "cache" | "fallback" | "agent1_cache";
+    } | null = null;
+    let profilerStratSkillsSource: "fresh" | "fresh_cached" | "cache" | "fallback" | "agent1_cache" = "fresh";
     {
       // CRITICAL FIX: Skip Agent1 cache when a resume is present OR forceRefresh is true.
       // Previously: only forceRefresh bypassed the Agent1 cache. This meant uploading a
