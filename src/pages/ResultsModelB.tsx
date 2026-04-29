@@ -660,6 +660,29 @@ export default function ResultsModelB() {
 
   // C2: copy helpers reference the module-scope functions (stable, no realloc per render)
 
+  // Personalisation backbone (Farheen feedback, 2026-04-29):
+  // Single derivation reused by RevealShareStrip + MondayMoveCard so the
+  // user's first name is consistent across surfaces. Empty/missing name
+  // becomes null — every consumer must guard for that.
+  const revealFirstName = useMemo<string | null>(() => {
+    const raw = (cardData?.user?.full_name || cardData?.user?.name || "")
+      .toString()
+      .trim()
+      .split(/\s+/)[0];
+    return raw && raw.length > 0 ? raw : null;
+  }, [cardData?.user?.full_name, cardData?.user?.name]);
+
+  // Browser-tab personalisation: name in <title> earns trust on back-button +
+  // tab-switch. Falls back to product name when no first name is available.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const previous = document.title;
+    document.title = revealFirstName
+      ? `${revealFirstName}'s career reality check · JobBachao`
+      : "Career reality check · JobBachao";
+    return () => { document.title = previous; };
+  }, [revealFirstName]);
+
   return (
     <div className="mb-root" style={{ background: "var(--mb-bg)", minHeight: "100vh" }}>
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 16px 64px" }}>
