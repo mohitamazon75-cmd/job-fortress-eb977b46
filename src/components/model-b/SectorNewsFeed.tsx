@@ -1,4 +1,5 @@
 import { SectionLabel } from "./SharedUI";
+import { freshnessLabel } from "@/lib/market-copy-sanitizer";
 
 interface NewsItem {
   headline: string;
@@ -6,6 +7,7 @@ interface NewsItem {
   why_it_matters?: string;
   source_domain?: string;
   url?: string;
+  published_at?: string | null;
 }
 
 const IMPACT_COLOR: Record<string, { bg: string; color: string; border: string; chip: string }> = {
@@ -16,9 +18,12 @@ const IMPACT_COLOR: Record<string, { bg: string; color: string; border: string; 
 
 export default function SectorNewsFeed({ items, industry }: { items: NewsItem[]; industry?: string }) {
   if (!items || items.length === 0) return null;
+  // Round-6 fix (J, 2026-04-29): label was hardcoded "LAST 21 DAYS" but items
+  // could be 8+ months old. Now derived from actual oldest published_at.
+  const windowLabel = freshnessLabel(items, "RECENT");
   return (
     <div style={{ marginBottom: 22 }}>
-      <SectionLabel label={`SECTOR NEWS — ${(industry || "your industry").toUpperCase()} · LAST 21 DAYS`} />
+      <SectionLabel label={`SECTOR NEWS — ${(industry || "your industry").toUpperCase()} · ${windowLabel}`} />
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {items.slice(0, 5).map((n, i) => {
           const style = IMPACT_COLOR[n.impact || "neutral"];

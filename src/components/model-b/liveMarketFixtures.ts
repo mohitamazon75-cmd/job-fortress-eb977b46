@@ -34,7 +34,14 @@ export const r1Fixture: LiveMarketSnapshot = {
     missing_top_tags: ["aws", "kafka", "kubernetes", "sql"],
   },
   salary: { shown: true, n_disclosed: 32, n_total: 50, median_lpa: 15.0, p25_lpa: 3.9, p75_lpa: 24 },
-  recency: { same_day_count: 50, within_7d_count: 0, older_count: 0 },
+  // Heuristic anchors (round-6, K fix): a HEALTHY HOT corpus must have
+  //   - categorized ≥ 5 (hasSignal)
+  //   - within7d > 0 (NOT a same-day-only repost wave)
+  //   - sameDayShare < 0.95 if pool > 40 (else flagged as repost noise)
+  //   - freshPct >= 70 to land in HOT branch (sameDay + within7d / categorized)
+  // 30 today + 18 within-7d + 2 older → categorized 50, sameDayShare 0.60,
+  // within7d 18 (>0), freshPct 96% → genuinely HOT.
+  recency: { same_day_count: 30, within_7d_count: 18, older_count: 2 },
   corpus_relevance: { score: 86, band: "strong", title_overlap_pct: 88, skill_match_in_top_tags: 4 },
   source: { name: "Naukri.com", via: "Apify", fetched_at: now },
 };

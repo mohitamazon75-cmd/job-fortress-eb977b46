@@ -83,18 +83,32 @@ export default function IntelligenceMapCard({ cardData }: Props) {
     // "Live threat signals" strip on Card2). Previous code read
     // cardData.ai_tools_replacing which get-model-b-analysis never populates,
     // so the KG always showed "0 tools" and contradicted Card2.
-    const threatRows: Array<{ skill?: string; threat_tool?: string; risk_level?: string }> =
+    const threatRows: Array<{ skill?: string; threat_tool?: string; risk_level?: string; severity?: string }> =
       Array.isArray(cardData?.scan_skill_threats) ? cardData.scan_skill_threats : [];
     const threatToolByLowerSkill = new Map<string, string>();
     const automatedSkillsLower = new Set<string>();
+    // Round-6 fix (P, 2026-04-29): also collect threat skill tokens for fuzzy
+    // matching. e.g. KG skill "Revenue Attribution" should match threat
+    // "Revenue Attribution Modeling". Previously exact lowercase only — silently
+    // missed every multi-word threat skill.
+    const threatTokenIndex: Array<{ token: string; tool?: string; severe: boolean }> = [];
     for (const t of threatRows) {
       if (t?.skill && t?.threat_tool) {
         threatToolByLowerSkill.set(t.skill.toLowerCase(), t.threat_tool);
       }
-      // HIGH/MEDIUM threats override the KG bucket so we never claim a skill
-      // is "human-only" when Card2's threat strip flags it as actively dying.
-      if (t?.skill && (t.risk_level === "HIGH" || t.risk_level === "MEDIUM")) {
+      // Accept either schema field — round-4 wrote `risk_level`, some legacy
+      // payloads still ship `severity`. Treat HIGH/MEDIUM/CRITICAL as severe.
+      const sev = (t?.risk_level || t?.severity || "").toUpperCase();
+      const isSevere = sev === "HIGH" || sev === "MEDIUM" || sev === "CRITICAL";
+      if (t?.skill && isSevere) {
         automatedSkillsLower.add(t.skill.toLowerCase());
+      }
+      if (t?.skill) {
+        threatTokenIndex.push({
+          token: t.skill.toLowerCase(),
+          tool: t.threat_tool,
+          severe: isSevere,
+        });
       }
     }
     const toolsFromThreats: Tool[] = Array.from(
@@ -105,7 +119,6 @@ export default function IntelligenceMapCard({ cardData }: Props) {
       ).values()
     );
     const legacyTools = normalizeTools(cardData?.ai_tools_replacing || cardData?.card1_risk?.ai_tools_replacing || []);
-    // Merge, dedupe by tool_name (case-insensitive).
     const toolsMerged = new Map<string, Tool>();
     for (const t of [...toolsFromThreats, ...legacyTools]) {
       const k = (t.tool_name || "").toLowerCase();
@@ -116,23 +129,42 @@ export default function IntelligenceMapCard({ cardData }: Props) {
     const pivots = normalizePivots(cardData?.card4_pivot?.adjacent_roles || cardData?.card4_pivot?.pivots || []).slice(0, 4);
     const role: string = cardData?.user?.current_title || cardData?.role || "Your Role";
 
+    // Round-6 fix (P): bidirectional substring match between KG skill and
+    // threat skill. "Revenue Attribution" ↔ "Revenue Attribution Modeling"
+    // both succeed via shared 2+ word prefix overlap.
+    const fuzzyMatchThreat = (kgSkill: string): { tool?: string; severe: boolean } | null => {
+      const k = kgSkill.toLowerCase().trim();
+      if (!k) return null;
+      // Exact first.
+      const exactTool = threatToolByLowerSkill.get(k);
+      const exactSevere = automatedSkillsLower.has(k);
+      if (exactTool || exactSevere) return { tool: exactTool, severe: exactSevere };
+      // Substring either direction (require at least 6 chars overlap to avoid false positives).
+      for (const entry of threatTokenIndex) {
+        if (entry.token.length < 4 || k.length < 4) continue;
+        if (entry.token.includes(k) || k.includes(entry.token)) {
+          return { tool: entry.tool, severe: entry.severe };
+        }
+      }
+      return null;
+    };
+
     const linkTool = (name: string): string | undefined => {
       if (!name) return undefined;
-      // 1) direct hit from scan_skill_threats
-      const direct = threatToolByLowerSkill.get(name.toLowerCase());
-      if (direct) return direct;
-      // 2) fallback substring match against legacy automates_task
+      const fuzzy = fuzzyMatchThreat(name);
+      if (fuzzy?.tool) return fuzzy.tool;
       const head = name.toLowerCase().split(/[\s/]/)[0];
       return tools.find((t) =>
         t.automates_task && head && t.automates_task.toLowerCase().includes(head)
       )?.tool_name;
     };
 
-    // Reconcile bucket: if engine said human-only but threats list it, flip to automated.
+    // Reconcile bucket: if engine said human-only but threats list it (exact OR
+    // fuzzy match) at HIGH/MEDIUM/CRITICAL, flip to automated. Trust > comfort.
     const reconcile = (name: string, bucket: RiskBucket): RiskBucket => {
-      if (automatedSkillsLower.has(name.toLowerCase()) && bucket === "human-only") {
-        return "automated";
-      }
+      if (bucket !== "human-only") return bucket;
+      const fuzzy = fuzzyMatchThreat(name);
+      if (fuzzy?.severe) return "automated";
       return bucket;
     };
 
