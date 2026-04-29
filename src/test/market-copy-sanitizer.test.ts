@@ -88,18 +88,32 @@ describe("sanitiseMarketCopy composes both", () => {
 });
 
 describe("filterFreshSectorNews", () => {
-  it("drops items dated 2024 when current year is 2026", () => {
+  it("drops items dated 2024 AND 2025 when current year is 2026 (round-6 stricter)", () => {
+    // Round-6: stricter — year markers must match the current year. Previous
+    // 1-year tolerance let "(2025)" items render under "LAST 21 DAYS" labels
+    // even when 8+ months old. Now only same-year markers pass.
     const items = [
       { headline: "TCS adds AI jobs (2024)" },
       { headline: "NITI Aayog warning (2025)" },
-      { headline: "Recent fresh news" },
+      { headline: "Fresh news (2026)" },
+      { headline: "No-year-marker fresh item" },
     ];
     const out = filterFreshSectorNews(items, 2026);
-    expect(out).toHaveLength(2);
     expect(out.map((i) => i.headline)).toEqual([
-      "NITI Aayog warning (2025)",
-      "Recent fresh news",
+      "Fresh news (2026)",
+      "No-year-marker fresh item",
     ]);
+  });
+
+  it("respects published_at over year markers", () => {
+    const now = new Date("2026-04-29T00:00:00Z");
+    const items = [
+      { headline: "Fresh (2026)", published_at: "2026-04-20T00:00:00Z" }, // 9 days old → keep
+      { headline: "Stale (2026)", published_at: "2025-09-01T00:00:00Z" }, // ~240 days → drop
+    ];
+    const out = filterFreshSectorNews(items, 2026, 30, now);
+    expect(out).toHaveLength(1);
+    expect(out[0].headline).toBe("Fresh (2026)");
   });
 
   it("keeps items without year markers", () => {
