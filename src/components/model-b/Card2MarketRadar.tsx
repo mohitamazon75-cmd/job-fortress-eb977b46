@@ -347,7 +347,12 @@ function LiveSalaryBand({
   userCity: string;
 }) {
   const { min, max, median } = baseRange;
-  const cityLabel = userCity && userCity.length > 0 && userCity.length < 30 ? userCity : null;
+  // Round-5 fix (F, 2026-04-29): suppress the 📍 city pin when value is a
+  // country/region name. Previously rendered "📍 INDIA" which contradicts a
+  // pin glyph (a pin marks a city, not a country).
+  const COUNTRY_OR_REGION = /^(india|in|bharat|asia|apac|global|world|remote|na|n\/a|none|unknown)$/i;
+  const trimmed = (userCity || "").trim();
+  const cityLabel = trimmed && trimmed.length < 30 && !COUNTRY_OR_REGION.test(trimmed) ? trimmed : null;
   return (
     <div style={{ background: "var(--mb-green-tint)", border: "1.5px solid rgba(26,107,60,0.2)", borderRadius: 12, padding: "12px 16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
