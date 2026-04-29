@@ -128,7 +128,7 @@ describe("filterFreshSectorNews", () => {
       { headline: "29 days old", published_at: "2026-03-31T00:00:00Z" }, // 29 days → drop
       { headline: "10 days old", published_at: "2026-04-19T00:00:00Z" }, // 10 days → keep
     ];
-    const out = filterFreshSectorNews(items, 2026, undefined as any, now);
+    const out = filterFreshSectorNews(items, 2026, 21, now);
     expect(out.map((i) => i.headline)).toEqual(["10 days old"]);
   });
 
