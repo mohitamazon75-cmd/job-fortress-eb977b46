@@ -40,6 +40,7 @@ import {
   sanitizeRoleTitle,
   applyFunctionalIndustryOverride,
 } from "../_shared/scan-helpers.ts";
+import { getCategoryCandidates } from "../_shared/kg-category-map.ts";
 import { computeProfileCompleteness, deterministicSeedFromString } from "../_shared/scan-utils.ts";
 import {
   buildProfileCacheKey,
