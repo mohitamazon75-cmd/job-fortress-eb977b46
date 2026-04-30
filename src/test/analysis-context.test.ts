@@ -134,3 +134,69 @@ describe('filterNovelSkillRecommendations — kills P7 contradiction', () => {
     expect(out).toEqual(['LangChain']);
   });
 });
+
+describe('computeSeniorityFloor — Fix B (Sales Sr Manager 11yr)', () => {
+  it('CXO/Founder titles → EXECUTIVE regardless of years', () => {
+    // Locks: title evidence dominates years (8-yr CFO is still EXECUTIVE).
+    expect(computeSeniorityFloor('CFO at Acme', 8)).toBe('EXECUTIVE');
+    expect(computeSeniorityFloor('Founder & CEO', 3)).toBe('EXECUTIVE');
+    expect(computeSeniorityFloor('Co-Founder', null)).toBe('EXECUTIVE');
+  });
+
+  it('VP/Director/Head of → SENIOR_LEADER', () => {
+    // Locks: leader-track titles do not get downgraded to SENIOR by the LLM.
+    expect(computeSeniorityFloor('VP Sales', 10)).toBe('SENIOR_LEADER');
+    expect(computeSeniorityFloor('Head of Marketing', 8)).toBe('SENIOR_LEADER');
+    expect(computeSeniorityFloor('Senior Director', 12)).toBe('SENIOR_LEADER');
+  });
+
+  it('Senior Manager + 10+ years → SENIOR_LEADER (the actual bug case)', () => {
+    // Locks: "Senior Manager – Business Development" (11yr) is no longer MID.
+    expect(computeSeniorityFloor('Senior Manager – Business Development', 11)).toBe('SENIOR_LEADER');
+    expect(computeSeniorityFloor('General Manager', 15)).toBe('SENIOR_LEADER');
+  });
+
+  it('Senior Manager + <10 years → SENIOR (not yet leader)', () => {
+    // Locks: not all "Senior Manager" titles are leaders — years gate matters.
+    expect(computeSeniorityFloor('Senior Manager', 6)).toBe('SENIOR');
+  });
+
+  it('Years-only floor: 15+ ⇒ SENIOR_LEADER, 10+ ⇒ SENIOR, 5+ ⇒ MID', () => {
+    // Locks: pure years signal when title is generic/empty.
+    expect(computeSeniorityFloor(null, 16)).toBe('SENIOR_LEADER');
+    expect(computeSeniorityFloor(null, 11)).toBe('SENIOR');
+    expect(computeSeniorityFloor('Analyst', 6)).toBe('MID');
+    expect(computeSeniorityFloor('Analyst', 1)).toBe('JUNIOR');
+  });
+});
+
+describe('buildAnalysisContext — floor never lowers LLM tier', () => {
+  it('LLM says EXECUTIVE, floor says MID → result is EXECUTIVE', () => {
+    // Locks: floor is a one-way ratchet upward.
+    const ctx = buildAnalysisContext({
+      ...baseInput,
+      seniority_tier: 'EXECUTIVE',
+      experience_years_raw: '0-2',
+      current_title: 'Junior Analyst',
+    });
+    expect(ctx.user_seniority_tier).toBe('EXECUTIVE');
+  });
+
+  it('LLM says MID, title is "Senior Manager – BD" + 11yr → SENIOR_LEADER', () => {
+    // Locks: the actual Sales-resume regression — was MID, now SENIOR_LEADER.
+    const ctx = buildAnalysisContext({
+      ...baseInput,
+      seniority_tier: 'MID',
+      experience_years_raw: '10+',
+      current_title: 'Senior Manager – Business Development',
+    });
+    expect(ctx.user_seniority_tier).toBe('SENIOR_LEADER');
+    expect(ctx.user_is_exec).toBe(true);
+  });
+
+  it('No title/years inputs → behaves identically to pre-Fix-B (LLM tier wins)', () => {
+    // Locks: backward compat — call sites that don't pass new fields are unaffected.
+    const ctx = buildAnalysisContext({ ...baseInput, seniority_tier: 'MID' });
+    expect(ctx.user_seniority_tier).toBe('MID');
+  });
+});
