@@ -202,7 +202,14 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
   const selectedCity = (String(selected?.location ?? currentCity).split(",")[0] || currentCity).trim();
   const channels = isExec ? buildExecChannels(selectedRole, selectedCity) : buildProChannels(selectedRole, selectedCity);
 
-  // Salary math — deterministic, derived from already-shown bands
+  // Salary math — deterministic, derived from already-shown bands.
+  // GATE: only render the personal-₹ math + opportunity-cost block when the user
+  // actually typed a CTC during onboarding. Without that anchor, every figure is
+  // a role-tier guess and showing them as "your delta" is the exact hallucination
+  // we shipped C2.1 to kill. Source of truth: salary_provenance.has_user_ctc,
+  // stamped server-side in get-model-b-analysis.
+  const salaryProv = (cardData?.salary_provenance ?? {}) as { has_user_ctc?: boolean; annual_lakhs?: number | null };
+  const hasUserCTC = salaryProv.has_user_ctc === true;
   const currentLakhs = parseInrBandToLakhs(d.current_band);
   const year1Lakhs = parseInrBandToLakhs(selected?.salary_range || selected?.salary || d.pivot_year1);
   const year3Lakhs = parseInrBandToLakhs(d.director_band);
