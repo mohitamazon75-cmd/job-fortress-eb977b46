@@ -159,6 +159,8 @@ export interface ScanPipelineResult {
   displayCompany: string;
   /** Issue #12: per-agent observability captured during the parallel block. */
   agentMeta: Awaited<ReturnType<typeof orchestrateAgents>>["agentMeta"];
+  /** Phase 1.B (audit 2026-04-30): deterministic shared context, persisted to scans.analysis_context. */
+  analysisContext: AnalysisContext;
 }
 
 export interface ScanPipelineError {
