@@ -338,8 +338,20 @@ Return null if unclear. No explanation, no markdown.`;
     // Development" → project_manager), polluting Card 4 pivot filtering. The deterministic
     // FAMILY_TOKENS dictionary is title-aware and beats noisy KG inference. Falls back to KG
     // only when the title yields no match (rare unusual titles).
+    //
+    // Pass C5.1 (2026-04-30): broaden the inference inputs. 4/4 most-recent prod scans had
+    // detectedRole=null but industry="Sales & Business Development" — KG fell through to
+    // project_manager/supply_chain_manager, polluting every downstream filter. We now feed
+    // the user's self-declared industry into inferFamilyFromRole as a 2nd-pass signal before
+    // surrendering to KG. The dictionary already contains "business development" and "sales"
+    // tokens, so this is plumbing-only.
+    const industryHint = ((agent1 as any)?.industry as string) || resolvedIndustry || "";
     const roleString = detectedRole || resolvedRoleHint || "";
-    const roleFamily = inferFamilyFromRole(roleString) || primaryJob?.job_family || null;
+    const roleFamily =
+      inferFamilyFromRole(roleString) ||
+      inferFamilyFromRole(industryHint) ||
+      primaryJob?.job_family ||
+      null;
     const userMonthlyCTC = (scan as any)?.estimated_monthly_salary_inr ?? null;
     const hasUserCTC = typeof userMonthlyCTC === "number" && userMonthlyCTC > 0;
     analysisContext = buildAnalysisContext({
