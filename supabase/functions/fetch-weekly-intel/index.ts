@@ -2,6 +2,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearch } from "../_shared/tavily-search.ts";
 import { logEdgeError, trackUsage } from "../_shared/edge-logger.ts";
+import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
 
 const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_TTL = 30 * 60 * 1000; // 30 min
