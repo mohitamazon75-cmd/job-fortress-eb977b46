@@ -182,20 +182,12 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
   const d = cardData?.card4_pivot ?? {};
   // C1 fix (2026-04-30): rank pivots by match_pct DESC so the strongest fit is
   // always #1. Previously the LLM-emitted order was rendered as-is, which meant
-  // a 94% match could appear at position #3 below an 88% match. Stable sort
-  // preserves LLM order on ties.
-  const pivots: any[] = useMemo(() => {
-    const raw = Array.isArray(d.pivots) ? d.pivots : [];
-    return [...raw]
-      .map((p, i) => ({ p, i, m: Number(p?.match_pct) }))
-      .sort((a, b) => {
-        const am = Number.isFinite(a.m) ? a.m : -1;
-        const bm = Number.isFinite(b.m) ? b.m : -1;
-        if (bm !== am) return bm - am;
-        return a.i - b.i; // stable on ties
-      })
-      .map((x) => x.p);
-  }, [d.pivots]);
+  // a 94% match could appear at position #3 below an 88% match. See sortPivotsByMatch
+  // for stable tie-break behavior.
+  const pivots: any[] = useMemo(
+    () => sortPivotsByMatch(Array.isArray(d.pivots) ? d.pivots : []),
+    [d.pivots],
+  );
   const [selectedPivot, setSelectedPivot] = useState(0);
   const isExec = useMemo(() => isExecutiveCardData(cardData), [cardData]);
   const safeSelected = pivots.length > 0 ? Math.min(selectedPivot, pivots.length - 1) : 0;
