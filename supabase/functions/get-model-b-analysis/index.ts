@@ -5,6 +5,7 @@ import { CircuitBreaker } from "../_shared/circuit-breaker.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { validateBody, z } from "../_shared/validate-input.ts";
 import { logCostEvent, estimateLlmCostInrPaise } from "../_shared/cost-logger.ts";
+import { stripRupeeFromCardData } from "../_shared/strip-fabricated-rupee-figures.ts";
 
 const ModelBSchema = z.object({
   analysis_id: z.string().uuid(),
