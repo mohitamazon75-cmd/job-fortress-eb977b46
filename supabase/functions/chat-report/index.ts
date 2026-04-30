@@ -226,6 +226,8 @@ Deno.serve(async (req: Request) => {
         status: 400, headers: { ...cors, "Content-Type": "application/json" },
       });
     }
+    // Attribute downstream cost_event rows to this scan for /admin/costs.
+    if (typeof scanId === "string" && scanId.length > 0) setCurrentScanId(scanId);
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
