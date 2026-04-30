@@ -413,8 +413,10 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
                 </div>
               )}
 
-              {/* Salary Math — concrete rupees, not bands */}
-              {currentLakhs != null && year1Lakhs != null && (
+              {/* Salary Math — concrete rupees, not bands.
+                  GATED: only render when user actually entered CTC. Otherwise
+                  show a soft prompt and band-only context (no fake delta). */}
+              {hasUserCTC && currentLakhs != null && year1Lakhs != null ? (
                 <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--mb-rule)", background: `${accent}06` }}>
                   <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: accent, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
                     💸 The math, in your rupees
@@ -440,6 +442,30 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
                       </div>
                     </div>
                   )}
+                </div>
+              ) : (
+                /* No-CTC mode — band-only honest framing. No fabricated delta. */
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--mb-rule)", background: "var(--mb-paper)" }}>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "var(--mb-ink3)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+                    📊 Role-tier salary bands · India
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                    <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, color: "var(--mb-ink3)", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>Current role band</div>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 800, color: "var(--mb-ink2)", marginTop: 4 }}>{d.current_band || "—"}</div>
+                      <div style={{ fontSize: 11, color: "var(--mb-ink3)", marginTop: 2 }}>tier estimate</div>
+                    </div>
+                    <div style={{ background: "white", border: `1.5px solid ${accent}`, borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, color: accent, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>Pivot target band</div>
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 800, color: accent, marginTop: 4 }}>{selected?.salary_range || selected?.salary || d.pivot_year1 || "—"}</div>
+                      <div style={{ fontSize: 11, color: "var(--mb-ink2)", marginTop: 2 }}>tier estimate</div>
+                    </div>
+                  </div>
+                  <div style={{ background: "var(--mb-navy-tint)", border: "1.5px solid var(--mb-navy-tint2)", borderRadius: 10, padding: "10px 14px" }}>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-navy)", lineHeight: 1.55, fontWeight: 600 }}>
+                      💡 Bands above are role-tier estimates, not your personal numbers. Add your CTC on a re-scan to see the exact ₹ delta and 3-year opportunity cost.
+                    </div>
+                  </div>
                 </div>
               )}
 
