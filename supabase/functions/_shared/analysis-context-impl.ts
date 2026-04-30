@@ -101,6 +101,7 @@ function normalizeSeniority(raw: string | null | undefined): SeniorityTier {
       return 'EXECUTIVE';
     default:
       return 'MID';
+  }
 }
 
 // ── Fix B (Audit 2026-04-30): deterministic seniority floor ─────────────────
