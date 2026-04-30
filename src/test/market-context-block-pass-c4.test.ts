@@ -17,7 +17,7 @@
  *     visually distinguish it from the rest of the system prompt.
  */
 import { describe, expect, it } from 'vitest';
-import { buildMarketContextBlock } from '../../supabase/functions/get-model-b-analysis/index.ts';
+import { buildMarketContextBlock } from '@/lib/market-context-block';
 
 describe('Pass C4 — buildMarketContextBlock', () => {
   it('returns null for null context (legacy scan path)', () => {
