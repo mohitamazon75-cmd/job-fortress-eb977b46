@@ -1204,7 +1204,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { finalReport, det, detectedSubSector, seniorityTier, displayName, displayCompany, agentMeta } = pipelineResult;
+    const { finalReport, det, detectedSubSector, seniorityTier, displayName, displayCompany, agentMeta, analysisContext } = pipelineResult;
 
 
     // ══════════════════════════════════════════════════════════
