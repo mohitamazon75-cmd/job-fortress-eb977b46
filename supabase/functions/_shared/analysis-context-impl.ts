@@ -172,7 +172,7 @@ export function computeSeniorityFloor(
 function maxTier(a: SeniorityTier, b: SeniorityTier): SeniorityTier {
   return TIER_BY_RANK[Math.max(TIER_RANK[a], TIER_RANK[b])];
 }
-}
+
 
 function normalizeMetro(raw: string | null | undefined): MetroTier {
   const v = (raw || '').toLowerCase().trim();
