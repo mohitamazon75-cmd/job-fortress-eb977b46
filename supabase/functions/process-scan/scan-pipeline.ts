@@ -23,6 +23,7 @@
  */
 
 import { callAgent, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
+import { buildAnalysisContext, inferFamilyFromRole, type AnalysisContext } from "../_shared/analysis-context.ts";
 import {
   computeAll,
   type ProfileInput,
