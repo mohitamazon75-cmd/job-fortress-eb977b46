@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { CardShell, CardHead, CardBody, SectionLabel, CardNav, Badge, variantColor } from "./SharedUI";
+import { sortPivotsByMatch } from "@/lib/pivot-sort";
 import { toast } from "sonner";
 import { useCohortIntel } from "@/hooks/useCohortIntel";
 
