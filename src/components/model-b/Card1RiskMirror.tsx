@@ -593,6 +593,13 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
           <strong style={{ color: "var(--mb-ink2)", fontWeight: 800, letterSpacing: "0.04em" }}>HOW WE CALCULATED THIS:</strong> AI Exposure derived from O*NET task-automation indices, McKinsey & Goldman Sachs occupational AI-impact studies, and your resume's task profile. Disruption year is a directional estimate based on current adoption velocity in your sector — not a guarantee.
         </div>
 
+        {/* Pass C1 (#5) — engine/prompt/KG version trace. Quiet credibility footer. */}
+        {cardData?._provenance && (
+          <div style={{ marginTop: 6, padding: "6px 10px", fontFamily: "'DM Mono', monospace", fontSize: 10, color: "var(--mb-ink3)", letterSpacing: "0.02em", textAlign: "right" }}>
+            engine {cardData._provenance.engine_version} · prompt {cardData._provenance.prompt_version} · KG {cardData._provenance.kg_version}
+          </div>
+        )}
+
         <CardNav onBack={onBack} onNext={onNext} nextLabel="See your live market →" />
       </CardBody>
     </CardShell>
