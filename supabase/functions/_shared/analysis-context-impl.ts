@@ -206,7 +206,12 @@ export function buildAnalysisContext(input: AnalysisContextInput): AnalysisConte
       : 0;
 
   const existing = dedupeSkills(input.existing_skills);
-  const seniority = normalizeSeniority(input.seniority_tier);
+  const llmTier = normalizeSeniority(input.seniority_tier);
+  // Fix B (Audit 2026-04-30): apply deterministic floor from years + title.
+  // Floor can ONLY raise the tier, never lower it.
+  const years = parseExperienceYears(input.experience_years_raw ?? null);
+  const floor = computeSeniorityFloor(input.current_title ?? null, years);
+  const seniority = maxTier(llmTier, floor);
   const now = input.now ? input.now() : new Date();
 
   return {
