@@ -45,7 +45,15 @@ function pickMondayMove(cardData: CardData): Move {
   }
 
   // ── Priority 1: a target role from pivot paths (most concrete: search + read) ──
-  const pivots = cardData?.card4_pivot?.adjacent_roles || cardData?.card4_pivot?.paths;
+  // Pass C3 (2026-04-30): pivot field-name drift fix.
+  // The producer (get-model-b-analysis) emits `card4_pivot.pivots`, which is also
+  // the array post-filtered by filterEligiblePivots. The legacy aliases
+  // `adjacent_roles` / `paths` were never populated, so this branch never fired
+  // and Monday Move silently fell through to the generic skill/diet branches.
+  const pivots =
+    cardData?.card4_pivot?.pivots ||
+    cardData?.card4_pivot?.adjacent_roles ||
+    cardData?.card4_pivot?.paths;
   if (Array.isArray(pivots) && pivots.length > 0) {
     const role = pivots[0]?.role || pivots[0]?.title;
     if (role && typeof role === "string") {

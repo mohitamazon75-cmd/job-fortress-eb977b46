@@ -198,9 +198,15 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
   const topPivot = c4?.pivots?.[0];
   const topMatchPct = topPivot?.match_pct || topPivot?.skill_overlap_pct || 70;
   const topPivotRole = topPivot?.role;
+  // Pass C3 (2026-04-30): pivot count drift fix.
+  // Previously hardcoded "top 3 escape routes" even when filterEligiblePivots
+  // (server-side) had dropped same-family/declining pivots down to 0/1/2/4/5.
+  // Now reads the live post-filter count so the copy never contradicts the grid.
   const topMove = topPivotRole
     ? `Your skills already transfer ${topMatchPct}% to → ${topPivotRole}.`
-    : "We've mapped your top 3 escape routes.";
+    : pivotCount > 0
+      ? `We've mapped your top ${pivotCount} escape route${pivotCount === 1 ? "" : "s"}.`
+      : "Your escape routes are being prepared.";
   const topMoveSub = topPivotRole
     ? "Unlock the 90-day transition plan, salary delta, and exact next steps."
     : "Unlock the full report to see them.";
