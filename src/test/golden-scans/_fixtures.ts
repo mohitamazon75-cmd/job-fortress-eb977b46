@@ -75,7 +75,7 @@ export const SALES_EXEC: GoldenScanFixture = {
   id: 'sales-senior-manager-hyderabad',
   description: '11y Senior Manager — Business Development, Hyderabad, no CTC provided',
   industry_input: 'Sales',
-  expected_first_kg_category: 'Other',
+  expected_kg_category_in_candidates: 'Other',
   has_user_ctc: false,
   ctx: {
     user_role_family: 'sales',
@@ -123,7 +123,7 @@ export const IC_ENGINEER: GoldenScanFixture = {
   id: 'ic-software-engineer-bangalore',
   description: '4y Software Engineer, Bangalore, ₹18L CTC provided',
   industry_input: 'Software',
-  expected_first_kg_category: 'IT & Software',
+  expected_kg_category_in_candidates: 'IT & Software',
   has_user_ctc: true,
   ctx: {
     user_role_family: 'engineering',
@@ -168,7 +168,7 @@ export const BPO_TEAM_LEAD: GoldenScanFixture = {
   id: 'bpo-team-lead-hyderabad',
   description: '6y BPO Team Lead, Hyderabad, no CTC',
   industry_input: 'Customer Support',
-  expected_first_kg_category: 'Other',
+  expected_kg_category_in_candidates: 'Other',
   has_user_ctc: false,
   ctx: {
     user_role_family: 'customer_success',
@@ -208,7 +208,7 @@ export const FOUNDER_EXEC: GoldenScanFixture = {
   id: 'founder-fintech-bangalore',
   description: '15y Co-founder, Bangalore, no CTC',
   industry_input: 'Finance',
-  expected_first_kg_category: 'Finance & Banking',
+  expected_kg_category_in_candidates: 'Finance & Banking',
   has_user_ctc: false,
   ctx: {
     user_role_family: 'finance_ops',
@@ -245,7 +245,7 @@ export const FREELANCE_CREATIVE: GoldenScanFixture = {
   id: 'freelance-creative-mumbai',
   description: '3y Freelance Video Editor, Mumbai, ₹6L CTC provided',
   industry_input: 'Creative',
-  expected_first_kg_category: 'Creative & Design',
+  expected_kg_category_in_candidates: 'Creative & Design',
   has_user_ctc: true,
   ctx: {
     user_role_family: 'creative_content',

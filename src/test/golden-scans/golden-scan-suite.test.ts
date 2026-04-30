@@ -135,7 +135,7 @@ describe('GOLDEN SCAN SUITE — 5 personas × 5 invariants', () => {
     it('C5 industry input maps to expected first KG category candidate', () => {
       const candidates = getCategoryCandidates(fx.industry_input);
       expect(candidates.length).toBeGreaterThan(0);
-      expect(candidates[0]).toBe(fx.expected_first_kg_category);
+      expect(candidates[0]).toBe(fx.expected_kg_category_in_candidates);
     });
   });
 
