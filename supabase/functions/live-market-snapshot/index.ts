@@ -29,10 +29,14 @@ import { fetchWithTimeout } from "../_shared/fetch-with-timeout.ts";
 const APIFY_ACTOR_ID = "alpcnRV9YI9lYVPWk";
 const CACHE_TTL_HOURS = 6;
 const RUN_LIMIT = 50;
-// v4: extractCoreRole strips verbose suffixes (e.g. "Manager | Growth & Demand
-// Generation Leader") so search query AND corpus-relevance scoring run against
-// the core role only. Bumping invalidates v3 caches fetched with noisier URLs.
-const CACHE_VERSION = "v4";
+// v5 (2026-04-30): per-company tag-contribution cap added to aggregateTopTags
+// to neutralise recruiter spam (one healthcare-pharma company posting 20+
+// duplicate "AVP Marketing" listings was monopolising the top-tag list with
+// "Healthcare / Consumer Behavior / Market Research" for Digital Marketing
+// Manager scans). Bump invalidates v4 caches that already store the polluted
+// raw payload — but the fix is at AGGREGATION time, so v4 caches would also
+// produce clean output on first re-render. Bumping anyway for clarity.
+const CACHE_VERSION = "v5";
 
 // Same EXECUTIVE_HINTS as src/lib/jobsTab.ts (kept in sync manually —
 // duplicated to avoid cross-tier import).
