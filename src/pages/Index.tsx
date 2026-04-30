@@ -659,11 +659,14 @@ const Index = () => {
     setUserReportedCTC(inrValue);
 
     // Manual path: still need skills step (step 6). Otherwise launch immediately.
+    // CRITICAL: pass `inrValue` directly — setUserReportedCTC is async and
+    // launchScan would otherwise read a stale `null` from closure, causing the
+    // Pivot card to render "Add CTC during onboarding" even after the user did.
     if (!linkedinUrl && !resumeFileRef.current) {
       setStep(6);
       return;
     }
-    await launchScan(metroTier, '');
+    await launchScan(metroTier, '', inrValue);
   };
 
   const handleSelectSkills = async (skills: string) => {
@@ -675,7 +678,7 @@ const Index = () => {
     await launchScan(metroTier, '');
   };
 
-  const launchScan = async (metro: string, skills: string) => {
+  const launchScan = async (metro: string, skills: string, ctcOverride?: number | null) => {
     if (hasPendingResumeIntent() && !resumeFileRef.current) {
       toast.error('Resume missing. Please upload your resume again — we blocked fallback to stale manual analysis.');
       setPhase('input-method');
@@ -705,7 +708,7 @@ const Index = () => {
           yearsExperience,
           metroTier: metro,
           keySkills: skills || undefined,
-          estimatedMonthlySalaryInr: userReportedCTC ?? null,
+          estimatedMonthlySalaryInr: ctcOverride !== undefined ? ctcOverride : (userReportedCTC ?? null),
           dataRetentionConsent: dataRetentionConsentRef.current,
         });
         if (!id || !token) {
