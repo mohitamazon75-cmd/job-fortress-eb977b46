@@ -556,17 +556,54 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
             </div>
           )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {[
+          {(() => {
+            // Fix C (Audit 2026-04-30): when the LLM emits identical values
+            // across all 4 anchor fields (happens when no user CTC is anchored),
+            // collapse to a single tile + disclaimer instead of repeating the
+            // same number 4 times.
+            const anchors = [
               { val: d.negotiation?.walk_away, label: "Walk away", color: "var(--mb-red)", highlight: false },
               { val: d.negotiation?.accept, label: "Accept", color: "var(--mb-amber)", highlight: false },
               { val: d.negotiation?.open_with, label: "Open with", color: "var(--mb-green)", highlight: true },
               { val: d.negotiation?.best_case, label: "Best case", color: "var(--mb-navy)", highlight: false },
-            ].map((a, i) => (
+            ];
+            const norm = (v: any) => String(v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+            const present = anchors.filter((a) => norm(a.val).length > 0);
+            const distinctVals = new Set(present.map((a) => norm(a.val)));
+            const allIdentical = present.length >= 2 && distinctVals.size === 1;
+
+            if (allIdentical) {
+              return (
+                <div>
+                  <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
+                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 17, fontWeight: 800, color: "var(--mb-navy)" }}>{present[0].val}</div>
+                    <div style={{ fontSize: 11, color: "var(--mb-ink2)", fontWeight: 700, marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>Estimated range</div>
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 11, color: "var(--mb-ink2)", fontFamily: "'DM Sans', sans-serif", fontStyle: "italic" }}>
+                    Add your current CTC during onboarding to unlock walk-away / accept / open / best-case anchors personalised to your number.
+                  </div>
+                </div>
+              );
+            }
+
+            // Dedupe identical values while preserving order so users never see
+            // two adjacent tiles with the same number.
+            const seen = new Set<string>();
+            const deduped = anchors.filter((a) => {
+              const k = norm(a.val);
+              if (!k) return true; // empty values still render as placeholders
+              if (seen.has(k)) return false;
+              seen.add(k);
+              return true;
+            });
+
+            return deduped.map((a, i) => (
               <div key={i} style={{ flex: 1, background: a.highlight ? "var(--mb-green-tint)" : "white", border: `1.5px solid ${a.highlight ? "rgba(26,107,60,0.35)" : "var(--mb-rule)"}`, borderRadius: 12, padding: "12px 10px", textAlign: "center", minWidth: 70 }}>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 17, fontWeight: 800, color: a.color }}>{a.val}</div>
                 <div style={{ fontSize: 11, color: "var(--mb-ink2)", fontWeight: 700, marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>{a.label}</div>
               </div>
-            ))}
+            ));
+          })()}
           </div>
         </div>
 
