@@ -245,19 +245,22 @@ Deno.serve(async (req) => {
   // Per-surface request shapes mirror what each widget currently sends to
   // the underlying edge function. Drift here = cached payload won't match
   // the widget's expectations, so be careful when changing call sites.
+  // Send BOTH scanId (camelCase, used by edge fn body parsers) and scan_id
+  // (snake_case, kept for backwards compat) — peripheral fns wired in Pass 1.5
+  // call setCurrentScanId(scanId) so logTokenUsage emits a cost_events row.
   const allTasks: Record<SurfaceKey, [string, Record<string, unknown>]> = {
-    market_radar:  ["market-radar",            { role, industry, skills: skills.slice(0, 8), country, scan_id: scanId }],
-    live_news:     ["live-news",               { role, industry, country, scan_id: scanId }],
-    sector_pulse:  ["sector-pulse",            { role, industry, country, scan_id: scanId }],
-    tools:         ["tool-learning-resources", { role, industry, skills: skills.slice(0, 8), scan_id: scanId }],
+    market_radar:  ["market-radar",            { role, industry, skills: skills.slice(0, 8), country, scanId, scan_id: scanId }],
+    live_news:     ["live-news",               { role, industry, country, scanId, scan_id: scanId }],
+    sector_pulse:  ["sector-pulse",            { role, industry, country, scanId, scan_id: scanId }],
+    tools:         ["tool-learning-resources", { role, industry, skills: skills.slice(0, 8), scanId, scan_id: scanId }],
     best_fit_jobs: ["best-fit-jobs",           {
-      role, industry, country, scan_id: scanId,
+      role, industry, country, scanId, scan_id: scanId,
       skills: skills.slice(0, 12),
       moatSkills: extras.moatSkills ?? [],
       seniority: extras.seniority ?? "PROFESSIONAL",
       determinismIndex: extras.determinismIndex ?? null,
     }],
-    india_jobs:    ["india-jobs",              { role, industry, country, scan_id: scanId }],
+    india_jobs:    ["india-jobs",              { role, industry, country, scanId, scan_id: scanId }],
   };
 
   const tasks = staleSurfaces.map((key) => {
