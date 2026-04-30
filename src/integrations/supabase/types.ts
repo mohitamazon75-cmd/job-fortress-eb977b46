@@ -665,6 +665,13 @@ export type Database = {
             referencedRelation: "scans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cohort_data_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: true
+            referencedRelation: "v_scan_cost_summary"
+            referencedColumns: ["scan_id"]
+          },
         ]
       }
       cohort_market_cache: {
@@ -813,6 +820,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "scans"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cost_events_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "v_scan_cost_summary"
+            referencedColumns: ["scan_id"]
           },
         ]
       }
@@ -1654,6 +1668,13 @@ export type Database = {
             referencedRelation: "scans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "model_b_results_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "v_scan_cost_summary"
+            referencedColumns: ["scan_id"]
+          },
         ]
       }
       monitoring_alerts: {
@@ -2058,6 +2079,8 @@ export type Database = {
           ml_insights_hash: string | null
           months_remaining: number | null
           payment_status: string | null
+          peripheral_refreshed_at: string | null
+          process_completed_at: string | null
           resume_file_path: string | null
           role_detected: string | null
           salary_bleed_monthly: number | null
@@ -2088,6 +2111,8 @@ export type Database = {
           ml_insights_hash?: string | null
           months_remaining?: number | null
           payment_status?: string | null
+          peripheral_refreshed_at?: string | null
+          process_completed_at?: string | null
           resume_file_path?: string | null
           role_detected?: string | null
           salary_bleed_monthly?: number | null
@@ -2118,6 +2143,8 @@ export type Database = {
           ml_insights_hash?: string | null
           months_remaining?: number | null
           payment_status?: string | null
+          peripheral_refreshed_at?: string | null
+          process_completed_at?: string | null
           resume_file_path?: string | null
           role_detected?: string | null
           salary_bleed_monthly?: number | null
@@ -2620,6 +2647,22 @@ export type Database = {
           industry: string | null
           job_family: string | null
           low_accuracy_count: number | null
+        }
+        Relationships: []
+      }
+      v_scan_cost_summary: {
+        Row: {
+          distinct_functions: number | null
+          distinct_providers: number | null
+          event_count: number | null
+          first_event_at: string | null
+          last_event_at: string | null
+          process_completed_at: string | null
+          scan_created_at: string | null
+          scan_id: string | null
+          scan_status: string | null
+          total_cost_paise: number | null
+          user_id: string | null
         }
         Relationships: []
       }
