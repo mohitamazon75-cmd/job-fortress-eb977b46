@@ -346,6 +346,10 @@ Return null if unclear. No explanation, no markdown.`;
       seniority_tier: seniorityTier as string,
       metro_tier: ((scan as any)?.metro_tier as string) || null,
       has_user_ctc: hasUserCTC,
+      // Fix B (Audit 2026-04-30): pass deterministic seniority-floor inputs.
+      // The floor (years + title) can ONLY raise the LLM-supplied tier.
+      experience_years_raw: (scan as any)?.years_experience ?? null,
+      current_title: detectedRole || resolvedRoleHint || null,
       kg_version: "kg-v1",
       prompt_version: "p-v1",
       engine_version: "e-v1",
