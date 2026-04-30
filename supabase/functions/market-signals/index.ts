@@ -3,6 +3,7 @@ import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { tavilySearch, tavilySearchParallel, extractCitations, buildSearchContext } from "../_shared/tavily-search.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { setCurrentScanId } from "../_shared/cost-logger.ts";
 import { getLocale } from "../_shared/locale-config.ts";
 import { fetchHNSignals, fetchStackQuestions, fetchGitHubTrending, buildCommunityContext } from "../_shared/community-signals.ts";
 import { enrichUrlsWithJina } from "../_shared/jina-reader.ts";
@@ -315,6 +316,7 @@ Return JSON:
 // Handle market signal (replaces live-market)
 async function handleMarket(req: any, corsHeaders: any, supabase: any, body: any, locale: any) {
   const { role, industry, metroTier, scanId, country } = body;
+  setCurrentScanId(scanId);
 
   if (!role && !industry) {
     return new Response(
