@@ -19,6 +19,8 @@ Deno.serve(async (req) => {
     if (jwtBlocked) return jwtBlocked;
 
     const { role, judo_tool, industry, scanId } = await req.json();
+    // Attribute downstream cost_event rows to this scan for /admin/costs.
+    if (typeof scanId === "string" && scanId.length > 0) setCurrentScanId(scanId);
 
     if (!judo_tool) {
       return new Response(
