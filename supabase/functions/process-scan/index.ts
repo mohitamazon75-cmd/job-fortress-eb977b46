@@ -316,6 +316,9 @@ Deno.serve(async (req) => {
         scan_status: "complete", final_json_report: cachedReport,
         determinism_index: cachedResult.meta.determinism_index, months_remaining: cachedResult.meta.months_remaining,
         salary_bleed_monthly: cachedResult.meta.salary_bleed_monthly, role_detected: cachedResult.meta.role_detected,
+        // Idempotency stamp — same rule as the main success path. A cache hit
+        // still represents "this scan_id is now done; don't re-bill it".
+        process_completed_at: new Date().toISOString(),
       }).eq("id", scanId);
       clearTimeout(globalTimer);
       return new Response(JSON.stringify({ status: "complete", cached: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
