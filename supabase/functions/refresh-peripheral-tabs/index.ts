@@ -141,11 +141,20 @@ async function invokeFunction(
   }
 }
 
+const ALL_SURFACES: SurfaceKey[] = [
+  "market_radar",
+  "live_news",
+  "sector_pulse",
+  "tools",
+  "best_fit_jobs",
+  "india_jobs",
+];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleCorsPreFlight(req);
   if (req.method !== "POST") return errResponse(req, "Method not allowed", 405);
 
-  let body: { scanId?: string; force?: boolean };
+  let body: { scanId?: string; force?: boolean; surfaces?: string[]; extra?: Record<string, unknown> };
   try {
     body = await req.json();
   } catch {
@@ -156,6 +165,17 @@ Deno.serve(async (req) => {
   const force = body?.force === true;
   if (!scanId || typeof scanId !== "string") {
     return errResponse(req, "scanId is required", 400);
+  }
+
+  // Optional surface filter — callers can request only the surfaces they need
+  // (e.g. BestFitJobsCard asks for ['best_fit_jobs'] alone). When omitted,
+  // refresh fans out to all six.
+  const requestedSurfaces: SurfaceKey[] = Array.isArray(body?.surfaces) && body.surfaces.length > 0
+    ? body.surfaces.filter((s): s is SurfaceKey => ALL_SURFACES.includes(s as SurfaceKey))
+    : ALL_SURFACES;
+
+  if (requestedSurfaces.length === 0) {
+    return errResponse(req, "No valid surfaces requested", 400);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -172,30 +192,44 @@ Deno.serve(async (req) => {
   if (scanErr) return errResponse(req, `DB error: ${scanErr.message}`, 500);
   if (!scan) return errResponse(req, "Scan not found", 404);
 
-  // 2. Freshness check
-  const lastRefreshed = scan.peripheral_refreshed_at ? new Date(scan.peripheral_refreshed_at).getTime() : 0;
-  const ageMs = Date.now() - lastRefreshed;
-  const isFresh = !force && lastRefreshed > 0 && ageMs < REFRESH_TTL_MS;
+  // 2. Per-surface freshness check.
+  //    A surface is "fresh" if it has a cached row younger than 7 days.
+  //    We re-fetch only stale/missing surfaces, so a card asking for one
+  //    surface never triggers a 6-way fan-out.
+  const { data: cached } = await admin
+    .from("peripheral_refresh_cache")
+    .select("surface, payload, refreshed_at")
+    .eq("scan_id", scanId)
+    .in("surface", requestedSurfaces);
 
-  if (isFresh) {
-    const { data: cached } = await admin
-      .from("peripheral_refresh_cache")
-      .select("surface, payload, refreshed_at")
-      .eq("scan_id", scanId);
+  const cachedBySurface = new Map<string, { payload: unknown; refreshed_at: string }>();
+  for (const row of cached ?? []) {
+    cachedBySurface.set(row.surface, { payload: row.payload, refreshed_at: row.refreshed_at });
+  }
 
+  const staleSurfaces: SurfaceKey[] = force
+    ? requestedSurfaces
+    : requestedSurfaces.filter((s) => {
+        const c = cachedBySurface.get(s);
+        if (!c) return true;
+        return Date.now() - new Date(c.refreshed_at).getTime() >= REFRESH_TTL_MS;
+      });
+
+  // Short-circuit: nothing stale → return cache as-is, zero external calls.
+  if (staleSurfaces.length === 0) {
     const surfaces: Record<string, SurfaceResult> = {};
-    for (const row of cached ?? []) {
-      surfaces[row.surface] = { ok: true, payload: row.payload };
+    for (const s of requestedSurfaces) {
+      const c = cachedBySurface.get(s);
+      if (c) surfaces[s] = { ok: true, payload: c.payload };
     }
     return okResponse(req, {
       refreshed: false,
       refreshed_at: scan.peripheral_refreshed_at,
-      ttl_remaining_ms: REFRESH_TTL_MS - ageMs,
       surfaces,
     });
   }
 
-  // 3. Stale or forced — re-fetch all six surfaces in parallel.
+  // 3. Re-fetch stale surfaces in parallel.
   setCurrentScanId(scanId);
 
   const role = scan.role_detected ?? "";
@@ -204,17 +238,32 @@ Deno.serve(async (req) => {
   const skills = extractSkills(scan.final_json_report);
   const authHeader = req.headers.get("Authorization") ?? `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`;
 
-  // Per-surface request shapes mirror what the widgets currently send
-  // (see MarketRadarWidget.tsx, RiskIQDashboard.tsx, DoomClockCard.tsx,
-  // SectorPulse.tsx). We pass scan_id so cost-logger attribution sticks.
-  const tasks: Array<[SurfaceKey, string, Record<string, unknown>]> = [
-    ["market_radar",  "market-radar",            { role, industry, skills: skills.slice(0, 8), country, scan_id: scanId }],
-    ["live_news",     "live-news",               { role, industry, country, scan_id: scanId }],
-    ["sector_pulse",  "sector-pulse",            { role, industry, country, scan_id: scanId }],
-    ["tools",         "tool-learning-resources", { role, industry, skills: skills.slice(0, 8), scan_id: scanId }],
-    ["best_fit_jobs", "best-fit-jobs",           { role, industry, country, scan_id: scanId }],
-    ["india_jobs",    "india-jobs",              { role, industry, country, scan_id: scanId }],
-  ];
+  // Optional caller-supplied extras override (lets BestFitJobsCard pass
+  // moatSkills/seniority/determinismIndex which aren't on the scans row).
+  const extras = (body.extra && typeof body.extra === "object") ? body.extra : {};
+
+  // Per-surface request shapes mirror what each widget currently sends to
+  // the underlying edge function. Drift here = cached payload won't match
+  // the widget's expectations, so be careful when changing call sites.
+  const allTasks: Record<SurfaceKey, [string, Record<string, unknown>]> = {
+    market_radar:  ["market-radar",            { role, industry, skills: skills.slice(0, 8), country, scan_id: scanId }],
+    live_news:     ["live-news",               { role, industry, country, scan_id: scanId }],
+    sector_pulse:  ["sector-pulse",            { role, industry, country, scan_id: scanId }],
+    tools:         ["tool-learning-resources", { role, industry, skills: skills.slice(0, 8), scan_id: scanId }],
+    best_fit_jobs: ["best-fit-jobs",           {
+      role, industry, country, scan_id: scanId,
+      skills: skills.slice(0, 12),
+      moatSkills: extras.moatSkills ?? [],
+      seniority: extras.seniority ?? "PROFESSIONAL",
+      determinismIndex: extras.determinismIndex ?? null,
+    }],
+    india_jobs:    ["india-jobs",              { role, industry, country, scan_id: scanId }],
+  };
+
+  const tasks = staleSurfaces.map((key) => {
+    const [fn, payload] = allTasks[key];
+    return [key, fn, payload] as [SurfaceKey, string, Record<string, unknown>];
+  });
 
   const results = await Promise.all(
     tasks.map(([key, fn, payload]) =>
@@ -225,13 +274,14 @@ Deno.serve(async (req) => {
   // 4. Persist successful surfaces (UPSERT on (scan_id, surface)).
   //    Failed surfaces are returned to the caller but NOT cached, so a
   //    transient outage doesn't poison the next 7 days of reads.
+  const nowIso = new Date().toISOString();
   const upserts = results
     .filter(([, r]) => r.ok && r.payload !== undefined)
     .map(([surface, r]) => ({
       scan_id: scanId,
       surface,
       payload: r.payload as unknown,
-      refreshed_at: new Date().toISOString(),
+      refreshed_at: nowIso,
     }));
 
   if (upserts.length > 0) {
@@ -243,13 +293,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  // 5. Stamp scans.peripheral_refreshed_at only if at least one surface
-  //    succeeded. Otherwise leave the prior timestamp alone so the next
-  //    call retries instead of waiting 7 more days.
+  // 5. Stamp scans.peripheral_refreshed_at to the latest successful refresh.
   const anyOk = results.some(([, r]) => r.ok);
   let stampedAt = scan.peripheral_refreshed_at;
   if (anyOk) {
-    stampedAt = new Date().toISOString();
+    stampedAt = nowIso;
     await admin
       .from("scans")
       .update({ peripheral_refreshed_at: stampedAt })
@@ -258,8 +306,18 @@ Deno.serve(async (req) => {
 
   clearCurrentScanId();
 
+  // 6. Compose response: fresh cache for non-stale surfaces +
+  //    new results for refreshed surfaces.
   const surfaces: Record<string, SurfaceResult> = {};
-  for (const [k, r] of results) surfaces[k] = r;
+  for (const s of requestedSurfaces) {
+    const justRefreshed = results.find(([k]) => k === s);
+    if (justRefreshed) {
+      surfaces[s] = justRefreshed[1];
+    } else {
+      const c = cachedBySurface.get(s);
+      if (c) surfaces[s] = { ok: true, payload: c.payload };
+    }
+  }
 
   return okResponse(req, {
     refreshed: anyOk,

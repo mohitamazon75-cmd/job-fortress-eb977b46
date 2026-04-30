@@ -364,7 +364,7 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
               )}
               {card.id === 'best-fit' && (
                 <ErrorBoundary>
-                  <BestFitJobsCard report={report} />
+                  <BestFitJobsCard report={report} scanId={scanId} />
                 </ErrorBoundary>
               )}
               {card.id === 'resume' && (

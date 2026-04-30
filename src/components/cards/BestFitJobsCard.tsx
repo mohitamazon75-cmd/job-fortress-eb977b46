@@ -20,7 +20,7 @@ export interface RealJobListing {
   fit_level: 'STRONG' | 'GOOD' | 'STRETCH';
 }
 
-export default function BestFitJobsCard({ report }: { report: ScanReport }) {
+export default function BestFitJobsCard({ report, scanId }: { report: ScanReport; scanId?: string }) {
   const [jobs, setJobs] = useState<RealJobListing[]>([]);
   const [marketInsight, setMarketInsight] = useState('');
   const [totalFound, setTotalFound] = useState(0);
@@ -46,6 +46,38 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
         setError('auth_required');
         return;
       }
+
+      // ─── Pass 2: try the per-scan 7-day cache first ────────────────────
+      // refresh-peripheral-tabs returns cached payload if <7d old, otherwise
+      // re-runs best-fit-jobs (server-side), upserts the cache, and returns.
+      // Falling back to the direct call on any error keeps original behavior.
+      if (scanId) {
+        try {
+          const refreshResp = await supabase.functions.invoke('refresh-peripheral-tabs', {
+            body: {
+              scanId,
+              surfaces: ['best_fit_jobs'],
+              extra: {
+                moatSkills: report.moat_skills || [],
+                seniority: report.seniority_tier || 'PROFESSIONAL',
+                determinismIndex: report.determinism_index,
+              },
+            },
+          });
+          const surface = (refreshResp.data as { surfaces?: { best_fit_jobs?: { ok: boolean; payload?: { jobs?: RealJobListing[]; market_insight?: string; total_found?: number } } } } | null)?.surfaces?.best_fit_jobs;
+          if (surface?.ok && surface.payload) {
+            setJobs(surface.payload.jobs || []);
+            setMarketInsight(surface.payload.market_insight || '');
+            setTotalFound(surface.payload.total_found || 0);
+            setHasLoaded(true);
+            return;
+          }
+          // fall through to direct call on cache miss / error
+        } catch {
+          // fall through
+        }
+      }
+
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/best-fit-jobs`, {
         method: 'POST',
         signal: controller.signal,
@@ -87,7 +119,7 @@ export default function BestFitJobsCard({ report }: { report: ScanReport }) {
       clearTimeout(timeout);
       setLoading(false);
     }
-  }, [report]);
+  }, [report, scanId]);
 
   useEffect(() => {
     if (!hasLoaded && !loading) {
