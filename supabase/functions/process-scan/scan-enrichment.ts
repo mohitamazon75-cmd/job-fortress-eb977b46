@@ -19,6 +19,7 @@ import {
 } from "../_shared/scan-utils.ts";
 import { inferFromLinkedinUrl, parseExperienceYears } from "../_shared/scan-helpers.ts";
 import { parseResumeWithAffinda } from "../_shared/affinda-parser.ts";
+import { extractResumeTextViaVisionOcr, extractRoleFromOcrText } from "../_shared/resume-ocr-fallback.ts";
 import { recordResumeArtifact, recordLinkedinSnapshot } from "../_shared/artifact-recorder.ts";
 
 // ── Types ──
