@@ -54,14 +54,16 @@ describe("Pivot CTC provenance — server-stamped flag", () => {
     expect(prov.annual_lakhs).toBe(null);
   });
 
-  it("S3 edge: CTC=0 (treated as missing — never positive) → has_user_ctc=false", () => {
-    // Calibration: 0 should be treated identically to null. Prevents the case
-    // where create-scan strips an out-of-range value to 0 and we then render
-    // "₹0L · your CTC" as if it were truth.
+  it("S3 edge: CTC=0 (treated as missing — never positive) → has_user_ctc=false, annual_lakhs=null", () => {
+    // Calibration: 0 should be treated identically to null for the gate. Prevents the
+    // case where create-scan strips an out-of-range value to 0 and we then render
+    // "₹0L · your CTC" as if it were truth. annual_lakhs is null (not 0) because the
+    // implementation uses `userMonthlyCTC ? Math.round(...) : null` — a truthy guard,
+    // not a null-check. monthly_inr passes through 0 via `?? null`.
     const prov = buildProvenance(0);
     expect(prov.has_user_ctc).toBe(false);
     expect(prov.monthly_inr).toBe(0);
-    expect(prov.annual_lakhs).toBe(0);
+    expect(prov.annual_lakhs).toBe(null);
   });
 
   it("S1 edge: minimum legal CTC (₹5,000/month, the create-scan clamp floor) → has_user_ctc=true", () => {
