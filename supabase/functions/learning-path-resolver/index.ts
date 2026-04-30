@@ -137,6 +137,8 @@ serve(async (req) => {
     const parsedBody = await validateBody(req, LearningPathSchema, getCorsHeaders(req));
     if (parsedBody.kind === "invalid") return parsedBody.response;
     const body = parsedBody.data;
+    // Attribute downstream cost_event rows to this scan for /admin/costs.
+    if (body.scan_id) setCurrentScanId(body.scan_id);
     const gapTitle = body.gap_title.trim();
     const role = (body.role || "").trim();
     const cacheKey = await buildCacheKey(gapTitle, role);
