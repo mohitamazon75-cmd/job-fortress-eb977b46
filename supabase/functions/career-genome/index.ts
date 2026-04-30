@@ -10,6 +10,7 @@ import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { AI_URL, PRO_MODEL } from "../_shared/ai-agent-caller.ts";
 import { tavilySearch } from "../_shared/tavily-search.ts";
 import { logTokenUsageRaw } from "../_shared/token-tracker.ts";
+import { setCurrentScanId } from "../_shared/cost-logger.ts";
 import {
   PROSECUTOR_SYSTEM,
   DEFENDER_SYSTEM,
@@ -183,6 +184,12 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Attribute downstream cost_event rows to this scan for /admin/costs.
+  // No matching clear() — this is a streaming response, so the request stays
+  // alive long after this point. Per cost-logger.ts comment, Deno isolates
+  // are short-lived per-request so module-level scan id won't bleed across
+  // requests in practice.
+  if (typeof scanId === "string" && scanId.length > 0) setCurrentScanId(scanId);
   console.log(`[CareerGenome] Starting adversarial debate for scan ${scanId}, user ${userId}`);
 
   const encoder = new TextEncoder();

@@ -43,6 +43,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders, handleCorsPreFlight, okResponse, errResponse } from "../_shared/cors.ts";
 import { fetchAdzunaSalaryForRole } from "../_shared/adzuna-salary.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -344,6 +345,8 @@ serve(async (req) => {
     if (parsedBody.kind === "invalid") return parsedBody.response;
     const body = parsedBody.data;
     const scanId = body.scan_id.trim();
+    // Attribute every downstream cost_event to this scan for /admin/costs.
+    setCurrentScanId(scanId);
     const role = body.role.trim();
     const topAdv = (body.top_advantage || "").trim();
     const city = (body.city || "").trim();
@@ -408,5 +411,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("[human-edge-resolver] error", e);
     return errResponse(req, e instanceof Error ? e.message : "Unknown error", 500);
+  } finally {
+    clearCurrentScanId();
   }
 });

@@ -6,6 +6,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createAdminClient } from "../_shared/supabase-client.ts";
 import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
 
 
 
@@ -77,7 +78,8 @@ Deno.serve(async (req) => {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
-
+    // Attribute downstream cost_event rows to this scan for /admin/costs.
+    setCurrentScanId(scan_id);
     const sb = createAdminClient();
 
     // Fetch the 2 most recent score_history records for this user
@@ -191,5 +193,7 @@ Deno.serve(async (req) => {
       status: 500,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
+  } finally {
+    clearCurrentScanId();
   }
 });

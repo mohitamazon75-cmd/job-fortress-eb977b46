@@ -24,6 +24,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getCorsHeaders, handleCorsPreFlight, okResponse, errResponse } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { validateBody, z } from "../_shared/validate-input.ts";
+import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
 
 const LearningPathSchema = z.object({
   gap_title: z.string().trim().min(1, "gap_title is required").max(300),
@@ -136,6 +137,8 @@ serve(async (req) => {
     const parsedBody = await validateBody(req, LearningPathSchema, getCorsHeaders(req));
     if (parsedBody.kind === "invalid") return parsedBody.response;
     const body = parsedBody.data;
+    // Attribute downstream cost_event rows to this scan for /admin/costs.
+    if (body.scan_id) setCurrentScanId(body.scan_id);
     const gapTitle = body.gap_title.trim();
     const role = (body.role || "").trim();
     const cacheKey = await buildCacheKey(gapTitle, role);
@@ -240,5 +243,7 @@ CRITICAL RULES for "url" fields:
   } catch (e) {
     console.error("[learning-path-resolver] error", e);
     return errResponse(req, e instanceof Error ? e.message : "Unknown error", 500);
+  } finally {
+    clearCurrentScanId();
   }
 });

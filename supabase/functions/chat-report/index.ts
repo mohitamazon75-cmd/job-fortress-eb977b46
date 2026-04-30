@@ -6,6 +6,7 @@ import { logEdgeError, trackUsage } from "../_shared/edge-logger.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
 import { tavilySearch, buildSearchContext, extractCitations } from "../_shared/tavily-search.ts";
 import { createTokenTrackingTransform } from "../_shared/token-tracker.ts";
+import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
 
 // ── Rate limits ──────────────────────────────────────────────
 const CHAT_RATE_LIMIT = 30;
@@ -225,6 +226,8 @@ Deno.serve(async (req: Request) => {
         status: 400, headers: { ...cors, "Content-Type": "application/json" },
       });
     }
+    // Attribute downstream cost_event rows to this scan for /admin/costs.
+    if (typeof scanId === "string" && scanId.length > 0) setCurrentScanId(scanId);
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

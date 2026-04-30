@@ -2,6 +2,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearch } from "../_shared/tavily-search.ts";
 import { logEdgeError, trackUsage } from "../_shared/edge-logger.ts";
+import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
 
 const cache = new Map<string, { data: any; ts: number }>();
 const CACHE_TTL = 30 * 60 * 1000; // 30 min
@@ -18,6 +19,8 @@ Deno.serve(async (req) => {
     if (jwtBlocked) return jwtBlocked;
 
     const { role, judo_tool, industry, scanId } = await req.json();
+    // Attribute downstream cost_event rows to this scan for /admin/costs.
+    if (typeof scanId === "string" && scanId.length > 0) setCurrentScanId(scanId);
 
     if (!judo_tool) {
       return new Response(
@@ -152,5 +155,7 @@ Return ONLY valid JSON (no markdown, no code fences):
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+  } finally {
+    clearCurrentScanId();
   }
 });

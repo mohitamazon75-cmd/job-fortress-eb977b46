@@ -165,14 +165,34 @@ Deno.serve(async (req) => {
     // Previously select("*") fetched ~25 columns including final_json_report (50–200KB
     // from a previous scan on rescans) that was immediately discarded.
     const { data: scan, error: scanErr } = await supabase.from("scans")
-      .select("id, user_id, scan_status, access_token, linkedin_url, resume_file_path, industry, years_experience, metro_tier, country, enrichment_cache, final_json_report, data_retention_consent, estimated_monthly_salary_inr")
+      .select("id, user_id, scan_status, access_token, linkedin_url, resume_file_path, industry, years_experience, metro_tier, country, enrichment_cache, final_json_report, data_retention_consent, estimated_monthly_salary_inr, process_completed_at")
       .eq("id", scanId).single();
     if (scanErr || !scan) {
       return new Response(JSON.stringify({ error: "Scan not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ─── Hard idempotency guard: one payment = one process-scan execution ───
+    // process_completed_at is stamped exactly once when the final report is
+    // persisted (see scan-report-builder.ts → updateScan). It is never cleared,
+    // not even on user-triggered "rescan" — a rescan must use a NEW scan row.
+    // This blocks: forceRefresh re-triggers, status-flip races, and direct
+    // edge-function invocations against an already-billed scan_id.
+    // Honest cost-control: prevents burning a fresh ~₹15-40 of LLM spend on
+    // the same payment. Returns the existing report so the client UX is unchanged.
+    if (scan.process_completed_at) {
+      console.log(`[Orchestrator] Idempotency guard: scan ${scanId} already processed at ${scan.process_completed_at}`);
+      return new Response(JSON.stringify({
+        status: "complete",
+        duplicate: true,
+        already_processed_at: scan.process_completed_at,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Legacy guard: covers scans that completed BEFORE process_completed_at column existed.
     if (scan.scan_status === "complete" && scan.final_json_report) {
-      console.log(`[Orchestrator] Duplicate trigger ignored for completed scan ${scanId}`);
+      console.log(`[Orchestrator] Duplicate trigger ignored for completed scan ${scanId} (legacy, no completion stamp)`);
       return new Response(JSON.stringify({ status: "complete", duplicate: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -296,6 +316,9 @@ Deno.serve(async (req) => {
         scan_status: "complete", final_json_report: cachedReport,
         determinism_index: cachedResult.meta.determinism_index, months_remaining: cachedResult.meta.months_remaining,
         salary_bleed_monthly: cachedResult.meta.salary_bleed_monthly, role_detected: cachedResult.meta.role_detected,
+        // Idempotency stamp — same rule as the main success path. A cache hit
+        // still represents "this scan_id is now done; don't re-bill it".
+        process_completed_at: new Date().toISOString(),
       }).eq("id", scanId);
       clearTimeout(globalTimer);
       return new Response(JSON.stringify({ status: "complete", cached: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
