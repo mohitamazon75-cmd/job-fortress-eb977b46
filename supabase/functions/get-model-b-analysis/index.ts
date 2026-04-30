@@ -449,6 +449,14 @@ async function processAnalysis(
   const executiveBlock = buildExecutiveModeBlock(execDetect);
 
   const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry, userMonthlyCTC) + executiveBlock;
+
+  // Pass C4 (2026-04-30): MARKET_CONTEXT system message.
+  // Grounds the LLM's narrative in the deterministic per-scan context computed
+  // by process-scan. Without this, Card 1 / Card 4 / Card 6 narrative copy can
+  // contradict market_health (e.g. "fortified" headline on a declining family).
+  // Gated on analysisContext presence — legacy scans pass through unchanged.
+  const marketContextBlock = buildMarketContextBlock(analysisContext);
+
   let cardData: Record<string, unknown> | null = null;
   let geminiRaw: unknown = null;
   let modelUsed = PRIMARY_MODEL;
@@ -462,12 +470,17 @@ async function processAnalysis(
       const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
 
       const isGpt = model.includes("gpt-5");
+      const messages: Array<{ role: string; content: string }> = [
+        { role: "system", content: systemPrompt },
+      ];
+      if (marketContextBlock) {
+        messages.push({ role: "system", content: marketContextBlock });
+      }
+      messages.push({ role: "user", content: userPrompt });
+
       const requestBody: Record<string, unknown> = {
         model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
+        messages,
         temperature: 0.45, // Higher than 0.25 — psychological copy needs creative variation while JSON structure stays valid
         max_tokens: 12000,
       };
@@ -1081,6 +1094,12 @@ export function applyTrustGuardrails(
     }
   }
 }
+
+
+// MARKET_CONTEXT block — Pass C4 (2026-04-30). Pure helper extracted to
+// src/lib/market-context-block.ts so vitest can import it without dragging
+// in Deno globals. Edge fn imports the Deno re-export mirror.
+import { buildMarketContextBlock } from "../_shared/market-context-block.ts";
 
 
 // ═══════════════════════════════════════════════════════════════
