@@ -155,8 +155,40 @@ export function buildAnalysisContext(input: AnalysisContextInput): AnalysisConte
 export interface PivotCandidate {
   job_family?: string | null;
   market_health?: string | null;
+  role?: string | null;
+  title?: string | null;
   // anything else passes through untouched
   [key: string]: unknown;
+}
+
+/**
+ * String-token role→family inferer for cases where the LLM emits a `role`
+ * but no `job_family` field. Pure, deterministic. Returns null if no match.
+ *
+ * Tokens deliberately overlap src/lib/role-family.ts SIGNAL_MAP — kept narrow
+ * here because false positives are worse than false negatives in the eligibility
+ * filter (a missed family blocks nothing; a wrong family blocks a valid pivot).
+ */
+const FAMILY_TOKENS: Array<{ family: string; tokens: string[] }> = [
+  { family: 'marketing', tokens: ['marketing', 'brand manager', 'seo', 'sem ', 'ppc', 'growth marketer', 'demand gen', 'martech', 'performance marketer'] },
+  { family: 'sales', tokens: ['sales', 'business development', 'account executive', 'account manager', 'sdr', 'bdr', 'revenue ops', 'revops'] },
+  { family: 'engineering', tokens: ['software engineer', 'developer', 'devops', 'sre ', 'qa engineer', 'frontend', 'backend', 'full stack', 'fullstack', 'tech lead', 'principal engineer'] },
+  { family: 'data_analytics', tokens: ['data scientist', 'data analyst', 'business analyst', 'data engineer', 'ml engineer', 'ai engineer', 'analytics manager'] },
+  { family: 'finance_ops', tokens: ['finance', 'accountant', 'controller', 'auditor', 'fp&a', 'financial analyst', 'treasury'] },
+  { family: 'product_design', tokens: ['product manager', 'product owner', 'ux designer', 'ui designer', 'product designer', 'design lead'] },
+  { family: 'hr_people', tokens: ['human resource', 'talent acquisition', 'recruiter', 'l&d', 'hrbp', 'people partner'] },
+  { family: 'creative_content', tokens: ['copywriter', 'content writer', 'editor', 'creative director', 'art director', 'video editor', 'animator'] },
+  { family: 'legal_compliance', tokens: ['lawyer', 'attorney', 'paralegal', 'legal counsel', 'compliance officer'] },
+  { family: 'customer_success', tokens: ['customer success', 'customer experience', 'csm ', 'support engineer', 'implementation specialist'] },
+];
+
+export function inferFamilyFromRole(role: string | null | undefined): string | null {
+  const haystack = (role || '').toLowerCase();
+  if (!haystack.trim()) return null;
+  for (const { family, tokens } of FAMILY_TOKENS) {
+    if (tokens.some((t) => haystack.includes(t))) return family;
+  }
+  return null;
 }
 
 /**
@@ -164,6 +196,10 @@ export interface PivotCandidate {
  *  - same family as the user (would not be a "pivot")
  *  - declining market_health (cannot recommend a sinking role)
  * Kills audit-finding P1.
+ *
+ * If pivot.job_family is missing, infers it from pivot.role/title via
+ * inferFamilyFromRole. If inference returns null we PASS the pivot (fail-open) —
+ * blocking on missing data is worse than letting one slip through.
  */
 export function filterEligiblePivots<T extends PivotCandidate>(
   pivots: ReadonlyArray<T>,
@@ -171,13 +207,15 @@ export function filterEligiblePivots<T extends PivotCandidate>(
 ): T[] {
   const userFamily = (ctx.user_role_family || '').toLowerCase().trim();
   return pivots.filter((p) => {
-    const fam = (p.job_family || '').toString().toLowerCase().trim();
-    if (userFamily && fam && fam === userFamily) return false;
+    const explicitFam = (p.job_family || '').toString().toLowerCase().trim();
+    const inferredFam = explicitFam || inferFamilyFromRole(p.role || p.title || '') || '';
+    if (userFamily && inferredFam && inferredFam === userFamily) return false;
     const health = (p.market_health || '').toString().toLowerCase().trim();
     if (health === 'declining') return false;
     return true;
   });
 }
+
 
 /**
  * Drop skill recommendations the user already has.
