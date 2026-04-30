@@ -348,6 +348,10 @@ async function processAnalysis(
   detectedIndustry = "",
   yearsExperience: string | number = "",
   detScoreAnchor: number | null = null,
+  // RC2: user-provided monthly CTC (INR) — null when user skipped the optional CTC step.
+  // When present, prompt emits real ₹ deltas tagged [USER-PROVIDED]; when null, prompt
+  // emits role-tier bands only and Card4 will render a "Add CTC for personal delta" hint.
+  userMonthlyCTC: number | null = null,
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
