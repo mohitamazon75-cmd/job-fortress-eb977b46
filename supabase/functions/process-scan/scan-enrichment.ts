@@ -51,7 +51,7 @@ export interface EnrichmentResult {
   /**
    * Which extraction tier produced the role title. Surfaced for admin diagnostics
    * so we can monitor regex-rescue rate. Values: "headline" | "experience[0]"
-   * | "affinda" | "regex" | "NONE" | null (LinkedIn-only path).
+   * | "affinda" | "regex" | "artifact_cache" | "NONE" | null (LinkedIn-only path).
    */
   roleSource: string | null;
 }
@@ -121,6 +121,7 @@ async function parseResume(
   supabaseClient: any,
   resumeFilePath: string,
   activeModel: string,
+  userId: string | null = null,
 ): Promise<{
   rawText: string;
   name: string | null;
@@ -133,8 +134,69 @@ async function parseResume(
 }> {
   const fallback = { rawText: "", name: null, company: null, industry: null, role: null, confidence: "low", extractedYears: null, roleSource: "NONE" as string | null };
 
+  const buildArtifactFallback = async (): Promise<typeof fallback> => {
+    if (!userId) return fallback;
+    const fileName = resumeFilePath.split("/").pop()?.trim();
+    if (!fileName) return fallback;
+
+    const { data, error } = await supabaseClient
+      .from("resume_artifacts")
+      .select("resume_file_path, raw_text, parsed_json, extracted_years_experience")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error || !Array.isArray(data)) return fallback;
+
+    for (const row of data) {
+      const previousPath = String(row.resume_file_path ?? "");
+      if (!previousPath.endsWith(`/${fileName}`) && previousPath !== fileName) continue;
+
+      const rawText = typeof row.raw_text === "string" ? row.raw_text.trim() : "";
+      const parsedJson = row.parsed_json && typeof row.parsed_json === "object" ? row.parsed_json : {};
+      const role = typeof parsedJson.role === "string" ? parsedJson.role.trim() : "";
+      if (rawText.length < 100 || !role || role === "Unknown" || role === "Professional") continue;
+
+      console.log(`[parseResume] Live parsers failed — reused prior successful resume artifact for ${fileName}`);
+      supabaseClient.from("edge_function_logs").insert({
+        function_name: "process-scan:role-source",
+        status: "success",
+        request_meta: { role_source: "artifact_cache" },
+      }).then(({ error }: { error: unknown }) => {
+        if (error) console.warn("[parseResume] role-source log insert failed:", error);
+      });
+      supabaseClient.from("edge_function_logs").insert({
+        function_name: "process-scan:profile-confidence",
+        status: "success",
+        request_meta: { confidence: "medium", role_source: "artifact_cache" },
+      }).then(({ error }: { error: unknown }) => {
+        if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
+      });
+
+      const extractedYearsRaw = row.extracted_years_experience;
+      const extractedYears = typeof extractedYearsRaw === "number"
+        ? extractedYearsRaw
+        : typeof extractedYearsRaw === "string"
+        ? Number(extractedYearsRaw)
+        : null;
+
+      return {
+        rawText,
+        name: typeof parsedJson.name === "string" ? parsedJson.name : null,
+        company: typeof parsedJson.company === "string" ? parsedJson.company : null,
+        industry: typeof parsedJson.industry === "string" ? parsedJson.industry : null,
+        role,
+        confidence: "medium",
+        extractedYears: Number.isFinite(extractedYears) ? extractedYears : null,
+        roleSource: "artifact_cache",
+      };
+    }
+
+    return fallback;
+  };
+
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) return fallback;
+  if (!LOVABLE_API_KEY) return await buildArtifactFallback();
 
   try {
     const { data: fileData, error: dlError } = await supabaseClient.storage.from("resumes").download(resumeFilePath);
