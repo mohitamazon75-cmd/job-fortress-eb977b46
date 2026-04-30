@@ -110,3 +110,64 @@ describe("MondayMoveCard.pickMondayMove", () => {
     }
   });
 });
+
+// ─── Pass C3 (2026-04-30): pivot field-name drift fix ─────────────────
+// Calibrated against: producer (get-model-b-analysis) emits the post-filter
+// array under `card4_pivot.pivots`. Before C3, MondayMoveCard only read
+// `adjacent_roles` / `paths`, so for ALL real scans this branch silently
+// skipped to skill/diet defaults. Locks in the canonical field as priority 1
+// while keeping legacy aliases as fallback (additive, Rule 2).
+describe("MondayMoveCard.pickMondayMove — Pass C3 canonical pivots field", () => {
+  it("reads card4_pivot.pivots (the field actually emitted by the edge fn)", () => {
+    const cd = {
+      card4_pivot: { pivots: [{ role: "Director of Strategic Partnerships" }] },
+    };
+    const m = pickMondayMove(cd);
+    expect(m.action).toContain("Director of Strategic Partnerships");
+    expect(m.source).toBe("From your pivot paths");
+  });
+
+  it("prefers .pivots over legacy .adjacent_roles when both exist", () => {
+    const cd = {
+      card4_pivot: {
+        pivots: [{ role: "VP Sales" }],
+        adjacent_roles: [{ role: "Junior Marketer" }],
+      },
+    };
+    const m = pickMondayMove(cd);
+    expect(m.action).toContain("VP Sales");
+    expect(m.action).not.toContain("Junior Marketer");
+  });
+
+  it("falls back to .adjacent_roles when .pivots is empty (post-filter wipe)", () => {
+    // The filter dropped every same-family pivot for a non-exec — empty array.
+    // Legacy alias still wins so we don't regress old fixtures.
+    const cd = {
+      card4_pivot: {
+        pivots: [],
+        adjacent_roles: [{ role: "Product Manager" }],
+      },
+    };
+    const m = pickMondayMove(cd);
+    expect(m.action).toContain("Product Manager");
+  });
+
+  it("falls back to .paths when neither .pivots nor .adjacent_roles populated", () => {
+    const cd = { card4_pivot: { paths: [{ role: "Customer Success Lead" }] } };
+    const m = pickMondayMove(cd);
+    expect(m.action).toContain("Customer Success Lead");
+  });
+
+  it("falls through to skill shield when card4_pivot.pivots is empty AND no aliases", () => {
+    // Calibrated against: post-filter exec on declining family with 0 same-family
+    // execs surviving. Should NOT fabricate a pivot — should use the next priority.
+    const cd = {
+      card4_pivot: { pivots: [] },
+      card3_shield: { skills: [{ name: "Python", tier: "critical-gap" }] },
+    };
+    const m = pickMondayMove(cd);
+    expect(m.source).toBe("From your skill shield");
+    expect(m.action).toContain("Python");
+  });
+});
+
