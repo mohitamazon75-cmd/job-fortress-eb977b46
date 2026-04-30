@@ -1740,6 +1740,48 @@ export type Database = {
         }
         Relationships: []
       }
+      peripheral_refresh_cache: {
+        Row: {
+          cost_paise: number
+          id: string
+          payload: Json
+          refreshed_at: string
+          scan_id: string
+          surface: string
+        }
+        Insert: {
+          cost_paise?: number
+          id?: string
+          payload: Json
+          refreshed_at?: string
+          scan_id: string
+          surface: string
+        }
+        Update: {
+          cost_paise?: number
+          id?: string
+          payload?: Json
+          refreshed_at?: string
+          scan_id?: string
+          surface?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "peripheral_refresh_cache_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "peripheral_refresh_cache_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "v_scan_cost_summary"
+            referencedColumns: ["scan_id"]
+          },
+        ]
+      }
       processed_events: {
         Row: {
           created_at: string
