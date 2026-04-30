@@ -356,6 +356,9 @@ async function processAnalysis(
   // When present, prompt emits real ₹ deltas tagged [USER-PROVIDED]; when null, prompt
   // emits role-tier bands only and Card4 will render a "Add CTC for personal delta" hint.
   userMonthlyCTC: number | null = null,
+  // Phase 1.B (audit 2026-04-30): deterministic per-scan context built by process-scan.
+  // Read by Card 4 pivot eligibility filter. Null on legacy scans → filter no-ops (fail-open).
+  analysisContext: Record<string, unknown> | null = null,
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
