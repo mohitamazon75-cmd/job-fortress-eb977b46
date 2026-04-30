@@ -311,7 +311,17 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
                 const accent = variantColor(color);
                 const matchPctRaw = Number(p?.match_pct);
                 const matchPct = Number.isFinite(matchPctRaw) ? Math.max(0, Math.min(100, matchPctRaw)) : 0;
-                const salaryDisplay = p?.salary_range || p?.salary || "—";
+                const rawSalary = p?.salary_range || p?.salary || "—";
+                // Pivot Coherence Pass — Bug 3 fix (2026-04-30):
+                // When user did NOT enter CTC, the band on the pivot row is a
+                // role-tier estimate from the LLM, not anchored to the user's
+                // actual numbers. Stamp [ESTIMATED] so the chip cannot be misread
+                // as "this is your delta". The expanded math card below is already
+                // gated on hasUserCTC; this is the matching honesty for the chip.
+                const hasEstTag = typeof rawSalary === "string" && /\[\s*estimated\s*\]/i.test(rawSalary);
+                const salaryDisplay = (!hasUserCTC && rawSalary !== "—" && !hasEstTag)
+                  ? `${rawSalary} [ESTIMATED]`
+                  : rawSalary;
                 return (
                   <button
                     key={i}

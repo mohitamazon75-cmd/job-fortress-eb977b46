@@ -656,6 +656,34 @@ async function processAnalysis(
     }
   }
 
+  // Pivot Coherence Pass — Bug 2 fix (2026-04-30):
+  // Strip "fortified"/"safe"/"protected" verdict words from card1.headline when
+  // analysisContext.market_health === "declining". Without this, Card 1 can
+  // print "Your role is Fortified" while Card 4 says "your market is sinking
+  // — pivot now". The contradiction is the kind of credibility-killer the
+  // user explicitly flagged. Pure regex; only swaps the offending adjective,
+  // does not rewrite the whole headline.
+  try {
+    const marketHealth = String((analysisContext as any)?.market_health || "").toLowerCase().trim();
+    if (marketHealth === "declining" || marketHealth === "shrinking") {
+      const c1 = (cardData as any)?.card1_risk;
+      if (c1 && typeof c1.headline === "string") {
+        const before = c1.headline;
+        const after = before
+          .replace(/\bfortified\b/gi, "exposed")
+          .replace(/\bsafe\b/gi, "at risk")
+          .replace(/\bprotected\b/gi, "under pressure")
+          .replace(/\bsecure\b/gi, "under pressure");
+        if (after !== before) {
+          c1.headline = after;
+          console.log(`[model-b] Card1 verdict softened (market_health=${marketHealth}): "${before}" → "${after}"`);
+        }
+      }
+    }
+  } catch (vErr) {
+    console.warn("[model-b] Card1 verdict guard failed (non-fatal):", vErr);
+  }
+
   try {
     (cardData as Record<string, unknown>).monday_move = computeMondayMove(cardData);
   } catch (mErr) {
