@@ -440,7 +440,7 @@ async function processAnalysis(
   }
   const executiveBlock = buildExecutiveModeBlock(execDetect);
 
-  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry) + executiveBlock;
+  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry, userMonthlyCTC) + executiveBlock;
   let cardData: Record<string, unknown> | null = null;
   let geminiRaw: unknown = null;
   let modelUsed = PRIMARY_MODEL;
