@@ -10,6 +10,7 @@ import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { AI_URL, PRO_MODEL } from "../_shared/ai-agent-caller.ts";
 import { tavilySearch } from "../_shared/tavily-search.ts";
 import { logTokenUsageRaw } from "../_shared/token-tracker.ts";
+import { setCurrentScanId } from "../_shared/cost-logger.ts";
 import {
   PROSECUTOR_SYSTEM,
   DEFENDER_SYSTEM,
