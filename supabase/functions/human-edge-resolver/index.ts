@@ -411,5 +411,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("[human-edge-resolver] error", e);
     return errResponse(req, e instanceof Error ? e.message : "Unknown error", 500);
+  } finally {
+    clearCurrentScanId();
   }
 });
