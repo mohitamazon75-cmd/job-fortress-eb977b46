@@ -629,6 +629,33 @@ async function processAnalysis(
     }
   }
 
+  // Phase 1.B (audit 2026-04-30): Card 4 pivot eligibility filter.
+  // Kills audit-finding P1 — Card 4 must not recommend a pivot in the user's own
+  // family or a pivot whose own market_health is "declining". Pure deterministic
+  // filter against the AnalysisContext built by process-scan. Fail-open if context
+  // is missing (legacy scans, in-flight migrations) — partial moat > no moat.
+  if (analysisContext && (analysisContext as any).user_role_family) {
+    try {
+      const c4 = (cardData as any)?.card4_pivot;
+      if (c4 && Array.isArray(c4.pivots) && c4.pivots.length > 0) {
+        const before = c4.pivots.length;
+        c4.pivots = filterEligiblePivots(
+          c4.pivots,
+          analysisContext as unknown as AnalysisContext,
+        );
+        const after = c4.pivots.length;
+        if (after !== before) {
+          console.log(
+            `[model-b] Card4 pivot eligibility filter: dropped ${before - after}/${before} ineligible pivots ` +
+              `(family=${(analysisContext as any).user_role_family})`,
+          );
+        }
+      }
+    } catch (eErr) {
+      console.warn("[model-b] Pivot eligibility filter failed (non-fatal):", eErr);
+    }
+  }
+
   try {
     (cardData as Record<string, unknown>).monday_move = computeMondayMove(cardData);
   } catch (mErr) {
