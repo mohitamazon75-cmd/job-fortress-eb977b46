@@ -302,7 +302,20 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   return (
     <CardShell>
       <CardHead
-        badges={<><Badge label="01 · Awareness" variant="amber" /><Badge label="Resume analysed" variant="navy" /></>}
+        badges={
+          <>
+            <Badge label="01 · Awareness" variant="amber" />
+            <Badge label="Resume analysed" variant="navy" />
+            {/* Pass C1 (#4) — KG match badge. Suppressed when matches are too
+                weak to claim moat (LOW = <40%). Empty-fallback over fake-confident. */}
+            {cardData?.kg_match && cardData.kg_match.confidence_label !== 'LOW' && (
+              <Badge
+                label={`KG match · ${cardData.kg_match.matched_count}/${cardData.kg_match.total_count} skills (${cardData.kg_match.pct}%)`}
+                variant={cardData.kg_match.confidence_label === 'HIGH' ? 'green' : 'navy'}
+              />
+            )}
+          </>
+        }
         title={displayHeadline}
         sub={displaySubline}
       />
@@ -579,6 +592,13 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         <div style={{ padding: "10px 14px", background: "var(--mb-paper)", border: "1px dashed var(--mb-rule)", borderRadius: 10, fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", lineHeight: 1.6, fontWeight: 500 }}>
           <strong style={{ color: "var(--mb-ink2)", fontWeight: 800, letterSpacing: "0.04em" }}>HOW WE CALCULATED THIS:</strong> AI Exposure derived from O*NET task-automation indices, McKinsey & Goldman Sachs occupational AI-impact studies, and your resume's task profile. Disruption year is a directional estimate based on current adoption velocity in your sector — not a guarantee.
         </div>
+
+        {/* Pass C1 (#5) — engine/prompt/KG version trace. Quiet credibility footer. */}
+        {cardData?._provenance && (
+          <div style={{ marginTop: 6, padding: "6px 10px", fontFamily: "'DM Mono', monospace", fontSize: 10, color: "var(--mb-ink3)", letterSpacing: "0.02em", textAlign: "right" }}>
+            engine {cardData._provenance.engine_version} · prompt {cardData._provenance.prompt_version} · KG {cardData._provenance.kg_version}
+          </div>
+        )}
 
         <CardNav onBack={onBack} onNext={onNext} nextLabel="See your live market →" />
       </CardBody>

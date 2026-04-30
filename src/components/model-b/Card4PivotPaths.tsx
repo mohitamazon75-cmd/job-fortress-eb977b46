@@ -348,6 +348,18 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, color: "var(--mb-ink)", lineHeight: 1.3 }}>{role}</div>
                       <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "var(--mb-ink2)", marginTop: 2, fontWeight: 600 }}>{salaryDisplay}{p?.location ? ` · ${p.location}` : ""}</div>
+                      {/* Pass C1 (#7) — citation basis chip. Tells the user WHY this
+                          pivot was deemed eligible. Hidden when basis is unknown. */}
+                      {p?.citation_basis?.family_match === 'kg_family_match' && (
+                        <div style={{ marginTop: 4, fontFamily: "'DM Mono', monospace", fontSize: 9, fontWeight: 700, color: "var(--mb-green)", letterSpacing: "0.04em" }}>
+                          ✓ KG family match{p?.citation_basis?.market_health_grounded ? " · market signal grounded" : ""}
+                        </div>
+                      )}
+                      {p?.citation_basis?.family_match === 'cross_family_inferred' && (
+                        <div style={{ marginTop: 4, fontFamily: "'DM Mono', monospace", fontSize: 9, fontWeight: 700, color: "var(--mb-ink3)", letterSpacing: "0.04em" }}>
+                          cross-family pivot · inferred fit
+                        </div>
+                      )}
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, fontWeight: 800, color: accent }}>{matchPct}%</div>
