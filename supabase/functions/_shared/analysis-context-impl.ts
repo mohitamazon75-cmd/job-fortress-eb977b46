@@ -101,7 +101,76 @@ function normalizeSeniority(raw: string | null | undefined): SeniorityTier {
       return 'EXECUTIVE';
     default:
       return 'MID';
+}
+
+// ── Fix B (Audit 2026-04-30): deterministic seniority floor ─────────────────
+// Title and years signals are unambiguous and should NEVER be undercut by the
+// LLM-emitted seniority_tier. We compute a floor and take max(LLM tier, floor).
+// Pure, no IO. Tested in src/test/analysis-context.test.ts.
+
+const TIER_RANK: Record<SeniorityTier, number> = {
+  JUNIOR: 0,
+  MID: 1,
+  SENIOR: 2,
+  SENIOR_LEADER: 3,
+  EXECUTIVE: 4,
+};
+const TIER_BY_RANK: SeniorityTier[] = ['JUNIOR', 'MID', 'SENIOR', 'SENIOR_LEADER', 'EXECUTIVE'];
+
+// Word-boundaried executive/leader patterns. Matched against a normalised title.
+const EXECUTIVE_TITLE_RE = /\b(ceo|cto|cfo|coo|cmo|cpo|chro|cro|cdo|ciso|cio|chief\s+\w+\s+officer|founder|co[\s-]?founder|managing\s+director|managing\s+partner|president|owner)\b/i;
+const SENIOR_LEADER_TITLE_RE = /\b(vp|vice\s+president|svp|evp|senior\s+vice\s+president|executive\s+vice\s+president|head\s+of|director|senior\s+director|partner|principal)\b/i;
+// "Senior Manager" / "General Manager" / "Group Manager" — clear above-IC management track.
+const SENIOR_MANAGER_TITLE_RE = /\b(senior\s+manager|sr\.?\s+manager|general\s+manager|group\s+manager|associate\s+director|practice\s+lead|engineering\s+lead|tech\s+lead)\b/i;
+
+function parseExperienceYears(raw: string | number | null | undefined): number | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === 'number' && Number.isFinite(raw)) return Math.max(0, raw);
+  const s = String(raw).trim().toLowerCase();
+  if (!s) return null;
+  // Common bucket strings used by onboarding.
+  if (s === '0-2') return 1;
+  if (s === '3-5') return 4;
+  if (s === '6-10') return 8;
+  if (s === '10+' || s === '11+' || s === '15+') return 15;
+  // Numeric prefix (e.g. "11", "12 years")
+  const m = s.match(/^(\d+(?:\.\d+)?)/);
+  if (m) {
+    const n = Number(m[1]);
+    if (Number.isFinite(n)) return Math.max(0, n);
   }
+  return null;
+}
+
+/**
+ * Returns the deterministic minimum seniority tier implied by years + title.
+ * NEVER lowers a higher LLM-supplied tier — caller takes the max.
+ *
+ * Title rules dominate years (an 8-year CFO is still EXECUTIVE).
+ * Years rules: 15+ ⇒ at least SENIOR_LEADER, 10+ ⇒ at least SENIOR.
+ */
+export function computeSeniorityFloor(
+  title: string | null | undefined,
+  years: number | null,
+): SeniorityTier {
+  const t = (title || '').toLowerCase();
+  if (t && EXECUTIVE_TITLE_RE.test(t)) return 'EXECUTIVE';
+  if (t && SENIOR_LEADER_TITLE_RE.test(t)) return 'SENIOR_LEADER';
+  if (t && SENIOR_MANAGER_TITLE_RE.test(t)) {
+    // Senior/General Manager with 10+ years is a leader; below that, treat as SENIOR.
+    return (years !== null && years >= 10) ? 'SENIOR_LEADER' : 'SENIOR';
+  }
+  if (years !== null) {
+    if (years >= 15) return 'SENIOR_LEADER';
+    if (years >= 10) return 'SENIOR';
+    if (years >= 5) return 'MID';
+  }
+  return 'JUNIOR';
+}
+
+function maxTier(a: SeniorityTier, b: SeniorityTier): SeniorityTier {
+  return TIER_BY_RANK[Math.max(TIER_RANK[a], TIER_RANK[b])];
+}
 }
 
 function normalizeMetro(raw: string | null | undefined): MetroTier {
