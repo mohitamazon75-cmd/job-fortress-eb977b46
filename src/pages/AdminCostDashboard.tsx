@@ -8,6 +8,12 @@ import {
   formatRupees,
   type CostEventRow,
 } from '@/lib/cost-events';
+import {
+  burnRate,
+  detectAnomalies,
+  perScanTotals,
+  percentile,
+} from '@/lib/cost-analytics';
 
 /**
  * AdminCostDashboard — operator-only view of per-scan COGS.
@@ -71,6 +77,26 @@ export default function AdminCostDashboard() {
   const avgPaise = avgCostPerScan(rows);
   const totalPaise = rows.reduce((s, r) => s + r.cost_inr_paise, 0);
   const uniqueScans = new Set(rows.filter((r) => r.scan_id).map((r) => r.scan_id)).size;
+  const burn = burnRate(rows, windowDays);
+  const scanTotals = perScanTotals(rows);
+  const scanCosts = scanTotals.map((s) => s.total_paise);
+  const p50 = percentile(scanCosts, 0.5);
+  const p95 = percentile(scanCosts, 0.95);
+  const p99 = percentile(scanCosts, 0.99);
+  const anomalies = detectAnomalies(rows);
+
+  // Burn-rate threshold: at ₹399/mo Pro pricing, monthly COGS per Pro user
+  // should stay under ~₹150 (≈37% gross margin floor). We show a soft warn
+  // if the projected per-scan cost exceeds ₹50 (deeply unprofitable at single
+  // scan/payment). Numbers are display-only; no automated kill-switch.
+  const SOFT_WARN_PER_SCAN_PAISE = 5000; // ₹50
+  const HARD_WARN_PER_SCAN_PAISE = 10000; // ₹100
+  const burnSeverity =
+    burn.cost_per_scan_paise >= HARD_WARN_PER_SCAN_PAISE
+      ? 'critical'
+      : burn.cost_per_scan_paise >= SOFT_WARN_PER_SCAN_PAISE
+      ? 'warning'
+      : 'ok';
 
   return (
     <div className="min-h-screen bg-background">
