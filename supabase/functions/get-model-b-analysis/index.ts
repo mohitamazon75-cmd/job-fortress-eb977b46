@@ -296,6 +296,11 @@ Deno.serve(async (req) => {
       scan.role_detected || "", scan.industry || "",
       scan.years_experience || "",
       typeof scan.determinism_index === "number" ? scan.determinism_index : null,
+      // RC2: pipe user-provided CTC into the prompt so the LLM stops fabricating
+      // ₹ deltas. null means "no CTC entered" → prompt switches to band-only mode.
+      typeof scan.estimated_monthly_salary_inr === "number" && scan.estimated_monthly_salary_inr > 0
+        ? scan.estimated_monthly_salary_inr
+        : null,
     );
 
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
