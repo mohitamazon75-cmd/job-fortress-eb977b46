@@ -41,8 +41,14 @@ export interface GoldenScanFixture {
   description: string;
   /** Industry the user picked in onboarding — drives KG category lookup. */
   industry_input: string;
-  /** Expected first KG category candidate. Asserts kg-category-map invariant. */
-  expected_first_kg_category: string;
+  /**
+   * KG category that MUST appear in getCategoryCandidates(industry_input).
+   * Note: the helper preserves the literal input as candidate[0] (happy path),
+   * then appends the semantically mapped categories. We assert that the
+   * MAPPED category is present somewhere in the list — this is what
+   * fetchTaxonomyByCandidates falls through to when the literal misses.
+   */
+  expected_kg_category_in_candidates: string;
   /** Frozen deterministic context the engine should produce. */
   ctx: AnalysisContext;
   /** Representative LLM output AFTER sanitizers. */
