@@ -243,5 +243,7 @@ CRITICAL RULES for "url" fields:
   } catch (e) {
     console.error("[learning-path-resolver] error", e);
     return errResponse(req, e instanceof Error ? e.message : "Unknown error", 500);
+  } finally {
+    clearCurrentScanId();
   }
 });
