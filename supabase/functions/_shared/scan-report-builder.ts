@@ -58,6 +58,9 @@ export async function updateScan(
       salary_bleed_monthly: report.salary_bleed_monthly,
       months_remaining: report.months_remaining,
       industry: report.industry,
+      // Idempotency stamp: process-scan refuses to re-run when this is set.
+      // Set ONCE here. Never cleared. Enforces "one payment = one scan".
+      process_completed_at: new Date().toISOString(),
     })
     .eq("id", scanId);
 }
