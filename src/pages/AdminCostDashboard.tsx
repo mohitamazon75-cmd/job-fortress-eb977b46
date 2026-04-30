@@ -314,3 +314,17 @@ function Stat({ label, value, sub }: { label: string; value: string; sub: string
     </div>
   );
 }
+
+function BurnBadge({ severity }: { severity: 'ok' | 'warning' | 'critical' }) {
+  const styles = {
+    ok: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+    warning: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
+    critical: 'bg-destructive/15 text-destructive border-destructive/30',
+  } as const;
+  const label = severity === 'ok' ? 'Healthy' : severity === 'warning' ? 'Watch' : 'Critical';
+  return (
+    <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${styles[severity]}`}>
+      {label}
+    </span>
+  );
+}
