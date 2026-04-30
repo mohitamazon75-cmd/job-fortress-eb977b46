@@ -26,6 +26,53 @@
 const AFFINDA_API_BASE = "https://api.affinda.com/v2";
 const AFFINDA_TIMEOUT_MS = 10_000;
 
+// ── Retry + circuit breaker config ────────────────────────────────
+// Why: same resume failed once after passing 3x prior — root cause is
+// transient external API jitter (timeout / 5xx / rate-limit). Under
+// volume spikes this becomes routine. Retry covers single jitter; the
+// circuit breaker prevents hammering Affinda when it's actually down.
+const AFFINDA_RETRY_ATTEMPTS = 2;          // total attempts = 1 + 2 = 3
+const AFFINDA_RETRY_BACKOFF_MS = [500, 1500];
+const AFFINDA_BREAKER_THRESHOLD = 5;        // consecutive failures
+const AFFINDA_BREAKER_COOLDOWN_MS = 5 * 60 * 1000;  // 5 minutes
+
+// In-memory breaker state (per-isolate; Deno edge isolates are short-lived
+// so this is best-effort — main job is to prevent N concurrent requests
+// from each retrying 3x against a dead provider in the same isolate).
+const breakerState = {
+  consecutiveFailures: 0,
+  openUntilMs: 0,
+};
+
+function isBreakerOpen(): boolean {
+  return Date.now() < breakerState.openUntilMs;
+}
+
+function recordSuccess(): void {
+  breakerState.consecutiveFailures = 0;
+  breakerState.openUntilMs = 0;
+}
+
+function recordFailure(): void {
+  breakerState.consecutiveFailures += 1;
+  if (breakerState.consecutiveFailures >= AFFINDA_BREAKER_THRESHOLD) {
+    breakerState.openUntilMs = Date.now() + AFFINDA_BREAKER_COOLDOWN_MS;
+    console.warn(
+      `[Affinda] Circuit breaker OPEN — ${breakerState.consecutiveFailures} consecutive failures, cooling down for ${AFFINDA_BREAKER_COOLDOWN_MS / 1000}s`,
+    );
+  }
+}
+
+// Retryable = transient: timeout, network error, 5xx, 429.
+// Non-retryable = 4xx (auth/quota/bad request) — fast-fail.
+function isRetryable(status: number | null, errName?: string): boolean {
+  if (errName === "AbortError") return true;
+  if (status === null) return true; // network error
+  if (status === 429) return true;
+  if (status >= 500 && status < 600) return true;
+  return false;
+}
+
 // Known tier-1 India colleges for education signal
 const TIER1_INDIA_COLLEGES = [
   "iit", "iim", "nit", "bits pilani", "iisc", "xlri", "iift", "srcc",
