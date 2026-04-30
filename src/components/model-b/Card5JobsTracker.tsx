@@ -303,16 +303,25 @@ export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId 
           );
         })}
 
-        {jobs.length === 0 && !liveJobsQuery.isLoading && (
-          <div style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 16, padding: 18, marginBottom: 18 }}>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8 }}>No live listings matched this exact brief yet</div>
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.7, marginBottom: 12 }}>Open the direct board searches below and broaden the keyword by one adjacent title.</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <a href={searchLinks.naukri} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-navy)", color: "white", padding: "10px 14px", textDecoration: "none" }}>Search Naukri ↗</a>
-              <a href={searchLinks.linkedin} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-paper)", color: "var(--mb-ink2)", border: "1px solid var(--mb-rule)", padding: "10px 14px", textDecoration: "none" }}>Search LinkedIn ↗</a>
+        {jobs.length === 0 && !liveJobsQuery.isLoading && (() => {
+          // Pass C1 (#6) — honest empty state. Edge function stamps
+          // card5_jobs.empty_state when job_matches is empty OR carries no real
+          // URLs. Falls back to the original copy when stamp is missing
+          // (legacy scans / fail-open).
+          const stamp = (cardData?.card5_jobs?.empty_state ?? null) as { reason?: string; suggestion?: string } | null;
+          const headline = stamp?.reason || "No live listings matched this exact brief yet";
+          const sub = stamp?.suggestion || "Open the direct board searches below and broaden the keyword by one adjacent title.";
+          return (
+            <div style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 16, padding: 18, marginBottom: 18 }}>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 800, color: "var(--mb-ink)", marginBottom: 8 }}>{headline}</div>
+              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.7, marginBottom: 12 }}>{sub}</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <a href={searchLinks.naukri} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-navy)", color: "white", padding: "10px 14px", textDecoration: "none" }}>Search Naukri ↗</a>
+                <a href={searchLinks.linkedin} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, borderRadius: 10, background: "var(--mb-paper)", color: "var(--mb-ink2)", border: "1px solid var(--mb-rule)", padding: "10px 14px", textDecoration: "none" }}>Search LinkedIn ↗</a>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         <SectionLabel label="Your pipeline" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10, marginBottom: 18 }}>
