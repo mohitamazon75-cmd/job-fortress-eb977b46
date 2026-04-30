@@ -345,6 +345,8 @@ serve(async (req) => {
     if (parsedBody.kind === "invalid") return parsedBody.response;
     const body = parsedBody.data;
     const scanId = body.scan_id.trim();
+    // Attribute every downstream cost_event to this scan for /admin/costs.
+    setCurrentScanId(scanId);
     const role = body.role.trim();
     const topAdv = (body.top_advantage || "").trim();
     const city = (body.city || "").trim();
