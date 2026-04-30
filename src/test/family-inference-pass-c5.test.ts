@@ -56,3 +56,36 @@ describe('Pass C5 — sales/BD family inference', () => {
     expect(inferFamilyFromRole('Product Manager')).toBe('product_design');
   });
 });
+
+/**
+ * Pass C5.1 (2026-04-30) — industry-string fallback.
+ *
+ * Calibrated against 4/4 most-recent prod scans (2026-04-30 18:00 IST audit):
+ * detectedRole=null, resolvedRoleHint=null, industry="Sales & Business Development".
+ * Without this, KG fell through to project_manager / supply_chain_manager and
+ * polluted Card 4 pivot eligibility filtering for every BD/Sales scan.
+ *
+ * The fix in scan-pipeline.ts is a 2nd-pass call to inferFamilyFromRole with
+ * the user's self-declared `industry` string when the role-string call returns
+ * null. These tests lock in that the existing FAMILY_TOKENS dictionary already
+ * matches the industry strings users actually pick in onboarding.
+ */
+describe('Pass C5.1 — industry-string fallback for null role', () => {
+  // Real onboarding industry options from src/components/OnboardingFlow.tsx.
+  // If you change the onboarding industry list, audit these mappings.
+  it('maps "Sales & Business Development" industry to sales', () => {
+    expect(inferFamilyFromRole('Sales & Business Development')).toBe('sales');
+  });
+
+  it('maps "Marketing" industry to marketing', () => {
+    expect(inferFamilyFromRole('Marketing')).toBe('marketing');
+  });
+
+  it('maps "Human Resources" industry to hr_people', () => {
+    expect(inferFamilyFromRole('Human Resources')).toBe('hr_people');
+  });
+
+  it('maps "Customer Success" industry to customer_success', () => {
+    expect(inferFamilyFromRole('Customer Success')).toBe('customer_success');
+  });
+});
