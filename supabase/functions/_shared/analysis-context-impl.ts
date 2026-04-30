@@ -68,6 +68,16 @@ export interface AnalysisContextInput {
   engine_version: string;
   /** Optional clock injection for deterministic tests. */
   now?: () => Date;
+  /**
+   * Fix B (Audit 2026-04-30) — deterministic seniority floor inputs.
+   * If supplied, the floor can ONLY raise the LLM-supplied seniority_tier,
+   * never lower it. Both fields are optional; when absent the LLM tier is used as-is.
+   *
+   * - experience_years_raw: scans.years_experience format ("0-2", "3-5", "6-10", "10+", or numeric).
+   * - current_title: best-known role string (detectedRole / resolvedRoleHint / agent1.current_role).
+   */
+  experience_years_raw?: string | number | null;
+  current_title?: string | null;
 }
 
 const VALID_HEALTH = new Set(['booming', 'stable', 'declining']);
