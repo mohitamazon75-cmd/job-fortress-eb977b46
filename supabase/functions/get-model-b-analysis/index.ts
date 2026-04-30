@@ -597,6 +597,15 @@ async function processAnalysis(
   // and ship it as a top-level field. The frontend prefers this if present.
   // Pure function, no LLM call, no latency.
   // ═══════════════════════════════════════════════════════════════════════════
+  // RC4 fix: stamp salary provenance onto card_data so the client can branch
+  // deterministically (e.g. Card4 hides "₹X opportunity cost" math when CTC is unknown).
+  // Single source of truth: did the user actually type a CTC during onboarding?
+  (cardData as Record<string, unknown>).salary_provenance = {
+    has_user_ctc: userMonthlyCTC !== null && userMonthlyCTC > 0,
+    monthly_inr: userMonthlyCTC ?? null,
+    annual_lakhs: userMonthlyCTC ? Math.round((userMonthlyCTC * 12) / 100000) : null,
+  };
+
   try {
     (cardData as Record<string, unknown>).monday_move = computeMondayMove(cardData);
   } catch (mErr) {
