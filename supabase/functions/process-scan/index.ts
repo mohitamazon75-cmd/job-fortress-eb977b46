@@ -40,6 +40,7 @@ import {
   sanitizeRoleTitle,
   applyFunctionalIndustryOverride,
 } from "../_shared/scan-helpers.ts";
+import { getCategoryCandidates } from "../_shared/kg-category-map.ts";
 import { computeProfileCompleteness, deterministicSeedFromString } from "../_shared/scan-utils.ts";
 import {
   buildProfileCacheKey,
@@ -444,12 +445,27 @@ Deno.serve(async (req) => {
     // ══════════════════════════════════════════════════════════
     let kgContext = "\n## JobBachao Knowledge Graph Data\n";
 
-    const { data: industryJobs } = await supabase.from("job_taxonomy").select("*").eq("category", resolvedIndustry);
-    let allIndustryJobs = industryJobs || [];
-    if (allIndustryJobs.length === 0) {
-      const { data: fallbackJobs } = await supabase.from("job_taxonomy").select("*").limit(20);
-      allIndustryJobs = fallbackJobs || [];
+    // Fix A (Audit 2026-04-30): use deterministic industry→KG-category mapper.
+    // Previously: .eq("category", resolvedIndustry) with random limit(20) fallback,
+    // which mis-mapped "Sales" → supply_chain_manager via token collision.
+    const kgCategoryCandidates = getCategoryCandidates(resolvedIndustry, resolvedRoleHint);
+    let allIndustryJobs: any[] = [];
+    let matchedKgCategory: string | null = null;
+    for (const cat of kgCategoryCandidates) {
+      const { data: rows } = await supabase.from("job_taxonomy").select("*").eq("category", cat);
+      if (rows && rows.length > 0) {
+        allIndustryJobs = rows;
+        matchedKgCategory = cat;
+        break;
+      }
     }
+    if (allIndustryJobs.length === 0) {
+      // Last-resort safety net (replaces the previous random limit(20) grab-bag).
+      const { data: fallbackJobs } = await supabase.from("job_taxonomy").select("*").eq("category", "Other");
+      allIndustryJobs = fallbackJobs || [];
+      matchedKgCategory = "Other";
+    }
+    console.log(`[Orchestrator] KG category resolution: industry="${resolvedIndustry}" → category="${matchedKgCategory}" (${allIndustryJobs.length} families) | candidates=[${kgCategoryCandidates.join(", ")}]`);
 
     let primaryJob: JobTaxonomyRow | null = matchRoleToJobFamily(resolvedRoleHint, allIndustryJobs);
     
