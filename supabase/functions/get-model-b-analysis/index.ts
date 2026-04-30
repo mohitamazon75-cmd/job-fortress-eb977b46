@@ -302,6 +302,9 @@ Deno.serve(async (req) => {
       typeof scan.estimated_monthly_salary_inr === "number" && scan.estimated_monthly_salary_inr > 0
         ? scan.estimated_monthly_salary_inr
         : null,
+      // Phase 1.B (audit 2026-04-30): pass deterministic AnalysisContext for Card 4
+      // pivot eligibility filter. May be null on legacy/in-flight scans → filter no-ops.
+      (scan as any).analysis_context ?? null,
     );
 
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
