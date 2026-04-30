@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildAnalysisContext,
+  computeSeniorityFloor,
   filterEligiblePivots,
   filterNovelSkillRecommendations,
 } from '@/lib/analysis-context';
