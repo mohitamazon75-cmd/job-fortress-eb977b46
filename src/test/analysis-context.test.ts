@@ -113,6 +113,61 @@ describe('filterEligiblePivots — kills P1 contradiction', () => {
     );
     expect(out).toHaveLength(2);
   });
+
+  // ── Pivot Coherence Pass — Bug 1 fix (2026-04-30) ─────────────────────
+  // Calibration: when user_is_exec=true, the same-family drop is INVERTED
+  // because exec careers ladder vertically inside one family (Sr Manager →
+  // Director → VP → Chief). For non-execs, same-family is still dropped.
+  // Declining-market filter applies to BOTH execs and non-execs — sinking
+  // markets are sinking regardless of seniority.
+  it('exec mode: keeps same-family pivots (vertical ladder is the realistic path)', () => {
+    const out = filterEligiblePivots(
+      [
+        { role: 'VP of Sales', job_family: 'sales', market_health: 'stable' },
+        { role: 'Chief Revenue Officer', job_family: 'sales', market_health: 'booming' },
+        { role: 'Director Marketing', job_family: 'marketing', market_health: 'stable' },
+      ],
+      { user_role_family: 'sales', user_is_exec: true },
+    );
+    expect(out.map((p) => p.role).sort()).toEqual(
+      ['Chief Revenue Officer', 'Director Marketing', 'VP of Sales'].sort(),
+    );
+  });
+
+  it('exec mode: still drops declining-market pivots (sinking is sinking)', () => {
+    const out = filterEligiblePivots(
+      [
+        { role: 'VP Print Sales', job_family: 'sales', market_health: 'declining' },
+        { role: 'VP SaaS Sales', job_family: 'sales', market_health: 'booming' },
+      ],
+      { user_role_family: 'sales', user_is_exec: true },
+    );
+    expect(out.map((p) => p.role)).toEqual(['VP SaaS Sales']);
+  });
+
+  it('non-exec (default): same-family drop still applies (no exec flag → old behaviour)', () => {
+    // Calibration: omitting user_is_exec must behave exactly like before the fix.
+    // This pins backwards-compatibility for legacy callers and non-exec scans.
+    const out = filterEligiblePivots(
+      [
+        { role: 'Senior Marketer', job_family: 'marketing', market_health: 'stable' },
+        { role: 'Product Manager', job_family: 'product_design', market_health: 'stable' },
+      ],
+      { user_role_family: 'marketing' },
+    );
+    expect(out.map((p) => p.role)).toEqual(['Product Manager']);
+  });
+
+  it('non-exec with explicit user_is_exec=false: same-family drop applies', () => {
+    const out = filterEligiblePivots(
+      [
+        { role: 'Senior Marketer', job_family: 'marketing', market_health: 'stable' },
+        { role: 'Product Manager', job_family: 'product_design', market_health: 'stable' },
+      ],
+      { user_role_family: 'marketing', user_is_exec: false },
+    );
+    expect(out.map((p) => p.role)).toEqual(['Product Manager']);
+  });
 });
 
 describe('filterNovelSkillRecommendations — kills P7 contradiction', () => {
