@@ -132,10 +132,14 @@ describe('GOLDEN SCAN SUITE — 5 personas × 5 invariants', () => {
     });
 
     // ─── C5 Cohort / category mismatch ───────────────────────────────────
-    it('C5 industry input maps to expected first KG category candidate', () => {
+    it('C5 industry input maps to the expected KG category candidate', () => {
       const candidates = getCategoryCandidates(fx.industry_input);
       expect(candidates.length).toBeGreaterThan(0);
-      expect(candidates[0]).toBe(fx.expected_kg_category_in_candidates);
+      // Contract: helper preserves input verbatim as candidate[0] (happy path),
+      // then appends mapped categories. We assert the MAPPED category is
+      // present — that's what saves us from the random limit(20) fallback
+      // when the literal input has no taxonomy row.
+      expect(candidates).toContain(fx.expected_kg_category_in_candidates);
     });
   });
 
