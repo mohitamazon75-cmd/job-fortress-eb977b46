@@ -139,9 +139,12 @@ describe("MondayMoveCard.pickMondayMove — Pass C3 canonical pivots field", () 
     expect(m.action).not.toContain("Junior Marketer");
   });
 
-  it("falls back to .adjacent_roles when .pivots is empty (post-filter wipe)", () => {
-    // The filter dropped every same-family pivot for a non-exec — empty array.
-    // Legacy alias still wins so we don't regress old fixtures.
+  it("treats empty .pivots as authoritative — does NOT resurrect from .adjacent_roles", () => {
+    // Calibrated against: filterEligiblePivots wiped every same-family pivot for
+    // a non-exec on declining family. The empty array IS the deterministic answer.
+    // Falling back to legacy aliases would resurrect dropped pivots and reintroduce
+    // the contradiction C3 exists to prevent. Correct behaviour = skip pivot branch
+    // and let the next priority (skill shield / diet / default) handle it.
     const cd = {
       card4_pivot: {
         pivots: [],
@@ -149,7 +152,8 @@ describe("MondayMoveCard.pickMondayMove — Pass C3 canonical pivots field", () 
       },
     };
     const m = pickMondayMove(cd);
-    expect(m.action).toContain("Product Manager");
+    expect(m.action).not.toContain("Product Manager");
+    expect(m.source).toBe("Default action");
   });
 
   it("falls back to .paths when neither .pivots nor .adjacent_roles populated", () => {
