@@ -10,6 +10,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { AI_URL, FLASH_MODEL } from "../_shared/ai-agent-caller.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { setCurrentScanId } from "../_shared/cost-logger.ts";
 import { tavilySearch } from "../_shared/tavily-search.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
 
@@ -45,7 +46,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { role, industry, skills, moatSkills, seniority, country, determinismIndex } = body;
+  const { role, industry, skills, moatSkills, seniority, country, determinismIndex, scanId } = body;
+  setCurrentScanId(scanId);
   if (!role || !industry) {
     return new Response(JSON.stringify({ error: "Missing role or industry" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
