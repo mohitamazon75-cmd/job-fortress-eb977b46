@@ -282,19 +282,29 @@ export function inferFamilyFromRole(role: string | null | undefined): string | n
  *  - declining market_health (cannot recommend a sinking role)
  * Kills audit-finding P1.
  *
+ * EXEC RELAXATION (Pivot Coherence Pass, 2026-04-30):
+ * For executives (SENIOR_LEADER tier, user_is_exec=true), the "same family"
+ * rule is INVERTED — an exec's most realistic pivots are vertical progressions
+ * within their own family (Sr Manager Sales → Director Sales → VP Sales →
+ * Chief Revenue Officer). Cross-family exec moves exist but are exotic.
+ * Filtering same-family for execs leaves them with junior cross-family roles
+ * and breaks the experience. We still drop declining-market pivots.
+ *
  * If pivot.job_family is missing, infers it from pivot.role/title via
  * inferFamilyFromRole. If inference returns null we PASS the pivot (fail-open) —
  * blocking on missing data is worse than letting one slip through.
  */
 export function filterEligiblePivots<T extends PivotCandidate>(
   pivots: ReadonlyArray<T>,
-  ctx: Pick<AnalysisContext, 'user_role_family'>,
+  ctx: Pick<AnalysisContext, 'user_role_family'> & Partial<Pick<AnalysisContext, 'user_is_exec'>>,
 ): T[] {
   const userFamily = (ctx.user_role_family || '').toLowerCase().trim();
+  const isExec = ctx.user_is_exec === true;
   return pivots.filter((p) => {
     const explicitFam = (p.job_family || '').toString().toLowerCase().trim();
     const inferredFam = explicitFam || inferFamilyFromRole(p.role || p.title || '') || '';
-    if (userFamily && inferredFam && inferredFam === userFamily) return false;
+    // Bug 1 fix: skip same-family drop for execs — vertical pivots are valid for them.
+    if (!isExec && userFamily && inferredFam && inferredFam === userFamily) return false;
     const health = (p.market_health || '').toString().toLowerCase().trim();
     if (health === 'declining') return false;
     return true;
