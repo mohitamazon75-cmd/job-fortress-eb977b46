@@ -78,7 +78,8 @@ Deno.serve(async (req) => {
         headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       });
     }
-
+    // Attribute downstream cost_event rows to this scan for /admin/costs.
+    setCurrentScanId(scan_id);
     const sb = createAdminClient();
 
     // Fetch the 2 most recent score_history records for this user
