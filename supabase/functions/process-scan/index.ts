@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
     // Previously select("*") fetched ~25 columns including final_json_report (50–200KB
     // from a previous scan on rescans) that was immediately discarded.
     const { data: scan, error: scanErr } = await supabase.from("scans")
-      .select("id, user_id, scan_status, access_token, linkedin_url, resume_file_path, industry, years_experience, metro_tier, country, enrichment_cache, final_json_report, data_retention_consent")
+      .select("id, user_id, scan_status, access_token, linkedin_url, resume_file_path, industry, years_experience, metro_tier, country, enrichment_cache, final_json_report, data_retention_consent, estimated_monthly_salary_inr")
       .eq("id", scanId).single();
     if (scanErr || !scan) {
       return new Response(JSON.stringify({ error: "Scan not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -932,7 +932,12 @@ Deno.serve(async (req) => {
       all_skills: agent1?.all_skills || [],
       geo_advantage: agent1?.geo_advantage || null,
       adaptability_signals: agent1?.adaptability_signals || 1,
-      estimated_monthly_salary_inr: agent1?.estimated_monthly_salary_inr || null,
+      // RC1 fix: user-provided CTC (persisted on scan row by create-scan) wins over the
+      // LLM estimate. Without this, agent1's guess overrides what the user actually typed,
+      // which is the root cause of every "₹X gap" hallucination on the Pivot/Verdict cards.
+      estimated_monthly_salary_inr: (typeof scan.estimated_monthly_salary_inr === 'number' && scan.estimated_monthly_salary_inr > 0)
+        ? scan.estimated_monthly_salary_inr
+        : (agent1?.estimated_monthly_salary_inr || null),
       seniority_tier: agent1?.seniority_tier || null,
       executive_impact: agent1?.executive_impact || null,
     };

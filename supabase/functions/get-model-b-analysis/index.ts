@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
 
     const { data: scan, error: scanError } = await supabase
       .from("scans")
-      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url, scan_status, determinism_index")
+      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url, scan_status, determinism_index, estimated_monthly_salary_inr")
       .eq("id", analysis_id)
       .maybeSingle();
 
@@ -296,6 +296,11 @@ Deno.serve(async (req) => {
       scan.role_detected || "", scan.industry || "",
       scan.years_experience || "",
       typeof scan.determinism_index === "number" ? scan.determinism_index : null,
+      // RC2: pipe user-provided CTC into the prompt so the LLM stops fabricating
+      // ₹ deltas. null means "no CTC entered" → prompt switches to band-only mode.
+      typeof scan.estimated_monthly_salary_inr === "number" && scan.estimated_monthly_salary_inr > 0
+        ? scan.estimated_monthly_salary_inr
+        : null,
     );
 
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
@@ -343,6 +348,10 @@ async function processAnalysis(
   detectedIndustry = "",
   yearsExperience: string | number = "",
   detScoreAnchor: number | null = null,
+  // RC2: user-provided monthly CTC (INR) — null when user skipped the optional CTC step.
+  // When present, prompt emits real ₹ deltas tagged [USER-PROVIDED]; when null, prompt
+  // emits role-tier bands only and Card4 will render a "Add CTC for personal delta" hint.
+  userMonthlyCTC: number | null = null,
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
@@ -431,7 +440,7 @@ async function processAnalysis(
   }
   const executiveBlock = buildExecutiveModeBlock(execDetect);
 
-  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry) + executiveBlock;
+  const userPrompt = buildUserPrompt(resumeText, userCity, liveJobsContext, detectedRole, detectedIndustry, userMonthlyCTC) + executiveBlock;
   let cardData: Record<string, unknown> | null = null;
   let geminiRaw: unknown = null;
   let modelUsed = PRIMARY_MODEL;
@@ -588,6 +597,15 @@ async function processAnalysis(
   // and ship it as a top-level field. The frontend prefers this if present.
   // Pure function, no LLM call, no latency.
   // ═══════════════════════════════════════════════════════════════════════════
+  // RC4 fix: stamp salary provenance onto card_data so the client can branch
+  // deterministically (e.g. Card4 hides "₹X opportunity cost" math when CTC is unknown).
+  // Single source of truth: did the user actually type a CTC during onboarding?
+  (cardData as Record<string, unknown>).salary_provenance = {
+    has_user_ctc: userMonthlyCTC !== null && userMonthlyCTC > 0,
+    monthly_inr: userMonthlyCTC ?? null,
+    annual_lakhs: userMonthlyCTC ? Math.round((userMonthlyCTC * 12) / 100000) : null,
+  };
+
   try {
     (cardData as Record<string, unknown>).monday_move = computeMondayMove(cardData);
   } catch (mErr) {
@@ -1143,15 +1161,27 @@ OUTPUT: Return ONLY a valid JSON object. No markdown fences. Start with {`;
 // ═══════════════════════════════════════════════════════════════
 // USER PROMPT — Full Schema with Psychology Fields
 // ═══════════════════════════════════════════════════════════════
-function buildUserPrompt(resumeText: string, userCity: string, liveJobsContext = "", detectedRole = "", detectedIndustry = ""): string {
+function buildUserPrompt(resumeText: string, userCity: string, liveJobsContext = "", detectedRole = "", detectedIndustry = "", userMonthlyCTC: number | null = null): string {
   const cityInstruction = userCity === "India"
     ? "Location unknown. Use 'India' as location. Do not default to any specific city. Show companies from multiple Indian metros."
     : `The user is based in ${userCity}. Prioritize companies and job matches in ${userCity} and nearby metros. Only use Bangalore/Mumbai if the user is actually located there.`;
 
   const roleCtx = detectedRole ? `\nDETECTED ROLE: ${detectedRole}${detectedIndustry ? ` | INDUSTRY: ${detectedIndustry}` : ""}\nCalibrate ALL salary bands, skill threats, and pivot paths to this specific role. Do NOT use Marketing/generic bands unless this IS a marketing role.` : "";
+
+  // ── CTC ANCHOR (RC2 + Salary Grounding Provenance, mem://features/salary-grounding-provenance) ──
+  // Two distinct modes — the LLM MUST follow the matching contract:
+  //   USER-PROVIDED → real ₹ deltas allowed, every figure tagged [USER-PROVIDED]
+  //   ESTIMATED     → bands/percentages only, every figure tagged [ESTIMATED]
+  // This block is what kills the "₹10L more per year" hallucination on the Pivot tab
+  // when the user never typed a CTC.
+  const annualLakhs = userMonthlyCTC ? Math.round((userMonthlyCTC * 12) / 100000) : null;
+  const ctcBlock = userMonthlyCTC && annualLakhs
+    ? `\n\nUSER-PROVIDED CURRENT CTC: ₹${annualLakhs}L per year (≈ ₹${userMonthlyCTC.toLocaleString('en-IN')}/month). [USER-PROVIDED]\nUse THIS exact figure as the anchor for every ₹ delta, opportunity-cost, and negotiation number. Tag every absolute ₹ figure that derives from it as [USER-PROVIDED]. Never substitute a role-tier average.`
+    : `\n\nUSER-PROVIDED CURRENT CTC: NOT SUPPLIED.\nYou do NOT know this user's actual salary. For card1_risk.cost_of_inaction and card4_pivot, you MUST use percentage-of-package language (e.g. "10-15% of package", "5-8% earning power"), NOT absolute ₹ figures. For card4_pivot, leave current_band as a wide role-tier band (e.g. "₹X-YL band — role tier"), and tag every salary figure with [ESTIMATED]. Do NOT emit a personal "₹X gap" or "₹X more per year" claim.`;
+
   const now = new Date();
   const monthYear = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-  return `Analyse this resume for the Indian job market in ${monthYear}. Apply the FULL psychological framework.${roleCtx}
+  return `Analyse this resume for the Indian job market in ${monthYear}. Apply the FULL psychological framework.${roleCtx}${ctcBlock}
 
 RESUME:
 ${resumeText}
