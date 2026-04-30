@@ -52,7 +52,7 @@ export interface EnrichmentResult {
   /**
    * Which extraction tier produced the role title. Surfaced for admin diagnostics
    * so we can monitor regex-rescue rate. Values: "headline" | "experience[0]"
-   * | "affinda" | "regex" | "artifact_cache" | "NONE" | null (LinkedIn-only path).
+   * | "affinda" | "regex" | "vision_ocr" | "artifact_cache" | "NONE" | null (LinkedIn-only path).
    */
   roleSource: string | null;
 }
