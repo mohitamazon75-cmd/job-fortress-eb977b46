@@ -1152,15 +1152,27 @@ OUTPUT: Return ONLY a valid JSON object. No markdown fences. Start with {`;
 // ═══════════════════════════════════════════════════════════════
 // USER PROMPT — Full Schema with Psychology Fields
 // ═══════════════════════════════════════════════════════════════
-function buildUserPrompt(resumeText: string, userCity: string, liveJobsContext = "", detectedRole = "", detectedIndustry = ""): string {
+function buildUserPrompt(resumeText: string, userCity: string, liveJobsContext = "", detectedRole = "", detectedIndustry = "", userMonthlyCTC: number | null = null): string {
   const cityInstruction = userCity === "India"
     ? "Location unknown. Use 'India' as location. Do not default to any specific city. Show companies from multiple Indian metros."
     : `The user is based in ${userCity}. Prioritize companies and job matches in ${userCity} and nearby metros. Only use Bangalore/Mumbai if the user is actually located there.`;
 
   const roleCtx = detectedRole ? `\nDETECTED ROLE: ${detectedRole}${detectedIndustry ? ` | INDUSTRY: ${detectedIndustry}` : ""}\nCalibrate ALL salary bands, skill threats, and pivot paths to this specific role. Do NOT use Marketing/generic bands unless this IS a marketing role.` : "";
+
+  // ── CTC ANCHOR (RC2 + Salary Grounding Provenance, mem://features/salary-grounding-provenance) ──
+  // Two distinct modes — the LLM MUST follow the matching contract:
+  //   USER-PROVIDED → real ₹ deltas allowed, every figure tagged [USER-PROVIDED]
+  //   ESTIMATED     → bands/percentages only, every figure tagged [ESTIMATED]
+  // This block is what kills the "₹10L more per year" hallucination on the Pivot tab
+  // when the user never typed a CTC.
+  const annualLakhs = userMonthlyCTC ? Math.round((userMonthlyCTC * 12) / 100000) : null;
+  const ctcBlock = userMonthlyCTC && annualLakhs
+    ? `\n\nUSER-PROVIDED CURRENT CTC: ₹${annualLakhs}L per year (≈ ₹${userMonthlyCTC.toLocaleString('en-IN')}/month). [USER-PROVIDED]\nUse THIS exact figure as the anchor for every ₹ delta, opportunity-cost, and negotiation number. Tag every absolute ₹ figure that derives from it as [USER-PROVIDED]. Never substitute a role-tier average.`
+    : `\n\nUSER-PROVIDED CURRENT CTC: NOT SUPPLIED.\nYou do NOT know this user's actual salary. For card1_risk.cost_of_inaction and card4_pivot, you MUST use percentage-of-package language (e.g. "10-15% of package", "5-8% earning power"), NOT absolute ₹ figures. For card4_pivot, leave current_band as a wide role-tier band (e.g. "₹X-YL band — role tier"), and tag every salary figure with [ESTIMATED]. Do NOT emit a personal "₹X gap" or "₹X more per year" claim.`;
+
   const now = new Date();
   const monthYear = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-  return `Analyse this resume for the Indian job market in ${monthYear}. Apply the FULL psychological framework.${roleCtx}
+  return `Analyse this resume for the Indian job market in ${monthYear}. Apply the FULL psychological framework.${roleCtx}${ctcBlock}
 
 RESUME:
 ${resumeText}
