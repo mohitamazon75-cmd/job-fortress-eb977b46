@@ -157,13 +157,16 @@ describe("detectAnomalies", () => {
   });
 
   it("sorts flagged anomalies DESC", () => {
+    // Sorted: [100,100,100,100,800,1500,3000] → median=100. Threshold=200.
+    // Flagged: 800, 1500, 3000 — sorted DESC = [3000, 1500, 800]
     const rows = [
       row({ scan_id: "a", cost_inr_paise: 100 }),
       row({ scan_id: "b", cost_inr_paise: 100 }),
       row({ scan_id: "c", cost_inr_paise: 100 }),
-      row({ scan_id: "d", cost_inr_paise: 500 }),
-      row({ scan_id: "e", cost_inr_paise: 1500 }),
-      row({ scan_id: "f", cost_inr_paise: 800 }),
+      row({ scan_id: "g", cost_inr_paise: 100 }),
+      row({ scan_id: "d", cost_inr_paise: 800 }),
+      row({ scan_id: "e", cost_inr_paise: 3000 }),
+      row({ scan_id: "f", cost_inr_paise: 1500 }),
     ];
     const flagged = detectAnomalies(rows);
     expect(flagged.map((f) => f.scan_id)).toEqual(["e", "f", "d"]);
