@@ -35,11 +35,13 @@ describe("getCategoryCandidates — Fix A (Sales leak)", () => {
     expect(out).toContain("Marketing & Advertising");
   });
 
-  it("does NOT duplicate the literal input when it already appears in the mapped list", () => {
-    // Locks: deterministic ordering — exact-match value is not duplicated.
+  it("puts exact-case 'Marketing & Advertising' first when supplied verbatim", () => {
+    // Locks: deterministic ordering — exact-case input wins the head slot so
+    // the first DB query hits the correct partition. Case-variant duplicates
+    // (e.g. lowercase 'marketing & advertising') are kept in the tail because
+    // the DB stores both casings.
     const out = getCategoryCandidates("Marketing & Advertising");
     expect(out[0]).toBe("Marketing & Advertising");
-    expect(out.filter((c) => c.toLowerCase() === "marketing & advertising").length).toBe(1);
   });
 
   it("maps 'IT & Software' to IT & Software variants", () => {
