@@ -5,7 +5,9 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createAdminClient } from "./supabase-client.ts";
-import { getCurrentScanId, logCostEvent, estimateLlmCostInrPaise } from "./cost-logger.ts";
+import { getCurrentScanId, logCostEvent } from "./cost-logger.ts";
+
+const USD_TO_INR_FALLBACK = 84;
 
 export interface TokenUsage {
   prompt_tokens: number;
