@@ -1097,6 +1097,69 @@ export function applyTrustGuardrails(
 
 
 // ═══════════════════════════════════════════════════════════════
+// MARKET_CONTEXT BLOCK — Pass C4 (2026-04-30)
+// ═══════════════════════════════════════════════════════════════
+// Pure helper. Renders the deterministic AnalysisContext into a system
+// message that grounds the LLM's narrative. Returns null when context is
+// missing (legacy scans) so call-site can skip the message entirely.
+//
+// Calibrated against: src/lib/analysis-context.ts AnalysisContext shape.
+// Fields used: user_role_family, user_role_market_health, user_seniority_tier,
+// user_is_exec, user_skill_kg_match_pct. Other fields intentionally excluded
+// to keep the block <500 tokens and focused on contradiction-prevention.
+export function buildMarketContextBlock(
+  ctx: Record<string, unknown> | null,
+): string | null {
+  if (!ctx || typeof ctx !== "object") return null;
+  const family = (ctx as any).user_role_family;
+  const health = (ctx as any).user_role_market_health;
+  const tier = (ctx as any).user_seniority_tier;
+  const isExec = (ctx as any).user_is_exec === true;
+  const kgMatch = (ctx as any).user_skill_kg_match_pct;
+
+  // Skip if we have no usable signal — avoid emitting an empty rule block.
+  if (!family && !health && !tier) return null;
+
+  const healthLine = health
+    ? (() => {
+        const h = String(health).toLowerCase();
+        if (h === "declining") {
+          return `MARKET HEALTH: declining. NEVER use the words "fortified", "safe", "protected", "secure", or "future-proof" in any headline, subline, or verdict. Frame as "under significant disruption pressure" or "exposed". Pivots in this same family MUST NOT be recommended as safe harbors.`;
+        }
+        if (h === "booming") {
+          return `MARKET HEALTH: booming. You may use confident framing, but never claim immunity. Pivots are about acceleration, not rescue.`;
+        }
+        return `MARKET HEALTH: stable. Use measured framing — neither alarm nor false safety.`;
+      })()
+    : null;
+
+  const familyLine = family
+    ? `USER ROLE FAMILY: ${family}. ${
+        isExec
+          ? "EXEC mode: same-family vertical pivots (Director/VP/CXO within this family) ARE valid recommendations. Do NOT push to junior cross-family roles."
+          : "Non-exec: same-family pivots are NOT pivots — recommend cross-family adjacent roles only."
+      }`
+    : null;
+
+  const tierLine = tier ? `SENIORITY: ${tier}.` : null;
+  const matchLine =
+    typeof kgMatch === "number"
+      ? `KG SKILL MATCH: ${kgMatch}% — calibrate confidence accordingly.`
+      : null;
+
+  const lines = [
+    "═══ MARKET_CONTEXT (deterministic, computed by engine — DO NOT contradict) ═══",
+    familyLine,
+    healthLine,
+    tierLine,
+    matchLine,
+    "═══ END MARKET_CONTEXT ═══",
+  ].filter((l): l is string => typeof l === "string" && l.length > 0);
+
+  return lines.join("\n");
+}
+
+// ═══════════════════════════════════════════════════════════════
 // SYSTEM PROMPT — Psychology-Driven Career Intelligence Engine
 // ═══════════════════════════════════════════════════════════════
 function buildSystemPrompt(): string {
