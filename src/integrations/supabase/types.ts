@@ -2037,6 +2037,7 @@ export type Database = {
       scans: {
         Row: {
           access_token: string | null
+          analysis_context: Json | null
           career_reality_check_data: Json | null
           country: string | null
           created_at: string
@@ -2066,6 +2067,7 @@ export type Database = {
         }
         Insert: {
           access_token?: string | null
+          analysis_context?: Json | null
           career_reality_check_data?: Json | null
           country?: string | null
           created_at?: string
@@ -2095,6 +2097,7 @@ export type Database = {
         }
         Update: {
           access_token?: string | null
+          analysis_context?: Json | null
           career_reality_check_data?: Json | null
           country?: string | null
           created_at?: string
