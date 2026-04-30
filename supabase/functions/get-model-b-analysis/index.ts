@@ -7,6 +7,13 @@ import { validateBody, z } from "../_shared/validate-input.ts";
 import { logCostEvent, estimateLlmCostInrPaise } from "../_shared/cost-logger.ts";
 import { stripRupeeFromCardData } from "../_shared/strip-fabricated-rupee-figures.ts";
 import { filterEligiblePivots, type AnalysisContext } from "../_shared/analysis-context.ts";
+import {
+  computeKgMatchBadge,
+  buildProvenanceBlock,
+  attachPivotCitationBasis,
+  deriveJobsEmptyState,
+  deriveDefensePlanEmptyState,
+} from "../_shared/provenance-stamping.ts";
 
 const ModelBSchema = z.object({
   analysis_id: z.string().uuid(),
