@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createAdminClient } from "./supabase-client.ts";
+import { getCurrentScanId, logCostEvent, estimateLlmCostInrPaise } from "./cost-logger.ts";
 
 export interface TokenUsage {
   prompt_tokens: number;
