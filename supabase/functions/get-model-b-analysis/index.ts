@@ -601,11 +601,26 @@ async function processAnalysis(
   // RC4 fix: stamp salary provenance onto card_data so the client can branch
   // deterministically (e.g. Card4 hides "₹X opportunity cost" math when CTC is unknown).
   // Single source of truth: did the user actually type a CTC during onboarding?
+  const hasUserCTC = userMonthlyCTC !== null && userMonthlyCTC > 0;
   (cardData as Record<string, unknown>).salary_provenance = {
-    has_user_ctc: userMonthlyCTC !== null && userMonthlyCTC > 0,
+    has_user_ctc: hasUserCTC,
     monthly_inr: userMonthlyCTC ?? null,
     annual_lakhs: userMonthlyCTC ? Math.round((userMonthlyCTC * 12) / 100000) : null,
   };
+
+  // Pass C2.2 (2026-04-30) — Belt-and-braces ₹ sanitizer.
+  // When the user did NOT provide CTC, any personalised ₹/lakh/L figure the LLM
+  // emitted (despite the [ESTIMATED]-only prompt branch) is by definition
+  // un-grounded. Walk the entire card_data tree and strip un-sourced ₹ sentences,
+  // preserving role-tier band labels (current_band/pivot_year1/director_band/etc).
+  // When the user DID provide CTC, leave figures intact — they're anchored.
+  if (!hasUserCTC) {
+    try {
+      stripRupeeFromCardData(cardData);
+    } catch (sErr) {
+      console.warn("[model-b] Rupee sanitizer failed (non-fatal):", sErr);
+    }
+  }
 
   try {
     (cardData as Record<string, unknown>).monday_move = computeMondayMove(cardData);
