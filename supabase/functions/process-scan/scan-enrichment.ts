@@ -270,6 +270,9 @@ async function parseResume(
           roleSource: "affinda",
         };
       }
+      const cached = await buildArtifactFallback();
+      if (cached.role) return cached;
+
       console.log(`[parseResume] Gemini failed — Affinda has no title either — no rescue available`);
       supabaseClient.from("edge_function_logs").insert({
         function_name: "process-scan:role-source",
@@ -285,7 +288,7 @@ async function parseResume(
       }).then(({ error }: { error: unknown }) => {
         if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
       });
-      return fallback;
+      return await buildArtifactFallback();
     };
 
     const { signal, cancel } = createTimeoutController(RESUME_PARSE_TIMEOUT_MS);
@@ -737,7 +740,7 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
   // Resume parsing (takes priority)
   if (hasResume && scan.resume_file_path) {
     console.log(`[Ingestion] Parsing resume: ${scan.resume_file_path}`);
-    const resumeResult = await parseResume(supabaseClient, scan.resume_file_path, activeModel);
+    const resumeResult = await parseResume(supabaseClient, scan.resume_file_path, activeModel, scan.user_id ?? null);
     rawProfileText = resumeResult.rawText;
     profileExtractionConfidence = resumeResult.confidence;
     linkedinName = resumeResult.name;
