@@ -676,7 +676,57 @@ async function processAnalysis(
     }
   }
 
-  // Pivot Coherence Pass — Bug 2 fix (2026-04-30):
+  // ── Pass C1 (Provenance, audit 2026-04-30): stamp the moat onto cardData.
+  // Four additive surfaces — never overwrites existing LLM output, fail-open
+  // if analysisContext is null/legacy. Tested by provenance-stamping-pass-c1.
+  if (analysisContext) {
+    try {
+      const ctx = analysisContext as unknown as AnalysisContext;
+      const cd = cardData as Record<string, any>;
+
+      // (#5) Engine/prompt/KG version trace — single source of truth for the
+      // ProvenanceFootnote rendered in the report footer.
+      cd._provenance = buildProvenanceBlock(ctx);
+
+      // (#4) KG match badge for Card 1. Total = card3 skill count if present,
+      // else execution_skills count from the ctx. LOW confidence still emits;
+      // the component decides whether to suppress.
+      const totalSkillCount = Array.isArray(cd?.card3_shield?.skills)
+        ? cd.card3_shield.skills.length
+        : Array.isArray((ctx as any).execution_skills)
+          ? (ctx as any).execution_skills.length
+          : 0;
+      const badge = computeKgMatchBadge(ctx, totalSkillCount);
+      if (badge) cd.kg_match = badge;
+
+      // (#7) Card 4 pivot citation inheritance — stamp every surviving pivot
+      // with its grounding basis. Runs AFTER filterEligiblePivots so dropped
+      // rows don't carry a misleading badge.
+      const c4 = cd?.card4_pivot;
+      if (c4 && Array.isArray(c4.pivots) && c4.pivots.length > 0) {
+        c4.pivots = c4.pivots.map((p: any) => attachPivotCitationBasis(p, ctx));
+      }
+
+      // (#6) Honest empty states — only ATTACH the marker. The component
+      // decides how to render. Never replaces real LLM output.
+      const c5 = cd?.card5_jobs;
+      if (c5) {
+        const cityHint = String(cd?.user?.city ?? cd?.user?.location ?? "").trim() || null;
+        const jobsEmpty = deriveJobsEmptyState(c5.job_matches, cityHint);
+        if (jobsEmpty) c5.empty_state = jobsEmpty;
+      }
+      const c3 = cd?.card3_shield;
+      if (c3) {
+        // skills_to_add is the canonical Defense Plan slot; some legacy
+        // shapes use `gaps` or `weekly_actions` — check the most common.
+        const gaps = c3.skills_to_add ?? c3.gaps ?? null;
+        const planEmpty = deriveDefensePlanEmptyState(gaps);
+        if (planEmpty) c3.empty_state = planEmpty;
+      }
+    } catch (provErr) {
+      console.warn("[model-b] Pass C1 provenance stamping failed (non-fatal):", provErr);
+    }
+  }
   // Strip "fortified"/"safe"/"protected" verdict words from card1.headline when
   // analysisContext.market_health === "declining". Without this, Card 1 can
   // print "Your role is Fortified" while Card 4 says "your market is sinking
