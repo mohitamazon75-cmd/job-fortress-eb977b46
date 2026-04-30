@@ -185,7 +185,19 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         ? `At your level, that's roughly ${lo}/year you don't get back.`
         : `At your level, that's roughly ${lo}–${hi}/year you don't get back.`;
     } else if (cost.monthly_loss_lpa) {
-      rupeeCostLine = `At your level, that's roughly ${cost.monthly_loss_lpa} of earning power slipping past you each year.`;
+      // Pivot Coherence Pass — Bug 4 fix (2026-04-30):
+      // The legacy free-form fallback string can carry an absolute ₹ figure
+      // (e.g. "₹3-5L") that we cannot anchor without a user CTC. Showing it
+      // as "earning power slipping past you" makes the user believe it's
+      // their personal number. Suppress when (a) we have no user-anchored
+      // monthly AND (b) the string contains a rupee/lakh figure. Percent-only
+      // strings ("5-8% earning power") still render — they're honest.
+      const lossStr = String(cost.monthly_loss_lpa);
+      const hasRupeeFigure = /(₹\s*\d|\d+\s*(?:L|lakh|lakhs|cr|crore)\b)/i.test(lossStr);
+      const hasAnchor = (monthlySalaryInr && monthlySalaryInr > 0) || (derivedMonthly && derivedMonthly > 0);
+      if (!hasRupeeFigure || hasAnchor) {
+        rupeeCostLine = `At your level, that's roughly ${lossStr} of earning power slipping past you each year.`;
+      }
     }
   }
 
