@@ -256,7 +256,10 @@ export interface PivotCandidate {
  */
 const FAMILY_TOKENS: Array<{ family: string; tokens: string[] }> = [
   { family: 'marketing', tokens: ['marketing', 'brand manager', 'seo', 'sem ', 'ppc', 'growth marketer', 'demand gen', 'martech', 'performance marketer'] },
-  { family: 'sales', tokens: ['sales', 'business development', 'account executive', 'account manager', 'sdr', 'bdr', 'revenue ops', 'revops'] },
+  // Pass C5 (2026-04-30): expanded sales/BD tokens. Previously a "Senior Manager – Business
+  // Development" title fell through to KG's primaryJob.job_family which over-weighted "manager"
+  // → project_manager, mis-filtering Card 4 pivots. Mirrored from src/lib/analysis-context.ts.
+  { family: 'sales', tokens: ['business development', 'sales manager', 'sales executive', 'sales lead', 'sales director', 'sales head', 'head of sales', 'vp sales', 'partnerships', 'account executive', 'account manager', 'key account', 'enterprise sales', 'inside sales', 'field sales', 'bdm', 'sdr', 'bdr', 'revenue ops', 'revops', 'sales'] },
   { family: 'engineering', tokens: ['software engineer', 'developer', 'devops', 'sre ', 'qa engineer', 'frontend', 'backend', 'full stack', 'fullstack', 'tech lead', 'principal engineer'] },
   { family: 'data_analytics', tokens: ['data scientist', 'data analyst', 'business analyst', 'data engineer', 'ml engineer', 'ai engineer', 'analytics manager'] },
   { family: 'finance_ops', tokens: ['finance', 'accountant', 'controller', 'auditor', 'fp&a', 'financial analyst', 'treasury'] },

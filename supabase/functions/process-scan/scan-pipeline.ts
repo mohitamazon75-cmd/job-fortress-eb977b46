@@ -333,8 +333,13 @@ Return null if unclear. No explanation, no markdown.`;
   try {
     const totalSkillCount = Array.isArray(profileInput.all_skills) ? profileInput.all_skills.length : 0;
     const matchedSkillCount = typeof det.matched_skill_count === "number" ? det.matched_skill_count : 0;
-    // Family is inferred from the resolved role string when primaryJob (KG row) is absent.
-    const roleFamily = primaryJob?.job_family || inferFamilyFromRole(detectedRole || resolvedRoleHint || "");
+    // Pass C5 (2026-04-30): role-string inference takes PRECEDENCE over primaryJob.job_family.
+    // KG matching over-weights generic tokens like "manager" (e.g. "Senior Manager – Business
+    // Development" → project_manager), polluting Card 4 pivot filtering. The deterministic
+    // FAMILY_TOKENS dictionary is title-aware and beats noisy KG inference. Falls back to KG
+    // only when the title yields no match (rare unusual titles).
+    const roleString = detectedRole || resolvedRoleHint || "";
+    const roleFamily = inferFamilyFromRole(roleString) || primaryJob?.job_family || null;
     const userMonthlyCTC = (scan as any)?.estimated_monthly_salary_inr ?? null;
     const hasUserCTC = typeof userMonthlyCTC === "number" && userMonthlyCTC > 0;
     analysisContext = buildAnalysisContext({
