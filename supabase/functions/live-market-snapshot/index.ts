@@ -249,11 +249,30 @@ export function skillPresent(skillNorm: string, haystackNorm: string): boolean {
 
 // ─── Aggregation ─────────────────────────────────────────────────────
 
+// aggregateTopTags — counts each (company, tag) pair AT MOST ONCE.
+//
+// Why per-company cap: Naukri scrapes regularly include 10–20 duplicate
+// requisitions from a single recruiter (verified 2026-04-30: Benovymed
+// Healthcare posted 20/50 "AVP Marketing" jobs in the
+// digital-marketing-manager-jobs-in-india corpus, monopolising tags with
+// "healthcare / consumer behavior / market research" — none of which the
+// user's actual peers in Digital Marketing care about).
+//
+// The fix: a tag from the same company contributes 1 vote, not N. Legitimate
+// market signal (10 different companies asking for "SEO") still surfaces;
+// recruiter spam from 1 company gets dampened to 1 vote.
+//
+// Per-job dedupe (seenInJob) is preserved as a second guard.
 export function aggregateTopTags(jobs: ApifyJob[]): Array<{ tag: string; count: number; pct: number }> {
   const total = jobs.length || 1;
   const freq = new Map<string, number>();
-  for (const job of jobs) {
+  // (companyKey + ":" + tag) → already counted? Empty company falls back to
+  // a per-job key so unknown-company jobs each count individually (safe).
+  const seenCompanyTag = new Set<string>();
+  for (let i = 0; i < jobs.length; i++) {
+    const job = jobs[i];
     if (!job.tagsAndSkills) continue;
+    const companyKey = (job.companyName || "").trim().toLowerCase() || `__job_${i}__`;
     const seenInJob = new Set<string>();
     for (const raw of job.tagsAndSkills.split(",")) {
       const tag = raw.trim().toLowerCase();
@@ -262,6 +281,9 @@ export function aggregateTopTags(jobs: ApifyJob[]): Array<{ tag: string; count: 
       if (TAG_STOPWORDS.has(tag)) continue;    // stopword filter
       if (seenInJob.has(tag)) continue;        // dedupe within a job
       seenInJob.add(tag);
+      const ckey = `${companyKey}::${tag}`;
+      if (seenCompanyTag.has(ckey)) continue;  // dedupe across same company's listings
+      seenCompanyTag.add(ckey);
       freq.set(tag, (freq.get(tag) || 0) + 1);
     }
   }
