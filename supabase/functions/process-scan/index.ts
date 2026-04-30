@@ -1204,7 +1204,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { finalReport, det, detectedSubSector, seniorityTier, displayName, displayCompany, agentMeta } = pipelineResult;
+    const { finalReport, det, detectedSubSector, seniorityTier, displayName, displayCompany, agentMeta, analysisContext } = pipelineResult;
 
 
     // ══════════════════════════════════════════════════════════
@@ -1291,6 +1291,19 @@ Deno.serve(async (req) => {
     finalReport._diagnostics = scanDiagnostics;
 
     await updateScan(supabase, scanId, finalReport, linkedinName, linkedinCompany);
+
+    // Phase 1.B (audit 2026-04-30): persist deterministic AnalysisContext alongside the report.
+    // Single-source-of-truth read by get-model-b-analysis (Card 4 pivot eligibility) + future cards.
+    // Separate UPDATE so a column write failure does not corrupt the main report write.
+    try {
+      await supabase
+        .from("scans")
+        .update({ analysis_context: analysisContext })
+        .eq("id", scanId);
+    } catch (acErr) {
+      // Non-fatal — context is rebuildable on read; report is the canonical artifact.
+      console.warn("[process-scan] failed to persist analysis_context (non-fatal):", acErr);
+    }
 
     // Invalidate any stale model_b_results card_data for this scan.
     // This is critical when the user uploaded a NEW resume — the old card_data

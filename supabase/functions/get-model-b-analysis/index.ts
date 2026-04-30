@@ -6,6 +6,7 @@ import { requireAuth } from "../_shared/require-auth.ts";
 import { validateBody, z } from "../_shared/validate-input.ts";
 import { logCostEvent, estimateLlmCostInrPaise } from "../_shared/cost-logger.ts";
 import { stripRupeeFromCardData } from "../_shared/strip-fabricated-rupee-figures.ts";
+import { filterEligiblePivots, type AnalysisContext } from "../_shared/analysis-context.ts";
 
 const ModelBSchema = z.object({
   analysis_id: z.string().uuid(),
@@ -47,7 +48,7 @@ Deno.serve(async (req) => {
 
     const { data: scan, error: scanError } = await supabase
       .from("scans")
-      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url, scan_status, determinism_index, estimated_monthly_salary_inr")
+      .select("id, user_id, final_json_report, role_detected, industry, years_experience, linkedin_url, scan_status, determinism_index, estimated_monthly_salary_inr, analysis_context")
       .eq("id", analysis_id)
       .maybeSingle();
 
@@ -302,6 +303,9 @@ Deno.serve(async (req) => {
       typeof scan.estimated_monthly_salary_inr === "number" && scan.estimated_monthly_salary_inr > 0
         ? scan.estimated_monthly_salary_inr
         : null,
+      // Phase 1.B (audit 2026-04-30): pass deterministic AnalysisContext for Card 4
+      // pivot eligibility filter. May be null on legacy/in-flight scans → filter no-ops.
+      (scan as any).analysis_context ?? null,
     );
 
     if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
@@ -353,6 +357,9 @@ async function processAnalysis(
   // When present, prompt emits real ₹ deltas tagged [USER-PROVIDED]; when null, prompt
   // emits role-tier bands only and Card4 will render a "Add CTC for personal delta" hint.
   userMonthlyCTC: number | null = null,
+  // Phase 1.B (audit 2026-04-30): deterministic per-scan context built by process-scan.
+  // Read by Card 4 pivot eligibility filter. Null on legacy scans → filter no-ops (fail-open).
+  analysisContext: Record<string, unknown> | null = null,
 ): Promise<any> {
   const startTime = Date.now();
   const systemPrompt = buildSystemPrompt();
@@ -619,6 +626,33 @@ async function processAnalysis(
       stripRupeeFromCardData(cardData);
     } catch (sErr) {
       console.warn("[model-b] Rupee sanitizer failed (non-fatal):", sErr);
+    }
+  }
+
+  // Phase 1.B (audit 2026-04-30): Card 4 pivot eligibility filter.
+  // Kills audit-finding P1 — Card 4 must not recommend a pivot in the user's own
+  // family or a pivot whose own market_health is "declining". Pure deterministic
+  // filter against the AnalysisContext built by process-scan. Fail-open if context
+  // is missing (legacy scans, in-flight migrations) — partial moat > no moat.
+  if (analysisContext && (analysisContext as any).user_role_family) {
+    try {
+      const c4 = (cardData as any)?.card4_pivot;
+      if (c4 && Array.isArray(c4.pivots) && c4.pivots.length > 0) {
+        const before = c4.pivots.length;
+        c4.pivots = filterEligiblePivots(
+          c4.pivots,
+          analysisContext as unknown as AnalysisContext,
+        );
+        const after = c4.pivots.length;
+        if (after !== before) {
+          console.log(
+            `[model-b] Card4 pivot eligibility filter: dropped ${before - after}/${before} ineligible pivots ` +
+              `(family=${(analysisContext as any).user_role_family})`,
+          );
+        }
+      }
+    } catch (eErr) {
+      console.warn("[model-b] Pivot eligibility filter failed (non-fatal):", eErr);
     }
   }
 
