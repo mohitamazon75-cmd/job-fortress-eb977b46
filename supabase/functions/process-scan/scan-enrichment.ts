@@ -19,6 +19,7 @@ import {
 } from "../_shared/scan-utils.ts";
 import { inferFromLinkedinUrl, parseExperienceYears } from "../_shared/scan-helpers.ts";
 import { parseResumeWithAffinda } from "../_shared/affinda-parser.ts";
+import { extractResumeTextViaVisionOcr, extractRoleFromOcrText } from "../_shared/resume-ocr-fallback.ts";
 import { recordResumeArtifact, recordLinkedinSnapshot } from "../_shared/artifact-recorder.ts";
 
 // ── Types ──
@@ -51,7 +52,7 @@ export interface EnrichmentResult {
   /**
    * Which extraction tier produced the role title. Surfaced for admin diagnostics
    * so we can monitor regex-rescue rate. Values: "headline" | "experience[0]"
-   * | "affinda" | "regex" | "artifact_cache" | "NONE" | null (LinkedIn-only path).
+   * | "affinda" | "regex" | "vision_ocr" | "artifact_cache" | "NONE" | null (LinkedIn-only path).
    */
   roleSource: string | null;
 }
@@ -272,10 +273,46 @@ async function parseResume(
           roleSource: "affinda",
         };
       }
+      // OCR FALLBACK: Affinda has no title — try Gemini Vision OCR on the raw PDF.
+      // This is the safety net for first-time scans when both primary parsers fail.
+      // Only attempted once per scan; failure → continue to artifact_cache.
+      const ocr = await extractResumeTextViaVisionOcr(resumeBase64, LOVABLE_API_KEY);
+      if (ocr) {
+        const ocrRole = extractRoleFromOcrText(ocr.text);
+        if (ocrRole) {
+          console.log(`[parseResume] Vision OCR rescue: role="${ocrRole}" textLen=${ocr.charCount}`);
+          supabaseClient.from("edge_function_logs").insert({
+            function_name: "process-scan:role-source",
+            status: "success",
+            request_meta: { role_source: "vision_ocr" },
+          }).then(({ error }: { error: unknown }) => {
+            if (error) console.warn("[parseResume] role-source log insert failed:", error);
+          });
+          supabaseClient.from("edge_function_logs").insert({
+            function_name: "process-scan:profile-confidence",
+            status: "success",
+            request_meta: { confidence: "low", role_source: "vision_ocr" },
+          }).then(({ error }: { error: unknown }) => {
+            if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
+          });
+          return {
+            rawText: ocr.text,
+            name: null,
+            company: null,
+            industry: null,
+            role: ocrRole,
+            confidence: "low",
+            extractedYears: null,
+            roleSource: "vision_ocr",
+          };
+        }
+        console.log(`[parseResume] Vision OCR returned text but no role pattern matched`);
+      }
+
       const cached = await buildArtifactFallback();
       if (cached.role) return cached;
 
-      console.log(`[parseResume] Gemini failed — Affinda has no title either — no rescue available`);
+      console.log(`[parseResume] Gemini failed — Affinda + Vision OCR + artifact cache all empty — no rescue available`);
       supabaseClient.from("edge_function_logs").insert({
         function_name: "process-scan:role-source",
         status: "error",

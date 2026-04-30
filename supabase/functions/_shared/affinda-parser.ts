@@ -26,6 +26,53 @@
 const AFFINDA_API_BASE = "https://api.affinda.com/v2";
 const AFFINDA_TIMEOUT_MS = 10_000;
 
+// ── Retry + circuit breaker config ────────────────────────────────
+// Why: same resume failed once after passing 3x prior — root cause is
+// transient external API jitter (timeout / 5xx / rate-limit). Under
+// volume spikes this becomes routine. Retry covers single jitter; the
+// circuit breaker prevents hammering Affinda when it's actually down.
+const AFFINDA_RETRY_ATTEMPTS = 2;          // total attempts = 1 + 2 = 3
+const AFFINDA_RETRY_BACKOFF_MS = [500, 1500];
+const AFFINDA_BREAKER_THRESHOLD = 5;        // consecutive failures
+const AFFINDA_BREAKER_COOLDOWN_MS = 5 * 60 * 1000;  // 5 minutes
+
+// In-memory breaker state (per-isolate; Deno edge isolates are short-lived
+// so this is best-effort — main job is to prevent N concurrent requests
+// from each retrying 3x against a dead provider in the same isolate).
+const breakerState = {
+  consecutiveFailures: 0,
+  openUntilMs: 0,
+};
+
+function isBreakerOpen(): boolean {
+  return Date.now() < breakerState.openUntilMs;
+}
+
+function recordSuccess(): void {
+  breakerState.consecutiveFailures = 0;
+  breakerState.openUntilMs = 0;
+}
+
+function recordFailure(): void {
+  breakerState.consecutiveFailures += 1;
+  if (breakerState.consecutiveFailures >= AFFINDA_BREAKER_THRESHOLD) {
+    breakerState.openUntilMs = Date.now() + AFFINDA_BREAKER_COOLDOWN_MS;
+    console.warn(
+      `[Affinda] Circuit breaker OPEN — ${breakerState.consecutiveFailures} consecutive failures, cooling down for ${AFFINDA_BREAKER_COOLDOWN_MS / 1000}s`,
+    );
+  }
+}
+
+// Retryable = transient: timeout, network error, 5xx, 429.
+// Non-retryable = 4xx (auth/quota/bad request) — fast-fail.
+function isRetryable(status: number | null, errName?: string): boolean {
+  if (errName === "AbortError") return true;
+  if (status === null) return true; // network error
+  if (status === 429) return true;
+  if (status >= 500 && status < 600) return true;
+  return false;
+}
+
 // Known tier-1 India colleges for education signal
 const TIER1_INDIA_COLLEGES = [
   "iit", "iim", "nit", "bits pilani", "iisc", "xlri", "iift", "srcc",
@@ -151,83 +198,129 @@ export async function parseResumeWithAffinda(
     return null;
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), AFFINDA_TIMEOUT_MS);
-
-  try {
-    // Affinda accepts base64 via JSON body or multipart — use JSON for simplicity
-    const resp = await fetch(`${AFFINDA_API_BASE}/documents`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        file: resumeBase64,
-        fileName: `resume.${mimeType === "application/pdf" ? "pdf" : "docx"}`,
-        wait: true,       // synchronous parse (max ~5s for most resumes)
-        collection: null, // use default extractor
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-
-    if (!resp.ok) {
-      const errText = await resp.text().catch(() => "");
-      console.warn(`[Affinda] API error ${resp.status}: ${errText.slice(0, 200)}`);
-      return null;
-    }
-
-    const data = await resp.json();
-    const parsed = data?.data ?? data; // Affinda wraps in .data
-
-    if (!parsed) {
-      console.warn("[Affinda] Empty response");
-      return null;
-    }
-
-    // Compute years from work history dates
-    const workHistory = parsed.workExperience ?? parsed.work_experience ?? [];
-    const totalMonths = computeTotalMonths(workHistory);
-    const accurateYears = totalMonths > 0 ? Math.round((totalMonths / 12) * 10) / 10 : null;
-
-    // Extract most-recent job title (workExperience is typically reverse-chronological).
-    // Defensive: handle missing entry, non-string title, snake_case variant.
-    const wh0 = workHistory[0];
-    const currentJobTitle: string | null =
-      (typeof wh0?.jobTitle === "string" && wh0.jobTitle.trim() ? wh0.jobTitle.trim() : null)
-      ?? (typeof wh0?.job_title === "string" && wh0.job_title.trim() ? wh0.job_title.trim() : null)
-      ?? null;
-
-    // Guard against clearly bad values
-    const clampedYears = accurateYears && accurateYears > 0 && accurateYears < 60
-      ? accurateYears
-      : null;
-
-    const certifications = extractCertifications(parsed);
-    const educationTier = detectEducationTier(parsed.education ?? []);
-
-    console.debug(
-      `[Affinda] Parsed: years=${clampedYears ?? "unknown"}, ` +
-      `certs=${certifications.length}, edu=${educationTier ?? "unknown"}, ` +
-      `workEntries=${workHistory.length}`
-    );
-
-    return {
-      accurate_years_experience: clampedYears,
-      certifications,
-      education_tier: educationTier,
-      raw_work_months: totalMonths || null,
-      current_job_title: currentJobTitle,
-    };
-  } catch (err: any) {
-    clearTimeout(timer);
-    if (err?.name === "AbortError") {
-      console.warn("[Affinda] Parse timed out — continuing with LLM parser");
-    } else {
-      console.warn("[Affinda] Parse error:", err?.message ?? err);
-    }
+  // Circuit breaker: if Affinda is down, skip immediately and let LLM/OCR carry the load.
+  if (isBreakerOpen()) {
+    const remainingSec = Math.ceil((breakerState.openUntilMs - Date.now()) / 1000);
+    console.warn(`[Affinda] Circuit breaker OPEN — skipping (cooldown: ${remainingSec}s remaining)`);
     return null;
   }
+
+  const totalAttempts = 1 + AFFINDA_RETRY_ATTEMPTS;
+  let lastErrName: string | undefined;
+  let lastStatus: number | null = null;
+
+  for (let attempt = 0; attempt < totalAttempts; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), AFFINDA_TIMEOUT_MS);
+
+    try {
+      const resp = await fetch(`${AFFINDA_API_BASE}/documents`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          file: resumeBase64,
+          fileName: `resume.${mimeType === "application/pdf" ? "pdf" : "docx"}`,
+          wait: true,
+          collection: null,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => "");
+        lastStatus = resp.status;
+        console.warn(`[Affinda] API error ${resp.status} (attempt ${attempt + 1}/${totalAttempts}): ${errText.slice(0, 200)}`);
+        if (!isRetryable(resp.status)) {
+          recordFailure();
+          return null;
+        }
+        if (attempt < totalAttempts - 1) {
+          await new Promise(r => setTimeout(r, AFFINDA_RETRY_BACKOFF_MS[attempt] ?? 1500));
+          continue;
+        }
+        recordFailure();
+        return null;
+      }
+
+      const data = await resp.json();
+      const parsed = data?.data ?? data;
+
+      if (!parsed) {
+        console.warn(`[Affinda] Empty response (attempt ${attempt + 1}/${totalAttempts})`);
+        if (attempt < totalAttempts - 1) {
+          await new Promise(r => setTimeout(r, AFFINDA_RETRY_BACKOFF_MS[attempt] ?? 1500));
+          continue;
+        }
+        recordFailure();
+        return null;
+      }
+
+      const workHistory = parsed.workExperience ?? parsed.work_experience ?? [];
+      const totalMonths = computeTotalMonths(workHistory);
+      const accurateYears = totalMonths > 0 ? Math.round((totalMonths / 12) * 10) / 10 : null;
+
+      const wh0 = workHistory[0];
+      const currentJobTitle: string | null =
+        (typeof wh0?.jobTitle === "string" && wh0.jobTitle.trim() ? wh0.jobTitle.trim() : null)
+        ?? (typeof wh0?.job_title === "string" && wh0.job_title.trim() ? wh0.job_title.trim() : null)
+        ?? null;
+
+      const clampedYears = accurateYears && accurateYears > 0 && accurateYears < 60
+        ? accurateYears
+        : null;
+
+      const certifications = extractCertifications(parsed);
+      const educationTier = detectEducationTier(parsed.education ?? []);
+
+      console.debug(
+        `[Affinda] Parsed (attempt ${attempt + 1}): years=${clampedYears ?? "unknown"}, ` +
+        `certs=${certifications.length}, edu=${educationTier ?? "unknown"}, ` +
+        `workEntries=${workHistory.length}`
+      );
+
+      recordSuccess();
+      return {
+        accurate_years_experience: clampedYears,
+        certifications,
+        education_tier: educationTier,
+        raw_work_months: totalMonths || null,
+        current_job_title: currentJobTitle,
+      };
+    } catch (err: any) {
+      clearTimeout(timer);
+      lastErrName = err?.name;
+      const isTransient = isRetryable(null, err?.name);
+      const label = err?.name === "AbortError" ? "timed out" : `error: ${err?.message ?? err}`;
+      console.warn(`[Affinda] Parse ${label} (attempt ${attempt + 1}/${totalAttempts})`);
+      if (!isTransient || attempt >= totalAttempts - 1) {
+        recordFailure();
+        return null;
+      }
+      await new Promise(r => setTimeout(r, AFFINDA_RETRY_BACKOFF_MS[attempt] ?? 1500));
+    }
+  }
+
+  // Should be unreachable, but keep for type safety.
+  recordFailure();
+  void lastErrName; void lastStatus;
+  return null;
 }
+
+// ── Test-only exports for breaker state ───────────────────────────
+// Allows vitest to assert breaker behavior without exposing the
+// state object to production callers.
+export const __test__ = {
+  resetBreaker: () => {
+    breakerState.consecutiveFailures = 0;
+    breakerState.openUntilMs = 0;
+  },
+  getBreakerState: () => ({ ...breakerState }),
+  isBreakerOpen,
+  recordFailure,
+  recordSuccess,
+};
