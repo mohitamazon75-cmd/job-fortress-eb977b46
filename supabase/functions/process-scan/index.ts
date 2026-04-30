@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
     // Previously select("*") fetched ~25 columns including final_json_report (50–200KB
     // from a previous scan on rescans) that was immediately discarded.
     const { data: scan, error: scanErr } = await supabase.from("scans")
-      .select("id, user_id, scan_status, access_token, linkedin_url, resume_file_path, industry, years_experience, metro_tier, country, enrichment_cache, final_json_report, data_retention_consent")
+      .select("id, user_id, scan_status, access_token, linkedin_url, resume_file_path, industry, years_experience, metro_tier, country, enrichment_cache, final_json_report, data_retention_consent, estimated_monthly_salary_inr")
       .eq("id", scanId).single();
     if (scanErr || !scan) {
       return new Response(JSON.stringify({ error: "Scan not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
