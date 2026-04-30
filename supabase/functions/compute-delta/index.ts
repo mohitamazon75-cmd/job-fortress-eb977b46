@@ -193,5 +193,7 @@ Deno.serve(async (req) => {
       status: 500,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
+  } finally {
+    clearCurrentScanId();
   }
 });
