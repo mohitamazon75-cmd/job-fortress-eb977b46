@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { CardShell, CardHead, CardBody, SectionLabel, CardNav, Badge, variantColor } from "./SharedUI";
+import { sortPivotsByMatch } from "@/lib/pivot-sort";
 import { toast } from "sonner";
 import { useCohortIntel } from "@/hooks/useCohortIntel";
 
@@ -180,7 +181,14 @@ ${senderLine}`;
 
 export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { cardData: any; onBack: () => void; onNext: () => void; scanId?: string }) {
   const d = cardData?.card4_pivot ?? {};
-  const pivots: any[] = Array.isArray(d.pivots) ? d.pivots : [];
+  // C1 fix (2026-04-30): rank pivots by match_pct DESC so the strongest fit is
+  // always #1. Previously the LLM-emitted order was rendered as-is, which meant
+  // a 94% match could appear at position #3 below an 88% match. See sortPivotsByMatch
+  // for stable tie-break behavior.
+  const pivots: any[] = useMemo(
+    () => sortPivotsByMatch(Array.isArray(d.pivots) ? d.pivots : []),
+    [d.pivots],
+  );
   const [selectedPivot, setSelectedPivot] = useState(0);
   const isExec = useMemo(() => isExecutiveCardData(cardData), [cardData]);
   const safeSelected = pivots.length > 0 ? Math.min(selectedPivot, pivots.length - 1) : 0;
