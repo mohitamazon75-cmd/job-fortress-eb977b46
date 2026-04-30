@@ -2,6 +2,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearch, extractCitations, buildSearchContext } from "../_shared/tavily-search.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { setCurrentScanId } from "../_shared/cost-logger.ts";
 
 // Simple in-memory cache per company (5 min TTL)
 const cache = new Map<string, { data: any; ts: number }>();
@@ -19,6 +20,7 @@ Deno.serve(async (req) => {
     if (jwtBlocked) return jwtBlocked;
 
     const { company, industry, role, skills, scanId } = await req.json();
+    setCurrentScanId(scanId);
 
     if (!company) {
       return new Response(
