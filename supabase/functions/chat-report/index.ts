@@ -6,6 +6,7 @@ import { logEdgeError, trackUsage } from "../_shared/edge-logger.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
 import { tavilySearch, buildSearchContext, extractCitations } from "../_shared/tavily-search.ts";
 import { createTokenTrackingTransform } from "../_shared/token-tracker.ts";
+import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
 
 // ── Rate limits ──────────────────────────────────────────────
 const CHAT_RATE_LIMIT = 30;
