@@ -56,6 +56,17 @@ export interface EnrichmentResult {
   roleSource: string | null;
 }
 
+type ResumeParseResult = {
+  rawText: string;
+  name: string | null;
+  company: string | null;
+  industry: string | null;
+  role: string | null;
+  confidence: string;
+  extractedYears: number | null;
+  roleSource: string | null;
+};
+
 // ── Constants ──
 
 const RESUME_PARSE_TIMEOUT_MS = 25_000;
@@ -122,19 +133,10 @@ async function parseResume(
   resumeFilePath: string,
   activeModel: string,
   userId: string | null = null,
-): Promise<{
-  rawText: string;
-  name: string | null;
-  company: string | null;
-  industry: string | null;
-  role: string | null;
-  confidence: string;
-  extractedYears: number | null;
-  roleSource: string | null;
-}> {
-  const fallback = { rawText: "", name: null, company: null, industry: null, role: null, confidence: "low", extractedYears: null, roleSource: "NONE" as string | null };
+): Promise<ResumeParseResult> {
+  const fallback: ResumeParseResult = { rawText: "", name: null, company: null, industry: null, role: null, confidence: "low", extractedYears: null, roleSource: "NONE" };
 
-  const buildArtifactFallback = async (): Promise<typeof fallback> => {
+  const buildArtifactFallback = async (): Promise<ResumeParseResult> => {
     if (!userId) return fallback;
     const fileName = resumeFilePath.split("/").pop()?.trim();
     if (!fileName) return fallback;
