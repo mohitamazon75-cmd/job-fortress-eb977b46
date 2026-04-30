@@ -326,6 +326,51 @@ Return null if unclear. No explanation, no markdown.`;
     scanDiagnostics.qualityEditor = "skipped";
   }
 
+  // ── Step 12: Build deterministic AnalysisContext (Phase 1.B audit 2026-04-30) ──
+  // Single source of truth read by every downstream card to prevent contradictions.
+  // Pure computation — no IO, fail-open with safe defaults if any input is missing.
+  let analysisContext: AnalysisContext;
+  try {
+    const totalSkillCount = Array.isArray(profileInput.all_skills) ? profileInput.all_skills.length : 0;
+    const matchedSkillCount = typeof det.matched_skill_count === "number" ? det.matched_skill_count : 0;
+    // Family is inferred from the resolved role string when primaryJob (KG row) is absent.
+    const roleFamily = primaryJob?.job_family || inferFamilyFromRole(detectedRole || resolvedRoleHint || "");
+    const userMonthlyCTC = (scan as any)?.estimated_monthly_salary_inr ?? null;
+    const hasUserCTC = typeof userMonthlyCTC === "number" && userMonthlyCTC > 0;
+    analysisContext = buildAnalysisContext({
+      role_family: roleFamily,
+      market_health: marketSignal?.market_health ?? null,
+      matched_skill_count: matchedSkillCount,
+      total_skill_count: totalSkillCount,
+      existing_skills: profileInput.all_skills || [],
+      seniority_tier: seniorityTier as string,
+      metro_tier: ((scan as any)?.metro_tier as string) || null,
+      has_user_ctc: hasUserCTC,
+      kg_version: "kg-v1",
+      prompt_version: "p-v1",
+      engine_version: "e-v1",
+    });
+    console.log(
+      `[Pipeline] AnalysisContext: family=${analysisContext.user_role_family}, health=${analysisContext.user_role_market_health}, kg_match=${analysisContext.user_skill_kg_match_pct}%, exec=${analysisContext.user_is_exec}`,
+    );
+  } catch (e) {
+    // Fail-open: never block a scan because context build threw.
+    console.warn("[Pipeline] AnalysisContext build failed, using minimal fallback (non-fatal):", e);
+    analysisContext = buildAnalysisContext({
+      role_family: null,
+      market_health: null,
+      matched_skill_count: 0,
+      total_skill_count: 0,
+      existing_skills: [],
+      seniority_tier: "MID",
+      metro_tier: null,
+      has_user_ctc: false,
+      kg_version: "kg-v1",
+      prompt_version: "p-v1",
+      engine_version: "e-v1",
+    });
+  }
+
   return {
     success: true,
     finalReport,
@@ -335,5 +380,6 @@ Return null if unclear. No explanation, no markdown.`;
     displayName: displayName as string,
     displayCompany: displayCompany as string,
     agentMeta,
+    analysisContext,
   };
 }
