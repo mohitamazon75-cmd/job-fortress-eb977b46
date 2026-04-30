@@ -8,6 +8,12 @@ import {
   formatRupees,
   type CostEventRow,
 } from '@/lib/cost-events';
+import {
+  burnRate,
+  detectAnomalies,
+  perScanTotals,
+  percentile,
+} from '@/lib/cost-analytics';
 
 /**
  * AdminCostDashboard — operator-only view of per-scan COGS.
@@ -71,6 +77,26 @@ export default function AdminCostDashboard() {
   const avgPaise = avgCostPerScan(rows);
   const totalPaise = rows.reduce((s, r) => s + r.cost_inr_paise, 0);
   const uniqueScans = new Set(rows.filter((r) => r.scan_id).map((r) => r.scan_id)).size;
+  const burn = burnRate(rows, windowDays);
+  const scanTotals = perScanTotals(rows);
+  const scanCosts = scanTotals.map((s) => s.total_paise);
+  const p50 = percentile(scanCosts, 0.5);
+  const p95 = percentile(scanCosts, 0.95);
+  const p99 = percentile(scanCosts, 0.99);
+  const anomalies = detectAnomalies(rows);
+
+  // Burn-rate threshold: at ₹399/mo Pro pricing, monthly COGS per Pro user
+  // should stay under ~₹150 (≈37% gross margin floor). We show a soft warn
+  // if the projected per-scan cost exceeds ₹50 (deeply unprofitable at single
+  // scan/payment). Numbers are display-only; no automated kill-switch.
+  const SOFT_WARN_PER_SCAN_PAISE = 5000; // ₹50
+  const HARD_WARN_PER_SCAN_PAISE = 10000; // ₹100
+  const burnSeverity =
+    burn.cost_per_scan_paise >= HARD_WARN_PER_SCAN_PAISE
+      ? 'critical'
+      : burn.cost_per_scan_paise >= SOFT_WARN_PER_SCAN_PAISE
+      ? 'warning'
+      : 'ok';
 
   return (
     <div className="min-h-screen bg-background">
@@ -115,6 +141,89 @@ export default function AdminCostDashboard() {
             sub={rows.length === 0 ? 'instrument edge fns to log' : `last ${windowDays}d`}
           />
         </div>
+
+        {/* Burn rate + projection */}
+        {rows.length > 0 && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-foreground">Burn rate</h2>
+              <BurnBadge severity={burnSeverity} />
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <Stat
+                label="Daily spend"
+                value={formatRupees(burn.daily_paise)}
+                sub={`avg over ${windowDays}d`}
+              />
+              <Stat
+                label="Monthly projection"
+                value={formatRupees(burn.monthly_paise)}
+                sub="if burn holds"
+              />
+              <Stat
+                label="Cost / scan"
+                value={formatRupees(burn.cost_per_scan_paise)}
+                sub={`${burn.scan_count} scans logged`}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Soft warn at ₹50/scan, critical at ₹100/scan. At ₹399/mo Pro pricing,
+              monthly COGS per Pro user should ideally stay under ₹150 (≈37% gross margin floor).
+              Display-only — no automated kill-switch.
+            </p>
+          </section>
+        )}
+
+        {/* Per-scan distribution */}
+        {scanTotals.length >= 3 && (
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-foreground">Per-scan distribution</h2>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <Stat label="p50 (median)" value={formatRupees(p50)} sub="typical scan" />
+              <Stat label="p95" value={formatRupees(p95)} sub="tail scan" />
+              <Stat label="p99" value={formatRupees(p99)} sub="worst-case" />
+            </div>
+          </section>
+        )}
+
+        {/* Anomalies */}
+        {anomalies.length > 0 && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-foreground">Anomalies</h2>
+              <span className="text-xs text-muted-foreground">
+                Scans &gt;2× median, sorted by cost
+              </span>
+            </div>
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-amber-500/10">
+                  <tr className="text-left text-amber-700 dark:text-amber-300">
+                    <th className="px-4 py-2 font-medium">Scan ID</th>
+                    <th className="px-4 py-2 font-medium text-right">Cost</th>
+                    <th className="px-4 py-2 font-medium text-right">× median</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {anomalies.slice(0, 20).map((a) => (
+                    <tr key={a.scan_id} className="border-t border-amber-500/20">
+                      <td className="px-4 py-2 font-mono text-xs text-foreground">{a.scan_id}</td>
+                      <td className="px-4 py-2 text-right font-semibold">
+                        {formatRupees(a.total_paise)}
+                      </td>
+                      <td className="px-4 py-2 text-right text-amber-700 dark:text-amber-300">
+                        {a.multiple_of_median}×
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Investigate top anomalies — usually retries, runaway loops, or missing idempotency.
+            </p>
+          </section>
+        )}
 
         {error && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
@@ -203,5 +312,19 @@ function Stat({ label, value, sub }: { label: string; value: string; sub: string
       <p className="text-3xl font-black text-foreground mt-2">{value}</p>
       <p className="text-xs text-muted-foreground mt-1">{sub}</p>
     </div>
+  );
+}
+
+function BurnBadge({ severity }: { severity: 'ok' | 'warning' | 'critical' }) {
+  const styles = {
+    ok: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+    warning: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
+    critical: 'bg-destructive/15 text-destructive border-destructive/30',
+  } as const;
+  const label = severity === 'ok' ? 'Healthy' : severity === 'warning' ? 'Watch' : 'Critical';
+  return (
+    <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${styles[severity]}`}>
+      {label}
+    </span>
   );
 }
