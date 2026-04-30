@@ -4,6 +4,7 @@ import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearch, buildSearchContext } from "../_shared/tavily-search.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { setCurrentScanId } from "../_shared/cost-logger.ts";
 
 // In-memory cache (per isolate) — 5 min TTL
 const cache = new Map<string, { data: any; ts: number }>();
@@ -24,6 +25,7 @@ Deno.serve(async (req) => {
     const role = url.searchParams.get("role");
     const city = url.searchParams.get("city") || "all";
     const industry = url.searchParams.get("industry");
+    setCurrentScanId(url.searchParams.get("scanId"));
 
     // Cache check
     const cacheKey = `panic_${industry}_${role}_${city}`.toLowerCase();
