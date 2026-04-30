@@ -51,10 +51,21 @@ export interface EnrichmentResult {
   /**
    * Which extraction tier produced the role title. Surfaced for admin diagnostics
    * so we can monitor regex-rescue rate. Values: "headline" | "experience[0]"
-   * | "affinda" | "regex" | "NONE" | null (LinkedIn-only path).
+   * | "affinda" | "regex" | "artifact_cache" | "NONE" | null (LinkedIn-only path).
    */
   roleSource: string | null;
 }
+
+type ResumeParseResult = {
+  rawText: string;
+  name: string | null;
+  company: string | null;
+  industry: string | null;
+  role: string | null;
+  confidence: string;
+  extractedYears: number | null;
+  roleSource: string | null;
+};
 
 // ── Constants ──
 
@@ -121,20 +132,73 @@ async function parseResume(
   supabaseClient: any,
   resumeFilePath: string,
   activeModel: string,
-): Promise<{
-  rawText: string;
-  name: string | null;
-  company: string | null;
-  industry: string | null;
-  role: string | null;
-  confidence: string;
-  extractedYears: number | null;
-  roleSource: string | null;
-}> {
-  const fallback = { rawText: "", name: null, company: null, industry: null, role: null, confidence: "low", extractedYears: null, roleSource: "NONE" as string | null };
+  userId: string | null = null,
+): Promise<ResumeParseResult> {
+  const fallback: ResumeParseResult = { rawText: "", name: null, company: null, industry: null, role: null, confidence: "low", extractedYears: null, roleSource: "NONE" };
+
+  const buildArtifactFallback = async (): Promise<ResumeParseResult> => {
+    if (!userId) return fallback;
+    const fileName = resumeFilePath.split("/").pop()?.trim();
+    if (!fileName) return fallback;
+
+    const { data, error } = await supabaseClient
+      .from("resume_artifacts")
+      .select("resume_file_path, raw_text, parsed_json, extracted_years_experience")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error || !Array.isArray(data)) return fallback;
+
+    for (const row of data) {
+      const previousPath = String(row.resume_file_path ?? "");
+      if (!previousPath.endsWith(`/${fileName}`) && previousPath !== fileName) continue;
+
+      const rawText = typeof row.raw_text === "string" ? row.raw_text.trim() : "";
+      const parsedJson = row.parsed_json && typeof row.parsed_json === "object" ? row.parsed_json : {};
+      const role = typeof parsedJson.role === "string" ? parsedJson.role.trim() : "";
+      if (rawText.length < 100 || !role || role === "Unknown" || role === "Professional") continue;
+
+      console.log(`[parseResume] Live parsers failed — reused prior successful resume artifact for ${fileName}`);
+      supabaseClient.from("edge_function_logs").insert({
+        function_name: "process-scan:role-source",
+        status: "success",
+        request_meta: { role_source: "artifact_cache" },
+      }).then(({ error }: { error: unknown }) => {
+        if (error) console.warn("[parseResume] role-source log insert failed:", error);
+      });
+      supabaseClient.from("edge_function_logs").insert({
+        function_name: "process-scan:profile-confidence",
+        status: "success",
+        request_meta: { confidence: "medium", role_source: "artifact_cache" },
+      }).then(({ error }: { error: unknown }) => {
+        if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
+      });
+
+      const extractedYearsRaw = row.extracted_years_experience;
+      const extractedYears = typeof extractedYearsRaw === "number"
+        ? extractedYearsRaw
+        : typeof extractedYearsRaw === "string"
+        ? Number(extractedYearsRaw)
+        : null;
+
+      return {
+        rawText,
+        name: typeof parsedJson.name === "string" ? parsedJson.name : null,
+        company: typeof parsedJson.company === "string" ? parsedJson.company : null,
+        industry: typeof parsedJson.industry === "string" ? parsedJson.industry : null,
+        role,
+        confidence: "medium",
+        extractedYears: Number.isFinite(extractedYears) ? extractedYears : null,
+        roleSource: "artifact_cache",
+      };
+    }
+
+    return fallback;
+  };
 
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) return fallback;
+  if (!LOVABLE_API_KEY) return await buildArtifactFallback();
 
   try {
     const { data: fileData, error: dlError } = await supabaseClient.storage.from("resumes").download(resumeFilePath);
@@ -208,6 +272,9 @@ async function parseResume(
           roleSource: "affinda",
         };
       }
+      const cached = await buildArtifactFallback();
+      if (cached.role) return cached;
+
       console.log(`[parseResume] Gemini failed — Affinda has no title either — no rescue available`);
       supabaseClient.from("edge_function_logs").insert({
         function_name: "process-scan:role-source",
@@ -223,7 +290,7 @@ async function parseResume(
       }).then(({ error }: { error: unknown }) => {
         if (error) console.warn("[parseResume] profile-confidence log insert failed:", error);
       });
-      return fallback;
+      return await buildArtifactFallback();
     };
 
     const { signal, cancel } = createTimeoutController(RESUME_PARSE_TIMEOUT_MS);
@@ -675,7 +742,7 @@ export async function gatherEnrichmentData(input: EnrichmentInput): Promise<Enri
   // Resume parsing (takes priority)
   if (hasResume && scan.resume_file_path) {
     console.log(`[Ingestion] Parsing resume: ${scan.resume_file_path}`);
-    const resumeResult = await parseResume(supabaseClient, scan.resume_file_path, activeModel);
+    const resumeResult = await parseResume(supabaseClient, scan.resume_file_path, activeModel, scan.user_id ?? null);
     rawProfileText = resumeResult.rawText;
     profileExtractionConfidence = resumeResult.confidence;
     linkedinName = resumeResult.name;
