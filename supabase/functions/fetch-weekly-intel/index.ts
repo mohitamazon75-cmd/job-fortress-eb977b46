@@ -155,5 +155,7 @@ Return ONLY valid JSON (no markdown, no code fences):
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+  } finally {
+    clearCurrentScanId();
   }
 });
