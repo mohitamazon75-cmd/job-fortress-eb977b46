@@ -50,11 +50,12 @@ function relativeDays(iso: string): string {
 export interface SectorPulseProps {
   role: string;
   city: string;
+  scanId?: string;
   /** Test/preview override — bypasses the network call. */
   pulseOverride?: PulseResponse;
 }
 
-export default function SectorPulse({ role, city, pulseOverride }: SectorPulseProps) {
+export default function SectorPulse({ role, city, scanId, pulseOverride }: SectorPulseProps) {
   const sector = useMemo(() => {
     const family = applySectorTieBreaker(detectFamily(role.toLowerCase()), "");
     return getSectorDescriptor(family);
@@ -68,7 +69,7 @@ export default function SectorPulse({ role, city, pulseOverride }: SectorPulsePr
     staleTime: 1000 * 60 * 60 * 24, // 24h, matches edge fn cache
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("sector-pulse", {
-        body: { sector: sector!.query_fragment, sector_label: sector!.label, city },
+        body: { sector: sector!.query_fragment, sector_label: sector!.label, city, scanId },
       });
       if (error) throw error;
       return data as PulseResponse;

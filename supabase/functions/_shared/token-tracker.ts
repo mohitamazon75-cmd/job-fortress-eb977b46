@@ -5,6 +5,9 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createAdminClient } from "./supabase-client.ts";
+import { getCurrentScanId, logCostEvent } from "./cost-logger.ts";
+
+const USD_TO_INR_FALLBACK = 84;
 
 export interface TokenUsage {
   prompt_tokens: number;
@@ -77,6 +80,25 @@ export function logTokenUsage(
       .then(({ error }: { error: { message: string } | null }) => {
         if (error) console.warn("[TokenTrack] DB insert error:", error.message);
       });
+
+    // ─── Pass 1.5: also emit a cost_events row for per-scan attribution ───
+    // Uses request-scoped scanId from cost-logger (set by edge fn entry points).
+    // No-ops if scanId not set (e.g., cron jobs) — still tracked in token_usage_log.
+    try {
+      const scanId = getCurrentScanId();
+      const inrPaise = Math.round(estimatedCost * USD_TO_INR_FALLBACK * 100);
+      if (inrPaise > 0) {
+        logCostEvent({
+          function_name: functionName,
+          scan_id: scanId,
+          provider: "lovable_ai",
+          cost_inr_paise: inrPaise,
+          note: agentName ? `${model}:${agentName}` : model,
+        });
+      }
+    } catch {
+      // never propagate
+    }
   } catch {
     // Never throw — this is telemetry
   }

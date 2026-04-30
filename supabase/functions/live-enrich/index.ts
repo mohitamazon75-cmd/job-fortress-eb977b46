@@ -4,6 +4,7 @@ import { createAdminClient } from "../_shared/supabase-client.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearch, buildSearchContext, extractCitations } from "../_shared/tavily-search.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { setCurrentScanId } from "../_shared/cost-logger.ts";
 import { getLocale } from "../_shared/locale-config.ts";
 
 // DB-backed cache TTL (6 hours — balances freshness vs cost)
@@ -54,8 +55,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { role, industry, skills, moatSkills, pivotRoles, yearsExperience, company, country } = await req.json();
+    const { role, industry, skills, moatSkills, pivotRoles, yearsExperience, company, country, scanId } = await req.json();
     const locale = getLocale(country);
+    setCurrentScanId(scanId);
 
 
     if (!role) {

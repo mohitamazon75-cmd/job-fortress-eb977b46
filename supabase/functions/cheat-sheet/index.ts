@@ -6,6 +6,7 @@ import { tavilySearch, buildSearchContext, extractCitations } from "../_shared/t
 import { getLocale } from "../_shared/locale-config.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { setCurrentScanId } from "../_shared/cost-logger.ts";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
@@ -20,7 +21,8 @@ Deno.serve(async (req) => {
     const { userId: _jwtUserId, blocked: jwtBlocked } = await validateJwtClaims(req, corsHeaders);
     if (jwtBlocked) return jwtBlocked;
 
-    const { role, industry, skills, moatSkills, company, country, yearsExperience } = await req.json();
+    const { role, industry, skills, moatSkills, company, country, yearsExperience, scanId } = await req.json();
+    setCurrentScanId(scanId);
     if (!role) {
       return new Response(JSON.stringify({ error: "role is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },

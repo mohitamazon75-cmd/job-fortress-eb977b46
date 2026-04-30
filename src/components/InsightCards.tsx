@@ -450,6 +450,7 @@ export default function InsightCards({ report, onComplete, scanId, biggest_conce
                       industry={report.industry || 'Technology'}
                       skills={[...(report.all_skills || []), ...(report.moat_skills || [])].filter(Boolean)}
                       country={report.country}
+                      scanId={scanId}
                     />
                   </React.Suspense>
                 </ErrorBoundary>

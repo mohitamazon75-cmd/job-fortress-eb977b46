@@ -3,6 +3,7 @@ import { getCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearch, extractCitations, buildSearchContext } from "../_shared/tavily-search.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { setCurrentScanId } from "../_shared/cost-logger.ts";
 import { getLocale } from "../_shared/locale-config.ts";
 
 const PERPLEXITY_URL = "https://api.perplexity.ai/chat/completions";
@@ -56,6 +57,7 @@ Deno.serve(async (req) => {
     }
 
     const { role, industry, skills, location, seniority, experience, mode, scanId, country } = await req.json();
+    setCurrentScanId(scanId);
     const locale = getLocale(country);
 
     if (!role) {

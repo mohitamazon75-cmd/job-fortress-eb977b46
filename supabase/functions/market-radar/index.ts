@@ -3,6 +3,7 @@ import { guardRequest, validateJwtClaims } from "../_shared/abuse-guard.ts";
 import { tavilySearchParallel, buildSearchContext, extractCitations } from "../_shared/tavily-search.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
 import { logTokenUsage } from "../_shared/token-tracker.ts";
+import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const LOVABLE_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -25,8 +26,9 @@ Deno.serve(async (req) => {
     const { userId: _jwtUserId, blocked: jwtBlocked } = await validateJwtClaims(req, cors);
     if (jwtBlocked) return jwtBlocked;
 
-    const { role, industry, skills, country } = await req.json();
+    const { role, industry, skills, country, scanId } = await req.json();
     if (!role) return json({ error: "role is required" }, 400);
+    setCurrentScanId(scanId);
 
     // Spending guard
     const spendCheck = await checkDailySpending("market-radar");

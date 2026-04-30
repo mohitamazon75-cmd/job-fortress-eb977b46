@@ -57,9 +57,11 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
     const metroTier = userObj.metro_tier || "tier1";
     const country = userObj.country || "IN";
     const exp = userObj.years_experience || "";
+    // Pass 1.5: forward scanId so live-market's logTokenUsage attributes cost.
+    const scanId = (cardData as any)?.scan_id || (cardData as any)?.scanId || userObj.scan_id;
 
     supabase.functions.invoke("live-market", {
-      body: { role, industry, metroTier, experienceBand: exp, country },
+      body: { role, industry, metroTier, experienceBand: exp, country, scanId },
     }).then(({ data }) => {
       if (data?.salary_range_lpa || data?.key_findings?.length || data?.sector_news?.length) {
         setLiveMarket(data);
@@ -74,6 +76,7 @@ export default function Card2MarketRadar({ cardData, onBack, onNext }: Props) {
           di,
           role: (cardData as any)?.user?.current_title || "",
           industry: (cardData as any)?.user?.industry || "",
+          scanId,
         },
       }).then(({ data }) => {
         if (data) setCohortOutcome(data);

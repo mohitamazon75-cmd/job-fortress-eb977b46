@@ -62,6 +62,7 @@ interface Props {
   industry: string;
   skills: string[];
   country?: string;
+  scanId?: string;
   onComplete?: () => void;
 }
 
@@ -112,7 +113,7 @@ function getTimeAgo(isoString?: string): string {
   return days === 1 ? '1 day ago' : `${days} days ago`;
 }
 
-const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, onComplete }) => {
+const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, scanId, onComplete }) => {
   const [data, setData] = useState<RadarData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -161,14 +162,34 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
     }
 
     try {
-      const { data: result, error: fnErr } = await supabase.functions.invoke('market-radar', {
-        body: { role, industry, skills: skills.slice(0, 8), country },
-      });
+      // Pass 2.5: prefer 7-day weekly cache via refresh-peripheral-tabs.
+      // Falls back to direct invoke if cache call fails or returns no payload.
+      let result: RadarData | null = null;
+      if (scanId) {
+        try {
+          const { data: cacheRes, error: cacheErr } = await supabase.functions.invoke('refresh-peripheral-tabs', {
+            body: {
+              scanId,
+              surfaces: ['market_radar'],
+              extra: { skills: skills.slice(0, 8) },
+            },
+          });
+          if (!cacheErr && cacheRes?.surfaces?.market_radar?.payload) {
+            result = cacheRes.surfaces.market_radar.payload as RadarData;
+          }
+        } catch { /* fall through to direct */ }
+      }
 
-      if (fnErr) throw new Error(fnErr.message);
-      if (result?.error) throw new Error(result.error);
+      if (!result) {
+        const { data: direct, error: fnErr } = await supabase.functions.invoke('market-radar', {
+          body: { role, industry, skills: skills.slice(0, 8), country, scanId },
+        });
+        if (fnErr) throw new Error(fnErr.message);
+        if (direct?.error) throw new Error(direct.error);
+        result = direct as RadarData;
+      }
 
-      setData(result as RadarData);
+      setData(result);
       try {
         sessionStorage.setItem(cacheKey, JSON.stringify({ data: result, ts: Date.now() }));
       } catch {}
@@ -178,7 +199,7 @@ const MarketRadarWidget: React.FC<Props> = ({ role, industry, skills, country, o
     } finally {
       setLoading(false);
     }
-  }, [role, industry, skills, country, cacheKey]);
+  }, [role, industry, skills, country, scanId, cacheKey]);
 
   useEffect(() => {
     if (role) fetchRadar();
