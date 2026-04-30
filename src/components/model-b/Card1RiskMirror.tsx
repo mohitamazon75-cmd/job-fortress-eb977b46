@@ -302,7 +302,20 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
   return (
     <CardShell>
       <CardHead
-        badges={<><Badge label="01 · Awareness" variant="amber" /><Badge label="Resume analysed" variant="navy" /></>}
+        badges={
+          <>
+            <Badge label="01 · Awareness" variant="amber" />
+            <Badge label="Resume analysed" variant="navy" />
+            {/* Pass C1 (#4) — KG match badge. Suppressed when matches are too
+                weak to claim moat (LOW = <40%). Empty-fallback over fake-confident. */}
+            {cardData?.kg_match && cardData.kg_match.confidence_label !== 'LOW' && (
+              <Badge
+                label={`KG match · ${cardData.kg_match.matched_count}/${cardData.kg_match.total_count} skills (${cardData.kg_match.pct}%)`}
+                variant={cardData.kg_match.confidence_label === 'HIGH' ? 'green' : 'navy'}
+              />
+            )}
+          </>
+        }
         title={displayHeadline}
         sub={displaySubline}
       />
