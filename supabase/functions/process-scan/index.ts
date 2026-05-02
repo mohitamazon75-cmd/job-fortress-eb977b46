@@ -230,7 +230,11 @@ Deno.serve(async (req) => {
         .gte("created_at", windowStart);
 
       if (!markerErr && (existingScanMarker ?? 0) === 0) {
-        await supabase.from("scans").update({ scan_status: "error" }).eq("id", scanId);
+        await supabase.from("scans").update({
+          scan_status: "error",
+          error_message: `Rate limit exceeded for ip=${ip}`,
+          failure_stage: "rate_limit",
+        }).eq("id", scanId);
       }
 
       return new Response(
@@ -245,7 +249,11 @@ Deno.serve(async (req) => {
     // Heal stale rows so they don't permanently consume concurrency slots
     await supabase
       .from("scans")
-      .update({ scan_status: "error" })
+      .update({
+        scan_status: "error",
+        error_message: "Stale processing scan healed by concurrency guard (>45min old)",
+        failure_stage: "stale_heal",
+      })
       .eq("scan_status", "processing")
       .lt("created_at", activeWindowStart)
       .neq("id", scanId);
@@ -1237,7 +1245,11 @@ Deno.serve(async (req) => {
     if (!pipelineResult.success) {
       const errMsg = pipelineResult.error;
       console.error(`[Orchestrator] Pipeline failed at step '${pipelineResult.step}':`, errMsg);
-      await supabase.from("scans").update({ scan_status: "failed" }).eq("id", scanId);
+      await supabase.from("scans").update({
+        scan_status: "failed",
+        error_message: errMsg.slice(0, 2000),
+        failure_stage: `pipeline:${pipelineResult.step}`,
+      }).eq("id", scanId);
       return new Response(JSON.stringify({ error: "Scoring pipeline failed", step: pipelineResult.step }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -1454,7 +1466,11 @@ Deno.serve(async (req) => {
         const supabase = createAdminClient();
         const { data: current } = await supabase.from("scans").select("scan_status").eq("id", scanId).single();
         if (current?.scan_status !== "complete") {
-          await supabase.from("scans").update({ scan_status: "failed" }).eq("id", scanId);
+          await supabase.from("scans").update({
+            scan_status: "failed",
+            error_message: errMsg.slice(0, 2000),
+            failure_stage: "fatal_orchestrator",
+          }).eq("id", scanId);
         }
       }
     } catch (recoveryErr) {
