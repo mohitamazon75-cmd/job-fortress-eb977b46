@@ -4,6 +4,7 @@ import { createAdminClient } from "../_shared/supabase-client.ts";
 import { tavilySearch, tavilySearchParallel, extractCitations, buildSearchContext } from "../_shared/tavily-search.ts";
 import { firecrawlSearch } from "../_shared/firecrawl.ts";
 import { getLocale } from "../_shared/locale-config.ts";
+import { cleanRoleForSearch } from "../_shared/clean-role-for-search.ts";
 
 // DB-backed cache TTL (30 min)
 const CACHE_TTL_MS = 30 * 60 * 1000;
@@ -79,10 +80,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const primaryRole = (role || industry || "software engineer")
-      .split(/[,&\/]+/)[0]
-      .replace(/\b(professional|specialist|expert|consultant)\b/gi, '')
-      .trim() || "software engineer";
+    const primaryRole = cleanRoleForSearch(role || industry, "software engineer");
     
     const tier = metroTier === "tier2" ? locale.tier2SearchString : locale.tier1SearchString;
 
