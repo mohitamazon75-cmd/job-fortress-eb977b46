@@ -15,6 +15,7 @@ import Card7HumanAdvantage from "@/components/model-b/Card7HumanAdvantage";
 import Card0Verdict from "@/components/model-b/Card0Verdict";
 import MondayMoveCard from "@/components/model-b/MondayMoveCard";
 import RevealShareStrip from "@/components/RevealShareStrip";
+import AiBusyRetry from "@/components/AiBusyRetry";
 import PromptModal from "@/components/model-b/PromptModal";
 import { useScanFunnelTracking } from "@/hooks/use-scan-funnel-tracking";
 import {
