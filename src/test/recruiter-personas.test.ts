@@ -107,13 +107,15 @@ describe('hashBullet + buildCacheKey', () => {
     expect(hashBullet('Shipped feature A')).not.toBe(hashBullet('Shipped feature B'));
   });
 
-  it('buildCacheKey embeds the v1 prefix and the scan id', () => {
-    // Calibrated against: `recruiter_panel_v1:${scanId}:${hash}`. Bumping the
-    // version invalidates all caches — important when persona definitions change.
+  it('buildCacheKey embeds the versioned prefix, scan id, persona fingerprint, and bullet hash', () => {
+    // Calibrated against: `recruiter_panel_${VERSION}:${scanId}:${personaFp}:${hash}`.
+    // Bumping the version OR editing personas invalidates all caches automatically.
     const k = buildCacheKey('scan-abc', 'Built and shipped a feature that lifted retention.');
-    expect(k.startsWith('recruiter_panel_v1:scan-abc:')).toBe(true);
-    expect(k.split(':').length).toBe(3);
-    expect(k.split(':')[2]).toMatch(/^[0-9a-f]{8}$/);
+    expect(k.startsWith(`recruiter_panel_${CACHE_KEY_VERSION}:scan-abc:`)).toBe(true);
+    const parts = k.split(':');
+    expect(parts.length).toBe(4);
+    expect(parts[2]).toMatch(/^[0-9a-f]{8}$/); // persona fingerprint
+    expect(parts[3]).toMatch(/^[0-9a-f]{8}$/); // bullet hash
   });
 });
 
