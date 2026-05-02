@@ -12,7 +12,7 @@
 // that drives the Weaponizer's STAR-rewrite suggestions.
 // ═══════════════════════════════════════════════════════════════
 
-import type { TermVector } from "./tfidf";
+import type { TermVector } from "./tfidf.ts";
 
 /** Cosine similarity between two sparse term vectors. Returns [0, 1]. */
 export function cosineSimilarity(a: TermVector, b: TermVector): number {

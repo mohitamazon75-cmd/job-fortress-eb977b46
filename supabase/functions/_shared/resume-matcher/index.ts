@@ -15,9 +15,9 @@
 // into the parsing critical path behind a feature flag.
 // ═══════════════════════════════════════════════════════════════
 
-import { tokenize, type TokenizeOptions } from "./tokenize";
-import { buildCorpus } from "./tfidf";
-import { cosineSimilarity, keywordGap, type KeywordGap } from "./cosine-match";
+import { tokenize, type TokenizeOptions } from "./tokenize.ts";
+import { buildCorpus } from "./tfidf.ts";
+import { cosineSimilarity, keywordGap, type KeywordGap } from "./cosine-match.ts";
 
 export interface MatchOptions extends TokenizeOptions {
   /** Top-N missing keywords to surface. Default 20. */
@@ -95,8 +95,8 @@ export function matchResumeToJD(
 }
 
 // Re-exports for direct use
-export { tokenize, normalizeText } from "./tokenize";
-export { cosineSimilarity, keywordGap } from "./cosine-match";
-export { buildCorpus, termFrequency } from "./tfidf";
-export type { TermVector } from "./tfidf";
-export type { KeywordGap } from "./cosine-match";
+export { tokenize, normalizeText } from "./tokenize.ts";
+export { cosineSimilarity, keywordGap } from "./cosine-match.ts";
+export { buildCorpus, termFrequency } from "./tfidf.ts";
+export type { TermVector } from "./tfidf.ts";
+export type { KeywordGap } from "./cosine-match.ts";

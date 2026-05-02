@@ -19,7 +19,7 @@
 // signals.
 // ═══════════════════════════════════════════════════════════════
 
-import { isStopword } from "./stopwords";
+import { isStopword } from "./stopwords.ts";
 
 const URL_RE = /https?:\/\/\S+|www\.\S+/gi;
 const EMAIL_RE = /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/gi;
