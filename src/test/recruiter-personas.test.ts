@@ -743,14 +743,17 @@ describe('assemblePanelPrompt — determinism + drift detection', () => {
     expect(promptsMatch(a, b)).toBe(true);
   });
 
-  it('whitespace/case-equivalent ctx → same fingerprint (normalisation works)', () => {
-    // Calibrated against: trivially-different inputs must not create cache misses.
+  it('whitespace-equivalent ctx → same fingerprint (normalisation works)', () => {
+    // Calibrated against: trivially-different whitespace inputs must not create cache misses.
+    // NOTE: case is preserved in the prompt sent to the LLM (different signal to the model),
+    // so case-only differences DO produce different fingerprints. Case-insensitive
+    // cache-key collapse is handled separately by canonicalizeContext / buildCacheKey.
     const a = assemblePanelPrompt(ctx);
     const b = assemblePanelPrompt({
       ...ctx,
-      role: '  SENIOR product   MANAGER  ',
-      seniority: '  SENIOR ',
-      industry: ' FINTECH ',
+      role: '  Senior   Product   Manager  ',
+      seniority: '  senior ',
+      industry: ' fintech ',
       bullet: '   Shipped   pricing experiment that lifted ARPU 11%.   ',
     });
     expect(a.fingerprint).toBe(b.fingerprint);
