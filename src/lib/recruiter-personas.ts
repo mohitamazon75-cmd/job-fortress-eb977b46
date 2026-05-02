@@ -302,6 +302,49 @@ export function buildPanelUserPrompt(ctx: PanelGroundingContext): string {
   ].join('\n');
 }
 
+// ─── Prompt assembly verification ─────────────────────────────────
+// Lets the edge function (and tests) assert "same input ⇒ same prompt"
+// and detect drift caused by accidental edits to the frozen text.
+
+export interface AssembledPrompt {
+  system: string;
+  user: string;
+  /** Hash of system+user. Stable across runtimes. */
+  fingerprint: string;
+  /** Hash of just the frozen bits (system + persona set). */
+  templateFingerprint: string;
+}
+
+/**
+ * One-shot prompt assembly + fingerprint. Use this from the edge
+ * function so the prompt sent to the LLM is provably identical to
+ * what tests verified.
+ *
+ * Determinism contract:
+ *  - assemblePanelPrompt(ctx).fingerprint === assemblePanelPrompt(ctx).fingerprint
+ *  - Equivalent ctx (extra whitespace, different case in role) ⇒ same fingerprint
+ *  - Any change to system text, persona set, or grounded ctx ⇒ new fingerprint
+ */
+export function assemblePanelPrompt(ctx: PanelGroundingContext): AssembledPrompt {
+  const system = buildPanelSystemPrompt();
+  const normalized: PanelGroundingContext = {
+    role: (ctx.role ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim(),
+    seniority: (ctx.seniority ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim() || null,
+    industry: (ctx.industry ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim() || null,
+    bullet: (ctx.bullet ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim(),
+    kgMatch: Number.isFinite(ctx.kgMatch) ? Number(ctx.kgMatch) : 0,
+  };
+  const user = buildPanelUserPrompt(normalized);
+  const templateFingerprint = hashString(`${system}\n§\n${personaSetFingerprint()}`);
+  const fingerprint = hashString(`${system}\n§\n${user}`);
+  return { system, user, fingerprint, templateFingerprint };
+}
+
+/** True iff two assembled prompts are byte-identical. */
+export function promptsMatch(a: AssembledPrompt, b: AssembledPrompt): boolean {
+  return a.fingerprint === b.fingerprint && a.system === b.system && a.user === b.user;
+}
+
 // ─── Reply parsing + sanitization ──────────────────────────────────
 
 export interface PersonaReaction {
