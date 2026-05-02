@@ -255,7 +255,7 @@ Rewrite this person's resume to:
     (async () => {
       try {
         const t0 = Date.now();
-        let resumeText = "";
+        let originalText = "";
         let resumeSource: "artifact" | "report_text" | "unavailable" = "unavailable";
 
         if (scanId) {
@@ -267,21 +267,29 @@ Rewrite this person's resume to:
             .limit(1)
             .maybeSingle();
           if (artifact?.raw_text && artifact.raw_text.length > 100) {
-            resumeText = artifact.raw_text;
+            originalText = artifact.raw_text;
             resumeSource = "artifact";
           }
         }
         // Fallback: synthesize from report's all_skills if no artifact
-        if (!resumeText && Array.isArray(report?.all_skills) && report.all_skills.length > 0) {
-          resumeText = `${role} ${industry} ${report.all_skills.join(" ")} ${moatSkills}`;
+        if (!originalText && Array.isArray(report?.all_skills) && report.all_skills.length > 0) {
+          originalText = `${role} ${industry} ${report.all_skills.join(" ")} ${moatSkills}`;
           resumeSource = "report_text";
         }
 
-        const det = (resumeText && hasJD)
-          ? matchResumeToJD(resumeText, jdSnippet)
+        // B2.2.1: Reconstruct the LLM-rewritten resume for apples-to-apples scoring
+        const rewrittenText = reconstructRewrittenResume(result as any);
+
+        const detOriginal = (originalText && hasJD)
+          ? matchResumeToJD(originalText, jdSnippet)
+          : null;
+        const detRewritten = (rewrittenText && hasJD)
+          ? matchResumeToJD(rewrittenText, jdSnippet)
           : null;
 
         const llmPct = result?.jd_match_analysis?.match_pct ?? null;
+        // Prefer rewritten for the "headline" det/missing counts (apples-to-apples vs llm)
+        const detPrimary = detRewritten ?? detOriginal;
 
         await supabase.from("shadow_match_log").insert({
           function_name: "resume-weaponizer",
@@ -289,15 +297,21 @@ Rewrite this person's resume to:
           scan_id: scanId ?? null,
           role,
           has_jd: hasJD,
-          det_pct: det?.score ?? null,
+          det_pct: detPrimary?.score ?? null, // legacy column — now mirrors rewritten when available
+          det_pct_original: detOriginal?.score ?? null,
+          det_pct_rewritten: detRewritten?.score ?? null,
+          rewritten_text_chars: rewrittenText.length,
           llm_pct: typeof llmPct === "number" ? Math.round(llmPct) : null,
-          det_matched_count: det?.keywords.matched.length ?? null,
-          det_missing_count: det?.keywords.missing.length ?? null,
+          det_matched_count: detPrimary?.keywords.matched.length ?? null,
+          det_missing_count: detPrimary?.keywords.missing.length ?? null,
           runtime_ms: Date.now() - t0,
           resume_source: resumeSource,
-          det_diagnostics: det?.diagnostics ?? {},
+          det_diagnostics: {
+            original: detOriginal?.diagnostics ?? null,
+            rewritten: detRewritten?.diagnostics ?? null,
+          },
         });
-        console.log(`[ResumeWeaponizer.shadow] det=${det?.score ?? 'n/a'} llm=${llmPct ?? 'n/a'} src=${resumeSource} hasJD=${hasJD}`);
+        console.log(`[ResumeWeaponizer.shadow] det_orig=${detOriginal?.score ?? 'n/a'} det_rewr=${detRewritten?.score ?? 'n/a'} llm=${llmPct ?? 'n/a'} src=${resumeSource} rewr_chars=${rewrittenText.length} hasJD=${hasJD}`);
       } catch (e: any) {
         console.warn("[ResumeWeaponizer.shadow] non-fatal:", e?.message ?? e);
       }
