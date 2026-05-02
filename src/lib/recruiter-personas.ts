@@ -138,21 +138,97 @@ export function checkPanelEligibility(input: {
 }
 
 // ─── Cache key ─────────────────────────────────────────────────────
-// (scan_id, bullet_hash) — deterministic so re-renders share the cache.
+// Deterministic across runtimes (browser + Deno) and stable across
+// re-renders. Bumping CACHE_KEY_VERSION invalidates ALL prior entries
+// (use when prompt text, persona set, or sanitizer behavior changes).
 
-/** Tiny non-cryptographic hash. Stable across runtimes. */
-export function hashBullet(bullet: string): string {
-  const s = bullet.normalize('NFKC').replace(/\s+/g, ' ').trim();
+export const CACHE_KEY_VERSION = 'v2';
+
+/** Tiny non-cryptographic hash (DJB2). Stable across runtimes. */
+export function hashString(input: string): string {
+  const s = (input ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim();
   let h = 5381;
   for (let i = 0; i < s.length; i++) {
     h = ((h << 5) + h + s.charCodeAt(i)) | 0;
   }
-  // Unsigned hex, padded.
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
-export function buildCacheKey(scanId: string, bullet: string): string {
-  return `recruiter_panel_v1:${scanId}:${hashBullet(bullet)}`;
+/** @deprecated Use hashString. Kept for any prior callers. */
+export function hashBullet(bullet: string): string {
+  return hashString(bullet);
+}
+
+/**
+ * Canonical serialization of grounding context. Order- and
+ * whitespace-independent so logically equivalent contexts hash
+ * identically. Null/empty optional fields collapse to "".
+ */
+export function canonicalizeContext(ctx: PanelGroundingContext): string {
+  const role = (ctx.role ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+  const seniority = (ctx.seniority ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+  const industry = (ctx.industry ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+  const bullet = (ctx.bullet ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim();
+  const kg = Number.isFinite(ctx.kgMatch) ? Number(ctx.kgMatch).toFixed(2) : '0.00';
+  // Sorted, fixed-key JSON. No Object.keys ordering surprises.
+  return JSON.stringify({
+    bullet,
+    industry,
+    kg,
+    role,
+    seniority,
+  });
+}
+
+/**
+ * Fingerprint of the FROZEN persona set. If anyone edits
+ * RECRUITER_PERSONAS this changes, invalidating cache automatically.
+ */
+export function personaSetFingerprint(): string {
+  const serialized = PERSONA_ORDER.map((id) => {
+    const p = RECRUITER_PERSONAS[id];
+    return [
+      p.id,
+      p.displayName,
+      p.lens,
+      p.evaluates.join('|'),
+      p.primaryLabel,
+      p.secondaryLabel,
+    ].join('§');
+  }).join('¶');
+  return hashString(serialized);
+}
+
+/**
+ * Cache key encodes everything that could change the LLM output:
+ *   version · scanId · personaSet fingerprint · context fingerprint.
+ * Same scan + same context + same personas → same key, every time.
+ * ANY change → new key → cold cache (safe).
+ */
+export function buildCacheKey(scanId: string, ctx: PanelGroundingContext): string;
+/** @deprecated 2-arg form. Pass the full context for proper invalidation. */
+export function buildCacheKey(scanId: string, bullet: string): string;
+export function buildCacheKey(
+  scanId: string,
+  ctxOrBullet: PanelGroundingContext | string,
+): string {
+  const safeScan = (scanId ?? '').trim() || 'anon';
+  if (typeof ctxOrBullet === 'string') {
+    // Legacy path: hash just the bullet. Still versioned + persona-fp'd
+    // so a persona edit still invalidates legacy entries.
+    return [
+      `recruiter_panel_${CACHE_KEY_VERSION}`,
+      safeScan,
+      personaSetFingerprint(),
+      hashString(ctxOrBullet),
+    ].join(':');
+  }
+  return [
+    `recruiter_panel_${CACHE_KEY_VERSION}`,
+    safeScan,
+    personaSetFingerprint(),
+    hashString(canonicalizeContext(ctxOrBullet)),
+  ].join(':');
 }
 
 // ─── Prompt assembly ───────────────────────────────────────────────
@@ -224,6 +300,49 @@ export function buildPanelUserPrompt(ctx: PanelGroundingContext): string {
     '{ "reactions": [ { "id": "skeptic", "primary": "...", "secondary": "..." }, ... ] }',
     'Order: skeptic, champion, gatekeeper. Each field max 12 words.',
   ].join('\n');
+}
+
+// ─── Prompt assembly verification ─────────────────────────────────
+// Lets the edge function (and tests) assert "same input ⇒ same prompt"
+// and detect drift caused by accidental edits to the frozen text.
+
+export interface AssembledPrompt {
+  system: string;
+  user: string;
+  /** Hash of system+user. Stable across runtimes. */
+  fingerprint: string;
+  /** Hash of just the frozen bits (system + persona set). */
+  templateFingerprint: string;
+}
+
+/**
+ * One-shot prompt assembly + fingerprint. Use this from the edge
+ * function so the prompt sent to the LLM is provably identical to
+ * what tests verified.
+ *
+ * Determinism contract:
+ *  - assemblePanelPrompt(ctx).fingerprint === assemblePanelPrompt(ctx).fingerprint
+ *  - Equivalent ctx (extra whitespace, different case in role) ⇒ same fingerprint
+ *  - Any change to system text, persona set, or grounded ctx ⇒ new fingerprint
+ */
+export function assemblePanelPrompt(ctx: PanelGroundingContext): AssembledPrompt {
+  const system = buildPanelSystemPrompt();
+  const normalized: PanelGroundingContext = {
+    role: (ctx.role ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim(),
+    seniority: (ctx.seniority ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim() || null,
+    industry: (ctx.industry ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim() || null,
+    bullet: (ctx.bullet ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim(),
+    kgMatch: Number.isFinite(ctx.kgMatch) ? Number(ctx.kgMatch) : 0,
+  };
+  const user = buildPanelUserPrompt(normalized);
+  const templateFingerprint = hashString(`${system}\n§\n${personaSetFingerprint()}`);
+  const fingerprint = hashString(`${system}\n§\n${user}`);
+  return { system, user, fingerprint, templateFingerprint };
+}
+
+/** True iff two assembled prompts are byte-identical. */
+export function promptsMatch(a: AssembledPrompt, b: AssembledPrompt): boolean {
+  return a.fingerprint === b.fingerprint && a.system === b.system && a.user === b.user;
 }
 
 // ─── Reply parsing + sanitization ──────────────────────────────────
