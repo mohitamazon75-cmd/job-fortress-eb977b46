@@ -717,6 +717,7 @@ async function processAnalysis(
       // (#7) Card 4 pivot citation inheritance — stamp every surviving pivot
       // with its grounding basis. Runs AFTER filterEligiblePivots so dropped
       // rows don't carry a misleading badge.
+      cd.user_role_family = (ctx as any).user_role_family ?? null;
       const c4 = cd?.card4_pivot;
       if (c4 && Array.isArray(c4.pivots) && c4.pivots.length > 0) {
         c4.pivots = c4.pivots.map((p: any) => attachPivotCitationBasis(p, ctx));
