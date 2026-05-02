@@ -223,6 +223,53 @@ Base ONLY on the provided data. No markdown.`,
     try {
       const jsonStr = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const parsed = JSON.parse(jsonStr);
+
+      // ═══ P0-Fix-A defense-in-depth: drop any sector_news item whose URL
+      // wasn't actually returned by Tavily. LLMs hallucinate deep paths
+      // (fake livemint.com IDs etc) even when told not to. We rebuild the
+      // trusted-URL set from the raw search results and gate by it.
+      // Also strip bracketed citations / attributions from headline + why_it_matters.
+      const trustedUrls = new Set<string>(
+        tavilyAllResults
+          .map((r: any) => (typeof r?.url === "string" ? r.url.trim() : ""))
+          .filter(Boolean)
+      );
+      const trustedHostPaths = new Set<string>();
+      for (const u of trustedUrls) {
+        try {
+          const parsedU = new URL(u);
+          trustedHostPaths.add(`${parsedU.hostname.replace(/^www\./, "")}${parsedU.pathname}`.toLowerCase());
+        } catch { /* ignore */ }
+      }
+      const stripCitations = (s: unknown): string => {
+        if (typeof s !== "string") return "";
+        return s
+          .replace(/\[(?:[^\]]*?(?:source|report|study|per|according|nasscom|mckinsey|gartner|forrester|idc|naukri)[^\]]*?)\]/gi, "")
+          .replace(/\((?:per|source:|according to)[^)]*\)/gi, "")
+          .replace(/\s{2,}/g, " ")
+          .trim();
+      };
+      if (Array.isArray(parsed.sector_news)) {
+        parsed.sector_news = parsed.sector_news
+          .filter((item: any) => {
+            if (!item || typeof item.url !== "string") return false;
+            const url = item.url.trim();
+            if (trustedUrls.has(url)) return true;
+            try {
+              const u = new URL(url);
+              const key = `${u.hostname.replace(/^www\./, "")}${u.pathname}`.toLowerCase();
+              return trustedHostPaths.has(key);
+            } catch { return false; }
+          })
+          .map((item: any) => ({
+            ...item,
+            headline: stripCitations(item.headline),
+            why_it_matters: stripCitations(item.why_it_matters),
+          }))
+          .filter((item: any) => item.headline && item.headline.length > 0)
+          .slice(0, 5);
+      }
+
       const result = {
         ...parsed,
         articles_analyzed: tavilyAllResults.length + firecrawlArticles.length,
