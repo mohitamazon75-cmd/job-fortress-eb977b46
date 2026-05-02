@@ -86,7 +86,30 @@ function isAllowedUrl(url: unknown): boolean {
     const host = u.hostname.toLowerCase();
     // Allow learning hosts + their search/homepage paths only
     const allowed = ["youtube.com","www.youtube.com","coursera.org","www.coursera.org","udemy.com","www.udemy.com","linkedin.com","www.linkedin.com","google.com","www.google.com","docs.google.com","khanacademy.org","www.khanacademy.org","mit.edu","ocw.mit.edu","edx.org","www.edx.org","deeplearning.ai","www.deeplearning.ai","oreilly.com","www.oreilly.com","github.com","kaggle.com","www.kaggle.com","upgrad.com","www.upgrad.com","greatlearning.in","www.mygreatlearning.com","scaler.com","www.scaler.com"];
-    return allowed.some(h => host === h || host.endsWith(`.${h}`));
+    if (!allowed.some(h => host === h || host.endsWith(`.${h}`))) return false;
+
+    // P0-Fix-B: even on allowed hosts, only permit homepage or search-style paths.
+    // LLMs invent specific course/article slugs (e.g. /learn/ai-governance-2025,
+    // /ai-for-business) that 404. Search pages always exist.
+    const path = u.pathname.toLowerCase();
+    const search = u.search.toLowerCase();
+    const isHomepage = path === "" || path === "/";
+    const isSearchPath =
+      path.includes("/search") ||
+      path.includes("/results") ||
+      path.includes("/courses") && (search.includes("search=") || search.includes("query=") || search.includes("q=")) ||
+      path === "/learning/search" ||
+      path === "/learning";
+    const hasSearchQuery =
+      search.includes("?q=") || search.includes("&q=") ||
+      search.includes("query=") ||
+      search.includes("search_query=") ||
+      search.includes("keywords=") ||
+      search.includes("k=") ||
+      search.includes("terms=") ||
+      search.includes("searchtext=") ||
+      search.includes("search=");
+    return isHomepage || isSearchPath || hasSearchQuery;
   } catch { return false; }
 }
 
