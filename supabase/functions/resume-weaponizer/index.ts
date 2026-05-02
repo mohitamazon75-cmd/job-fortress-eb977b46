@@ -11,6 +11,7 @@ import { callAgent, AI_URL, PRO_MODEL } from "../_shared/ai-agent-caller.ts";
 import { callAgentWithFallback } from "../_shared/model-fallback.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
 import { requirePro } from "../_shared/subscription-guard.ts";
+import { matchResumeToJD } from "../_shared/resume-matcher/index.ts";
 
 const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
@@ -112,7 +113,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { report, targetRole, jdText, angle } = body;
+  const { report, targetRole, jdText, angle, scanId } = body;
   if (!report) {
     return new Response(JSON.stringify({ error: "Missing report" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
