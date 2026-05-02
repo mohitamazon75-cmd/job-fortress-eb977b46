@@ -268,7 +268,7 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
               <span className="text-muted-foreground/40 hidden sm:inline">·</span>
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
-                <span className="text-xs text-muted-foreground">Methodology from <span className="text-foreground font-bold">WEF, NASSCOM, O*NET</span></span>
+                <span className="text-xs text-muted-foreground">Methodology from <span className="text-foreground font-bold">WEF, NASSCOM, McKinsey, O*NET, Oxford</span></span>
               </div>
             </motion.div>
           </motion.div>
