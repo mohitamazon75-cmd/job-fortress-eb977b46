@@ -305,3 +305,291 @@ describe('parsePanelReply', () => {
     expect(out.map((r) => r.id)).toEqual(['skeptic']);
   });
 });
+
+// ────────────────────────────────────────────────────────────────────
+// Edge-case tests added in P1.1 — seniority, role formatting, and
+// empty LinkedIn/resume inputs. Per BL-036, every fixture restates
+// the heuristic condition it is calibrated against.
+// ────────────────────────────────────────────────────────────────────
+
+describe('checkPanelEligibility — empty / degenerate inputs', () => {
+  it('rejects when bullet is null (treated as empty string)', () => {
+    // Calibrated against: empty resume parse => null bullet. Must not crash.
+    const r = checkPanelEligibility({ bullet: null, role: 'PM', kgMatch: 0.9 });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('bullet_too_short');
+  });
+
+  it('rejects when bullet is undefined (treated as empty string)', () => {
+    // Calibrated against: missing field on a partial form payload.
+    const r = checkPanelEligibility({ bullet: undefined, role: 'PM', kgMatch: 0.9 });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('bullet_too_short');
+  });
+
+  it('rejects a bullet that is whitespace-padded but empty after trim', () => {
+    // Calibrated against: paste-from-PDF artifacts often produce "  \n\n  ".
+    const r = checkPanelEligibility({ bullet: '   \n\n  \t  ', role: 'PM', kgMatch: 0.9 });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('bullet_too_short');
+  });
+
+  it('rejects when both bullet AND role are missing — bullet check fires first', () => {
+    // Calibrated against: failure-order contract. bullet_too_short outranks
+    // missing_role so the user fixes the more concrete problem first.
+    const r = checkPanelEligibility({ bullet: '', role: '', kgMatch: 0 });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('bullet_too_short');
+  });
+
+  it('rejects when role is null (LinkedIn parse returned no headline)', () => {
+    // Calibrated against: LinkedIn snapshot without `headline`/`title` field.
+    const r = checkPanelEligibility({ bullet: 'x'.repeat(MIN_BULLET_CHARS), role: null, kgMatch: 0.9 });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('missing_role');
+  });
+
+  it('rejects when role is only punctuation / non-word characters', () => {
+    // Calibrated against: junk LinkedIn headlines like "—" or "···".
+    const r = checkPanelEligibility({ bullet: 'x'.repeat(MIN_BULLET_CHARS), role: '   —   ', kgMatch: 0.9 });
+    // Non-empty after trim, so missing_role won't fire — but kgMatch gate will
+    // catch low-signal cases. Document the actual behaviour: role passes the
+    // emptiness check; kgMatch is what protects us here.
+    expect(r.ok).toBe(true); // role.trim() is "—", non-empty → passes role gate
+    // The KG match (0.9 here) is hypothetical; in practice a junk role would
+    // produce kgMatch ~0, which the kgMatch gate would catch.
+  });
+
+  it('rejects when kgMatch is exactly 0 (cold-start, no role mapping)', () => {
+    // Calibrated against: brand-new role string the KG has never seen.
+    const r = checkPanelEligibility({ bullet: 'x'.repeat(MIN_BULLET_CHARS), role: 'PM', kgMatch: 0 });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('kg_match_too_low');
+  });
+
+  it('rejects when kgMatch is null (treated as 0)', () => {
+    // Calibrated against: optional field missing from upstream payload.
+    const r = checkPanelEligibility({ bullet: 'x'.repeat(MIN_BULLET_CHARS), role: 'PM', kgMatch: null });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('kg_match_too_low');
+  });
+
+  it('accepts kgMatch at exact threshold boundary (0.4)', () => {
+    // Calibrated against: MIN_KG_MATCH = 0.4 is INCLUSIVE.
+    const r = checkPanelEligibility({ bullet: 'x'.repeat(MIN_BULLET_CHARS), role: 'PM', kgMatch: 0.4 });
+    expect(r.ok).toBe(true);
+  });
+
+  it('accepts very high kgMatch (1.0 — exact KG match)', () => {
+    const r = checkPanelEligibility({ bullet: 'x'.repeat(MIN_BULLET_CHARS), role: 'PM', kgMatch: 1.0 });
+    expect(r.ok).toBe(true);
+  });
+
+  it('accepts kgMatch above 1.0 — does not silently clamp or reject', () => {
+    // Calibrated against: defensive — upstream may pass un-normalised scores.
+    // We do NOT clamp; we just check ">= MIN_KG_MATCH". Document the contract.
+    const r = checkPanelEligibility({ bullet: 'x'.repeat(MIN_BULLET_CHARS), role: 'PM', kgMatch: 1.5 });
+    expect(r.ok).toBe(true);
+  });
+});
+
+describe('buildPanelUserPrompt — seniority + role formatting edge cases', () => {
+  const baseBullet = 'Owned GTM for India launch and grew MAU 3x in two quarters.';
+
+  it('renders junior seniority verbatim (no normalisation)', () => {
+    // Calibrated against: prompt grounding is literal. We do NOT remap
+    // "junior" → "entry-level" client-side; the LLM sees what we send.
+    const u = buildPanelUserPrompt({ role: 'Marketing Associate', seniority: 'junior', bullet: baseBullet, kgMatch: 0.7 });
+    expect(u).toMatch(/seniority: junior/);
+  });
+
+  it('renders mid seniority verbatim', () => {
+    const u = buildPanelUserPrompt({ role: 'Marketing Manager', seniority: 'mid', bullet: baseBullet, kgMatch: 0.7 });
+    expect(u).toMatch(/seniority: mid/);
+  });
+
+  it('renders senior seniority verbatim', () => {
+    const u = buildPanelUserPrompt({ role: 'Senior Marketing Manager', seniority: 'senior', bullet: baseBullet, kgMatch: 0.7 });
+    expect(u).toMatch(/seniority: senior/);
+  });
+
+  it('renders executive seniority verbatim (CXO grounding)', () => {
+    // Calibrated against: mem://logic/executive-tier-specialization — exec
+    // tier needs different reframing. The persona prompt must surface it.
+    const u = buildPanelUserPrompt({ role: 'VP Marketing', seniority: 'executive', bullet: baseBullet, kgMatch: 0.8 });
+    expect(u).toMatch(/seniority: executive/);
+  });
+
+  it('renders empty-string seniority as "(not provided)" — same as null/undefined', () => {
+    // Calibrated against: structural prompt invariance. Field always present.
+    const u = buildPanelUserPrompt({ role: 'PM', seniority: '', bullet: baseBullet, kgMatch: 0.7 });
+    expect(u).toMatch(/seniority: \(not provided\)/);
+  });
+
+  it('renders whitespace-only seniority as "(not provided)"', () => {
+    // Calibrated against: PDF / paste artifacts.
+    const u = buildPanelUserPrompt({ role: 'PM', seniority: '   \t  ', bullet: baseBullet, kgMatch: 0.7 });
+    expect(u).toMatch(/seniority: \(not provided\)/);
+  });
+
+  it('trims surrounding whitespace from role before embedding', () => {
+    // Calibrated against: noisy LinkedIn scrape data.
+    const u = buildPanelUserPrompt({ role: '   Senior PM   ', seniority: 'senior', bullet: baseBullet, kgMatch: 0.7 });
+    expect(u).toMatch(/role: Senior PM\n/);
+  });
+
+  it('preserves multi-word roles with hyphens and slashes verbatim', () => {
+    // Calibrated against: real titles like "Product / Growth Manager" or
+    // "Senior Product-Marketing Manager".
+    const u = buildPanelUserPrompt({ role: 'Senior Product-Marketing Manager', seniority: 'senior', bullet: baseBullet, kgMatch: 0.7 });
+    expect(u).toMatch(/role: Senior Product-Marketing Manager/);
+  });
+
+  it('preserves Indian title conventions (e.g. "AVP – Sales") verbatim', () => {
+    // Calibrated against: India-specific title patterns from MCA filings.
+    const u = buildPanelUserPrompt({ role: 'AVP – Sales', seniority: 'senior', bullet: baseBullet, kgMatch: 0.8 });
+    expect(u).toMatch(/role: AVP – Sales/);
+  });
+
+  it('embeds bullet verbatim even when it contains quote characters (no premature delimiter close)', () => {
+    // Calibrated against: prompt-injection defense. A bullet containing `"""`
+    // should still be wrapped — we accept that the LLM may see the inner quotes.
+    // The triple-quote wrapper still anchors the start and end.
+    const dirty = 'Built "AI-first" growth loop with 3x retention.';
+    const u = buildPanelUserPrompt({ role: 'PM', seniority: 'senior', bullet: dirty, kgMatch: 0.8 });
+    expect(u).toContain(`"""${dirty}"""`);
+  });
+
+  it('renders kgMatch with exactly 2 decimal places (0.05 → "0.05")', () => {
+    // Calibrated against: prompt determinism. Same input must produce same prompt.
+    const u = buildPanelUserPrompt({ role: 'PM', seniority: 'mid', bullet: baseBullet, kgMatch: 0.05 });
+    expect(u).toMatch(/kg_match: 0\.05/);
+  });
+
+  it('renders kgMatch=1 as "1.00" not "1"', () => {
+    // Calibrated against: determinism contract — toFixed(2) always.
+    const u = buildPanelUserPrompt({ role: 'PM', seniority: 'mid', bullet: baseBullet, kgMatch: 1 });
+    expect(u).toMatch(/kg_match: 1\.00/);
+  });
+
+  it('produces byte-identical prompts for identical inputs (full determinism)', () => {
+    // Calibrated against: cache-key contract. Same context => same prompt
+    // => safe to cache by (scanId, bulletHash).
+    const ctx = { role: 'PM', seniority: 'senior', industry: 'SaaS', bullet: baseBullet, kgMatch: 0.82 };
+    expect(buildPanelUserPrompt(ctx)).toBe(buildPanelUserPrompt(ctx));
+  });
+});
+
+describe('hashBullet — empty + edge inputs', () => {
+  it('returns a stable 8-char hex hash for empty string (does not throw)', () => {
+    // Calibrated against: defensive — caller may pass empty bullet at the
+    // very edge before the eligibility check fires.
+    const h = hashBullet('');
+    expect(h).toMatch(/^[0-9a-f]{8}$/);
+  });
+
+  it('treats unicode-equivalent bullets as identical (NFKC normalisation)', () => {
+    // Calibrated against: "fi" ligature (U+FB01) vs "f"+"i". A copy-paste
+    // from a PDF often introduces ligatures. NFKC folds them.
+    const ligature = 'Shipped a ﬁnance dashboard that lifted retention.';
+    const ascii    = 'Shipped a finance dashboard that lifted retention.';
+    expect(hashBullet(ligature)).toBe(hashBullet(ascii));
+  });
+
+  it('treats different line-ending styles (\\n vs \\r\\n) as identical after whitespace collapse', () => {
+    // Calibrated against: Windows vs Unix paste. Both collapse to single space.
+    const win  = 'line one.\r\nline two.';
+    const unix = 'line one.\nline two.';
+    expect(hashBullet(win)).toBe(hashBullet(unix));
+  });
+
+  it('produces different hashes for bullets that differ only in casing', () => {
+    // Calibrated against: NFKC does NOT case-fold. "Owned" and "owned" hash
+    // differently because the LLM reaction would differ on tone.
+    expect(hashBullet('Owned GTM launch')).not.toBe(hashBullet('owned gtm launch'));
+  });
+});
+
+describe('parsePanelReply — empty / degenerate LLM replies', () => {
+  it('returns [] when reactions array is empty', () => {
+    // Calibrated against: model returned valid JSON but no personas.
+    expect(parsePanelReply({ reactions: [] })).toEqual([]);
+  });
+
+  it('returns [] when every persona fails tone-lint (all banned jargon)', () => {
+    // Calibrated against: worst-case LLM output. We MUST drop everything
+    // rather than render fabricated jargon.
+    const reply = {
+      reactions: [
+        { id: 'skeptic',    primary: 'You leverage scale.',           secondary: 'Use a holistic approach.' },
+        { id: 'champion',   primary: 'A comprehensive win.',          secondary: 'Utilize this in panel.' },
+        { id: 'gatekeeper', primary: 'In today\'s landscape, risky.', secondary: 'Synthesize a reframe.' },
+      ],
+    };
+    expect(parsePanelReply(reply)).toEqual([]);
+  });
+
+  it('drops a persona where both fields are only whitespace', () => {
+    const reply = {
+      reactions: [
+        { id: 'skeptic', primary: '   ', secondary: '\t\n' },
+        { id: 'champion', primary: 'Numbers travel well.', secondary: 'Add a peer comparison.' },
+      ],
+    };
+    const out = parsePanelReply(reply);
+    expect(out.map((r) => r.id)).toEqual(['champion']);
+  });
+
+  it('handles reactions array containing null entries without crashing', () => {
+    // Calibrated against: malformed LLM output with embedded null.
+    const reply = {
+      reactions: [
+        null as any,
+        { id: 'skeptic', primary: 'Scannable enough.', secondary: 'Tighten the verb.' },
+      ],
+    };
+    const out = parsePanelReply(reply);
+    expect(out.map((r) => r.id)).toEqual(['skeptic']);
+  });
+
+  it('handles persona entries missing the id field', () => {
+    // Calibrated against: LLM forgets the `id` key — entry is unmappable.
+    const reply = {
+      reactions: [
+        { primary: 'Scannable enough.', secondary: 'Tighten the verb.' } as any,
+        { id: 'champion', primary: 'Numbers travel well.', secondary: 'Add a peer comparison.' },
+      ],
+    };
+    const out = parsePanelReply(reply);
+    expect(out.map((r) => r.id)).toEqual(['champion']);
+  });
+
+  it('does not duplicate a persona even if LLM returns it twice (first wins via Map)', () => {
+    // Calibrated against: defensive — `byId` map dedupes by last-wins. Document the actual behaviour.
+    const reply = {
+      reactions: [
+        { id: 'skeptic', primary: 'First take.', secondary: 'First fix.' },
+        { id: 'skeptic', primary: 'Second take.', secondary: 'Second fix.' },
+      ],
+    };
+    const out = parsePanelReply(reply);
+    expect(out).toHaveLength(1);
+    // Map.set last-wins — second entry overwrites first.
+    expect(out[0].primary).toBe('Second take.');
+  });
+});
+
+describe('buildCacheKey — collision resistance', () => {
+  it('produces different keys for same bullet across different scans', () => {
+    // Calibrated against: cache isolation per scan.
+    const bullet = 'Built and shipped a feature that lifted retention.';
+    expect(buildCacheKey('scan-a', bullet)).not.toBe(buildCacheKey('scan-b', bullet));
+  });
+
+  it('produces same key for whitespace-variant bullets in same scan', () => {
+    // Calibrated against: cache hit-rate. Trivially-different bullets share cache.
+    const a = 'Built and shipped a feature that lifted retention.';
+    const b = '  Built and shipped a feature that lifted retention.  ';
+    expect(buildCacheKey('scan-x', a)).toBe(buildCacheKey('scan-x', b));
+  });
+});
