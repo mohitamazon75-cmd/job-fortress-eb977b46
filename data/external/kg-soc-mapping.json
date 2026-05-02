@@ -2,11 +2,11 @@
   "_meta": {
     "snapshot_date": "2026-05-02",
     "kg_family_count": 67,
-    "coverage_pct": 80.6,
-    "triple_source_count": 42,
+    "coverage_pct": 98.5,
+    "triple_source_count": 47,
     "double_source_count": 2,
-    "single_source_count": 10,
-    "unmapped_count": 13,
+    "single_source_count": 17,
+    "unmapped_count": 1,
     "gate_decision": "PROCEED",
     "atlas_source": "data/external/jobs-exposure-atlas/unified_exposure.csv"
   },
@@ -37,7 +37,19 @@
         "frey_osborne": 0.018
       }
     ],
-    "backend_developer": [],
+    "backend_developer": [
+      {
+        "atlas_title": "Software developers, quality assurance analysts, and testers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      }
+    ],
     "bank_teller": [
       {
         "atlas_title": "Tellers",
@@ -243,8 +255,31 @@
         "frey_osborne": null
       }
     ],
-    "database_administrator": [],
+    "database_administrator": [
+      {
+        "atlas_title": "Database administrators and architects",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      }
+    ],
     "devops_engineer": [
+      {
+        "atlas_title": "Software developers, quality assurance analysts, and testers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      },
       {
         "atlas_title": "Network and computer systems administrators",
         "soc": "15-1244",
@@ -257,7 +292,19 @@
         "frey_osborne": null
       }
     ],
-    "digital_marketer": [],
+    "digital_marketer": [
+      {
+        "atlas_title": "Market research analysts",
+        "soc": "13-1161",
+        "consensus_score": 0.690963387978142,
+        "n_sources": 3,
+        "disagreement": 0.37540983606557377,
+        "karpathy": 0.9,
+        "openai": 0.5245901639344263,
+        "anthropic": 0.6483,
+        "frey_osborne": 0.61
+      }
+    ],
     "doctor": [
       {
         "atlas_title": "Physicians and surgeons",
@@ -271,7 +318,19 @@
         "frey_osborne": null
       }
     ],
-    "email_marketer": [],
+    "email_marketer": [
+      {
+        "atlas_title": "Market research analysts",
+        "soc": "13-1161",
+        "consensus_score": 0.690963387978142,
+        "n_sources": 3,
+        "disagreement": 0.37540983606557377,
+        "karpathy": 0.9,
+        "openai": 0.5245901639344263,
+        "anthropic": 0.6483,
+        "frey_osborne": 0.61
+      }
+    ],
     "financial_analyst": [
       {
         "atlas_title": "Financial analysts",
@@ -298,8 +357,32 @@
         "frey_osborne": 0.085
       }
     ],
-    "frontend_developer": [],
-    "full_stack_developer": [],
+    "frontend_developer": [
+      {
+        "atlas_title": "Web developers and digital designers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      }
+    ],
+    "full_stack_developer": [
+      {
+        "atlas_title": "Software developers, quality assurance analysts, and testers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      }
+    ],
     "graphic_designer": [
       {
         "atlas_title": "Graphic designers",
@@ -365,7 +448,19 @@
         "frey_osborne": null
       }
     ],
-    "journalist": [],
+    "journalist": [
+      {
+        "atlas_title": "News analysts, reporters, and journalists",
+        "soc": "27-3023",
+        "consensus_score": 0.5199333333333334,
+        "n_sources": 3,
+        "disagreement": 0.49019999999999997,
+        "karpathy": 0.7,
+        "openai": 0.65,
+        "anthropic": 0.2098,
+        "frey_osborne": null
+      }
+    ],
     "lawyer_litigation": [
       {
         "atlas_title": "Lawyers",
@@ -442,7 +537,19 @@
         "frey_osborne": 0.13
       }
     ],
-    "manual_qa_engineer": [],
+    "manual_qa_engineer": [
+      {
+        "atlas_title": "Software developers, quality assurance analysts, and testers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      }
+    ],
     "mechanical_engineer": [
       {
         "atlas_title": "Mechanical engineers",
@@ -471,6 +578,17 @@
     ],
     "ml_engineer": [
       {
+        "atlas_title": "Software developers, quality assurance analysts, and testers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      },
+      {
         "atlas_title": "Computer and information research scientists",
         "soc": "15-1221",
         "consensus_score": 0.6250051282051282,
@@ -482,8 +600,31 @@
         "frey_osborne": null
       }
     ],
-    "mobile_developer": [],
+    "mobile_developer": [
+      {
+        "atlas_title": "Software developers, quality assurance analysts, and testers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      }
+    ],
     "motion_designer": [
+      {
+        "atlas_title": "Special effects artists and animators",
+        "soc": "27-1014",
+        "consensus_score": 0.5940333333333333,
+        "n_sources": 3,
+        "disagreement": 0.5429,
+        "karpathy": 0.9,
+        "openai": 0.525,
+        "anthropic": 0.3571,
+        "frey_osborne": 0.015
+      },
       {
         "atlas_title": "Graphic designers",
         "soc": "27-1024",
@@ -509,7 +650,19 @@
         "frey_osborne": null
       }
     ],
-    "performance_marketer": [],
+    "performance_marketer": [
+      {
+        "atlas_title": "Market research analysts",
+        "soc": "13-1161",
+        "consensus_score": 0.690963387978142,
+        "n_sources": 3,
+        "disagreement": 0.37540983606557377,
+        "karpathy": 0.9,
+        "openai": 0.5245901639344263,
+        "anthropic": 0.6483,
+        "frey_osborne": 0.61
+      }
+    ],
     "pharmacist": [
       {
         "atlas_title": "Pharmacists",
@@ -525,6 +678,17 @@
     ],
     "product_designer": [
       {
+        "atlas_title": "Web developers and digital designers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      },
+      {
         "atlas_title": "Graphic designers",
         "soc": "27-1024",
         "consensus_score": 0.5890666666666666,
@@ -536,7 +700,19 @@
         "frey_osborne": 0.082
       }
     ],
-    "product_manager": [],
+    "product_manager": [
+      {
+        "atlas_title": "Computer and information systems managers",
+        "soc": "11-3021",
+        "consensus_score": 0.46206767676767674,
+        "n_sources": 3,
+        "disagreement": 0.5440999999999999,
+        "karpathy": 0.7,
+        "openai": 0.5303030303030303,
+        "anthropic": 0.1559,
+        "frey_osborne": 0.035
+      }
+    ],
     "project_manager": [
       {
         "atlas_title": "Project management specialists",
@@ -563,7 +739,19 @@
         "frey_osborne": null
       }
     ],
-    "qa_tester": [],
+    "qa_tester": [
+      {
+        "atlas_title": "Software developers, quality assurance analysts, and testers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      }
+    ],
     "real_estate_agent": [
       {
         "atlas_title": "Real estate brokers and sales agents",
@@ -657,6 +845,17 @@
     ],
     "social_media_manager": [
       {
+        "atlas_title": "Market research analysts",
+        "soc": "13-1161",
+        "consensus_score": 0.690963387978142,
+        "n_sources": 3,
+        "disagreement": 0.37540983606557377,
+        "karpathy": 0.9,
+        "openai": 0.5245901639344263,
+        "anthropic": 0.6483,
+        "frey_osborne": 0.61
+      },
+      {
         "atlas_title": "Public relations specialists",
         "soc": "27-3031",
         "consensus_score": 0.6146363636363638,
@@ -678,6 +877,17 @@
         "karpathy": 0.8,
         "openai": 0.6352227393617021,
         "anthropic": 0.1987,
+        "frey_osborne": null
+      },
+      {
+        "atlas_title": "Software developers, quality assurance analysts, and testers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
         "frey_osborne": null
       }
     ],
@@ -746,6 +956,17 @@
     ],
     "ui_ux_designer": [
       {
+        "atlas_title": "Web developers and digital designers",
+        "soc": "",
+        "consensus_score": 0.9,
+        "n_sources": 1,
+        "disagreement": null,
+        "karpathy": 0.9,
+        "openai": null,
+        "anthropic": null,
+        "frey_osborne": null
+      },
+      {
         "atlas_title": "Graphic designers",
         "soc": "27-1024",
         "consensus_score": 0.5890666666666666,
@@ -772,18 +993,6 @@
     ]
   },
   "unmapped": [
-    "backend_developer",
-    "data_entry_operator",
-    "database_administrator",
-    "digital_marketer",
-    "email_marketer",
-    "frontend_developer",
-    "full_stack_developer",
-    "journalist",
-    "manual_qa_engineer",
-    "mobile_developer",
-    "performance_marketer",
-    "product_manager",
-    "qa_tester"
+    "data_entry_operator"
   ]
 }

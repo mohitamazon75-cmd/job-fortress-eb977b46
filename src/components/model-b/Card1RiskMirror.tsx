@@ -120,6 +120,7 @@ export function deriveMonthlyFromBands(
 export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanCount, monthlySalaryInr, firstName }: Props) {
   const c1 = cardData.card1_risk;
   const u = cardData.user || {};
+  const academicExposure = cardData?.academic_exposure;
   const disruptionYear = c1?.disruption_year || "2027";
 
   // P-3-B: scan count is now fetched once by ResultsModelB and passed as a prop,
@@ -314,6 +315,12 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
                 variant={cardData.kg_match.confidence_label === 'HIGH' ? 'green' : 'navy'}
               />
             )}
+            {academicExposure?.kind === "mapped" && (
+              <Badge
+                label={academicExposure.converged ? "Cross-validated academic exposure" : "Academic exposure mapped"}
+                variant={academicExposure.risk_tier === "HIGH" ? "red" : academicExposure.risk_tier === "MEDIUM" ? "amber" : "green"}
+              />
+            )}
           </>
         }
         title={displayHeadline}
@@ -386,6 +393,23 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
         <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "var(--mb-ink3)", marginBottom: 18, paddingLeft: 4, fontStyle: "italic" }}>
           Different from your overall JobBachao score (top of page) — this measures only automation risk for your role, not your full career safety.
         </div>
+
+        {academicExposure && (
+          <div style={{ background: "var(--mb-navy-tint)", border: "1.5px solid var(--mb-navy-tint2)", borderRadius: 12, padding: "13px 16px", marginBottom: 18 }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--mb-navy)", marginBottom: 6 }}>
+              Academic exposure check
+            </div>
+            {academicExposure.kind === "mapped" ? (
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.65, margin: 0, fontWeight: 600 }}>
+                Atlas maps this KG role to <strong style={{ color: "var(--mb-ink)", fontWeight: 800 }}>{academicExposure.risk_tier}</strong> AI exposure across {academicExposure.source_count} academic source{academicExposure.source_count === 1 ? "" : "s"}. Matched occupation: {academicExposure.occupations?.[0]?.atlas_title || "occupation mapped"}.
+              </p>
+            ) : (
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.65, margin: 0, fontWeight: 600 }}>
+                {academicExposure.message}. We are not showing a fake academic badge for this role.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ─────────────── 2. Fear → Anxiety → Hope → Plan narration arc ──────────
             Restored 2026-04-27 after audit found the trio (tough_love /

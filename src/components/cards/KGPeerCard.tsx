@@ -4,6 +4,7 @@ import { Database, Shield, AlertTriangle, Zap, ArrowRight, Network } from 'lucid
 import { computeStabilityScore } from '@/lib/stability-score';
 import { useState } from 'react';
 import { classifySkills, getSkillCounts } from '@/lib/unified-skill-classifier';
+import { getAcademicOccupationExposure } from '@/lib/det-occupation-exposure';
 
 interface KGPeerCardProps {
   report: ScanReport;
@@ -22,6 +23,7 @@ export default function KGPeerCard({ report }: KGPeerCardProps) {
   const tools = normalizeTools(report.ai_tools_replacing || []);
   const pivotRoles = (report.pivot_roles || []).slice(0, 3);
   const role = report.matched_job_family || report.role || 'Your Role';
+  const academicExposure = (report as any).academic_exposure ?? getAcademicOccupationExposure(report.matched_job_family);
   const skillAdjustments = report.score_breakdown?.skill_adjustments || [];
   const kgMatched = report.computation_method?.kg_skills_matched ?? skillAdjustments.length;
   const [expandedNode, setExpandedNode] = useState<string | null>(null);
@@ -79,6 +81,11 @@ export default function KGPeerCard({ report }: KGPeerCardProps) {
               {kgMatched} skills matched against {tools.length} AI tools in our structured graph
             </p>
           </div>
+          {academicExposure?.kind === 'mapped' && (
+            <span className="ml-auto text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md border border-primary/20 bg-primary/10 text-primary">
+              Academic · {academicExposure.risk_tier}
+            </span>
+          )}
         </div>
 
         {/* Interactive Graph Visualization */}
@@ -311,6 +318,12 @@ export default function KGPeerCard({ report }: KGPeerCardProps) {
           📊 <span className="font-bold">Computed deterministically</span> · {kgMatched > 0 ? `${kgMatched} skills matched from KG` : 'Industry baseline'} ({report.computation_method?.numbers || '1,465-line engine'})
           {report.data_quality?.kg_coverage != null && report.data_quality.kg_coverage > 0 && (
             <span> · {report.data_quality.kg_coverage > 1 ? Math.min(100, Math.round(report.data_quality.kg_coverage)) : Math.round(report.data_quality.kg_coverage * 100)}% KG coverage</span>
+          )}
+          {academicExposure?.kind === 'mapped' && (
+            <span> · Atlas academic exposure mapped from {academicExposure.source_count} source{academicExposure.source_count === 1 ? '' : 's'}</span>
+          )}
+          {academicExposure?.kind === 'unmapped' && (
+            <span> · {academicExposure.message}</span>
           )}
         </p>
       </motion.div>

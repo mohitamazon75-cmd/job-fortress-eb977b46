@@ -1,0 +1,997 @@
+// Auto-generated from data/external/kg-soc-mapping.json. Do not hand-edit.
+// Snapshot: 2026-05-02. Primary source: jobs-exposure-atlas unified_exposure.csv (MIT).
+
+export const ATLAS_EXPOSURE_META = {
+  "snapshot_date": "2026-05-02",
+  "kg_family_count": 67,
+  "coverage_pct": 98.5,
+  "triple_source_count": 47,
+  "double_source_count": 2,
+  "single_source_count": 17,
+  "unmapped_count": 1,
+  "gate_decision": "PROCEED",
+  "atlas_source": "data/external/jobs-exposure-atlas/unified_exposure.csv"
+} as const;
+
+export const ATLAS_KG_EXPOSURE = {
+  "accountant": [
+    {
+      "atlas_title": "Accountants and auditors",
+      "soc": "13-2011",
+      "consensus_score": 0.5692666666666667,
+      "n_sources": 3,
+      "disagreement": 0.45220000000000005,
+      "karpathy": 0.8,
+      "openai": 0.56,
+      "anthropic": 0.3478,
+      "frey_osborne": 0.94
+    }
+  ],
+  "architect": [
+    {
+      "atlas_title": "Architects",
+      "soc": "17-1011",
+      "consensus_score": 0.42225736434108524,
+      "n_sources": 3,
+      "disagreement": 0.6215999999999999,
+      "karpathy": 0.7,
+      "openai": 0.4883720930232558,
+      "anthropic": 0.0784,
+      "frey_osborne": 0.018
+    }
+  ],
+  "backend_developer": [
+    {
+      "atlas_title": "Software developers, quality assurance analysts, and testers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "bank_teller": [
+    {
+      "atlas_title": "Tellers",
+      "soc": "43-3071",
+      "consensus_score": 0.42158888888888885,
+      "n_sources": 3,
+      "disagreement": 0.6769,
+      "karpathy": 0.7,
+      "openai": 0.5416666666666666,
+      "anthropic": 0.0231,
+      "frey_osborne": 0.98
+    }
+  ],
+  "bpo_l1_support": [
+    {
+      "atlas_title": "Customer service representatives",
+      "soc": "43-4051",
+      "consensus_score": 0.7230939393939394,
+      "n_sources": 3,
+      "disagreement": 0.3318181818181818,
+      "karpathy": 0.9,
+      "openai": 0.5681818181818182,
+      "anthropic": 0.7011,
+      "frey_osborne": 0.55
+    }
+  ],
+  "brand_manager": [
+    {
+      "atlas_title": "Advertising, promotions, and marketing managers",
+      "soc": "",
+      "consensus_score": 0.8,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.8,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "business_analyst": [
+    {
+      "atlas_title": "Management analysts",
+      "soc": "13-1111",
+      "consensus_score": 0.4494206349206349,
+      "n_sources": 3,
+      "disagreement": 0.45649999999999996,
+      "karpathy": 0.7,
+      "openai": 0.4047619047619047,
+      "anthropic": 0.2435,
+      "frey_osborne": 0.13
+    },
+    {
+      "atlas_title": "Operations research analysts",
+      "soc": "15-2031",
+      "consensus_score": 0.652610752688172,
+      "n_sources": 3,
+      "disagreement": 0.4712,
+      "karpathy": 0.9,
+      "openai": 0.6290322580645161,
+      "anthropic": 0.4288,
+      "frey_osborne": 0.035
+    }
+  ],
+  "call_center_agent": [
+    {
+      "atlas_title": "Customer service representatives",
+      "soc": "43-4051",
+      "consensus_score": 0.7230939393939394,
+      "n_sources": 3,
+      "disagreement": 0.3318181818181818,
+      "karpathy": 0.9,
+      "openai": 0.5681818181818182,
+      "anthropic": 0.7011,
+      "frey_osborne": 0.55
+    }
+  ],
+  "chartered_accountant": [
+    {
+      "atlas_title": "Accountants and auditors",
+      "soc": "13-2011",
+      "consensus_score": 0.5692666666666667,
+      "n_sources": 3,
+      "disagreement": 0.45220000000000005,
+      "karpathy": 0.8,
+      "openai": 0.56,
+      "anthropic": 0.3478,
+      "frey_osborne": 0.94
+    }
+  ],
+  "civil_engineer": [
+    {
+      "atlas_title": "Civil engineers",
+      "soc": "17-2051",
+      "consensus_score": 0.3634142857142857,
+      "n_sources": 3,
+      "disagreement": 0.5919,
+      "karpathy": 0.6,
+      "openai": 0.48214285714285715,
+      "anthropic": 0.0081,
+      "frey_osborne": 0.019
+    }
+  ],
+  "cloud_architect": [
+    {
+      "atlas_title": "Computer network architects",
+      "soc": "15-1241",
+      "consensus_score": 0.5446409131205674,
+      "n_sources": 3,
+      "disagreement": 0.6013000000000001,
+      "karpathy": 0.8,
+      "openai": 0.6352227393617021,
+      "anthropic": 0.1987,
+      "frey_osborne": null
+    }
+  ],
+  "content_writer": [
+    {
+      "atlas_title": "Writers and authors",
+      "soc": "27-3043",
+      "consensus_score": 0.674445584045584,
+      "n_sources": 3,
+      "disagreement": 0.6538,
+      "karpathy": 0.9,
+      "openai": 0.8771367521367521,
+      "anthropic": 0.2462,
+      "frey_osborne": 0.038
+    }
+  ],
+  "copywriter": [
+    {
+      "atlas_title": "Writers and authors",
+      "soc": "27-3043",
+      "consensus_score": 0.674445584045584,
+      "n_sources": 3,
+      "disagreement": 0.6538,
+      "karpathy": 0.9,
+      "openai": 0.8771367521367521,
+      "anthropic": 0.2462,
+      "frey_osborne": 0.038
+    }
+  ],
+  "customer_support": [
+    {
+      "atlas_title": "Customer service representatives",
+      "soc": "43-4051",
+      "consensus_score": 0.7230939393939394,
+      "n_sources": 3,
+      "disagreement": 0.3318181818181818,
+      "karpathy": 0.9,
+      "openai": 0.5681818181818182,
+      "anthropic": 0.7011,
+      "frey_osborne": 0.55
+    }
+  ],
+  "cybersecurity_analyst": [
+    {
+      "atlas_title": "Information security analysts",
+      "soc": "15-1212",
+      "consensus_score": 0.6460246376811595,
+      "n_sources": 3,
+      "disagreement": 0.31410000000000005,
+      "karpathy": 0.8,
+      "openai": 0.6521739130434783,
+      "anthropic": 0.4859,
+      "frey_osborne": null
+    }
+  ],
+  "data_analyst": [
+    {
+      "atlas_title": "Data scientists",
+      "soc": "15-2051",
+      "consensus_score": 0.6851077441077441,
+      "n_sources": 3,
+      "disagreement": 0.4395,
+      "karpathy": 0.9,
+      "openai": 0.6948232323232323,
+      "anthropic": 0.4605,
+      "frey_osborne": null
+    },
+    {
+      "atlas_title": "Operations research analysts",
+      "soc": "15-2031",
+      "consensus_score": 0.652610752688172,
+      "n_sources": 3,
+      "disagreement": 0.4712,
+      "karpathy": 0.9,
+      "openai": 0.6290322580645161,
+      "anthropic": 0.4288,
+      "frey_osborne": 0.035
+    }
+  ],
+  "data_entry_operator": [],
+  "data_scientist": [
+    {
+      "atlas_title": "Data scientists",
+      "soc": "15-2051",
+      "consensus_score": 0.6851077441077441,
+      "n_sources": 3,
+      "disagreement": 0.4395,
+      "karpathy": 0.9,
+      "openai": 0.6948232323232323,
+      "anthropic": 0.4605,
+      "frey_osborne": null
+    }
+  ],
+  "database_administrator": [
+    {
+      "atlas_title": "Database administrators and architects",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "devops_engineer": [
+    {
+      "atlas_title": "Software developers, quality assurance analysts, and testers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    },
+    {
+      "atlas_title": "Network and computer systems administrators",
+      "soc": "15-1244",
+      "consensus_score": 0.6223432432432433,
+      "n_sources": 3,
+      "disagreement": 0.46270000000000006,
+      "karpathy": 0.8,
+      "openai": 0.7297297297297298,
+      "anthropic": 0.3373,
+      "frey_osborne": null
+    }
+  ],
+  "digital_marketer": [
+    {
+      "atlas_title": "Market research analysts",
+      "soc": "13-1161",
+      "consensus_score": 0.690963387978142,
+      "n_sources": 3,
+      "disagreement": 0.37540983606557377,
+      "karpathy": 0.9,
+      "openai": 0.5245901639344263,
+      "anthropic": 0.6483,
+      "frey_osborne": 0.61
+    }
+  ],
+  "doctor": [
+    {
+      "atlas_title": "Physicians and surgeons",
+      "soc": "",
+      "consensus_score": 0.5,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.5,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "email_marketer": [
+    {
+      "atlas_title": "Market research analysts",
+      "soc": "13-1161",
+      "consensus_score": 0.690963387978142,
+      "n_sources": 3,
+      "disagreement": 0.37540983606557377,
+      "karpathy": 0.9,
+      "openai": 0.5245901639344263,
+      "anthropic": 0.6483,
+      "frey_osborne": 0.61
+    }
+  ],
+  "financial_analyst": [
+    {
+      "atlas_title": "Financial analysts",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "fitness_trainer": [
+    {
+      "atlas_title": "Fitness trainers and instructors",
+      "soc": "39-9031",
+      "consensus_score": 0.1049019607843137,
+      "n_sources": 3,
+      "disagreement": 0.3,
+      "karpathy": 0.3,
+      "openai": 0.0147058823529411,
+      "anthropic": 0.0,
+      "frey_osborne": 0.085
+    }
+  ],
+  "frontend_developer": [
+    {
+      "atlas_title": "Web developers and digital designers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "full_stack_developer": [
+    {
+      "atlas_title": "Software developers, quality assurance analysts, and testers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "graphic_designer": [
+    {
+      "atlas_title": "Graphic designers",
+      "soc": "27-1024",
+      "consensus_score": 0.5890666666666666,
+      "n_sources": 3,
+      "disagreement": 0.5327999999999999,
+      "karpathy": 0.9,
+      "openai": 0.5,
+      "anthropic": 0.3672,
+      "frey_osborne": 0.082
+    }
+  ],
+  "hr_generalist": [
+    {
+      "atlas_title": "Human resources specialists",
+      "soc": "13-1071",
+      "consensus_score": 0.5826148148148148,
+      "n_sources": 3,
+      "disagreement": 0.2966,
+      "karpathy": 0.7,
+      "openai": 0.6444444444444445,
+      "anthropic": 0.4034,
+      "frey_osborne": null
+    }
+  ],
+  "insurance_underwriter": [
+    {
+      "atlas_title": "Insurance underwriters",
+      "soc": "13-2053",
+      "consensus_score": 0.5113095238095239,
+      "n_sources": 3,
+      "disagreement": 0.8375,
+      "karpathy": 0.9,
+      "openai": 0.5714285714285714,
+      "anthropic": 0.0625,
+      "frey_osborne": 0.99
+    }
+  ],
+  "investment_banker": [
+    {
+      "atlas_title": "Securities, commodities, and financial services sales agents",
+      "soc": "41-3031",
+      "consensus_score": 0.6156897435897436,
+      "n_sources": 3,
+      "disagreement": 0.3587,
+      "karpathy": 0.8,
+      "openai": 0.6057692307692308,
+      "anthropic": 0.4413,
+      "frey_osborne": 0.016
+    }
+  ],
+  "it_support_engineer": [
+    {
+      "atlas_title": "Computer support specialists",
+      "soc": "15-1230",
+      "consensus_score": 0.8,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.8,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "journalist": [
+    {
+      "atlas_title": "News analysts, reporters, and journalists",
+      "soc": "27-3023",
+      "consensus_score": 0.5199333333333334,
+      "n_sources": 3,
+      "disagreement": 0.49019999999999997,
+      "karpathy": 0.7,
+      "openai": 0.65,
+      "anthropic": 0.2098,
+      "frey_osborne": null
+    }
+  ],
+  "lawyer_litigation": [
+    {
+      "atlas_title": "Lawyers",
+      "soc": "23-1011",
+      "consensus_score": 0.4641,
+      "n_sources": 3,
+      "disagreement": 0.6327,
+      "karpathy": 0.8,
+      "openai": 0.425,
+      "anthropic": 0.1673,
+      "frey_osborne": 0.035
+    }
+  ],
+  "legal_associate": [
+    {
+      "atlas_title": "Paralegals and legal assistants",
+      "soc": "23-2011",
+      "consensus_score": 0.5725666666666667,
+      "n_sources": 3,
+      "disagreement": 0.6073,
+      "karpathy": 0.9,
+      "openai": 0.525,
+      "anthropic": 0.2927,
+      "frey_osborne": 0.94
+    },
+    {
+      "atlas_title": "Lawyers",
+      "soc": "23-1011",
+      "consensus_score": 0.4641,
+      "n_sources": 3,
+      "disagreement": 0.6327,
+      "karpathy": 0.8,
+      "openai": 0.425,
+      "anthropic": 0.1673,
+      "frey_osborne": 0.035
+    }
+  ],
+  "loan_officer": [
+    {
+      "atlas_title": "Loan officers",
+      "soc": "13-2072",
+      "consensus_score": 0.5255363636363637,
+      "n_sources": 3,
+      "disagreement": 0.6143000000000001,
+      "karpathy": 0.8,
+      "openai": 0.5909090909090909,
+      "anthropic": 0.1857,
+      "frey_osborne": 0.98
+    }
+  ],
+  "logistics_coordinator": [
+    {
+      "atlas_title": "Logisticians",
+      "soc": "13-1081",
+      "consensus_score": 0.4616535106109088,
+      "n_sources": 3,
+      "disagreement": 0.5428999999999999,
+      "karpathy": 0.7,
+      "openai": 0.5278605318327264,
+      "anthropic": 0.1571,
+      "frey_osborne": 0.012
+    }
+  ],
+  "management_consultant": [
+    {
+      "atlas_title": "Management analysts",
+      "soc": "13-1111",
+      "consensus_score": 0.4494206349206349,
+      "n_sources": 3,
+      "disagreement": 0.45649999999999996,
+      "karpathy": 0.7,
+      "openai": 0.4047619047619047,
+      "anthropic": 0.2435,
+      "frey_osborne": 0.13
+    }
+  ],
+  "manual_qa_engineer": [
+    {
+      "atlas_title": "Software developers, quality assurance analysts, and testers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "mechanical_engineer": [
+    {
+      "atlas_title": "Mechanical engineers",
+      "soc": "17-2141",
+      "consensus_score": 0.4375311698839743,
+      "n_sources": 3,
+      "disagreement": 0.6186999999999999,
+      "karpathy": 0.7,
+      "openai": 0.5312935096519228,
+      "anthropic": 0.0813,
+      "frey_osborne": 0.011
+    }
+  ],
+  "medical_coder": [
+    {
+      "atlas_title": "Medical records specialists",
+      "soc": "29-2072",
+      "consensus_score": 0.728349019607843,
+      "n_sources": 3,
+      "disagreement": 0.2823529411764706,
+      "karpathy": 0.9,
+      "openai": 0.6176470588235294,
+      "anthropic": 0.6674,
+      "frey_osborne": null
+    }
+  ],
+  "ml_engineer": [
+    {
+      "atlas_title": "Software developers, quality assurance analysts, and testers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    },
+    {
+      "atlas_title": "Computer and information research scientists",
+      "soc": "15-1221",
+      "consensus_score": 0.6250051282051282,
+      "n_sources": 3,
+      "disagreement": 0.5596000000000001,
+      "karpathy": 0.9,
+      "openai": 0.6346153846153847,
+      "anthropic": 0.3404,
+      "frey_osborne": null
+    }
+  ],
+  "mobile_developer": [
+    {
+      "atlas_title": "Software developers, quality assurance analysts, and testers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "motion_designer": [
+    {
+      "atlas_title": "Special effects artists and animators",
+      "soc": "27-1014",
+      "consensus_score": 0.5940333333333333,
+      "n_sources": 3,
+      "disagreement": 0.5429,
+      "karpathy": 0.9,
+      "openai": 0.525,
+      "anthropic": 0.3571,
+      "frey_osborne": 0.015
+    },
+    {
+      "atlas_title": "Graphic designers",
+      "soc": "27-1024",
+      "consensus_score": 0.5890666666666666,
+      "n_sources": 3,
+      "disagreement": 0.5327999999999999,
+      "karpathy": 0.9,
+      "openai": 0.5,
+      "anthropic": 0.3672,
+      "frey_osborne": 0.082
+    }
+  ],
+  "nurse": [
+    {
+      "atlas_title": "Registered nurses",
+      "soc": "29-1141",
+      "consensus_score": 0.27989666901243254,
+      "n_sources": 3,
+      "disagreement": 0.3405,
+      "karpathy": 0.4,
+      "openai": 0.38019000703729766,
+      "anthropic": 0.0595,
+      "frey_osborne": null
+    }
+  ],
+  "performance_marketer": [
+    {
+      "atlas_title": "Market research analysts",
+      "soc": "13-1161",
+      "consensus_score": 0.690963387978142,
+      "n_sources": 3,
+      "disagreement": 0.37540983606557377,
+      "karpathy": 0.9,
+      "openai": 0.5245901639344263,
+      "anthropic": 0.6483,
+      "frey_osborne": 0.61
+    }
+  ],
+  "pharmacist": [
+    {
+      "atlas_title": "Pharmacists",
+      "soc": "29-1051",
+      "consensus_score": 0.3393904761904762,
+      "n_sources": 3,
+      "disagreement": 0.4104,
+      "karpathy": 0.5,
+      "openai": 0.4285714285714285,
+      "anthropic": 0.0896,
+      "frey_osborne": 0.012
+    }
+  ],
+  "product_designer": [
+    {
+      "atlas_title": "Web developers and digital designers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    },
+    {
+      "atlas_title": "Graphic designers",
+      "soc": "27-1024",
+      "consensus_score": 0.5890666666666666,
+      "n_sources": 3,
+      "disagreement": 0.5327999999999999,
+      "karpathy": 0.9,
+      "openai": 0.5,
+      "anthropic": 0.3672,
+      "frey_osborne": 0.082
+    }
+  ],
+  "product_manager": [
+    {
+      "atlas_title": "Computer and information systems managers",
+      "soc": "11-3021",
+      "consensus_score": 0.46206767676767674,
+      "n_sources": 3,
+      "disagreement": 0.5440999999999999,
+      "karpathy": 0.7,
+      "openai": 0.5303030303030303,
+      "anthropic": 0.1559,
+      "frey_osborne": 0.035
+    }
+  ],
+  "project_manager": [
+    {
+      "atlas_title": "Project management specialists",
+      "soc": "13-1082",
+      "consensus_score": 0.625,
+      "n_sources": 2,
+      "disagreement": 0.1499999999999999,
+      "karpathy": 0.7,
+      "openai": 0.55,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "psychologist": [
+    {
+      "atlas_title": "Psychologists",
+      "soc": "19-3030",
+      "consensus_score": 0.6,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.6,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "qa_tester": [
+    {
+      "atlas_title": "Software developers, quality assurance analysts, and testers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "real_estate_agent": [
+    {
+      "atlas_title": "Real estate brokers and sales agents",
+      "soc": "41-9020",
+      "consensus_score": 0.6,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.6,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "recruiter": [
+    {
+      "atlas_title": "Human resources specialists",
+      "soc": "13-1071",
+      "consensus_score": 0.5826148148148148,
+      "n_sources": 3,
+      "disagreement": 0.2966,
+      "karpathy": 0.7,
+      "openai": 0.6444444444444445,
+      "anthropic": 0.4034,
+      "frey_osborne": null
+    }
+  ],
+  "research_scientist": [
+    {
+      "atlas_title": "Computer and information research scientists",
+      "soc": "15-1221",
+      "consensus_score": 0.6250051282051282,
+      "n_sources": 3,
+      "disagreement": 0.5596000000000001,
+      "karpathy": 0.9,
+      "openai": 0.6346153846153847,
+      "anthropic": 0.3404,
+      "frey_osborne": null
+    }
+  ],
+  "risk_analyst": [
+    {
+      "atlas_title": "Financial analysts",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "sales_executive": [
+    {
+      "atlas_title": "Wholesale and manufacturing sales representatives",
+      "soc": "41-4000",
+      "consensus_score": 0.7,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.7,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "scrum_master": [
+    {
+      "atlas_title": "Project management specialists",
+      "soc": "13-1082",
+      "consensus_score": 0.625,
+      "n_sources": 2,
+      "disagreement": 0.1499999999999999,
+      "karpathy": 0.7,
+      "openai": 0.55,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "sdr_bdr": [
+    {
+      "atlas_title": "Wholesale and manufacturing sales representatives",
+      "soc": "41-4000",
+      "consensus_score": 0.7,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.7,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "social_media_manager": [
+    {
+      "atlas_title": "Market research analysts",
+      "soc": "13-1161",
+      "consensus_score": 0.690963387978142,
+      "n_sources": 3,
+      "disagreement": 0.37540983606557377,
+      "karpathy": 0.9,
+      "openai": 0.5245901639344263,
+      "anthropic": 0.6483,
+      "frey_osborne": 0.61
+    },
+    {
+      "atlas_title": "Public relations specialists",
+      "soc": "27-3031",
+      "consensus_score": 0.6146363636363638,
+      "n_sources": 3,
+      "disagreement": 0.34700000000000003,
+      "karpathy": 0.8,
+      "openai": 0.5909090909090909,
+      "anthropic": 0.453,
+      "frey_osborne": 0.18
+    }
+  ],
+  "solutions_architect": [
+    {
+      "atlas_title": "Computer network architects",
+      "soc": "15-1241",
+      "consensus_score": 0.5446409131205674,
+      "n_sources": 3,
+      "disagreement": 0.6013000000000001,
+      "karpathy": 0.8,
+      "openai": 0.6352227393617021,
+      "anthropic": 0.1987,
+      "frey_osborne": null
+    },
+    {
+      "atlas_title": "Software developers, quality assurance analysts, and testers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ],
+  "supply_chain_manager": [
+    {
+      "atlas_title": "Logisticians",
+      "soc": "13-1081",
+      "consensus_score": 0.4616535106109088,
+      "n_sources": 3,
+      "disagreement": 0.5428999999999999,
+      "karpathy": 0.7,
+      "openai": 0.5278605318327264,
+      "anthropic": 0.1571,
+      "frey_osborne": 0.012
+    }
+  ],
+  "tax_consultant": [
+    {
+      "atlas_title": "Tax examiners and collectors, and revenue agents",
+      "soc": "13-2081",
+      "consensus_score": 0.46938172043010756,
+      "n_sources": 3,
+      "disagreement": 0.7725000000000001,
+      "karpathy": 0.8,
+      "openai": 0.5806451612903225,
+      "anthropic": 0.0275,
+      "frey_osborne": 0.93
+    },
+    {
+      "atlas_title": "Accountants and auditors",
+      "soc": "13-2011",
+      "consensus_score": 0.5692666666666667,
+      "n_sources": 3,
+      "disagreement": 0.45220000000000005,
+      "karpathy": 0.8,
+      "openai": 0.56,
+      "anthropic": 0.3478,
+      "frey_osborne": 0.94
+    }
+  ],
+  "teacher": [
+    {
+      "atlas_title": "High school teachers",
+      "soc": "25-2031",
+      "consensus_score": 0.4411444444444444,
+      "n_sources": 3,
+      "disagreement": 0.40989999999999993,
+      "karpathy": 0.7,
+      "openai": 0.3333333333333333,
+      "anthropic": 0.2901,
+      "frey_osborne": 0.0078
+    }
+  ],
+  "technical_writer": [
+    {
+      "atlas_title": "Technical writers",
+      "soc": "27-3042",
+      "consensus_score": 0.6915666666666667,
+      "n_sources": 3,
+      "disagreement": 0.4253,
+      "karpathy": 0.9,
+      "openai": 0.7,
+      "anthropic": 0.4747,
+      "frey_osborne": 0.89
+    }
+  ],
+  "ui_ux_designer": [
+    {
+      "atlas_title": "Web developers and digital designers",
+      "soc": "",
+      "consensus_score": 0.9,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.9,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    },
+    {
+      "atlas_title": "Graphic designers",
+      "soc": "27-1024",
+      "consensus_score": 0.5890666666666666,
+      "n_sources": 3,
+      "disagreement": 0.5327999999999999,
+      "karpathy": 0.9,
+      "openai": 0.5,
+      "anthropic": 0.3672,
+      "frey_osborne": 0.082
+    }
+  ],
+  "video_editor": [
+    {
+      "atlas_title": "Film and video editors and camera operators",
+      "soc": "27-4030",
+      "consensus_score": 0.7,
+      "n_sources": 1,
+      "disagreement": null,
+      "karpathy": 0.7,
+      "openai": null,
+      "anthropic": null,
+      "frey_osborne": null
+    }
+  ]
+} as const;
