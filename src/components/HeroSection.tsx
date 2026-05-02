@@ -155,8 +155,16 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
             >
               Next?
               <motion.div
-                className="absolute -bottom-1 sm:-bottom-2 left-0 right-0 h-1 sm:h-2 rounded-full"
-                style={{ background: 'var(--gradient-threatened)' }}
+                className="absolute -bottom-2 sm:-bottom-3 left-0 right-0 h-2 sm:h-3 rounded-full opacity-90"
+                style={{
+                  background: 'var(--gradient-threatened)',
+                  WebkitMaskImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8' preserveAspectRatio='none'><path d='M0 4 Q 5 0 10 4 T 20 4 T 30 4 T 40 4' stroke='black' stroke-width='3' fill='none'/></svg>\")",
+                  maskImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8' preserveAspectRatio='none'><path d='M0 4 Q 5 0 10 4 T 20 4 T 30 4 T 40 4' stroke='black' stroke-width='3' fill='none'/></svg>\")",
+                  WebkitMaskRepeat: 'repeat-x',
+                  maskRepeat: 'repeat-x',
+                  WebkitMaskSize: '40px 8px',
+                  maskSize: '40px 8px',
+                }}
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ delay: 0.8, duration: 0.5 }}
@@ -211,20 +219,21 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
             ))}
           </motion.div>
 
-          {/* Dual CTA */}
+          {/* Single CTA — removed dual-CTA confusion (both buttons routed to
+              the same flow). Resume upload is offered inside the onboarding
+              step, so no need to duplicate it here. */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.5 }}
             className="mb-8 sm:mb-12"
           >
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-              {/* Primary CTA */}
+            <div className="flex items-center justify-center">
               <motion.button
                 whileHover={{ scale: 1.03, y: -3 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={onStart}
-                className="group relative w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 rounded-2xl text-primary-foreground font-black text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
+                className="group relative w-full sm:w-auto px-8 sm:px-14 py-5 sm:py-6 rounded-2xl text-primary-foreground font-black text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
                 style={{ background: 'var(--gradient-primary)', boxShadow: '0 16px 60px hsl(var(--primary) / 0.4)' }}
               >
                 Show Me My Risk Score
@@ -234,17 +243,6 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
                   animate={{ boxShadow: ['0 0 0 0 hsl(var(--primary) / 0)', '0 0 0 10px hsl(var(--primary) / 0.12)', '0 0 0 0 hsl(var(--primary) / 0)'] }}
                   transition={{ duration: 2.5, repeat: Infinity }}
                 />
-              </motion.button>
-
-              {/* Secondary CTA */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={onStart}
-                className="w-full sm:w-auto px-8 sm:px-10 py-5 sm:py-6 rounded-2xl border-2 border-border bg-card hover:border-primary/30 hover:bg-primary/[0.04] text-foreground font-bold text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
-              >
-                <FileText className="w-5 h-5" />
-                Upload Resume (faster)
               </motion.button>
             </div>
 
@@ -270,7 +268,7 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
               <span className="text-muted-foreground/40 hidden sm:inline">·</span>
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-prophet-green" />
-                <span className="text-xs text-muted-foreground">Methodology from <span className="text-foreground font-bold">WEF, NASSCOM, O*NET</span></span>
+                <span className="text-xs text-muted-foreground">Methodology from <span className="text-foreground font-bold">WEF, NASSCOM, McKinsey, O*NET, Oxford</span></span>
               </div>
             </motion.div>
           </motion.div>
@@ -333,9 +331,11 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
           >
             <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/50">Research basis</span>
             {[
-              { name: 'WEF Future of Jobs', label: 'WEF' },
-              { name: 'NASSCOM India Tech Workforce', label: 'NASSCOM' },
+              { name: 'WEF Future of Jobs Report 2025', label: 'WEF' },
+              { name: 'NASSCOM India Tech Workforce 2024', label: 'NASSCOM' },
+              { name: 'McKinsey GenAI Impact Report 2024', label: 'McKinsey' },
               { name: 'O*NET Task Database', label: 'O*NET' },
+              { name: 'Frey & Osborne, Oxford (2013)', label: 'Oxford' },
               { name: 'LinkedIn Economic Graph', label: 'LinkedIn' },
             ].map(src => (
               <span
