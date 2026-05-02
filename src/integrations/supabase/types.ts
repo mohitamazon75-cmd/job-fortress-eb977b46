@@ -2295,6 +2295,57 @@ export type Database = {
         }
         Relationships: []
       }
+      shadow_match_log: {
+        Row: {
+          created_at: string
+          det_diagnostics: Json | null
+          det_matched_count: number | null
+          det_missing_count: number | null
+          det_pct: number | null
+          function_name: string
+          has_jd: boolean
+          id: string
+          llm_pct: number | null
+          resume_source: string | null
+          role: string | null
+          runtime_ms: number | null
+          scan_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          det_diagnostics?: Json | null
+          det_matched_count?: number | null
+          det_missing_count?: number | null
+          det_pct?: number | null
+          function_name: string
+          has_jd?: boolean
+          id?: string
+          llm_pct?: number | null
+          resume_source?: string | null
+          role?: string | null
+          runtime_ms?: number | null
+          scan_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          det_diagnostics?: Json | null
+          det_matched_count?: number | null
+          det_missing_count?: number | null
+          det_pct?: number | null
+          function_name?: string
+          has_jd?: boolean
+          id?: string
+          llm_pct?: number | null
+          resume_source?: string | null
+          role?: string | null
+          runtime_ms?: number | null
+          scan_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       share_events: {
         Row: {
           assessment_id: string | null
