@@ -599,3 +599,209 @@ describe('buildCacheKey — collision resistance', () => {
     expect(buildCacheKey('scan-x', a)).toBe(buildCacheKey('scan-x', b));
   });
 });
+
+describe('canonicalizeContext — equivalence rules', () => {
+  const base = {
+    role: 'Senior Product Manager',
+    seniority: 'senior',
+    industry: 'fintech',
+    bullet: 'Shipped pricing experiment that lifted ARPU 11%.',
+    kgMatch: 0.78,
+  };
+
+  it('whitespace + case in role/seniority/industry collapse to same canonical form', () => {
+    // Calibrated against: cache hit-rate. "Senior PM" typed two ways must hash equal.
+    const a = canonicalizeContext(base);
+    const b = canonicalizeContext({
+      ...base,
+      role: '  SENIOR   product   manager  ',
+      seniority: 'SENIOR',
+      industry: '  FINTECH ',
+    });
+    expect(a).toBe(b);
+  });
+
+  it('different role produces different canonical form', () => {
+    // Calibrated against: cache isolation per role.
+    const a = canonicalizeContext(base);
+    const b = canonicalizeContext({ ...base, role: 'Engineering Manager' });
+    expect(a).not.toBe(b);
+  });
+
+  it('kgMatch is rounded to 2 decimals so 0.781 and 0.784 collide but 0.78 vs 0.79 do not', () => {
+    // Calibrated against: avoid cache thrash from float jitter; keep meaningful deltas.
+    expect(canonicalizeContext({ ...base, kgMatch: 0.781 })).toBe(
+      canonicalizeContext({ ...base, kgMatch: 0.784 }),
+    );
+    expect(canonicalizeContext({ ...base, kgMatch: 0.78 })).not.toBe(
+      canonicalizeContext({ ...base, kgMatch: 0.79 }),
+    );
+  });
+
+  it('null vs empty string vs undefined for optional fields collapse identically', () => {
+    // Calibrated against: callers pass any of these; cache must not split.
+    const a = canonicalizeContext({ ...base, seniority: null, industry: null });
+    const b = canonicalizeContext({ ...base, seniority: '', industry: '   ' });
+    const c = canonicalizeContext({ ...base, seniority: undefined as unknown as null, industry: undefined as unknown as null });
+    expect(a).toBe(b);
+    expect(b).toBe(c);
+  });
+
+  it('non-finite kgMatch (NaN, Infinity) collapses to 0.00 — fail-safe', () => {
+    // Calibrated against: never let a bad number poison the cache key.
+    const a = canonicalizeContext({ ...base, kgMatch: NaN });
+    const b = canonicalizeContext({ ...base, kgMatch: Infinity });
+    const c = canonicalizeContext({ ...base, kgMatch: 0 });
+    expect(a).toBe(c);
+    expect(b).toBe(c);
+  });
+});
+
+describe('personaSetFingerprint', () => {
+  it('returns a stable 8-hex-char hash across calls (pure)', () => {
+    // Calibrated against: must be deterministic so cache keys are stable.
+    const a = personaSetFingerprint();
+    const b = personaSetFingerprint();
+    expect(a).toBe(b);
+    expect(a).toMatch(/^[0-9a-f]{8}$/);
+  });
+});
+
+describe('buildCacheKey — context-aware (3-arg new contract)', () => {
+  const ctx = {
+    role: 'Senior Product Manager',
+    seniority: 'senior',
+    industry: 'fintech',
+    bullet: 'Shipped pricing experiment that lifted ARPU 11%.',
+    kgMatch: 0.78,
+  };
+
+  it('embeds CACHE_KEY_VERSION and persona fingerprint in the key', () => {
+    // Calibrated against: bumping version OR editing personas must invalidate cache.
+    const key = buildCacheKey('scan-123', ctx);
+    expect(key.startsWith(`recruiter_panel_${CACHE_KEY_VERSION}:scan-123:`)).toBe(true);
+    expect(key).toContain(personaSetFingerprint());
+  });
+
+  it('same ctx → same key (deterministic)', () => {
+    expect(buildCacheKey('scan-1', ctx)).toBe(buildCacheKey('scan-1', { ...ctx }));
+  });
+
+  it('whitespace/case-equivalent ctx → same key (cache hit)', () => {
+    // Calibrated against: "Senior PM" vs "  SENIOR   pm  " should share cache.
+    const a = buildCacheKey('scan-1', ctx);
+    const b = buildCacheKey('scan-1', {
+      ...ctx,
+      role: '  SENIOR product   MANAGER ',
+      industry: 'FINTECH',
+    });
+    expect(a).toBe(b);
+  });
+
+  it('different industry → different key (cache isolation)', () => {
+    expect(buildCacheKey('scan-1', ctx)).not.toBe(
+      buildCacheKey('scan-1', { ...ctx, industry: 'healthtech' }),
+    );
+  });
+
+  it('different scan → different key (per-scan isolation)', () => {
+    expect(buildCacheKey('scan-1', ctx)).not.toBe(buildCacheKey('scan-2', ctx));
+  });
+
+  it('legacy 2-arg (scanId, bullet) still works and is also versioned', () => {
+    // Calibrated against: backwards compat with the v1 signature in any caller.
+    const key = buildCacheKey('scan-1', 'some bullet text here long enough');
+    expect(key.startsWith(`recruiter_panel_${CACHE_KEY_VERSION}:scan-1:`)).toBe(true);
+    expect(key).toContain(personaSetFingerprint());
+  });
+
+  it('empty scanId falls back to "anon" rather than producing "::"', () => {
+    // Calibrated against: never emit malformed double-colon keys that look truncated.
+    const key = buildCacheKey('', ctx);
+    expect(key.startsWith(`recruiter_panel_${CACHE_KEY_VERSION}:anon:`)).toBe(true);
+  });
+});
+
+describe('assemblePanelPrompt — determinism + drift detection', () => {
+  const ctx = {
+    role: 'Senior Product Manager',
+    seniority: 'senior',
+    industry: 'fintech',
+    bullet: 'Shipped pricing experiment that lifted ARPU 11%.',
+    kgMatch: 0.78,
+  };
+
+  it('same ctx → byte-identical system+user+fingerprint', () => {
+    // Calibrated against: edge fn must be able to re-assemble the exact prompt later.
+    const a = assemblePanelPrompt(ctx);
+    const b = assemblePanelPrompt({ ...ctx });
+    expect(a.system).toBe(b.system);
+    expect(a.user).toBe(b.user);
+    expect(a.fingerprint).toBe(b.fingerprint);
+    expect(promptsMatch(a, b)).toBe(true);
+  });
+
+  it('whitespace/case-equivalent ctx → same fingerprint (normalisation works)', () => {
+    // Calibrated against: trivially-different inputs must not create cache misses.
+    const a = assemblePanelPrompt(ctx);
+    const b = assemblePanelPrompt({
+      ...ctx,
+      role: '  SENIOR product   MANAGER  ',
+      seniority: '  SENIOR ',
+      industry: ' FINTECH ',
+      bullet: '   Shipped   pricing experiment that lifted ARPU 11%.   ',
+    });
+    expect(a.fingerprint).toBe(b.fingerprint);
+  });
+
+  it('changing the bullet changes the user prompt + fingerprint but NOT the templateFingerprint', () => {
+    // Calibrated against: persona set + system prompt are frozen; only user-side changes.
+    const a = assemblePanelPrompt(ctx);
+    const b = assemblePanelPrompt({ ...ctx, bullet: 'Totally different bullet that is long enough.' });
+    expect(a.fingerprint).not.toBe(b.fingerprint);
+    expect(a.system).toBe(b.system);
+    expect(a.templateFingerprint).toBe(b.templateFingerprint);
+  });
+
+  it('templateFingerprint is stable across ctx changes (only depends on system + persona set)', () => {
+    // Calibrated against: lets us alarm if someone edits the frozen prompt without bumping version.
+    const a = assemblePanelPrompt(ctx);
+    const b = assemblePanelPrompt({ ...ctx, role: 'Different Role', industry: 'other' });
+    expect(a.templateFingerprint).toBe(b.templateFingerprint);
+  });
+
+  it('returns 8-hex-char fingerprints (DJB2 contract)', () => {
+    const out = assemblePanelPrompt(ctx);
+    expect(out.fingerprint).toMatch(/^[0-9a-f]{8}$/);
+    expect(out.templateFingerprint).toMatch(/^[0-9a-f]{8}$/);
+  });
+
+  it('non-finite kgMatch (NaN) is normalised to 0 and does not break assembly', () => {
+    // Calibrated against: fail-safe — bad upstream number must not throw.
+    expect(() => assemblePanelPrompt({ ...ctx, kgMatch: NaN })).not.toThrow();
+    const out = assemblePanelPrompt({ ...ctx, kgMatch: NaN });
+    expect(out.user).toContain('kg_match: 0.00');
+  });
+
+  it('promptsMatch returns false when fingerprints differ', () => {
+    const a = assemblePanelPrompt(ctx);
+    const b = assemblePanelPrompt({ ...ctx, role: 'Engineering Manager' });
+    expect(promptsMatch(a, b)).toBe(false);
+  });
+});
+
+describe('hashString', () => {
+  it('is stable, deterministic, and 8 hex chars', () => {
+    expect(hashString('hello world')).toBe(hashString('hello world'));
+    expect(hashString('hello world')).toMatch(/^[0-9a-f]{8}$/);
+  });
+
+  it('hashBullet is an alias of hashString (legacy compat)', () => {
+    expect(hashBullet('foo bar baz')).toBe(hashString('foo bar baz'));
+  });
+
+  it('handles empty / null-ish input without throwing', () => {
+    expect(hashString('')).toMatch(/^[0-9a-f]{8}$/);
+    expect(hashString('   ')).toBe(hashString(''));
+  });
+});
