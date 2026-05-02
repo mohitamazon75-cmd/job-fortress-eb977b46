@@ -331,9 +331,11 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
           >
             <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/50">Research basis</span>
             {[
-              { name: 'WEF Future of Jobs', label: 'WEF' },
-              { name: 'NASSCOM India Tech Workforce', label: 'NASSCOM' },
+              { name: 'WEF Future of Jobs Report 2025', label: 'WEF' },
+              { name: 'NASSCOM India Tech Workforce 2024', label: 'NASSCOM' },
+              { name: 'McKinsey GenAI Impact Report 2024', label: 'McKinsey' },
               { name: 'O*NET Task Database', label: 'O*NET' },
+              { name: 'Frey & Osborne, Oxford (2013)', label: 'Oxford' },
               { name: 'LinkedIn Economic Graph', label: 'LinkedIn' },
             ].map(src => (
               <span
