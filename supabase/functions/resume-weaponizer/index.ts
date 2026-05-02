@@ -246,6 +246,62 @@ Rewrite this person's resume to:
       { onConflict: "cache_key" }
     ).then(() => {}).catch((e: any) => console.warn("[ResumeWeaponizer] cache write fail:", e));
 
+    // ─────────────────────────────────────────────────────────────
+    // B2.2 Shadow Scorer — deterministic Resume-Matcher parity log.
+    // Fully non-blocking. Failures must NEVER affect the user response.
+    // Privacy: only counts + scores logged, never resume/JD text.
+    // ─────────────────────────────────────────────────────────────
+    (async () => {
+      try {
+        const t0 = Date.now();
+        let resumeText = "";
+        let resumeSource: "artifact" | "report_text" | "unavailable" = "unavailable";
+
+        if (scanId) {
+          const { data: artifact } = await supabase
+            .from("resume_artifacts")
+            .select("raw_text")
+            .eq("scan_id", scanId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (artifact?.raw_text && artifact.raw_text.length > 100) {
+            resumeText = artifact.raw_text;
+            resumeSource = "artifact";
+          }
+        }
+        // Fallback: synthesize from report's all_skills if no artifact
+        if (!resumeText && Array.isArray(report?.all_skills) && report.all_skills.length > 0) {
+          resumeText = `${role} ${industry} ${report.all_skills.join(" ")} ${moatSkills}`;
+          resumeSource = "report_text";
+        }
+
+        const det = (resumeText && hasJD)
+          ? matchResumeToJD(resumeText, jdSnippet)
+          : null;
+
+        const llmPct = result?.jd_match_analysis?.match_pct ?? null;
+
+        await supabase.from("shadow_match_log").insert({
+          function_name: "resume-weaponizer",
+          user_id: userId,
+          scan_id: scanId ?? null,
+          role,
+          has_jd: hasJD,
+          det_pct: det?.score ?? null,
+          llm_pct: typeof llmPct === "number" ? Math.round(llmPct) : null,
+          det_matched_count: det?.keywords.matched.length ?? null,
+          det_missing_count: det?.keywords.missing.length ?? null,
+          runtime_ms: Date.now() - t0,
+          resume_source: resumeSource,
+          det_diagnostics: det?.diagnostics ?? {},
+        });
+        console.log(`[ResumeWeaponizer.shadow] det=${det?.score ?? 'n/a'} llm=${llmPct ?? 'n/a'} src=${resumeSource} hasJD=${hasJD}`);
+      } catch (e: any) {
+        console.warn("[ResumeWeaponizer.shadow] non-fatal:", e?.message ?? e);
+      }
+    })();
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
