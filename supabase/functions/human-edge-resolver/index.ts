@@ -44,6 +44,7 @@ import { getCorsHeaders, handleCorsPreFlight, okResponse, errResponse } from "..
 import { fetchAdzunaSalaryForRole } from "../_shared/adzuna-salary.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
+import { cleanRoleForSearch } from "../_shared/clean-role-for-search.ts";
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
