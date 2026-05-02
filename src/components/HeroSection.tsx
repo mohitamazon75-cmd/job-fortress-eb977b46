@@ -466,6 +466,10 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
         </div>
       </motion.div>
     </div>
+
+    {/* Methodology modal — opened from the research-basis chip strip and
+        the "See methodology" link. Pure presentation, no engine wiring. */}
+    <MethodologyModal open={methodologyOpen} onClose={() => setMethodologyOpen(false)} />
     </div>
   );
 }
