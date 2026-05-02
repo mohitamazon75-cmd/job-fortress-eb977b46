@@ -2110,7 +2110,9 @@ export type Database = {
           dpdp_consent_given: boolean | null
           enrichment_cache: Json | null
           enrichment_cached_at: string | null
+          error_message: string | null
           estimated_monthly_salary_inr: number | null
+          failure_stage: string | null
           feedback_flag: string | null
           final_json_report: Json | null
           id: string
@@ -2142,7 +2144,9 @@ export type Database = {
           dpdp_consent_given?: boolean | null
           enrichment_cache?: Json | null
           enrichment_cached_at?: string | null
+          error_message?: string | null
           estimated_monthly_salary_inr?: number | null
+          failure_stage?: string | null
           feedback_flag?: string | null
           final_json_report?: Json | null
           id?: string
@@ -2174,7 +2178,9 @@ export type Database = {
           dpdp_consent_given?: boolean | null
           enrichment_cache?: Json | null
           enrichment_cached_at?: string | null
+          error_message?: string | null
           estimated_monthly_salary_inr?: number | null
+          failure_stage?: string | null
           feedback_flag?: string | null
           final_json_report?: Json | null
           id?: string
