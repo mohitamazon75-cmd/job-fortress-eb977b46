@@ -14,6 +14,7 @@ import {
   deriveJobsEmptyState,
   deriveDefensePlanEmptyState,
 } from "../_shared/provenance-stamping.ts";
+import { getAcademicOccupationExposure } from "../_shared/occupation-exposure.ts";
 
 const ModelBSchema = z.object({
   analysis_id: z.string().uuid(),
@@ -707,6 +708,11 @@ async function processAnalysis(
           : 0;
       const badge = computeKgMatchBadge(ctx, totalSkillCount);
       if (badge) cd.kg_match = badge;
+
+      // Atlas academic exposure: additive only, keyed by deterministic KG family.
+      // Approved surfaces: Card 1 + Knowledge Graph. Unknown families carry an
+      // explicit empty state; we never backfill with an LLM risk claim.
+      cd.academic_exposure = getAcademicOccupationExposure((ctx as any).user_role_family);
 
       // (#7) Card 4 pivot citation inheritance — stamp every surviving pivot
       // with its grounding basis. Runs AFTER filterEligiblePivots so dropped
