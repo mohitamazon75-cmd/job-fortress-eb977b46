@@ -268,6 +268,25 @@ Base ONLY on the provided data. No markdown.`,
           .slice(0, 5);
       }
 
+      // ═══ P1-Fix-C: extend citation strip to other free-text fields the LLM
+      // also pollutes with "[NASSCOM 2024]" / "(per McKinsey)" attributions.
+      // sector_news already covered above.
+      if (Array.isArray(parsed.key_findings)) {
+        parsed.key_findings = parsed.key_findings
+          .map((f: unknown) => stripCitations(f))
+          .filter((f: string) => f && f.length > 0);
+      }
+      if (Array.isArray(parsed.top_hiring_companies)) {
+        parsed.top_hiring_companies = parsed.top_hiring_companies
+          .map((c: unknown) => stripCitations(c))
+          .filter((c: string) => c && c.length > 0);
+      }
+      if (Array.isArray(parsed.in_demand_skills)) {
+        parsed.in_demand_skills = parsed.in_demand_skills
+          .map((s: unknown) => stripCitations(s))
+          .filter((s: string) => s && s.length > 0);
+      }
+
       const result = {
         ...parsed,
         articles_analyzed: tavilyAllResults.length + firecrawlArticles.length,
