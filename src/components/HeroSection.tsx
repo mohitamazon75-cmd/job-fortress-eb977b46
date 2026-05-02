@@ -64,6 +64,7 @@ function LivePulse({ count, label }: { count: number; label: string }) {
 
 export default function HeroSection({ onStart, onStartWithRole }: HeroSectionProps) {
   const [scanCount, setScanCount] = useState<number | null>(null);
+  const [methodologyOpen, setMethodologyOpen] = useState(false);
 
   useEffect(() => {
     supabase
