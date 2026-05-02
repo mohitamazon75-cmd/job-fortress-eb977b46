@@ -219,20 +219,21 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
             ))}
           </motion.div>
 
-          {/* Dual CTA */}
+          {/* Single CTA — removed dual-CTA confusion (both buttons routed to
+              the same flow). Resume upload is offered inside the onboarding
+              step, so no need to duplicate it here. */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.5 }}
             className="mb-8 sm:mb-12"
           >
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-              {/* Primary CTA */}
+            <div className="flex items-center justify-center">
               <motion.button
                 whileHover={{ scale: 1.03, y: -3 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={onStart}
-                className="group relative w-full sm:w-auto px-8 sm:px-12 py-5 sm:py-6 rounded-2xl text-primary-foreground font-black text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
+                className="group relative w-full sm:w-auto px-8 sm:px-14 py-5 sm:py-6 rounded-2xl text-primary-foreground font-black text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
                 style={{ background: 'var(--gradient-primary)', boxShadow: '0 16px 60px hsl(var(--primary) / 0.4)' }}
               >
                 Show Me My Risk Score
@@ -242,17 +243,6 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
                   animate={{ boxShadow: ['0 0 0 0 hsl(var(--primary) / 0)', '0 0 0 10px hsl(var(--primary) / 0.12)', '0 0 0 0 hsl(var(--primary) / 0)'] }}
                   transition={{ duration: 2.5, repeat: Infinity }}
                 />
-              </motion.button>
-
-              {/* Secondary CTA */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={onStart}
-                className="w-full sm:w-auto px-8 sm:px-10 py-5 sm:py-6 rounded-2xl border-2 border-border bg-card hover:border-primary/30 hover:bg-primary/[0.04] text-foreground font-bold text-base sm:text-xl flex items-center justify-center gap-3 transition-all duration-300"
-              >
-                <FileText className="w-5 h-5" />
-                Upload Resume (faster)
               </motion.button>
             </div>
 
