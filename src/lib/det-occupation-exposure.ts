@@ -90,7 +90,7 @@ export function getAcademicOccupationExposure(jobFamily: unknown): AcademicExpos
     return { kind: "unmapped", job_family: null, message: "Academic exposure data not yet mapped for this role" };
   }
 
-  const rows = ((ATLAS_KG_EXPOSURE as Record<string, AcademicExposureRow[]>)[normalized] || [])
+  const rows = ([...((ATLAS_KG_EXPOSURE as unknown as Record<string, readonly AcademicExposureRow[]>)[normalized] || [])])
     .filter((row) => typeof row.consensus_score === "number");
   if (!rows.length) {
     return { kind: "unmapped", job_family: normalized, message: "Academic exposure data not yet mapped for this role" };
