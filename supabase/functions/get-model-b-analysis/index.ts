@@ -36,6 +36,14 @@ const FALLBACK_MODEL = "google/gemini-2.5-pro";
 const MAX_RETRIES = 3;
 const AI_TIMEOUT_MS = 45_000;
 
+function stampAcademicExposure(cardData: unknown, analysisContext: unknown) {
+  if (!cardData || typeof cardData !== "object") return;
+  const cd = cardData as Record<string, unknown>;
+  const family = (analysisContext as any)?.user_role_family ?? (cd as any).user_role_family ?? null;
+  cd.user_role_family = family;
+  cd.academic_exposure = getAcademicOccupationExposure(family);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: getCorsHeaders(req) });
@@ -168,6 +176,7 @@ Deno.serve(async (req) => {
 
     if (cacheValid) {
       console.log(`[model-b] Cache hit for ${analysis_id} (age: ${Math.round(cacheAge / 60000)}min)`);
+      stampAcademicExposure(cached.card_data, (scan as any).analysis_context ?? null);
       return new Response(
         JSON.stringify({ success: true, data: cached }),
         { headers: jsonHeaders }
@@ -238,6 +247,7 @@ Deno.serve(async (req) => {
         );
       }
       if (pending?.card_data) {
+        stampAcademicExposure(pending.card_data, (scan as any).analysis_context ?? null);
         return new Response(
           JSON.stringify({ success: true, data: pending }),
           { headers: jsonHeaders }
