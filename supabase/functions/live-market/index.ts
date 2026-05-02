@@ -191,6 +191,12 @@ Return ONLY valid JSON:
   ] (3-5 items — pull from the news search results, MUST be relevant to ${industry || primaryRole} sector and ${experienceBand || 'this seniority'}; skip generic tech news),
   "data_confidence": "high" | "medium" | "low"
 }
+
+CRITICAL RULES for sector_news:
+- Each "url" MUST be copy-pasted VERBATIM from a URL that appears in the TAVILY SEARCH RESULTS below. Do NOT invent, modify, shorten, or guess any URL. Do NOT append IDs, slugs, or paths. If you cannot find an exact URL in the search results for an item, OMIT that item.
+- "headline" and "why_it_matters" must NOT contain bracketed citations like "[NASSCOM 2024]", "[Source: ...]", "(per Reuters)", or named-report attributions. Plain factual sentences only.
+- "source_domain" must match the hostname of the "url" you chose.
+
 Base ONLY on the provided data. No markdown.`,
           },
           {
