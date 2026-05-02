@@ -15,6 +15,7 @@ import Card7HumanAdvantage from "@/components/model-b/Card7HumanAdvantage";
 import Card0Verdict from "@/components/model-b/Card0Verdict";
 import MondayMoveCard from "@/components/model-b/MondayMoveCard";
 import RevealShareStrip from "@/components/RevealShareStrip";
+import AiBusyRetry from "@/components/AiBusyRetry";
 import PromptModal from "@/components/model-b/PromptModal";
 import { useScanFunnelTracking } from "@/hooks/use-scan-funnel-tracking";
 import {
@@ -830,7 +831,17 @@ export default function ResultsModelB() {
           const isAuthRequired = /please sign in|auth_required|401/i.test(error);
           const isScanIncomplete = !isForbidden && !isAuthRequired &&
             /didn't complete|not ready|scan_not_ready/i.test(error);
-          const isDailyLimit = /daily.*limit|try again tomorrow|429/i.test(error);
+          const isDailyLimit = /daily.*limit|try again tomorrow/i.test(error);
+          // AI gateway capacity / transient 429 (NOT the per-user daily cap above)
+          const isAiRateLimited = !isDailyLimit &&
+            /ai_rate_limited|rate limited|rate.?limit|\b429\b|\b402\b/i.test(error);
+          if (isAiRateLimited) {
+            return (
+              <AiBusyRetry
+                onRetry={() => { setError(""); fetchAnalysis(); }}
+              />
+            );
+          }
           if (isDailyLimit) {
             return (
               <div style={{ textAlign: "center", padding: "60px 20px", maxWidth: 440, margin: "0 auto" }}>
