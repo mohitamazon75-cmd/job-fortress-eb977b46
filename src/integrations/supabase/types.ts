@@ -2302,11 +2302,14 @@ export type Database = {
           det_matched_count: number | null
           det_missing_count: number | null
           det_pct: number | null
+          det_pct_original: number | null
+          det_pct_rewritten: number | null
           function_name: string
           has_jd: boolean
           id: string
           llm_pct: number | null
           resume_source: string | null
+          rewritten_text_chars: number | null
           role: string | null
           runtime_ms: number | null
           scan_id: string | null
@@ -2318,11 +2321,14 @@ export type Database = {
           det_matched_count?: number | null
           det_missing_count?: number | null
           det_pct?: number | null
+          det_pct_original?: number | null
+          det_pct_rewritten?: number | null
           function_name: string
           has_jd?: boolean
           id?: string
           llm_pct?: number | null
           resume_source?: string | null
+          rewritten_text_chars?: number | null
           role?: string | null
           runtime_ms?: number | null
           scan_id?: string | null
@@ -2334,11 +2340,14 @@ export type Database = {
           det_matched_count?: number | null
           det_missing_count?: number | null
           det_pct?: number | null
+          det_pct_original?: number | null
+          det_pct_rewritten?: number | null
           function_name?: string
           has_jd?: boolean
           id?: string
           llm_pct?: number | null
           resume_source?: string | null
+          rewritten_text_chars?: number | null
           role?: string | null
           runtime_ms?: number | null
           scan_id?: string | null
