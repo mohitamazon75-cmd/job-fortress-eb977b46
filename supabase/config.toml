@@ -26,7 +26,7 @@ project_id = "dlpeirtuaxydoyzwzdyz"
   [functions.parse-resume]
     verify_jwt = false
   [functions.process-email-queue]
-    verify_jwt = false
+    verify_jwt = true
   [functions.razorpay-webhook]
     verify_jwt = false
   [functions.recover-stuck-scans]
