@@ -11,7 +11,7 @@ UI per the user's "honest empty state" choice).
 import csv, json, re, sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path("/dev-server")
 ATLAS = ROOT / "data/external/jobs-exposure-atlas/unified_exposure.csv"
 OUT = ROOT / "data/external/kg-soc-mapping.json"
 
