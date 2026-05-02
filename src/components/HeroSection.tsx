@@ -340,20 +340,21 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
               { name: 'Frey & Osborne, Oxford (2013)', label: 'Oxford' },
               { name: 'LinkedIn Economic Graph', label: 'LinkedIn' },
             ].map(src => (
-              <span
+              <button
                 key={src.label}
-                title={src.name}
-                className="text-[11px] font-bold text-muted-foreground/70 px-2.5 py-1 rounded-full border border-border bg-card/50"
+                title={`${src.name} — click to see how we use it`}
+                onClick={() => setMethodologyOpen(true)}
+                className="text-[11px] font-bold text-muted-foreground/70 hover:text-primary px-2.5 py-1 rounded-full border border-border bg-card/50 hover:border-primary/40 hover:bg-primary/5 transition-colors cursor-pointer"
               >
                 {src.label}
-              </span>
+              </button>
             ))}
-            <a
-              href="/methodology"
+            <button
+              onClick={() => setMethodologyOpen(true)}
               className="text-[11px] font-bold text-primary hover:text-primary/80 underline underline-offset-2"
             >
               See methodology →
-            </a>
+            </button>
           </motion.div>
 
           {/* How it works */}
