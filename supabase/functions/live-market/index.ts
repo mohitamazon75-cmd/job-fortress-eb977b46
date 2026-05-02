@@ -4,6 +4,7 @@ import { createAdminClient } from "../_shared/supabase-client.ts";
 import { tavilySearch, tavilySearchParallel, extractCitations, buildSearchContext } from "../_shared/tavily-search.ts";
 import { firecrawlSearch } from "../_shared/firecrawl.ts";
 import { getLocale } from "../_shared/locale-config.ts";
+import { cleanRoleForSearch } from "../_shared/clean-role-for-search.ts";
 
 // DB-backed cache TTL (30 min)
 const CACHE_TTL_MS = 30 * 60 * 1000;
@@ -79,10 +80,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const primaryRole = (role || industry || "software engineer")
-      .split(/[,&\/]+/)[0]
-      .replace(/\b(professional|specialist|expert|consultant)\b/gi, '')
-      .trim() || "software engineer";
+    const primaryRole = cleanRoleForSearch(role || industry, "software engineer");
     
     const tier = metroTier === "tier2" ? locale.tier2SearchString : locale.tier1SearchString;
 
@@ -268,6 +266,25 @@ Base ONLY on the provided data. No markdown.`,
           }))
           .filter((item: any) => item.headline && item.headline.length > 0)
           .slice(0, 5);
+      }
+
+      // ═══ P1-Fix-C: extend citation strip to other free-text fields the LLM
+      // also pollutes with "[NASSCOM 2024]" / "(per McKinsey)" attributions.
+      // sector_news already covered above.
+      if (Array.isArray(parsed.key_findings)) {
+        parsed.key_findings = parsed.key_findings
+          .map((f: unknown) => stripCitations(f))
+          .filter((f: string) => f && f.length > 0);
+      }
+      if (Array.isArray(parsed.top_hiring_companies)) {
+        parsed.top_hiring_companies = parsed.top_hiring_companies
+          .map((c: unknown) => stripCitations(c))
+          .filter((c: string) => c && c.length > 0);
+      }
+      if (Array.isArray(parsed.in_demand_skills)) {
+        parsed.in_demand_skills = parsed.in_demand_skills
+          .map((s: unknown) => stripCitations(s))
+          .filter((s: string) => s && s.length > 0);
       }
 
       const result = {

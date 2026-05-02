@@ -44,6 +44,7 @@ import { getCorsHeaders, handleCorsPreFlight, okResponse, errResponse } from "..
 import { fetchAdzunaSalaryForRole } from "../_shared/adzuna-salary.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { setCurrentScanId, clearCurrentScanId } from "../_shared/cost-logger.ts";
+import { cleanRoleForSearch } from "../_shared/clean-role-for-search.ts";
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -134,7 +135,10 @@ async function fetchScarcity(
 async function fetchLiveDemand(role: string, city: string): Promise<any> {
   const apiId = Deno.env.get("ADZUNA_API_ID");
   const apiKey = Deno.env.get("ADZUNA_API_KEY");
-  const search_url = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(role)}${city ? `&location=${encodeURIComponent(city)}` : ""}&f_TPR=r1209600`; // 14d
+  // P1-Fix-D: scrub role decoration ("Senior Manager – BD | …") so Adzuna /
+  // LinkedIn keyword search returns real results instead of 0.
+  const searchRole = cleanRoleForSearch(role, "professional");
+  const search_url = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(searchRole)}${city ? `&location=${encodeURIComponent(city)}` : ""}&f_TPR=r1209600`; // 14d
 
   if (!apiId || !apiKey) {
     return { open_roles_14d: null, unfilled_60d_pct: null, median_salary_inr: null,
@@ -143,14 +147,14 @@ async function fetchLiveDemand(role: string, city: string): Promise<any> {
 
   try {
     // Reuse existing helper to get salary + sample count
-    const salary = await fetchAdzunaSalaryForRole(role, { apiId, apiKey });
+    const salary = await fetchAdzunaSalaryForRole(searchRole, { apiId, apiKey });
 
     // Second call: count of postings in last 14d (max_days_old=14)
     const url = new URL("https://api.adzuna.com/v1/api/jobs/in/search/1");
     url.searchParams.set("app_id", apiId);
     url.searchParams.set("app_key", apiKey);
     url.searchParams.set("results_per_page", "50");
-    url.searchParams.set("what", role);
+    url.searchParams.set("what", searchRole);
     url.searchParams.set("where", city || "India");
     url.searchParams.set("max_days_old", "14");
     url.searchParams.set("content-type", "application/json");
