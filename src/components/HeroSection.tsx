@@ -4,6 +4,7 @@ import WhatYouGetSection from '@/components/WhatYouGetSection';
 import TrustSection from '@/components/TrustSection';
 import SampleReport from '@/components/SampleReport';
 import IndustryRiskHeatmap from '@/components/IndustryRiskHeatmap';
+import MethodologyModal from '@/components/MethodologyModal';
 import { useEffect, useRef, useState, forwardRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
