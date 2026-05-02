@@ -155,8 +155,16 @@ export default function HeroSection({ onStart, onStartWithRole }: HeroSectionPro
             >
               Next?
               <motion.div
-                className="absolute -bottom-1 sm:-bottom-2 left-0 right-0 h-1 sm:h-2 rounded-full"
-                style={{ background: 'var(--gradient-threatened)' }}
+                className="absolute -bottom-2 sm:-bottom-3 left-0 right-0 h-2 sm:h-3 rounded-full opacity-90"
+                style={{
+                  background: 'var(--gradient-threatened)',
+                  WebkitMaskImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8' preserveAspectRatio='none'><path d='M0 4 Q 5 0 10 4 T 20 4 T 30 4 T 40 4' stroke='black' stroke-width='3' fill='none'/></svg>\")",
+                  maskImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 8' preserveAspectRatio='none'><path d='M0 4 Q 5 0 10 4 T 20 4 T 30 4 T 40 4' stroke='black' stroke-width='3' fill='none'/></svg>\")",
+                  WebkitMaskRepeat: 'repeat-x',
+                  maskRepeat: 'repeat-x',
+                  WebkitMaskSize: '40px 8px',
+                  maskSize: '40px 8px',
+                }}
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ delay: 0.8, duration: 0.5 }}
