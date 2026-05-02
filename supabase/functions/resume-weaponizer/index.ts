@@ -12,6 +12,7 @@ import { callAgentWithFallback } from "../_shared/model-fallback.ts";
 import { checkDailySpending, buildSpendingBlockedResponse } from "../_shared/spending-guard.ts";
 import { requirePro } from "../_shared/subscription-guard.ts";
 import { matchResumeToJD } from "../_shared/resume-matcher/index.ts";
+import { reconstructRewrittenResume } from "../_shared/reconstruct-rewritten-resume.ts";
 
 const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
