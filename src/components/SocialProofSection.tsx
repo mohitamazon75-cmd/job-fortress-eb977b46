@@ -87,14 +87,14 @@ export default function SocialProofSection() {
         </motion.div>
 
         {/* Testimonials */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-5">
           {TESTIMONIALS.map((t, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.15 + i * 0.08 }}
-              className="rounded-2xl border border-border bg-card p-6 flex flex-col gap-4 shadow-sm"
+              className="rounded-2xl border border-border bg-card p-4 md:p-6 flex flex-col gap-3 md:gap-4 shadow-sm"
             >
               {/* Score badge */}
               <div className="flex items-center gap-2">
