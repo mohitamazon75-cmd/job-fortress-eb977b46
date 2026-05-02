@@ -1,73 +1,77 @@
-# Welcome to your Lovable project
+# US Job Market Visualizer
 
-## Project info
+A research tool for visually exploring Bureau of Labor Statistics [Occupational Outlook Handbook](https://www.bls.gov/ooh/) data. This is not a report, a paper, or a serious economic publication — it is a development tool for exploring BLS data visually.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**Live demo: [karpathy.ai/jobs](https://karpathy.ai/jobs/)**
 
-## How can I edit this code?
+## What's here
 
-There are several ways of editing your application.
+The BLS OOH covers **342 occupations** spanning every sector of the US economy, with detailed data on job duties, work environment, education requirements, pay, and employment projections. We scraped all of it and built an interactive treemap visualization where each rectangle's **area** is proportional to total employment and **color** shows the selected metric — toggle between BLS projected growth outlook, median pay, education requirements, and AI exposure.
 
-**Use Lovable**
+## LLM-powered coloring
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+The repo includes scrapers, parsers, and a pipeline for writing custom LLM prompts to score and color occupations by any criteria. You write a prompt, the LLM scores each occupation, and the treemap colors accordingly. The "Digital AI Exposure" layer is one example — it estimates how much current AI (which is primarily digital) will reshape each occupation. But you could write a different prompt for any question — e.g. exposure to humanoid robotics, offshoring risk, climate impact — and re-run the pipeline to get a different coloring. See `score.py` for the prompt and scoring pipeline.
 
-Changes made via Lovable will be committed automatically to this repo.
+**What "AI Exposure" is NOT:**
+- It does **not** predict that a job will disappear. Software developers score 9/10 because AI is transforming their work — but demand for software could easily *grow* as each developer becomes more productive.
+- It does **not** account for demand elasticity, latent demand, regulatory barriers, or social preferences for human workers.
+- The scores are rough LLM estimates (Gemini Flash via OpenRouter), not rigorous predictions. Many high-exposure jobs will be reshaped, not replaced.
 
-**Use your preferred IDE**
+## Data pipeline
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. **Scrape** (`scrape.py`) — Playwright (non-headless, BLS blocks bots) downloads raw HTML for all 342 occupation pages into `html/`.
+2. **Parse** (`parse_detail.py`, `process.py`) — BeautifulSoup converts raw HTML into clean Markdown files in `pages/`.
+3. **Tabulate** (`make_csv.py`) — Extracts structured fields (pay, education, job count, growth outlook, SOC code) into `occupations.csv`.
+4. **Score** (`score.py`) — Sends each occupation's Markdown description to an LLM with a scoring rubric. Each occupation gets an AI Exposure score from 0-10 with a rationale. Results saved to `scores.json`. Fork this to write your own prompts.
+5. **Build site data** (`build_site_data.py`) — Merges CSV stats and AI exposure scores into a compact `site/data.json` for the frontend.
+6. **Website** (`site/index.html`) — Interactive treemap visualization with four color layers: BLS Outlook, Median Pay, Education, and Digital AI Exposure.
 
-The only requirement is having Bun (v1.2+) installed - [install Bun](https://bun.sh/docs/installation)
+## Key files
 
-Follow these steps:
+| File | Description |
+|------|-------------|
+| `occupations.json` | Master list of 342 occupations with title, URL, category, slug |
+| `occupations.csv` | Summary stats: pay, education, job count, growth projections |
+| `scores.json` | AI exposure scores (0-10) with rationales for all 342 occupations |
+| `prompt.md` | All data in a single file, designed to be pasted into an LLM for analysis |
+| `html/` | Raw HTML pages from BLS (source of truth, ~40MB) |
+| `pages/` | Clean Markdown versions of each occupation page |
+| `site/` | Static website (treemap visualization) |
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## LLM prompt
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+[`prompt.md`](prompt.md) packages all the data — aggregate statistics, tier breakdowns, exposure by pay/education, BLS growth projections, and all 342 occupations with their scores and rationales — into a single file (~45K tokens) designed to be pasted into an LLM. This lets you have a data-grounded conversation about AI's impact on the job market without needing to run any code. Regenerate it with `uv run python make_prompt.py`.
 
-# Step 3: Install the necessary dependencies.
-bun install
+## Setup
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-bun run dev
+```
+uv sync
+uv run playwright install chromium
 ```
 
-**Edit a file directly in GitHub**
+Requires an OpenRouter API key in `.env`:
+```
+OPENROUTER_API_KEY=your_key_here
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Usage
 
-**Use GitHub Codespaces**
+```bash
+# Scrape BLS pages (only needed once, results are cached in html/)
+uv run python scrape.py
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Generate Markdown from HTML
+uv run python process.py
 
-## What technologies are used for this project?
+# Generate CSV summary
+uv run python make_csv.py
 
-This project is built with:
+# Score AI exposure (uses OpenRouter API)
+uv run python score.py
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Build website data
+uv run python build_site_data.py
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+# Serve the site locally
+cd site && python -m http.server 8000
+```
