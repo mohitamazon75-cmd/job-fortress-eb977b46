@@ -6,6 +6,7 @@ import { requireAuth } from "../_shared/require-auth.ts";
 import { validateBody, z } from "../_shared/validate-input.ts";
 import { logCostEvent, estimateLlmCostInrPaise } from "../_shared/cost-logger.ts";
 import { stripRupeeFromCardData } from "../_shared/strip-fabricated-rupee-figures.ts";
+import { verifyAndStripCardData, type GroundingContext } from "../_shared/resume-grounded-rupee-verifier.ts";
 import { filterEligiblePivots, type AnalysisContext } from "../_shared/analysis-context.ts";
 import {
   computeKgMatchBadge,
@@ -655,17 +656,43 @@ async function processAnalysis(
     annual_lakhs: userMonthlyCTC ? Math.round((userMonthlyCTC * 12) / 100000) : null,
   };
 
-  // Pass C2.2 (2026-04-30) — Belt-and-braces ₹ sanitizer.
-  // When the user did NOT provide CTC, any personalised ₹/lakh/L figure the LLM
-  // emitted (despite the [ESTIMATED]-only prompt branch) is by definition
-  // un-grounded. Walk the entire card_data tree and strip un-sourced ₹ sentences,
-  // preserving role-tier band labels (current_band/pivot_year1/director_band/etc).
-  // When the user DID provide CTC, leave figures intact — they're anchored.
-  if (!hasUserCTC) {
-    try {
-      stripRupeeFromCardData(cardData);
-    } catch (sErr) {
-      console.warn("[model-b] Rupee sanitizer failed (non-fatal):", sErr);
+  // Path C v3 (2026-05-03) — ALWAYS-ON resume-grounded ₹ verifier.
+  //
+  // Replaces the prior CTC-gated keyword-only stripper. Path C v2.5 stress test
+  // (96 scans) showed the gated approach let through 17 unsourced ₹ figures
+  // when CTC was present — 9 in `immediate_next_step.action`, plus narrative
+  // fields like `dead_end_narrative` and `moat_narrative`. The verifier checks
+  // every ₹ figure against (a) provenance tags, (b) named outlets, (c) user
+  // CTC × {12,24,36}, (d) literal resume-text presence. Anything ungrounded
+  // gets surgically dropped (sentence-level, not field-level). Fail-closed.
+  //
+  // Resume raw text is fetched best-effort; missing text just disables Path B
+  // (CTC + tags + outlets still work). Never block a scan render on this.
+  let resumeRawText: string | null = null;
+  try {
+    const { data: artifact } = await supabase
+      .from("resume_artifacts")
+      .select("raw_text")
+      .eq("scan_id", scan.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    resumeRawText = artifact?.raw_text ?? null;
+  } catch (rErr) {
+    console.warn("[model-b] resume_artifacts fetch failed (non-fatal):", rErr);
+  }
+
+  const groundingCtx: GroundingContext = {
+    userMonthlyCtcInr: userMonthlyCTC ?? null,
+    resumeRawText,
+  };
+  try {
+    verifyAndStripCardData(cardData, groundingCtx);
+  } catch (vErr) {
+    console.warn("[model-b] Rupee verifier failed (non-fatal):", vErr);
+    // Belt-and-braces fallback to the older sanitizer if anything blows up.
+    if (!hasUserCTC) {
+      try { stripRupeeFromCardData(cardData); } catch { /* swallow */ }
     }
   }
 
