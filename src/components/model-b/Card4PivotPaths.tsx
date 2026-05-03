@@ -256,6 +256,9 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
         sub={d.subline}
       />
       <CardBody>
+        {/* Job vs Business teaser — sticky top of Pivot tab */}
+        <JobVsBusinessCard scanId={scanId} />
+
         {/* ── Emotional triggers (unchanged structure) ─────────────────────── */}
         {d.fear_hook && (
           <div style={{ background: "var(--mb-amber-tint)", border: "2px solid rgba(139,90,0,0.2)", borderRadius: 14, padding: "14px 18px", marginBottom: 10 }}>
