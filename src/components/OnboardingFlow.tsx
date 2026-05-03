@@ -471,60 +471,74 @@ export default function OnboardingFlow({
               </div>
 
               <div className="space-y-4">
-                {/* Quick-pick bands */}
-                <div className="grid grid-cols-2 gap-3">
-                  {currencyConfig.quickPicks.map((amount) => {
-                    const isActive = monthlyCTC === amount;
-                    return (
-                      <motion.button
-                        key={amount}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                          setCtcInput(String(amount));
+                {/* Quick-pick bands (ranges) + exact-amount column */}
+                <div className="grid md:grid-cols-3 gap-4">
+                  {/* Ranges: 2x2 on the left (spans 2 cols on md) */}
+                  <div className="md:col-span-2 grid grid-cols-2 gap-3">
+                    {currencyConfig.quickPicks.map((band) => {
+                      const isActive = monthlyCTC === band.mid;
+                      return (
+                        <motion.button
+                          key={band.mid}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setCtcInput(String(band.mid));
+                            setCtcError('');
+                            onSubmitCTC(band.mid);
+                          }}
+                          className={`p-4 rounded-xl border text-center transition-all duration-200 ${
+                            isActive
+                              ? 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary/20'
+                              : 'border-border bg-card hover:border-primary/30 hover:shadow-sm'
+                          }`}
+                        >
+                          <span className={`text-[11px] font-semibold uppercase tracking-wider block mb-1 ${
+                            isActive ? 'text-primary' : 'text-muted-foreground'
+                          }`}>
+                            {band.label}
+                          </span>
+                          <span className={`text-lg font-bold block ${
+                            isActive ? 'text-primary' : 'text-foreground'
+                          }`}>
+                            {formatRange(band.min, band.max)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">/month</span>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Exact-amount column */}
+                  <div className="p-4 rounded-xl border border-dashed border-border bg-muted/20 flex flex-col">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">
+                      Or exact amount
+                    </label>
+                    <div className="relative mb-2">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-sm">
+                        {currencyConfig.symbol}
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={ctcInput}
+                        onChange={(e) => {
+                          setCtcInput(e.target.value);
                           setCtcError('');
-                          onSubmitCTC(amount);
                         }}
-                        className={`p-4 rounded-xl border text-center transition-all duration-200 ${
-                          isActive
-                            ? 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary/20'
-                            : 'border-border bg-card hover:border-primary/30 hover:shadow-sm'
-                        }`}
-                      >
-                        <span className={`text-lg font-bold block ${
-                          isActive ? 'text-primary' : 'text-foreground'
-                        }`}>
-                          {currencyConfig.symbol}{amount.toLocaleString()}
-                        </span>
-                        <span className="text-xs text-muted-foreground">/month</span>
-                      </motion.button>
-                    );
-                  })}
+                        placeholder="150000"
+                        className="w-full pl-7 pr-2 py-2.5 rounded-lg border border-border bg-card text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground leading-tight">
+                      {currencyConfig.code} per month
+                    </span>
+                  </div>
                 </div>
 
-                {/* Custom input */}
+                {/* Inline validation / hint */}
                 <div>
-                  <label className="text-xs text-muted-foreground font-medium mb-1.5 block">
-                    Or enter exact amount ({currencyConfig.code} per month)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                      {currencyConfig.symbol}
-                    </span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={ctcInput}
-                      onChange={(e) => {
-                        setCtcInput(e.target.value);
-                        setCtcError('');
-                      }}
-                      placeholder="e.g. 150000"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                    />
-                  </div>
                   {ctcError && <p className="text-xs text-destructive font-medium mt-1.5">{ctcError}</p>}
-                  {/* Live numeric hint — mirrors SalaryFitWidget so users see what we parsed before submit */}
                   {!ctcError && ctcInput.trim() && (() => {
                     const parsed = Number(ctcInput.trim().replace(/[^\d.]/g, ''));
                     if (!Number.isFinite(parsed) || parsed <= 0) return <p className="text-[11px] text-muted-foreground mt-1.5">Enter a positive number</p>;
