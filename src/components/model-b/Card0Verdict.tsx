@@ -7,7 +7,7 @@
  */
 import { motion } from "framer-motion";
 import { ArrowRight, Shield, Zap, TrendingDown, Sparkles, Lock, FileCheck2, BookOpen, Wrench, Briefcase, GraduationCap, AlertTriangle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { detectRoleFamily, getFamilyNarrative } from "@/lib/role-family";
 import ProUpgradeModal from "@/components/ProUpgradeModal";
