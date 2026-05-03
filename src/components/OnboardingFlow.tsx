@@ -78,25 +78,51 @@ export default function OnboardingFlow({
       case 'US':
         return {
           symbol: '$', code: 'USD', label: 'monthly take-home',
-          // monthly take-home in USD — entry, mid, senior, exec
-          quickPicks: [3000, 5500, 9000, 15000],
+          // monthly take-home in USD ranges — entry, mid, senior, exec
+          quickPicks: [
+            { min: 2000, max: 4000, mid: 3000, label: 'Entry' },
+            { min: 4000, max: 7000, mid: 5500, label: 'Mid' },
+            { min: 7000, max: 12000, mid: 9000, label: 'Senior' },
+            { min: 12000, max: 20000, mid: 15000, label: 'Executive' },
+          ],
           minValid: 500, maxValid: 100000,
         };
       case 'AE':
         return {
           symbol: 'AED', code: 'AED', label: 'monthly salary',
-          quickPicks: [8000, 18000, 35000, 60000],
+          quickPicks: [
+            { min: 5000, max: 12000, mid: 8000, label: 'Entry' },
+            { min: 12000, max: 25000, mid: 18000, label: 'Mid' },
+            { min: 25000, max: 50000, mid: 35000, label: 'Senior' },
+            { min: 50000, max: 80000, mid: 60000, label: 'Executive' },
+          ],
           minValid: 1000, maxValid: 500000,
         };
       default: // IN and others
         return {
           symbol: '₹', code: 'INR', label: 'monthly in-hand',
-          // monthly in-hand INR — junior, mid, senior, lead/director
-          quickPicks: [50000, 120000, 250000, 500000],
+          // monthly in-hand INR ranges — junior, mid, senior, lead/director
+          quickPicks: [
+            { min: 30000, max: 80000, mid: 50000, label: 'Junior' },
+            { min: 80000, max: 180000, mid: 120000, label: 'Mid' },
+            { min: 180000, max: 350000, mid: 250000, label: 'Senior' },
+            { min: 350000, max: 750000, mid: 500000, label: 'Lead / Director' },
+          ],
           minValid: 5000, maxValid: 5000000,
         };
     }
   })();
+
+  const formatRange = (min: number, max: number) => {
+    const fmt = (n: number) => {
+      if (currencyConfig.code === 'INR') {
+        if (n >= 100000) return `${(n / 100000).toFixed(n % 100000 === 0 ? 0 : 1)}L`;
+        return `${Math.round(n / 1000)}k`;
+      }
+      return `${Math.round(n / 1000)}k`;
+    };
+    return `${currencyConfig.symbol}${fmt(min)}–${currencyConfig.symbol}${fmt(max)}`;
+  };
 
   const handleSubmitCTC = () => {
     const trimmed = ctcInput.trim();
