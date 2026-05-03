@@ -86,6 +86,12 @@ const SKIP_KEYS = new Set([
   "band",
   "negotiation_anchor",
   "negotiation_anchors",
+  // Role-tier band rows: deterministic seniority anchors, not personal claims.
+  // The `range` strings (e.g., "₹18-28L") are pre-computed role-level bands and
+  // must NOT be sentence-stripped by the grounding verifier (it has no way to
+  // ground them against resume/CTC and would replace them with SAFE_FALLBACK).
+  "salary_bands",
+  "range",
 ]);
 
 const SAFE_FALLBACK =
