@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     // ── Load scan + profile context (deterministic grounding) ──
     const { data: scan } = await sb
       .from("scans")
-      .select("user_id, role, industry, current_ctc_lpa, years_experience, city, final_json_report, analysis_context")
+      .select("user_id, role_detected, industry, estimated_monthly_salary_inr, years_experience, metro_tier, final_json_report")
       .eq("id", scanId)
       .maybeSingle();
 
@@ -45,13 +45,16 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) return json({ error: "AI not configured" }, 503);
 
-    // Compact, grounded context — no fabrication possible
+    // Compact, grounded context — no fabrication possible.
+    // CTC: convert estimated monthly INR → annual lakhs only when present.
+    const monthly = Number(scan.estimated_monthly_salary_inr ?? 0);
+    const ctcLakhs = monthly > 0 ? Math.round((monthly * 12) / 100000) : null;
     const ctx = {
-      role: scan.role,
-      industry: scan.industry,
-      city: scan.city,
+      role: scan.role_detected || "your role",
+      industry: scan.industry || "your industry",
+      city: scan.metro_tier || "India",
       years: scan.years_experience,
-      ctc_lakhs: scan.current_ctc_lpa ?? null,
+      ctc_lakhs: ctcLakhs,
       score: (scan.final_json_report as any)?.score ?? null,
     };
 
