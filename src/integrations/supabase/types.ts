@@ -407,6 +407,39 @@ export type Database = {
           },
         ]
       }
+      business_autopsy_results: {
+        Row: {
+          answers: Json
+          autopsy: Json
+          band: string
+          created_at: string
+          id: string
+          scan_id: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          answers: Json
+          autopsy: Json
+          band: string
+          created_at?: string
+          id?: string
+          scan_id: string
+          score: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          autopsy?: Json
+          band?: string
+          created_at?: string
+          id?: string
+          scan_id?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       calibration_config: {
         Row: {
           key: string
