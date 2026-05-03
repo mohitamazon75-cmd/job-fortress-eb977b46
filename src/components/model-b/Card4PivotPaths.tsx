@@ -3,6 +3,7 @@ import { CardShell, CardHead, CardBody, SectionLabel, CardNav, Badge, variantCol
 import { sortPivotsByMatch } from "@/lib/pivot-sort";
 import { toast } from "sonner";
 import { useCohortIntel } from "@/hooks/useCohortIntel";
+import JobVsBusinessCard from "./JobVsBusinessCard";
 
 // ─────────────────────────────────────────────────────────────────────
 // Salary band parser. Extracts an INR lakh figure from strings like
