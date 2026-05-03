@@ -219,7 +219,6 @@ export default function JobVsBusinessCard({ scanId }: { scanId?: string }) {
           <ProUpgradeModal
             isOpen={showProModal}
             onClose={() => setShowProModal(false)}
-            featureName="Personalized Founder Autopsy"
           />
         )}
       </motion.div>
