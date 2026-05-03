@@ -1044,14 +1044,14 @@ export default function Card0Verdict({ cardData, scanId, onNext }: Card0VerdictP
 
 /* ─────────── Sub-components ─────────── */
 
-function StatPill({ icon, value, label, tone }: { icon: React.ReactNode; value: string; label: string; tone: "threat" | "moat" | "hope" }) {
+const StatPill = forwardRef<HTMLDivElement, { icon: React.ReactNode; value: string; label: string; tone: "threat" | "moat" | "hope" }>(function StatPill({ icon, value, label, tone }, ref) {
   const colors = {
     threat: { fg: "#b91c1c", bg: "rgba(185,28,28,0.06)", border: "rgba(185,28,28,0.16)" },
     moat: { fg: "#15803d", bg: "rgba(21,128,61,0.06)", border: "rgba(21,128,61,0.16)" },
     hope: { fg: "#1e3a5f", bg: "rgba(30,58,95,0.06)", border: "rgba(30,58,95,0.16)" },
   }[tone];
   return (
-    <div style={{
+    <div ref={ref} style={{
       background: colors.bg,
       border: `1px solid ${colors.border}`,
       borderRadius: 12,
@@ -1067,7 +1067,7 @@ function StatPill({ icon, value, label, tone }: { icon: React.ReactNode; value: 
       </div>
     </div>
   );
-}
+});
 
 /* Capitalize first letter helper */
 function cap(s: string): string {
