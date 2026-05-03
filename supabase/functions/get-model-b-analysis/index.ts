@@ -217,21 +217,12 @@ Deno.serve(async (req) => {
     if (poll) {
       const { data: pending } = await supabase
         .from("model_b_results")
-        .select("id, card_data, updated_at, error_message")
+        .select("id, card_data, updated_at")
         .eq("analysis_id", analysis_id)
         .eq("user_id", user_id)
         .maybeSingle();
 
       if (pending && !pending.card_data) {
-        // Surface explicit AI rate-limit so the UI can render a friendly retry state
-        // instead of an indefinite "still generating" spinner.
-        const errMsg: string | null = (pending as any).error_message ?? null;
-        if (errMsg && /rate.?limit|429|402/i.test(errMsg)) {
-          return new Response(
-            JSON.stringify({ success: false, error: "AI_RATE_LIMITED", message: errMsg }),
-            { status: 429, headers: jsonHeaders }
-          );
-        }
         const pendingAge = pending.updated_at
           ? Date.now() - new Date(pending.updated_at as string).getTime()
           : 0;
@@ -673,7 +664,7 @@ async function processAnalysis(
     const { data: artifact } = await supabase
       .from("resume_artifacts")
       .select("raw_text")
-      .eq("scan_id", scan.id)
+        .eq("scan_id", analysisId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
