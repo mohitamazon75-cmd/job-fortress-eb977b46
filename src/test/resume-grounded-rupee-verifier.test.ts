@@ -183,11 +183,13 @@ describe("verifyAndStripText — paragraph-level behaviour", () => {
   });
   it("returns SAFE_FALLBACK when every sentence is dropped (never empty string)", () => {
     // Heuristic: blank UI block is worse than directional copy.
-    const input = "Highlight your ₹19.2L value-add. You can capture ₹50L upside.";
+    // Both figures must be ungrounded: ₹19.2L and ₹75L are NOT user-CTC × {12,24,36}
+    // for monthly = ₹1.4L (which yields 16.8L, 33.6L, 50.4L only).
+    const input = "Highlight your ₹19.2L value-add. You can capture ₹75L upside.";
     const out = verifyAndStripText(input, { userMonthlyCtcInr: 140_000 });
     expect(out.length).toBeGreaterThan(20);
     expect(out).not.toContain("₹19.2L");
-    expect(out).not.toContain("₹50L");
+    expect(out).not.toContain("₹75L");
   });
   it("preserves a clean paragraph verbatim", () => {
     // Heuristic: pure narrative without ₹ → identity transform.
