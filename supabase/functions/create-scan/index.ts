@@ -23,6 +23,24 @@ Deno.serve(async (req: Request) => {
   try {
     const supabase = createAdminClient();
 
+    const authHeader = req.headers.get("Authorization");
+    let userId: string | null = null;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.slice(7).trim();
+      try {
+        const { data: { user }, error: authErr } =
+          await supabase.auth.getUser(token);
+        if (!authErr && user) {
+          userId = user.id;
+        }
+      } catch {
+        // anon-key tokens or malformed JWTs throw here — leave userId null
+      }
+    }
+    // userId is now either a JWT-verified user.id OR null (anonymous).
+    // The downstream `if (userId && typeof userId === "string")`
+    // branch and the anon `else` branch below already handle both.
+
     const body = await req.json().catch(() => ({}));
     const {
       linkedinUrl,
@@ -32,7 +50,6 @@ Deno.serve(async (req: Request) => {
       yearsExperience,
       metroTier,
       keySkills,
-      userId,
       dpdpConsentGiven,
       dataRetentionConsent,
       estimatedMonthlySalaryInr: rawCTC,
