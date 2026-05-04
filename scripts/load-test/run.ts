@@ -176,8 +176,8 @@ async function phase2(concurrency: number) {
   return processResults;
 }
 
-const phase = Deno.args[0] || "all";
-const conc = Number(Deno.args[1] || 10);
+const phase = process.argv[2] || "all";
+const conc = Number(process.argv[3] || 10);
 
 console.log(`Load test starting — phase=${phase} concurrency=${conc}`);
 console.log(`Target: ${BASE}`);
