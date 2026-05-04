@@ -1275,29 +1275,12 @@ Deno.serve(async (req) => {
     // Week 2 #2: Record score history for delta tracking
     await recordScoreHistory(supabase, scan.user_id, scanId, finalReport);
 
-    // Phase B: Enqueue async delta computation (fire-and-forget)
-    if (scan.user_id && scan.user_id !== 'anon') {
-      try {
-        await supabase.functions.invoke('compute-delta', {
-          body: { user_id: scan.user_id, scan_id: scanId }
-        }).catch(() => {}); // intentional fire-and-forget
-      } catch (err) {
-        // Non-fatal — don't block scan completion
-        console.error('[process-scan] compute-delta invocation failed:', err);
-      }
-    }
-
-    // Phase C: Enqueue milestone generation (fire-and-forget)
-    if (scan.user_id && scan.user_id !== 'anon') {
-      try {
-        await supabase.functions.invoke('generate-milestones', {
-          body: { user_id: scan.user_id, scan_id: scanId }
-        }).catch(() => {}); // intentional fire-and-forget
-      } catch (err) {
-        // Non-fatal — don't block scan completion
-        console.error('[process-scan] generate-milestones invocation failed:', err);
-      }
-    }
+    // NOTE: compute-delta and generate-milestones are now invoked in the
+    // EdgeRuntime.waitUntil() block at the bottom of this handler, alongside
+    // cohort-match and store-prediction. Doing them all together keeps the
+    // worker isolate alive for ALL background fetches (previously these two
+    // were blocking the response for ~1s, and the rest were dying on isolate
+    // shutdown — see the "downstream all failed" bug fixed 2026-05-04).
 
     // Week 2 #2: Attach delta if previous score exists
     let prev: Awaited<ReturnType<typeof getPreviousScore>> = null;
