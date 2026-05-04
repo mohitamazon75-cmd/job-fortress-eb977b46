@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
     "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
       process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     ),
-    __BUILD_STAMP__: JSON.stringify("2026-04-04-onboarding-critical-fix"),
+    __BUILD_STAMP__: JSON.stringify(new Date().toISOString()),
   },
   build: {
     chunkSizeWarningLimit: 4000,
