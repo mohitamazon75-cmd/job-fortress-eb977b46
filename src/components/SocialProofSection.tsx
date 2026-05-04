@@ -1,5 +1,5 @@
 import { motion, useInView } from 'framer-motion';
-import { useRef } from 'react';
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { Star, TrendingUp, Shield, Zap } from 'lucide-react';
 
 const TESTIMONIALS = [
@@ -35,8 +35,9 @@ const STATS = [
   { value: '< 4 min', label: '4-agent intelligence engine + Knowledge Graph + live market signals. Not a quiz — a career MRI.' },
 ];
 
-export default function SocialProofSection() {
+const SocialProofSection = forwardRef<HTMLElement>((_props, forwardedRef) => {
   const ref = useRef<HTMLElement>(null);
+  useImperativeHandle(forwardedRef, () => ref.current as HTMLElement);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
 
   return (
@@ -131,4 +132,6 @@ export default function SocialProofSection() {
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
     </section>
   );
-}
+});
+SocialProofSection.displayName = 'SocialProofSection';
+export default SocialProofSection;
