@@ -7,11 +7,14 @@ import Card1RiskMirror from "@/components/model-b/Card1RiskMirror";
 import LiveMarketCard from "@/components/model-b/LiveMarketCard";
 import Card2MarketRadar from "@/components/model-b/Card2MarketRadar";
 import IntelligenceMapCard from "@/components/model-b/IntelligenceMapCard";
-import Card3SkillShield from "@/components/model-b/Card3SkillShield";
-import Card4PivotPaths from "@/components/model-b/Card4PivotPaths";
-import Card5JobsTracker from "@/components/model-b/Card5JobsTracker";
-import Card6BlindSpots from "@/components/model-b/Card6BlindSpots";
-import Card7HumanAdvantage from "@/components/model-b/Card7HumanAdvantage";
+// Phase 2B (2026-05-04): lazy-load Cards 3-7. Each only renders when its tab
+// is opened, so eager-loading them inflated the initial bundle for no reason.
+// Cards 0/1/2 stay eager (visible on the default tab during the reveal).
+const Card3SkillShield   = lazy(() => import("@/components/model-b/Card3SkillShield"));
+const Card4PivotPaths    = lazy(() => import("@/components/model-b/Card4PivotPaths"));
+const Card5JobsTracker   = lazy(() => import("@/components/model-b/Card5JobsTracker"));
+const Card6BlindSpots    = lazy(() => import("@/components/model-b/Card6BlindSpots"));
+const Card7HumanAdvantage = lazy(() => import("@/components/model-b/Card7HumanAdvantage"));
 import Card0Verdict from "@/components/model-b/Card0Verdict";
 import MondayMoveCard from "@/components/model-b/MondayMoveCard";
 import RevealShareStrip from "@/components/RevealShareStrip";
