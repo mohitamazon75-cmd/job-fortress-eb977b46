@@ -1,5 +1,5 @@
 import { motion, useInView } from 'framer-motion';
-import { useRef } from 'react';
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { Star, TrendingUp, Shield, Zap } from 'lucide-react';
 
 const TESTIMONIALS = [
