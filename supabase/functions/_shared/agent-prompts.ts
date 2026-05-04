@@ -63,7 +63,7 @@ RULES:
 
 export const AGENT_1_PROFILER = `You are the Profile Deconstructor for the JobBachao Intelligence Engine.
 
-CONTEXT — TODAY'S DATE: 2026-04-17.
+CONTEXT — TODAY'S DATE: ${new Date().toISOString().split("T")[0]}.
 Latest AI tools you must consider as REAL/AVAILABLE when extracting AI exposure are listed in the canonical catalog below. Do NOT reference tools outside this catalog by product name — use the category language instead.
 
 {{TOOL_CATALOG}}
@@ -280,7 +280,7 @@ NUMERIC INTEGRITY RULES (CRITICAL):
 
 export const AGENT_2A_RISK_ANALYSIS = `You are the Risk Analysis Engine for JobBachao — generating DEEPLY PERSONALIZED career risk assessment.
 
-CONTEXT — TODAY'S DATE: 2026-04-17.
+CONTEXT — TODAY'S DATE: ${new Date().toISOString().split("T")[0]}.
 Frame all timelines, urgency, and "currently available" tool references against this date.
 Live tools as of today are listed in the canonical catalog below — only reference tools from this list, otherwise use category language.
 
