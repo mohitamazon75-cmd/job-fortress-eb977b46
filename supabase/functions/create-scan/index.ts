@@ -105,9 +105,11 @@ Deno.serve(async (req: Request) => {
         );
       }
     } else {
-      // ── Anonymous IP-based rate limit (Phase 1, 2026-05-04) ──
-      // Without this, an unauth'd attacker can flood create-scan and burn LLM budget.
-      // Cap: 3 scans/hour per IP. Naive but sufficient pre-PMF.
+      // ── True per-IP anonymous rate limit (Phase 1.2, 2026-05-04) ──
+      // Replaces the previous coarse global 20/hr counter. Uses scan_rate_limits
+      // table keyed by `anon-ip:<ip>` so one bad IP can't starve every other anon user.
+      // Cap: 5 scans/hour per IP. Tighter than the global ceiling because we now
+      // attribute precisely.
       const ip =
         req.headers.get("cf-connecting-ip") ||
         req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -115,19 +117,42 @@ Deno.serve(async (req: Request) => {
         "unknown";
 
       if (ip !== "unknown") {
-        const { count: ipCount } = await supabase
-          .from("scans")
+        const ipKey = `anon-ip:${ip}`;
+        const ANON_IP_HOURLY_CAP = 5;
+
+        const { count: ipCount, error: ipCountErr } = await supabase
+          .from("scan_rate_limits")
           .select("id", { count: "exact", head: true })
-          .is("user_id", null)
+          .eq("client_ip", ipKey)
           .gte("created_at", hourAgo);
-        // NOTE: This counts all anon scans in last hour, not per-IP (we don't store client_ip on scans).
-        // True per-IP needs a separate table; this is a coarse global guardrail until then.
-        if ((ipCount ?? 0) >= 20) {
-          console.warn(`[create-scan] Global anon hourly cap hit (${ipCount}/20) — IP ${ip}`);
+
+        if (ipCountErr) {
+          // Fail-closed on DB errors — better to reject than burn LLM budget on
+          // unbounded anon traffic.
+          console.error(`[create-scan] Anon rate-limit check failed, blocking IP ${ip}:`, ipCountErr.message);
           return new Response(
-            JSON.stringify({ error: "Too many scans right now. Please sign in or try again shortly.", code: "ANON_RATE_LIMIT" }),
+            JSON.stringify({ error: "Service temporarily unavailable. Try again shortly.", code: "RATE_LIMIT_CHECK_FAILED" }),
+            { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if ((ipCount ?? 0) >= ANON_IP_HOURLY_CAP) {
+          console.warn(`[create-scan] Per-IP anon cap hit (${ipCount}/${ANON_IP_HOURLY_CAP}) — IP ${ip}`);
+          return new Response(
+            JSON.stringify({ error: "Too many scans from your network. Please sign in or try again in an hour.", code: "ANON_RATE_LIMIT" }),
             { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
+        }
+
+        // Stamp the IP marker so future requests count against this window.
+        // Insert error is logged but non-fatal — the request proceeds (we already
+        // verified count was under the cap). Worst case: same IP gets one extra
+        // free scan if the insert silently fails.
+        const { error: ipInsertErr } = await supabase
+          .from("scan_rate_limits")
+          .insert({ client_ip: ipKey });
+        if (ipInsertErr) {
+          console.error(`[create-scan] Anon IP marker insert failed for ${ip}:`, ipInsertErr.message);
         }
       }
     }
