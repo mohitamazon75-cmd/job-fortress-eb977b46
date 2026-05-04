@@ -61,6 +61,16 @@ Deno.serve(async (req) => {
     if (validated.kind === "invalid") return validated.response;
     const { analysis_id, user_id, resume_filename, poll } = validated.data;
 
+    if (user_id !== auth.userId) {
+      return new Response(
+        JSON.stringify({
+          error: "user_id mismatch with authenticated session",
+          code: "USER_ID_MISMATCH"
+        }),
+        { status: 403, headers: jsonHeaders }
+      );
+    }
+
     const supabase = createAdminClient();
 
     const { data: scan, error: scanError } = await supabase
