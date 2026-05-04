@@ -35,8 +35,9 @@ const STATS = [
   { value: '< 4 min', label: '4-agent intelligence engine + Knowledge Graph + live market signals. Not a quiz — a career MRI.' },
 ];
 
-export default function SocialProofSection() {
+const SocialProofSection = forwardRef<HTMLElement>((_props, forwardedRef) => {
   const ref = useRef<HTMLElement>(null);
+  useImperativeHandle(forwardedRef, () => ref.current as HTMLElement);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
 
   return (
