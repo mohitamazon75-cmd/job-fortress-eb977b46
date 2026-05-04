@@ -1099,14 +1099,18 @@ Deno.serve(async (req) => {
     // ("Senior General Execution Tasks Specialist") shipped to users and destroyed
     // trust. Fail loudly: mark scan invalid_input so the UI surfaces a retry CTA.
     if (!rawDetectedRole || rawDetectedRole === "Unknown") {
-      console.error(`[RoleGuard] No usable role title (parsed=${verbatimParsedTitle}, agent1=${agent1?.current_role}, hint=${resolvedRoleHint}) — failing scan instead of synthesizing junk`);
+      const scrapeBlocked = !!scan.linkedin_url && !hasResume;
+      console.error(`[RoleGuard] No usable role title (parsed=${verbatimParsedTitle}, agent1=${agent1?.current_role}, hint=${resolvedRoleHint}, scrape_blocked=${scrapeBlocked}) — failing scan instead of synthesizing junk`);
       await supabase.from("scans").update({
         scan_status: "invalid_input",
-        feedback_flag: "role_extraction_failed",
+        feedback_flag: scrapeBlocked ? "linkedin_scrape_blocked" : "role_extraction_failed",
       }).eq("id", scanId);
       return new Response(JSON.stringify({
-        error: "Could not detect role from your profile. Please add your current job title and re-run the scan.",
-        code: "ROLE_EXTRACTION_FAILED",
+        error: scrapeBlocked
+          ? "We couldn't read your LinkedIn profile (it may be private or temporarily blocked). Please add your current job title and 3–5 key skills, then re-run."
+          : "Could not detect role from your profile. Please add your current job title and re-run the scan.",
+        code: scrapeBlocked ? "LINKEDIN_SCRAPE_BLOCKED" : "ROLE_EXTRACTION_FAILED",
+        scrape_blocked: scrapeBlocked,
       }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const detectedRole = rawDetectedRole;
