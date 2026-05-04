@@ -132,4 +132,6 @@ const SocialProofSection = forwardRef<HTMLElement>((_props, forwardedRef) => {
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
     </section>
   );
-}
+});
+SocialProofSection.displayName = 'SocialProofSection';
+export default SocialProofSection;
