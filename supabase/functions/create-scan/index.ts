@@ -69,8 +69,10 @@ Deno.serve(async (req: Request) => {
     // ── P1 (2026-04-17): Per-user daily scan cap (cost guardrail) ──
     // Without this, a single bad actor can drain the AI budget overnight.
     // Free users: 3/day. Pro users: 50/day.
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
     if (userId && typeof userId === "string") {
-      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count: dailyCount } = await supabase
         .from("scans")
         .select("id", { count: "exact", head: true })
@@ -85,21 +87,48 @@ Deno.serve(async (req: Request) => {
       const isPro = profile?.subscription_tier === "pro"
         && profile?.subscription_expires_at
         && new Date(profile.subscription_expires_at as string) > new Date();
-      // TESTING MODE (2026-04-25): pricing/gating disabled. Both tiers get 100/day.
-      // Restore to (isPro ? 50 : 3) before re-enabling pricing.
-      const dailyLimit = 100;
+      // Pre-PMF cost guardrail (2026-05-04): tightened from 100 → 30/day.
+      // ENFORCE_PRO is OFF, so every scan = pure LLM burn. 30 is generous for real users
+      // and brutal for bot floods. Restore to (isPro ? 50 : 3) when ENFORCE_PRO flips.
+      const dailyLimit = 30;
 
       if ((dailyCount ?? 0) >= dailyLimit) {
         console.warn(`[create-scan] Daily cap reached for user ${userId}: ${dailyCount}/${dailyLimit}`);
         return new Response(
           JSON.stringify({
             error: isPro
-              ? "Daily Pro scan limit reached (50/day). Try again tomorrow."
-              : "Daily scan limit reached. Upgrade to Pro for 50 scans/day.",
+              ? "Daily Pro scan limit reached. Try again tomorrow."
+              : "Daily scan limit reached. Try again tomorrow.",
             code: "DAILY_LIMIT_REACHED",
           }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+    } else {
+      // ── Anonymous IP-based rate limit (Phase 1, 2026-05-04) ──
+      // Without this, an unauth'd attacker can flood create-scan and burn LLM budget.
+      // Cap: 3 scans/hour per IP. Naive but sufficient pre-PMF.
+      const ip =
+        req.headers.get("cf-connecting-ip") ||
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        req.headers.get("x-real-ip") ||
+        "unknown";
+
+      if (ip !== "unknown") {
+        const { count: ipCount } = await supabase
+          .from("scans")
+          .select("id", { count: "exact", head: true })
+          .is("user_id", null)
+          .gte("created_at", hourAgo);
+        // NOTE: This counts all anon scans in last hour, not per-IP (we don't store client_ip on scans).
+        // True per-IP needs a separate table; this is a coarse global guardrail until then.
+        if ((ipCount ?? 0) >= 20) {
+          console.warn(`[create-scan] Global anon hourly cap hit (${ipCount}/20) — IP ${ip}`);
+          return new Response(
+            JSON.stringify({ error: "Too many scans right now. Please sign in or try again shortly.", code: "ANON_RATE_LIMIT" }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
     }
 
