@@ -488,6 +488,23 @@ export default function ResultsModelB() {
     if (!analysisId) { navigate("/", { replace: true }); return; }
     fetchAnalysis();
 
+    // Phase 2A (2026-05-04): realtime accelerator. When the row lands with
+    // card_data, fire an immediate poke so pollForResult skips its 3s wait.
+    // Filter is keyed on analysis_id so we only see this scan's events.
+    const channel = supabase
+      .channel(`mb-results-${analysisId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "model_b_results", filter: `analysis_id=eq.${analysisId}` },
+        (payload) => {
+          const row = (payload.new ?? {}) as Record<string, unknown>;
+          if (row.card_data && realtimePokeRef.current) {
+            realtimePokeRef.current();
+          }
+        },
+      )
+      .subscribe();
+
     // P-3-B: Fetch monthly scan count for social proof (lifted from Card1RiskMirror)
     supabase
       .from("scans")
@@ -513,6 +530,10 @@ export default function ResultsModelB() {
           if (typeof v === "number" && v > 0) setMonthlySalaryInr(v);
         }, () => { /* swallow silently — card has graceful fallback */ });
     }
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [analysisId, navigate, fetchAnalysis]);
 
   // Friendly debrief instrumentation (2026-04-28).
