@@ -229,6 +229,12 @@ export default function ResultsModelB() {
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intelRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollGenerationRef = useRef(0); // increments on each fetchAnalysis to invalidate prior chains
+  // Phase 2A (2026-05-04): realtime accelerator. Subscribes to model_b_results
+  // for this analysis_id; when a row arrives with card_data, we immediately
+  // re-fetch (skips up to ~3s of poll wait). Polling stays as the safety net
+  // for anon scans (RLS blocks realtime without auth.uid()) and for any
+  // realtime delivery hiccups.
+  const realtimePokeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
