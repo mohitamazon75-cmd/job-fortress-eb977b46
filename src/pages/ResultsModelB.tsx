@@ -482,6 +482,13 @@ export default function ResultsModelB() {
     };
 
     pollTimeoutRef.current = setTimeout(poll, 3000);
+    // Phase 2A: expose immediate-poll trigger to the realtime subscription.
+    // Cleared automatically on next pollForResult invocation or unmount.
+    realtimePokeRef.current = () => {
+      if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
+      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+      poll();
+    };
   }, [analysisId]);
 
   useEffect(() => {
