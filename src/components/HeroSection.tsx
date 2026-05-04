@@ -47,10 +47,10 @@ function GridBackground() {
   );
 }
 
-// Live counter (forwardRef to silence ref-forwarding warnings from motion ancestors)
-const LivePulse = forwardRef<HTMLDivElement, { count: number; label: string }>(
-  ({ count, label }, ref) => (
-    <div ref={ref} className="flex items-center gap-2">
+// Live counter
+function LivePulse({ count, label }: { count: number; label: string }) {
+  return (
+    <div className="flex items-center gap-2">
       <span className="relative flex h-2 w-2">
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-prophet-green opacity-75" />
         <span className="relative inline-flex rounded-full h-2 w-2 bg-prophet-green" />
@@ -59,9 +59,8 @@ const LivePulse = forwardRef<HTMLDivElement, { count: number; label: string }>(
         <span className="text-prophet-green font-black">{count.toLocaleString()}</span> {label}
       </span>
     </div>
-  ),
-);
-LivePulse.displayName = 'LivePulse';
+  );
+}
 
 export default function HeroSection({ onStart, onStartWithRole }: HeroSectionProps) {
   const [scanCount, setScanCount] = useState<number | null>(null);
