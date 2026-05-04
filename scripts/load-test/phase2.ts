@@ -20,7 +20,7 @@ async function fire(scan: { id: string; token: string }) {
         "Content-Type": "application/json",
         apikey: ANON_KEY,
         Authorization: `Bearer ${ANON_KEY}`,
-        "x-scan-token": scan.token,
+        "x-scan-access-token": scan.token,
       },
       body: JSON.stringify({ scanId: scan.id, accessToken: scan.token }),
     });
