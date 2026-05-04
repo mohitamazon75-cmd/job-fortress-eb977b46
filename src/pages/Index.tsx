@@ -12,6 +12,7 @@ import GoalCaptureModal, { type ScanGoals } from '@/components/GoalCaptureModal'
 import OnboardingFlow from '@/components/OnboardingFlow';
 import ThankYouFooter from '@/components/ThankYouFooter';
 import { useAuth } from '@/hooks/useAuth';
+import { saveResumeToCache, loadResumeFromCache, clearResumeCache } from '@/lib/idb-resume-cache';
 
 // Sprint 8: Lazy-load heavy components with one-time retry for stale chunk errors
 // Keep the first-step onboarding screen in the main bundle to avoid critical-path lazy chunk failures.
@@ -370,9 +371,22 @@ const Index = () => {
     if (!pendingInput && !pendingMode) return;
 
     if (pendingInput?.linkedinUrl) setLinkedinUrl(pendingInput.linkedinUrl);
-    if ((pendingInput?.hasResume || pendingMode === 'resume') && !resumeFileRef.current) {
-      console.warn('Resume file lost after redirect — user will need to re-upload');
+
+    // Rehydrate the resume File from IndexedDB (sessionStorage can't hold blobs,
+    // so without this the user would be forced to re-pick the same file after OAuth).
+    if (pendingInput?.hasResume || pendingMode === 'resume') {
+      if (!resumeFileRef.current) {
+        loadResumeFromCache().then((file) => {
+          if (file && !resumeFileRef.current) {
+            resumeFileRef.current = file;
+            console.debug('[Index] Restored resume from IDB after OAuth:', file.name);
+          } else if (!file) {
+            console.warn('Resume file lost after redirect — user will need to re-upload');
+          }
+        });
+      }
     }
+
     // DPDP Phase B: rehydrate consent so it survives the OAuth bounce-back.
     if (typeof pendingInput?.dataRetentionConsent === 'boolean') {
       dataRetentionConsentRef.current = pendingInput.dataRetentionConsent;
@@ -487,6 +501,10 @@ const Index = () => {
     setMetroTier('');
     setKeySkills('');
     setStep(1);
+    // Persist the File blob to IndexedDB so it survives the OAuth bounce.
+    // sessionStorage can't hold blobs — without this, users are forced to
+    // re-pick the same resume after Google sign-in.
+    await saveResumeToCache(file);
     try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true, dataRetentionConsent })); } catch {}
     try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
     try { localStorage.setItem(PENDING_SCAN_MODE_KEY, 'resume'); } catch {}
