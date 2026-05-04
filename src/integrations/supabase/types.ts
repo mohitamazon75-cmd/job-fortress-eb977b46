@@ -2859,6 +2859,16 @@ export type Database = {
         }
         Returns: number
       }
+      purge_old_telemetry: {
+        Args: never
+        Returns: {
+          analytics_events_deleted: number
+          cost_events_deleted: number
+          edge_logs_deleted: number
+          rate_limits_deleted: number
+          token_usage_deleted: number
+        }[]
+      }
       purge_unconsented_artifacts: {
         Args: never
         Returns: {

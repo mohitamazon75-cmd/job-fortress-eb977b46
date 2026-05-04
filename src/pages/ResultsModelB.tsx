@@ -7,11 +7,14 @@ import Card1RiskMirror from "@/components/model-b/Card1RiskMirror";
 import LiveMarketCard from "@/components/model-b/LiveMarketCard";
 import Card2MarketRadar from "@/components/model-b/Card2MarketRadar";
 import IntelligenceMapCard from "@/components/model-b/IntelligenceMapCard";
-import Card3SkillShield from "@/components/model-b/Card3SkillShield";
-import Card4PivotPaths from "@/components/model-b/Card4PivotPaths";
-import Card5JobsTracker from "@/components/model-b/Card5JobsTracker";
-import Card6BlindSpots from "@/components/model-b/Card6BlindSpots";
-import Card7HumanAdvantage from "@/components/model-b/Card7HumanAdvantage";
+// Phase 2B (2026-05-04): lazy-load Cards 3-7. Each only renders when its tab
+// is opened, so eager-loading them inflated the initial bundle for no reason.
+// Cards 0/1/2 stay eager (visible on the default tab during the reveal).
+const Card3SkillShield   = lazy(() => import("@/components/model-b/Card3SkillShield"));
+const Card4PivotPaths    = lazy(() => import("@/components/model-b/Card4PivotPaths"));
+const Card5JobsTracker   = lazy(() => import("@/components/model-b/Card5JobsTracker"));
+const Card6BlindSpots    = lazy(() => import("@/components/model-b/Card6BlindSpots"));
+const Card7HumanAdvantage = lazy(() => import("@/components/model-b/Card7HumanAdvantage"));
 import Card0Verdict from "@/components/model-b/Card0Verdict";
 import MondayMoveCard from "@/components/model-b/MondayMoveCard";
 import RevealShareStrip from "@/components/RevealShareStrip";
@@ -229,6 +232,12 @@ export default function ResultsModelB() {
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intelRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollGenerationRef = useRef(0); // increments on each fetchAnalysis to invalidate prior chains
+  // Phase 2A (2026-05-04): realtime accelerator. Subscribes to model_b_results
+  // for this analysis_id; when a row arrives with card_data, we immediately
+  // re-fetch (skips up to ~3s of poll wait). Polling stays as the safety net
+  // for anon scans (RLS blocks realtime without auth.uid()) and for any
+  // realtime delivery hiccups.
+  const realtimePokeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -476,11 +485,35 @@ export default function ResultsModelB() {
     };
 
     pollTimeoutRef.current = setTimeout(poll, 3000);
+    // Phase 2A: expose immediate-poll trigger to the realtime subscription.
+    // Cleared automatically on next pollForResult invocation or unmount.
+    realtimePokeRef.current = () => {
+      if (!isMountedRef.current || gen !== pollGenerationRef.current) return;
+      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+      poll();
+    };
   }, [analysisId]);
 
   useEffect(() => {
     if (!analysisId) { navigate("/", { replace: true }); return; }
     fetchAnalysis();
+
+    // Phase 2A (2026-05-04): realtime accelerator. When the row lands with
+    // card_data, fire an immediate poke so pollForResult skips its 3s wait.
+    // Filter is keyed on analysis_id so we only see this scan's events.
+    const channel = supabase
+      .channel(`mb-results-${analysisId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "model_b_results", filter: `analysis_id=eq.${analysisId}` },
+        (payload) => {
+          const row = (payload.new ?? {}) as Record<string, unknown>;
+          if (row.card_data && realtimePokeRef.current) {
+            realtimePokeRef.current();
+          }
+        },
+      )
+      .subscribe();
 
     // P-3-B: Fetch monthly scan count for social proof (lifted from Card1RiskMirror)
     supabase
@@ -507,6 +540,10 @@ export default function ResultsModelB() {
           if (typeof v === "number" && v > 0) setMonthlySalaryInr(v);
         }, () => { /* swallow silently — card has graceful fallback */ });
     }
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [analysisId, navigate, fetchAnalysis]);
 
   // Friendly debrief instrumentation (2026-04-28).
@@ -1016,35 +1053,39 @@ export default function ResultsModelB() {
                 </>
               );
             })()}
-            {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} overallScore={baseScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
-              logEvent("modal_opened", { source: "upgrade_plan" });
-              setActionModal({
-                title: "60-Day Skill Upgrade Plan",
-                promptText: `Create a 60-day skill upgrade plan for ${cardData.user?.name} based on their resume.\n\nCurrent skills: ${(cardData.card3_shield?.skills || []).map((s: any) => s.name).join(", ")}\nSkill gaps: ${(cardData.card3_shield?.skills || []).filter((s: any) => s.level === "buildable" || s.level === "critical-gap").map((s: any) => s.name).join(", ")}\n\nFor each week:\n- Specific learning resources (free, India-accessible)\n- Practice exercises with measurable outcomes\n- Portfolio project milestones\n- Time estimates (assume 1hr/day on weekdays)`
-              });
-            }} />}
-            {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} scanId={analysisId ?? undefined} />}
-            {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
-            {/* Sprint 3: Tab 6 = Blind spots + Human Advantage (Card7) stacked. */}
-            {currentCard === 6 && (
-              <>
-                <Card6BlindSpots
-                  cardData={cardData}
-                  onBack={() => handleTabChange(5)}
-                  /* onNext omitted — forward nav lives on the Human section below */
-                  scanId={analysisId ?? undefined}
-                  firstName={revealFirstName}
-                />
-                <div style={{ height: 24 }} />
-                <Card7HumanAdvantage
-                  cardData={cardData}
-                  /* onBack omitted — back nav lives on Card6BlindSpots above */
-                  onNext={() => handleTabChange(TOOLS_TAB_INDEX)}
-                  copyFallback={handleCopyFallback}
-                  analysisId={analysisId}
-                />
-              </>
-            )}
+            {/* Phase 2B: lazy-loaded cards wrapped in Suspense (one boundary
+                covers all 5 since only one renders at a time per currentCard). */}
+            <Suspense fallback={<div style={{ padding: 40, textAlign: "center" as const, color: "var(--mb-ink3)", fontFamily: "'DM Sans',sans-serif", fontSize: 13 }}>Loading…</div>}>
+              {currentCard === 3 && <Card3SkillShield cardData={cardData} onBack={() => handleTabChange(2)} onNext={() => handleTabChange(4)} overallScore={baseScore} scanId={analysisId ?? undefined} onUpgradePlan={() => {
+                logEvent("modal_opened", { source: "upgrade_plan" });
+                setActionModal({
+                  title: "60-Day Skill Upgrade Plan",
+                  promptText: `Create a 60-day skill upgrade plan for ${cardData.user?.name} based on their resume.\n\nCurrent skills: ${(cardData.card3_shield?.skills || []).map((s: any) => s.name).join(", ")}\nSkill gaps: ${(cardData.card3_shield?.skills || []).filter((s: any) => s.level === "buildable" || s.level === "critical-gap").map((s: any) => s.name).join(", ")}\n\nFor each week:\n- Specific learning resources (free, India-accessible)\n- Practice exercises with measurable outcomes\n- Portfolio project milestones\n- Time estimates (assume 1hr/day on weekdays)`
+                });
+              }} />}
+              {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(5)} scanId={analysisId ?? undefined} />}
+              {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
+              {/* Sprint 3: Tab 6 = Blind spots + Human Advantage (Card7) stacked. */}
+              {currentCard === 6 && (
+                <>
+                  <Card6BlindSpots
+                    cardData={cardData}
+                    onBack={() => handleTabChange(5)}
+                    /* onNext omitted — forward nav lives on the Human section below */
+                    scanId={analysisId ?? undefined}
+                    firstName={revealFirstName}
+                  />
+                  <div style={{ height: 24 }} />
+                  <Card7HumanAdvantage
+                    cardData={cardData}
+                    /* onBack omitted — back nav lives on Card6BlindSpots above */
+                    onNext={() => handleTabChange(TOOLS_TAB_INDEX)}
+                    copyFallback={handleCopyFallback}
+                    analysisId={analysisId}
+                  />
+                </>
+              )}
+            </Suspense>
 
             {/* ── Tools tab (index 7, post-Sprint-3) ───────────────────── */}
             {currentCard === TOOLS_TAB_INDEX && (() => {
