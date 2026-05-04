@@ -881,14 +881,18 @@ Deno.serve(async (req) => {
         // Execution Tasks Specialist". Better to ask the user to retry with a job
         // title than to ship a meaningless analysis.
         if (!parsedLinkedinRole || parsedLinkedinRole === "Unknown") {
-          console.error("[Agent1:Profiler] Profiler failed AND no parsed title — marking scan invalid_input");
+          const scrapeBlocked = !!scan.linkedin_url && !hasResume;
+          console.error(`[Agent1:Profiler] Profiler failed AND no parsed title (scrape_blocked=${scrapeBlocked}) — marking scan invalid_input`);
           await supabase.from("scans").update({
             scan_status: "invalid_input",
-            feedback_flag: "profiler_failed_no_title",
+            feedback_flag: scrapeBlocked ? "linkedin_scrape_blocked" : "profiler_failed_no_title",
           }).eq("id", scanId);
           return new Response(JSON.stringify({
-            error: "Could not extract your profile. Please add your job title and key skills, then re-run the scan.",
-            code: "PROFILER_FAILED",
+            error: scrapeBlocked
+              ? "We couldn't read your LinkedIn profile (it may be private or temporarily blocked). Please add your current job title and 3–5 key skills, then re-run."
+              : "Could not extract your profile. Please add your job title and key skills, then re-run the scan.",
+            code: scrapeBlocked ? "LINKEDIN_SCRAPE_BLOCKED" : "PROFILER_FAILED",
+            scrape_blocked: scrapeBlocked,
           }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
 
