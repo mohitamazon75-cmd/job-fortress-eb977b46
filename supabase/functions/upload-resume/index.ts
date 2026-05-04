@@ -36,6 +36,29 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "scanId and file are required" }), { status: 400, headers: jsonHeaders });
     }
 
+    const MAX_BYTES = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_BYTES) {
+      return new Response(
+        JSON.stringify({ error: "File too large. Max 10MB.", code: "FILE_TOO_LARGE" }),
+        { status: 413, headers: jsonHeaders }
+      );
+    }
+    // Trust extension as primary signal; treat MIME as secondary.
+    // Some mobile browsers send empty file.type for valid PDFs.
+    const fname = (file.name || "").toLowerCase();
+    const validExt = fname.endsWith(".pdf") || fname.endsWith(".doc")
+                     || fname.endsWith(".docx");
+    const validMime = !file.type
+      || file.type === "application/pdf"
+      || file.type === "application/msword"
+      || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    if (!validExt || !validMime) {
+      return new Response(
+        JSON.stringify({ error: "Only PDF / DOC / DOCX files allowed.", code: "INVALID_FILE_TYPE" }),
+        { status: 415, headers: jsonHeaders }
+      );
+    }
+
     const admin = createAdminClient();
     const { data: scan, error: scanError } = await admin
       .from("scans")
