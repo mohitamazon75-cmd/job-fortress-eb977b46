@@ -394,6 +394,22 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
           Different from your overall JobBachao score (top of page) — this measures only automation risk for your role, not your full career safety.
         </div>
 
+        {/* STEP 3 — KG match badge: renders existing kg_match payload from
+            get-model-b-analysis. Hidden entirely if absent (no placeholder). */}
+        {cardData?.kg_match && (
+          <div
+            className={
+              cardData.kg_match.confidence_label === 'HIGH'
+                ? 'inline-flex items-center gap-2 rounded-full border border-[hsl(var(--prophet-green))] bg-[hsl(var(--prophet-green)/0.1)] px-3 py-1 text-xs font-semibold text-[hsl(var(--prophet-green))] mb-4'
+                : cardData.kg_match.confidence_label === 'MEDIUM'
+                ? 'inline-flex items-center gap-2 rounded-full border border-[hsl(var(--prophet-gold))] bg-[hsl(var(--prophet-gold)/0.1)] px-3 py-1 text-xs font-semibold text-[hsl(var(--prophet-gold))] mb-4'
+                : 'inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground mb-4'
+            }
+          >
+            Matched {cardData.kg_match.matched_count}/{cardData.kg_match.total_count} of your skills · confidence {cardData.kg_match.confidence_label}
+          </div>
+        )}
+
         {academicExposure && (
           <div style={{ background: "var(--mb-navy-tint)", border: "1.5px solid var(--mb-navy-tint2)", borderRadius: 12, padding: "13px 16px", marginBottom: 18 }}>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--mb-navy)", marginBottom: 6 }}>
