@@ -1383,7 +1383,13 @@ Deno.serve(async (req) => {
     // Failure is silent — cohort badge simply won't render for this scan.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    Promise.all([
+
+    // CRITICAL: wrap background fetches in EdgeRuntime.waitUntil so the worker
+    // isolate is kept alive after we send the response. Without this, the
+    // `return new Response(...)` below kills the isolate and ALL in-flight
+    // fetches die mid-request — which is why prior scans showed every downstream
+    // entry as "failed" with zero edge-function logs (the targets never booted).
+    const downstreamWork = Promise.all([
       fetchWithTimeout(`${supabaseUrl}/functions/v1/cohort-match`, {
         method: "POST",
         timeoutMs: 30000,
@@ -1392,17 +1398,57 @@ Deno.serve(async (req) => {
           Authorization: `Bearer ${serviceKey}`,
         },
         body: JSON.stringify({ scan_id: scanId }),
-      }).catch((e) => {
-        console.warn("[process-scan] cohort-match fire failed:", e);
-        scanDiagnostics.downstream.cohortMatch = "failed";
-      }).then(() => { scanDiagnostics.downstream.cohortMatch = "fired"; }).catch(() => {}),
+      })
+        .then(() => { scanDiagnostics.downstream.cohortMatch = "fired"; })
+        .catch((e) => {
+          console.warn("[process-scan] cohort-match fire failed:", e);
+          scanDiagnostics.downstream.cohortMatch = "failed";
+        }),
+
+      // compute-delta: scan-over-scan score change for returning users
+      (scan.user_id && scan.user_id !== 'anon'
+        ? fetchWithTimeout(`${supabaseUrl}/functions/v1/compute-delta`, {
+            method: "POST",
+            timeoutMs: 20000,
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({ user_id: scan.user_id, scan_id: scanId }),
+          })
+            .then(() => { scanDiagnostics.downstream.computeDelta = "fired"; })
+            .catch((e) => {
+              console.warn("[process-scan] compute-delta fire failed:", e);
+              scanDiagnostics.downstream.computeDelta = "failed";
+            })
+        : Promise.resolve().then(() => { scanDiagnostics.downstream.computeDelta = "fired"; })),
+
+      // generate-milestones: 30/60/90-day plan rows for the dashboard
+      (scan.user_id && scan.user_id !== 'anon'
+        ? fetchWithTimeout(`${supabaseUrl}/functions/v1/generate-milestones`, {
+            method: "POST",
+            timeoutMs: 20000,
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({ user_id: scan.user_id, scan_id: scanId }),
+          })
+            .then(() => { scanDiagnostics.downstream.generateMilestones = "fired"; })
+            .catch((e) => {
+              console.warn("[process-scan] generate-milestones fire failed:", e);
+              scanDiagnostics.downstream.generateMilestones = "failed";
+            })
+        : Promise.resolve().then(() => { scanDiagnostics.downstream.generateMilestones = "fired"; })),
 
       // ── IP #2: Store doom clock + skill predictions for calibration ────
-      // Build skill_risks array from classified skills in finalReport
       (() => {
         try {
           const atRiskSkills = (finalReport.at_risk_skills || []) as Array<any>;
-          if (atRiskSkills.length === 0) return Promise.resolve();
+          if (atRiskSkills.length === 0) {
+            scanDiagnostics.downstream.storePrediction = "fired";
+            return Promise.resolve();
+          }
           const skillRisks = atRiskSkills.slice(0, 10).map((s: any) => ({
             skill_name: String(s.skill || s.name || "unknown"),
             risk_score: Math.round(Math.max(0, Math.min(100, Number(s.risk_score || s.automation_risk || 50)))),
@@ -1420,18 +1466,19 @@ Deno.serve(async (req) => {
               doom_clock_months: finalReport.doom_clock_months || 36,
               skill_risks: skillRisks,
             }),
-          });
-        } catch { // Intentional: fire-and-forget prediction store; outer .catch() logs failures
+          })
+            .then(() => { scanDiagnostics.downstream.storePrediction = "fired"; })
+            .catch((e) => {
+              console.warn("[process-scan] store-prediction fire failed:", e);
+              scanDiagnostics.downstream.storePrediction = "failed";
+            });
+        } catch {
+          scanDiagnostics.downstream.storePrediction = "failed";
           return Promise.resolve();
         }
-      })().catch((e) => console.warn("[process-scan] store-prediction fire failed:", e)),
+      })(),
 
       // ── IP #2b: Validate previous predictions on rescan ────────────────
-      // Only fires when this is a rescan (prev exists). Matches the skill
-      // predictions from scan N-1 against this scan's actual risk scores,
-      // computes prediction error, and — once ≥50 pairs exist — adjusts
-      // OBSOLESCENCE_AI_ACCELERATION_RATE in calibration_config.
-      // This is the moat-widening flywheel: predict → rescan → validate → calibrate.
       (() => {
         if (!prev) return Promise.resolve(); // First scan — nothing to validate
         try {
@@ -1458,8 +1505,16 @@ Deno.serve(async (req) => {
           return Promise.resolve();
         }
       })().catch((e) => console.warn("[process-scan] validate-prediction fire failed:", e)),
-
     ]).catch(() => {});
+
+    // Keep the isolate alive long enough for the background fetches above to
+    // complete. Falls back to a no-op if the runtime hasn't injected the API
+    // (local dev). EdgeRuntime is a Supabase-Edge global; ts type may be missing.
+    // deno-lint-ignore no-explicit-any
+    const er = (globalThis as any).EdgeRuntime;
+    if (er && typeof er.waitUntil === 'function') {
+      er.waitUntil(downstreamWork);
+    }
 
     return new Response(JSON.stringify({ success: true, scanId, source: finalReport.source }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
