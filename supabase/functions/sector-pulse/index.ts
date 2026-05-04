@@ -268,7 +268,8 @@ RULES:
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  const corsHeaders = getCorsHeaders(req);
+  if (req.method === "OPTIONS") return handleCorsPreFlight(req);
 
   try {
     const body = await req.json().catch(() => ({}));
