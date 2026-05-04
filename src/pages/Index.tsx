@@ -12,6 +12,7 @@ import GoalCaptureModal, { type ScanGoals } from '@/components/GoalCaptureModal'
 import OnboardingFlow from '@/components/OnboardingFlow';
 import ThankYouFooter from '@/components/ThankYouFooter';
 import { useAuth } from '@/hooks/useAuth';
+import { saveResumeToCache, loadResumeFromCache, clearResumeCache } from '@/lib/idb-resume-cache';
 
 // Sprint 8: Lazy-load heavy components with one-time retry for stale chunk errors
 // Keep the first-step onboarding screen in the main bundle to avoid critical-path lazy chunk failures.
@@ -352,6 +353,8 @@ const Index = () => {
     try { sessionStorage.removeItem('jb_pending_input'); } catch {}
     try { localStorage.removeItem('jb_fresh_scan_intent'); } catch {}
     try { localStorage.removeItem(PENDING_SCAN_MODE_KEY); } catch {}
+    // Wipe the cached resume blob too — its purpose was to survive OAuth.
+    void clearResumeCache();
   }, []);
 
   const hasPendingResumeIntent = useCallback(() => {
@@ -370,9 +373,22 @@ const Index = () => {
     if (!pendingInput && !pendingMode) return;
 
     if (pendingInput?.linkedinUrl) setLinkedinUrl(pendingInput.linkedinUrl);
-    if ((pendingInput?.hasResume || pendingMode === 'resume') && !resumeFileRef.current) {
-      console.warn('Resume file lost after redirect — user will need to re-upload');
+
+    // Rehydrate the resume File from IndexedDB (sessionStorage can't hold blobs,
+    // so without this the user would be forced to re-pick the same file after OAuth).
+    if (pendingInput?.hasResume || pendingMode === 'resume') {
+      if (!resumeFileRef.current) {
+        loadResumeFromCache().then((file) => {
+          if (file && !resumeFileRef.current) {
+            resumeFileRef.current = file;
+            console.debug('[Index] Restored resume from IDB after OAuth:', file.name);
+          } else if (!file) {
+            console.warn('Resume file lost after redirect — user will need to re-upload');
+          }
+        });
+      }
     }
+
     // DPDP Phase B: rehydrate consent so it survives the OAuth bounce-back.
     if (typeof pendingInput?.dataRetentionConsent === 'boolean') {
       dataRetentionConsentRef.current = pendingInput.dataRetentionConsent;
@@ -487,6 +503,10 @@ const Index = () => {
     setMetroTier('');
     setKeySkills('');
     setStep(1);
+    // Persist the File blob to IndexedDB so it survives the OAuth bounce.
+    // sessionStorage can't hold blobs — without this, users are forced to
+    // re-pick the same resume after Google sign-in.
+    await saveResumeToCache(file);
     try { sessionStorage.setItem('jb_pending_input', JSON.stringify({ hasResume: true, dataRetentionConsent })); } catch {}
     try { localStorage.setItem('jb_fresh_scan_intent', '1'); } catch {}
     try { localStorage.setItem(PENDING_SCAN_MODE_KEY, 'resume'); } catch {}
@@ -494,8 +514,18 @@ const Index = () => {
   };
 
   // Called after auth is confirmed — check for previous scans
-  const handleAuthConfirmed = () => {
+  const handleAuthConfirmed = async () => {
     track('auth_complete');
+
+    // Last-chance rehydrate: if the OAuth-restore effect hasn't run yet
+    // (race with this callback), pull the resume directly from IDB here.
+    if (hasPendingResumeIntent() && !resumeFileRef.current) {
+      const cached = await loadResumeFromCache();
+      if (cached) {
+        resumeFileRef.current = cached;
+        console.debug('[Index] handleAuthConfirmed restored resume from IDB:', cached.name);
+      }
+    }
 
     if (hasPendingResumeIntent() && !resumeFileRef.current) {
       toast.error('Your resume was not retained. Please upload it again to run a fresh analysis.');
@@ -507,7 +537,11 @@ const Index = () => {
   };
 
   // Called when user wants to proceed with a new scan (from rescan check or directly)
-  const handleProceedNewScan = () => {
+  const handleProceedNewScan = async () => {
+    if (hasPendingResumeIntent() && !resumeFileRef.current) {
+      const cached = await loadResumeFromCache();
+      if (cached) resumeFileRef.current = cached;
+    }
     if (hasPendingResumeIntent() && !resumeFileRef.current) {
       toast.error('Please re-upload your resume before starting a new analysis.');
       setPhase('input-method');
