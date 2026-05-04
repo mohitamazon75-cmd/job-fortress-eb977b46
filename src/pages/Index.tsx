@@ -353,6 +353,8 @@ const Index = () => {
     try { sessionStorage.removeItem('jb_pending_input'); } catch {}
     try { localStorage.removeItem('jb_fresh_scan_intent'); } catch {}
     try { localStorage.removeItem(PENDING_SCAN_MODE_KEY); } catch {}
+    // Wipe the cached resume blob too — its purpose was to survive OAuth.
+    void clearResumeCache();
   }, []);
 
   const hasPendingResumeIntent = useCallback(() => {
@@ -512,8 +514,18 @@ const Index = () => {
   };
 
   // Called after auth is confirmed — check for previous scans
-  const handleAuthConfirmed = () => {
+  const handleAuthConfirmed = async () => {
     track('auth_complete');
+
+    // Last-chance rehydrate: if the OAuth-restore effect hasn't run yet
+    // (race with this callback), pull the resume directly from IDB here.
+    if (hasPendingResumeIntent() && !resumeFileRef.current) {
+      const cached = await loadResumeFromCache();
+      if (cached) {
+        resumeFileRef.current = cached;
+        console.debug('[Index] handleAuthConfirmed restored resume from IDB:', cached.name);
+      }
+    }
 
     if (hasPendingResumeIntent() && !resumeFileRef.current) {
       toast.error('Your resume was not retained. Please upload it again to run a fresh analysis.');
@@ -525,7 +537,11 @@ const Index = () => {
   };
 
   // Called when user wants to proceed with a new scan (from rescan check or directly)
-  const handleProceedNewScan = () => {
+  const handleProceedNewScan = async () => {
+    if (hasPendingResumeIntent() && !resumeFileRef.current) {
+      const cached = await loadResumeFromCache();
+      if (cached) resumeFileRef.current = cached;
+    }
     if (hasPendingResumeIntent() && !resumeFileRef.current) {
       toast.error('Please re-upload your resume before starting a new analysis.');
       setPhase('input-method');
