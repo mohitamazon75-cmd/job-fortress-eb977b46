@@ -121,12 +121,36 @@ async function callAgentCore(
       }));
     }
 
-    const resp = await fetch(AI_URL, {
+    // Phase 2A (2026-05-04): single retry with backoff+jitter on transient
+    // 408/425/429/5xx from the Lovable AI gateway. Without this, a transient
+    // 429 immediately burns the next model in the fallback chain (60-100s of
+    // serial waste). Honors Retry-After when present. Caps total added latency
+    // at ~3.5s. Network errors / aborts are NOT retried here — the outer
+    // try/catch + model-fallback chain handle those.
+    let resp = await fetch(AI_URL, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
+
+    if (!resp.ok && (resp.status === 408 || resp.status === 425 || resp.status === 429 || resp.status >= 500) && !controller.signal.aborted) {
+      const retryAfterRaw = resp.headers.get("retry-after");
+      const retryAfterMs = retryAfterRaw && Number.isFinite(Number(retryAfterRaw))
+        ? Math.min(3_000, Number(retryAfterRaw) * 1000)
+        : Math.floor(400 + Math.random() * 600); // 400-1000ms jitter
+      console.warn(`[${agentName}] transient ${resp.status} on ${model} — retrying in ${retryAfterMs}ms`);
+      await resp.body?.cancel().catch(() => {});
+      await new Promise(r => setTimeout(r, retryAfterMs));
+      if (!controller.signal.aborted) {
+        resp = await fetch(AI_URL, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+      }
+    }
     clearTimeout(timeout);
 
     if (!resp.ok) {
