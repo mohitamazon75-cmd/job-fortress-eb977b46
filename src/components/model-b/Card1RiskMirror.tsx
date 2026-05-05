@@ -406,7 +406,9 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
                 : 'inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground mb-4'
             }
           >
-            Matched {cardData.kg_match.matched_count}/{cardData.kg_match.total_count} of your skills · confidence {cardData.kg_match.confidence_label}
+            {cardData.kg_match.confidence_label === 'LOW'
+              ? `Skill-level peer match unavailable for this role — score reflects role-level norms`
+              : `Matched ${cardData.kg_match.matched_count}/${cardData.kg_match.total_count} of your skills · confidence ${cardData.kg_match.confidence_label}`}
           </div>
         )}
 
