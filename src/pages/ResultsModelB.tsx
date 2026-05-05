@@ -17,6 +17,7 @@ const Card6BlindSpots    = lazy(() => import("@/components/model-b/Card6BlindSpo
 const Card7HumanAdvantage = lazy(() => import("@/components/model-b/Card7HumanAdvantage"));
 import Card0Verdict from "@/components/model-b/Card0Verdict";
 import MondayMoveCard from "@/components/model-b/MondayMoveCard";
+import OrientationCard from "@/components/model-b/OrientationCard";
 import RevealShareStrip from "@/components/RevealShareStrip";
 import AiBusyRetry from "@/components/AiBusyRetry";
 import PromptModal from "@/components/model-b/PromptModal";
@@ -124,7 +125,7 @@ const ACTION_BUTTONS_HIDDEN_TABS = new Set([0, TOOLS_TAB_INDEX]);
 //   • Verdict tab must be score-only — no Share Strip, no Monday Move on first frame.
 //   • Monday Move felt redundant on every screen — restrict to the two action-y tabs.
 const SHARE_STRIP_HIDDEN_TABS = new Set([0]);
-const MONDAY_MOVE_VISIBLE_TABS = new Set([1, 4]); // Risk + Pivot Paths (post-Sprint-3 indices)
+
 // P0 polish (2026-04-28): Tab 0 = pure verdict moment.
 // Hide streak bar, progress bar and tab nav above the score so the
 // first frame is exactly: logo → score card. Card0Verdict's onNext
@@ -1015,7 +1016,8 @@ export default function ResultsModelB() {
                 firstName={revealFirstName}
               />
             )}
-            {MONDAY_MOVE_VISIBLE_TABS.has(currentCard) && <MondayMoveCard cardData={cardData} firstName={revealFirstName} />}
+            {currentCard === 1 && <OrientationCard cardData={cardData} firstName={revealFirstName} />}
+            {currentCard === 4 && <MondayMoveCard cardData={cardData} firstName={revealFirstName} />}
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
             {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(3)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} firstName={revealFirstName} />}
             {/* Phase 2B: lazy-loaded cards wrapped in Suspense (one boundary
