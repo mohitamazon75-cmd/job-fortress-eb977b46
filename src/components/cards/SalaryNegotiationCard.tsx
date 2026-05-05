@@ -13,7 +13,8 @@ export default function SalaryNegotiationCard({ report }: SalaryNegotiationCardP
 
   const salaryBleed = report.salary_bleed_monthly || 0;
   const estimatedSalary = report.estimated_monthly_salary_inr;
-  const hasSalaryData = estimatedSalary != null && estimatedSalary > 0;
+  const hasSalaryData = (estimatedSalary != null && estimatedSalary > 0)
+    && (report.score_breakdown?.salary_bleed_grounded !== false);
   const role = report.role || 'Professional';
   const industry = report.industry || 'Technology';
   const moatSkills = report.moat_skills || [];

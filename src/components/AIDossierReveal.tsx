@@ -260,7 +260,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
           </div>
           <div className="rounded-lg border border-border bg-card px-3 py-2 text-center">
             <p className="text-lg font-black text-foreground tabular-nums">
-              {report.salary_bleed_monthly && report.salary_bleed_monthly >= 8000
+              {(report.score_breakdown?.salary_bleed_grounded ?? true) && report.salary_bleed_monthly && report.salary_bleed_monthly >= 8000
                 ? `₹${Math.round(report.salary_bleed_monthly / 1000)}K`
                 : (() => {
                     const pct = Math.round(automationRisk * 0.4);
@@ -272,7 +272,7 @@ function IntelligenceProfile({ report, scanId, isProUser, onUpgrade }: { report:
                   Use 'Comp Risk' for exec — broad enough to cover both models. */}
               {isExec
                 ? 'Comp Risk'
-                : report.salary_bleed_monthly && report.salary_bleed_monthly >= 8000
+                : (report.score_breakdown?.salary_bleed_grounded ?? true) && report.salary_bleed_monthly && report.salary_bleed_monthly >= 8000
                   ? 'Monthly Loss'
                   : 'Salary at Risk'}
             </p>

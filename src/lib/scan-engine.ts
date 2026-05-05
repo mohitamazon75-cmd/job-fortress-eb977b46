@@ -142,6 +142,9 @@ export interface ScoreBreakdown {
   experience_reduction: number;
   pre_clamp_score: number;
   final_clamped: number;
+  /** Engine flag — true when salary was real (user CTC or
+   *  KG-derived); false when fabricated from a default fallback. */
+  salary_bleed_grounded?: boolean;
   salary_bleed_breakdown: {
     depreciation_rate: number;
     market_amplifier: number;

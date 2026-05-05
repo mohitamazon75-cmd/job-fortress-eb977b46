@@ -466,7 +466,13 @@ export default function OnboardingFlow({
                 </div>
                 <h2 className="text-3xl font-bold text-foreground mb-2">Your {currencyConfig.label}</h2>
                 <p className="text-muted-foreground">
-                  Adding this <span className="font-semibold text-foreground">personalises your salary-at-risk number</span> instead of showing a range. Your number stays on your device-linked record only — <span className="font-semibold text-foreground">never sold, never shared, never sent to employers</span>.
+                  <strong className="text-foreground">If you share:</strong> we'll show your exact ₹/month at risk, 5-year cumulative loss, and salary-anchored pivot recommendations.
+                </p>
+                <p className="text-muted-foreground mt-2">
+                  <strong className="text-foreground">If you skip:</strong> you'll get the full risk diagnosis and action plan — but no rupee figures anywhere in the report. Monetary stakes will be described in prose only.
+                </p>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Stays on your device-linked record only. Never sold, never shared, never sent to employers.
                 </p>
               </div>
 
@@ -547,9 +553,6 @@ export default function OnboardingFlow({
                     const annualLakhs = Math.round((parsed * 12) / 100000 * 10) / 10;
                     return <p className="text-[11px] text-prophet-green mt-1.5 font-medium">≈ {currencyConfig.symbol}{annualLakhs}L annual CTC — we use this verbatim in your scripts.</p>;
                   })()}
-                  <p className="text-[11px] text-muted-foreground mt-1.5">
-                    Stored privately, only used to compute your salary-at-risk number. <span className="text-foreground font-medium">Skipping means we use a market estimate and avoid quoting any ₹ figure as your salary.</span>
-                  </p>
                 </div>
 
                 <motion.button
