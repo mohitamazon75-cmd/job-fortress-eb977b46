@@ -1018,68 +1018,6 @@ export default function ResultsModelB() {
             {MONDAY_MOVE_VISIBLE_TABS.has(currentCard) && <MondayMoveCard cardData={cardData} firstName={revealFirstName} />}
             {currentCard === 0 && <Card0Verdict cardData={cardData} scanId={analysisId ?? undefined} onNext={() => handleTabChange(1)} />}
             {currentCard === 1 && <Card1RiskMirror cardData={cardData} onBack={() => handleTabChange(0)} onNext={() => handleTabChange(3)} monthlyScanCount={monthlyScanCount} monthlySalaryInr={monthlySalaryInr} firstName={revealFirstName} />}
-            {/* Sprint 3: Tab 2 = Live Market + Trends (Card2MarketRadar) stacked. */}
-            {currentCard === 2 && (() => {
-              const u = cardData.user || {};
-              const role = u.current_title || cardData.role || "Professional";
-              const city = u.location || u.city || cardData.country || "India";
-              const skills = (cardData.card3_shield?.skills || []).map((s: any) => s.name).filter(Boolean);
-              return (
-                <>
-                  <LiveMarketCard
-                    role={role}
-                    city={city}
-                    all_skills={skills}
-                    /* nav props intentionally omitted — single nav lives at the bottom of the merged tab (Sprint 3 fix 2026-04-29) */
-                  />
-                  <div style={{ height: 24 }} />
-                  <Card2MarketRadar cardData={cardData} />
-                  <div style={{ height: 24 }} />
-                  {/* Sprint 4 (2026-04-29): KG IP surfaced in Live Market tab. Self-hides if data is too thin. */}
-                  <IntelligenceMapCard cardData={cardData} />
-                  <div style={{ height: 24 }} />
-                  {/* Single nav bar for the merged tab — Back to Risk + Forward to Skill Shield */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 18, borderTop: "2px solid var(--mb-rule)" }}>
-                    <button
-                      onClick={() => handleTabChange(1)}
-                      style={{
-                        background: "none",
-                        color: "var(--mb-ink2)",
-                        border: "1.5px solid var(--mb-rule)",
-                        borderRadius: 12,
-                        padding: "12px 22px",
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontWeight: 700,
-                        fontSize: 14,
-                        cursor: "pointer",
-                        minHeight: 48,
-                      }}
-                    >
-                      ← Back
-                    </button>
-                    <button
-                      onClick={() => handleTabChange(3)}
-                      style={{
-                        background: "var(--mb-navy)",
-                        color: "white",
-                        border: "none",
-                        borderRadius: 12,
-                        padding: "12px 24px",
-                        fontFamily: "'DM Sans', sans-serif",
-                        fontWeight: 800,
-                        fontSize: 14,
-                        cursor: "pointer",
-                        boxShadow: "0 3px 12px rgba(27,47,85,0.25)",
-                        letterSpacing: "0.02em",
-                        minHeight: 48,
-                      }}
-                    >
-                      Continue → Skill Shield
-                    </button>
-                  </div>
-                </>
-              );
-            })()}
             {/* Phase 2B: lazy-loaded cards wrapped in Suspense (one boundary
                 covers all 5 since only one renders at a time per currentCard). */}
             <Suspense fallback={<div style={{ padding: 40, textAlign: "center" as const, color: "var(--mb-ink3)", fontFamily: "'DM Sans',sans-serif", fontSize: 13 }}>Loading…</div>}>
@@ -1091,27 +1029,6 @@ export default function ResultsModelB() {
                 });
               }} />}
               {currentCard === 4 && <Card4PivotPaths cardData={cardData} onBack={() => handleTabChange(3)} onNext={() => handleTabChange(7)} scanId={analysisId ?? undefined} />}
-              {currentCard === 5 && <Card5JobsTracker cardData={cardData} onBack={() => handleTabChange(4)} onNext={() => handleTabChange(6)} analysisId={analysisId} />}
-              {/* Sprint 3: Tab 6 = Blind spots + Human Advantage (Card7) stacked. */}
-              {currentCard === 6 && (
-                <>
-                  <Card6BlindSpots
-                    cardData={cardData}
-                    onBack={() => handleTabChange(5)}
-                    /* onNext omitted — forward nav lives on the Human section below */
-                    scanId={analysisId ?? undefined}
-                    firstName={revealFirstName}
-                  />
-                  <div style={{ height: 24 }} />
-                  <Card7HumanAdvantage
-                    cardData={cardData}
-                    /* onBack omitted — back nav lives on Card6BlindSpots above */
-                    onNext={() => handleTabChange(TOOLS_TAB_INDEX)}
-                    copyFallback={handleCopyFallback}
-                    analysisId={analysisId}
-                  />
-                </>
-              )}
             </Suspense>
 
             {/* ── Tools tab (index 7, post-Sprint-3) ───────────────────── */}
@@ -1146,8 +1063,61 @@ export default function ResultsModelB() {
                   {/* Header */}
                   <div style={{ background: "var(--mb-navy)", borderRadius: 16, padding: "20px 22px", marginBottom: 20, textAlign: "center" as const }}>
                     <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.6)", textTransform: "uppercase" as const, letterSpacing: "0.15em", marginBottom: 6 }}>Exclusive tools · Built for your profile</div>
-                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "white" }}>Go deeper on your career intelligence</div>
                   </div>
+
+                  {/* ── Section 1: Live Market ───────────────────────── */}
+                  {(() => {
+                    const u = cardData.user || {};
+                    const role = u.current_title || cardData.role || "Professional";
+                    const city = u.location || u.city || cardData.country || "India";
+                    const skills = (cardData.card3_shield?.skills || []).map((s: any) => s.name).filter(Boolean);
+                    return (
+                      <div style={{ marginBottom: 28 }}>
+                        <SectionHeading label="Your live market" />
+                        <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: "var(--mb-ink3)" }}>Loading market…</div>}>
+                          <LiveMarketCard role={role} city={city} all_skills={skills} />
+                          <div style={{ height: 16 }} />
+                          <Card2MarketRadar cardData={cardData} />
+                          <div style={{ height: 16 }} />
+                          <IntelligenceMapCard cardData={cardData} />
+                        </Suspense>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── Section 2: Jobs ──────────────────────────────── */}
+                  <div style={{ marginBottom: 28 }}>
+                    <SectionHeading label="Best-fit jobs for you" />
+                    <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: "var(--mb-ink3)" }}>Loading jobs…</div>}>
+                      <Card5JobsTracker
+                        cardData={cardData}
+                        onBack={() => {}}
+                        onNext={() => {}}
+                        analysisId={analysisId}
+                      />
+                    </Suspense>
+                  </div>
+
+                  {/* ── Section 3: Blind spots + Human advantage ────── */}
+                  <div style={{ marginBottom: 28 }}>
+                    <SectionHeading label="Resume gaps & your human edge" />
+                    <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: "var(--mb-ink3)" }}>Loading…</div>}>
+                      <Card6BlindSpots
+                        cardData={cardData}
+                        onBack={() => {}}
+                        scanId={analysisId ?? undefined}
+                        firstName={revealFirstName}
+                      />
+                      <div style={{ height: 24 }} />
+                      <Card7HumanAdvantage
+                        cardData={cardData}
+                        onNext={() => {}}
+                        copyFallback={handleCopyFallback}
+                        analysisId={analysisId}
+                      />
+                    </Suspense>
+                  </div>
+
 
                   <Suspense fallback={<div style={{ padding: 40, textAlign: "center" as const, color: "var(--mb-ink3)", fontFamily: "'DM Sans',sans-serif", fontSize: 13 }}>Loading tools…</div>}>
 
