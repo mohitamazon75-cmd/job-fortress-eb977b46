@@ -1041,7 +1041,6 @@ export function isMondayActionable(sentence: string): boolean {
 export function computeMondayMove(cardData: Record<string, unknown>): {
   action: string;
   why: string;
-  hinglish: string;
   source: string;
 } {
   const cd = cardData || {};
