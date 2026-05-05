@@ -1091,8 +1091,6 @@ export default function ResultsModelB() {
                     <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: "var(--mb-ink3)" }}>Loading jobs…</div>}>
                       <Card5JobsTracker
                         cardData={cardData}
-                        onBack={() => {}}
-                        onNext={() => {}}
                         analysisId={analysisId}
                       />
                     </Suspense>
@@ -1104,14 +1102,12 @@ export default function ResultsModelB() {
                     <Suspense fallback={<div style={{ padding: 20, textAlign: "center", color: "var(--mb-ink3)" }}>Loading…</div>}>
                       <Card6BlindSpots
                         cardData={cardData}
-                        onBack={() => {}}
                         scanId={analysisId ?? undefined}
                         firstName={revealFirstName}
                       />
                       <div style={{ height: 24 }} />
                       <Card7HumanAdvantage
                         cardData={cardData}
-                        onNext={() => {}}
                         copyFallback={handleCopyFallback}
                         analysisId={analysisId}
                       />
