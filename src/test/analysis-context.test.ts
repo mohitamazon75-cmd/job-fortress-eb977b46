@@ -254,4 +254,20 @@ describe('buildAnalysisContext — floor never lowers LLM tier', () => {
     const ctx = buildAnalysisContext({ ...baseInput, seniority_tier: 'MID' });
     expect(ctx.user_seniority_tier).toBe('MID');
   });
+
+  // Agent vocab mapping (Round 5 fix): Agent 1 emits PROFESSIONAL/MANAGER/ENTRY
+  // which previously collapsed to 'MID' via the default branch, mis-sizing
+  // pivots for ~60% of users. These cases now map explicitly.
+  it('Agent vocab PROFESSIONAL → MID', () => {
+    const ctx = buildAnalysisContext({ ...baseInput, seniority_tier: 'PROFESSIONAL' });
+    expect(ctx.user_seniority_tier).toBe('MID');
+  });
+  it('Agent vocab MANAGER → SENIOR', () => {
+    const ctx = buildAnalysisContext({ ...baseInput, seniority_tier: 'MANAGER' });
+    expect(ctx.user_seniority_tier).toBe('SENIOR');
+  });
+  it('Agent vocab ENTRY → JUNIOR', () => {
+    const ctx = buildAnalysisContext({ ...baseInput, seniority_tier: 'ENTRY' });
+    expect(ctx.user_seniority_tier).toBe('JUNIOR');
+  });
 });
