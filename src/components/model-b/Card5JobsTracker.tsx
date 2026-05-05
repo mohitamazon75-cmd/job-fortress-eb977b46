@@ -29,7 +29,7 @@ function useKanban() {
   return { state, addItem };
 }
 
-export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId }: { cardData: any; onBack: () => void; onNext: () => void; analysisId?: string | null }) {
+export default function Card5JobsTracker({ cardData, onBack, onNext, analysisId }: { cardData: any; onBack?: () => void; onNext?: () => void; analysisId?: string | null }) {
   const d = cardData?.card5_jobs ?? {};
   const [modal, setModal] = useState<{ title: string; promptText: string } | null>(null);
   const [forceRefresh, setForceRefresh] = useState(0);
