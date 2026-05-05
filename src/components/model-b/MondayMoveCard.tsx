@@ -211,21 +211,6 @@ export default function MondayMoveCard({ cardData, firstName }: { cardData: Card
           Why: {move.why}
         </p>
       )}
-
-      <p
-        style={{
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 13.5,
-          fontWeight: 600,
-          color: "var(--mb-ink2)",
-          fontStyle: "italic",
-          lineHeight: 1.5,
-          marginTop: 6,
-          marginBottom: 0,
-        }}
-      >
-        {move.hinglish}
-      </p>
     </div>
   );
 }
