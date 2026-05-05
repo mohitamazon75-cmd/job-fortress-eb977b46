@@ -595,14 +595,35 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
             ];
             const norm = (v: any) => String(v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
             const present = anchors.filter((a) => norm(a.val).length > 0);
-            const distinctVals = new Set(present.map((a) => norm(a.val)));
-            const allIdentical = present.length >= 2 && distinctVals.size === 1;
+
+            // Salary-anchor sanity guard: a valid anchor is a short numeric
+            // range like "₹24L" or "₹26-32L". When the LLM emits prose
+            // instead (e.g. "Compensation signals are mixed..."), we drop
+            // the tile so prose isn't rendered as a number in monospace.
+            const looksNumeric = (v: any): boolean => {
+              const s = String(v ?? "").trim();
+              if (s.length === 0) return false;
+              if (s.length > 25) return false; // prose is always longer than this
+              return /[\d₹$€£]/.test(s);        // must contain a digit or currency symbol
+            };
+            const numericAnchors = present.filter((a) => looksNumeric(a.val));
+
+            if (numericAnchors.length === 0) {
+              return (
+                <div style={{ background: "var(--mb-paper)", border: "1.5px solid var(--mb-rule)", borderRadius: 12, padding: "14px 16px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.55, fontStyle: "italic", flex: 1 }}>
+                  Personalised anchors are unavailable for this scan. Add your current CTC and run again to unlock walk-away / accept / open / best-case figures.
+                </div>
+              );
+            }
+
+            const distinctVals = new Set(numericAnchors.map((a) => norm(a.val)));
+            const allIdentical = numericAnchors.length >= 2 && distinctVals.size === 1;
 
             if (allIdentical) {
               return (
                 <div>
                   <div style={{ background: "white", border: "1.5px solid var(--mb-rule)", borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
-                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 17, fontWeight: 800, color: "var(--mb-navy)" }}>{present[0].val}</div>
+                    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 17, fontWeight: 800, color: "var(--mb-navy)" }}>{numericAnchors[0].val}</div>
                     <div style={{ fontSize: 11, color: "var(--mb-ink2)", fontWeight: 700, marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>Estimated range</div>
                   </div>
                   <div style={{ marginTop: 8, fontSize: 11, color: "var(--mb-ink2)", fontFamily: "'DM Sans', sans-serif", fontStyle: "italic" }}>
@@ -615,7 +636,7 @@ export default function Card4PivotPaths({ cardData, onBack, onNext, scanId }: { 
             // Dedupe identical values while preserving order so users never see
             // two adjacent tiles with the same number.
             const seen = new Set<string>();
-            const deduped = anchors.filter((a) => {
+            const deduped = numericAnchors.filter((a) => {
               const k = norm(a.val);
               if (!k) return true; // empty values still render as placeholders
               if (seen.has(k)) return false;
