@@ -129,6 +129,8 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
     enrichment, setActiveScreen, source, locale, strings,
   } = props;
 
+  const grounded = report.score_breakdown?.salary_bleed_grounded ?? true;
+
   const [riskMethodOpen, setRiskMethodOpen] = useState(false);
 
   // P1: Animate the headline Career Position Score on dashboard land so it feels
@@ -496,10 +498,16 @@ export default function DiagnosisTab({ props }: { props: DashboardSharedProps })
               : `Your strategic position is strong. The primary risk is opportunity cost — organisations that integrate AI at the leadership level are pulling ahead on operational efficiency. Staying visible as an AI transformation leader is your most effective hedge.`
           ) : (
             clampedRisk > 65
-              ? `Within ${report.months_remaining} months, ${displayRole} roles in ${report.industry} will see ${Math.round(clampedRisk * 0.6)}% of current tasks automated. Your monthly earning potential drops by ${formatCurrency(report.salary_bleed_monthly, country)}/mo. In 5 years, cumulative loss reaches ${report.total_5yr_loss_inr ? formatCurrency(report.total_5yr_loss_inr, country) : formatCurrency(report.salary_bleed_monthly * 60, country)}. Companies are already consolidating teams.`
+              ? (grounded
+                  ? `Within ${report.months_remaining} months, ${displayRole} roles in ${report.industry} will see ${Math.round(clampedRisk * 0.6)}% of current tasks automated. Your monthly earning potential drops by ${formatCurrency(report.salary_bleed_monthly, country)}/mo. In 5 years, cumulative loss reaches ${report.total_5yr_loss_inr ? formatCurrency(report.total_5yr_loss_inr, country) : formatCurrency(report.salary_bleed_monthly * 60, country)}. Companies are already consolidating teams.`
+                  : `Within ${report.months_remaining} months, ${displayRole} roles in ${report.industry} will see ${Math.round(clampedRisk * 0.6)}% of current tasks automated. Your monthly earning potential is meaningfully eroding, with cumulative compensation losses compounding over the next 5 years. Companies are already consolidating teams.`)
               : clampedRisk > 40
-              ? `Your role has a ${report.months_remaining}-month window before meaningful restructuring. Monthly earning erosion: ${formatCurrency(report.salary_bleed_monthly, country)}. The risk is not replacement — it's gradual irrelevance as AI-augmented peers outperform.`
-              : `Your position is currently stable, but ${report.industry} is shifting. Monthly salary pressure: ${formatCurrency(report.salary_bleed_monthly, country)}. Complacency is the primary risk — peers who upskill will pull ahead.`
+              ? (grounded
+                  ? `Your role has a ${report.months_remaining}-month window before meaningful restructuring. Monthly earning erosion: ${formatCurrency(report.salary_bleed_monthly, country)}. The risk is not replacement — it's gradual irrelevance as AI-augmented peers outperform.`
+                  : `Your role has a ${report.months_remaining}-month window before meaningful restructuring. Your monthly earning potential is meaningfully eroding. The risk is not replacement — it's gradual irrelevance as AI-augmented peers outperform.`)
+              : (grounded
+                  ? `Your position is currently stable, but ${report.industry} is shifting. Monthly salary pressure: ${formatCurrency(report.salary_bleed_monthly, country)}. Complacency is the primary risk — peers who upskill will pull ahead.`
+                  : `Your position is currently stable, but ${report.industry} is shifting. Your monthly earning potential is meaningfully eroding. Complacency is the primary risk — peers who upskill will pull ahead.`)
           )}
         </p>
         {report.obsolescence_timeline && (

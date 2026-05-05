@@ -319,7 +319,8 @@ function Card3SkillShield({ report, onBack, onNext }: { report: ScanReport; onBa
 // ════════════════════════════════════════════════════════════════════
 function Card4YourMarket({ report, onBack, onNext }: { report: ScanReport; onBack: () => void; onNext: () => void }) {
   const monthly = report.estimated_monthly_salary_inr;
-  const bleedMonthly = report.salary_bleed_monthly;
+  const grounded = report.score_breakdown?.salary_bleed_grounded ?? true;
+  const bleedMonthly = grounded ? report.salary_bleed_monthly : null;
   const survivability = report.survivability?.score ?? 50;
   const peerPct = report.survivability?.peer_percentile_estimate ?? null;
   const marketPos = report.market_position_model;

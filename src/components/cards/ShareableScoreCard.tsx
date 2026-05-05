@@ -132,7 +132,8 @@ function useCardData(report: ScanReport) {
   const humanEdgeRaw = Math.max(0, 100 - aiExposure);
 
   // Salary logic
-  const salaryBleedMonthly = (report.salary_bleed_monthly != null && report.salary_bleed_monthly > 0)
+  const grounded = report.score_breakdown?.salary_bleed_grounded ?? true;
+  const salaryBleedMonthly = (grounded && report.salary_bleed_monthly != null && report.salary_bleed_monthly > 0)
     ? report.salary_bleed_monthly : null;
   const rawSalaryDropPct = report.career_shock_simulator?.salary_drop_percentage
     ?? (report.score_breakdown?.salary_bleed_breakdown?.final_rate
