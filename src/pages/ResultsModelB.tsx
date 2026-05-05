@@ -91,6 +91,29 @@ const TOOLS_TAB_INDEX = 7;
 // 6 Blind spots) remain reachable via in-component CTAs.
 const PRIMARY_TAB_INDICES = new Set([0, 1, 3, 4, 7]);
 
+/** Tabs that count toward "journey complete" — only the reachable
+ *  primary nav tabs. Hidden tabs (Live Market, Jobs, Blind Spots)
+ *  are folded into Advance, so visiting Advance covers them. */
+const REACHABLE_TAB_COUNT = PRIMARY_TAB_INDICES.size; // = 5
+
+function SectionHeading({ label }: { label: string }) {
+  return (
+    <div style={{
+      fontFamily: "'DM Sans', sans-serif",
+      fontSize: 11,
+      fontWeight: 800,
+      color: "var(--mb-navy)",
+      textTransform: "uppercase",
+      letterSpacing: "0.16em",
+      marginBottom: 12,
+      paddingBottom: 8,
+      borderBottom: "2px solid var(--mb-rule)",
+    }}>
+      {label}
+    </div>
+  );
+}
+
 // Tabs where the header "Career Safety" score is hidden.
 // 0 = Verdict, 3 = Shield (sub-score conflict), 7 = Tools.
 const HEADER_SCORE_HIDDEN_TABS = new Set([0, 3, TOOLS_TAB_INDEX]);
@@ -207,7 +230,7 @@ export default function ResultsModelB() {
     resultLoaded: Boolean(cardData),
     currentCard,
     visitedCount: visitedCards.size,
-    totalCards: TOTAL_JOURNEY_TABS,
+    totalCards: REACHABLE_TAB_COUNT,
   });
   // P-3-B: Fetch monthly scan count once here, pass to Card1RiskMirror as a prop.
   const [monthlyScanCount, setMonthlyScanCount] = useState<number | null>(null);
@@ -660,7 +683,7 @@ export default function ResultsModelB() {
   // Idempotent: bonus is only applied if not already persisted as done.
   useEffect(() => {
     if (journeyDone) return;
-    if (visitedCards.size >= TOTAL_JOURNEY_TABS && cardData) {
+    if (visitedCards.size >= REACHABLE_TAB_COUNT && cardData) {
       setJourneyDone(true);
       // displayScore picks up the +6 automatically via the journeyDone useMemo (B5).
       toast.success("Journey complete ✓", { duration: 2800 });
@@ -696,7 +719,7 @@ export default function ResultsModelB() {
   // Progress is based on all 9 tabs (Verdict → Tools)
   // C1 #7: progress reflects actual exploration (visited tabs), not just current index.
   // Pure logic in src/lib/model-b-helpers.ts (BL-014 / INV-F03).
-  const progressPct = journeyProgressPct(visitedCards.size, TOTAL_JOURNEY_TABS);
+  const progressPct = journeyProgressPct(visitedCards.size, REACHABLE_TAB_COUNT);
 
   const getTabState = (i: number) => {
     if (i === currentCard) return "active";

@@ -640,7 +640,7 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
           </div>
         )}
 
-        <CardNav onBack={onBack} onNext={onNext} nextLabel="See your live market →" />
+        <CardNav onBack={onBack} onNext={onNext} nextLabel="Defend your skills →" />
       </CardBody>
     </CardShell>
   );
