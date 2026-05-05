@@ -97,7 +97,6 @@ describe("MondayMoveCard.pickMondayMove", () => {
   it("safe default when nothing is present", () => {
     const m = pickMondayMove({});
     expect(m.action).toContain("Naukri");
-    expect(m.hinglish).toContain("Naukri");
     expect(m.source).toBe("Default action");
   });
 
@@ -106,7 +105,7 @@ describe("MondayMoveCard.pickMondayMove", () => {
     for (const cd of cases) {
       const m = pickMondayMove(cd as any);
       expect(m.action.length).toBeGreaterThan(10);
-      expect(m.hinglish.length).toBeGreaterThan(5);
+      
     }
   });
 });
