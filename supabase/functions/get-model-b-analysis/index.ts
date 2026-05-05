@@ -1056,7 +1056,7 @@ export function computeMondayMove(cardData: Record<string, unknown>): {
       return {
         action: `Open Naukri Monday morning. Search "${role}". Read 3 listings end-to-end and copy 5 repeated keywords into a doc.`,
         why: "Those 5 keywords go straight into your resume this week.",
-        hinglish: `Monday subah Naukri kholo. "${role}" search karo. 3 listings padho, 5 keywords note karo.`,
+        
         source: "From your pivot paths",
       };
     }
@@ -1070,7 +1070,7 @@ export function computeMondayMove(cardData: Record<string, unknown>): {
       return {
         action: `Open one ${gap.name} tutorial Monday morning. Just one. Watch end-to-end and ship one tiny output by Friday.`,
         why: `${gap.name} is your highest-leverage skill gap right now.`,
-        hinglish: `Monday ko ek ${gap.name} ka tutorial dekho. Sirf ek. Friday tak ek chhota output ship karo.`,
+        
         source: "From your skill shield",
       };
     }
@@ -1084,7 +1084,7 @@ export function computeMondayMove(cardData: Record<string, unknown>): {
       return {
         action: `Spend 30 minutes on ${skill} Monday morning. Open one tutorial. Finish it.`,
         why: "Day 1 of the 7-day plan you already have below.",
-        hinglish: `Monday subah 30 minute ${skill} pe lagao. Ek tutorial. Khatam karo.`,
+        
         source: "From your survival diet",
       };
     }
@@ -1099,7 +1099,7 @@ export function computeMondayMove(cardData: Record<string, unknown>): {
       return {
         action: good,
         why: "From your risk verdict — pulled because it names a concrete next step.",
-        hinglish: "Yeh ek kaam Monday subah karo. Bas yahi.",
+        
         source: "From your risk verdict",
       };
     }
@@ -1110,7 +1110,7 @@ export function computeMondayMove(cardData: Record<string, unknown>): {
   return {
     action: `Open Naukri Monday morning. Search "${search}". Read 3 listings end-to-end and copy 5 repeated keywords.`,
     why: "Even 20 minutes here beats another anxious doom-scroll.",
-    hinglish: `Monday subah Naukri kholo. "${search}" search karo. 3 listings padho, 5 keywords note karo.`,
+    
     source: "Default action",
   };
 }
