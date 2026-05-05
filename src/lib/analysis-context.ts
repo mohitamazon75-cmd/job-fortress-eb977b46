@@ -99,6 +99,12 @@ function normalizeSeniority(raw: string | null | undefined): SeniorityTier {
       return 'SENIOR_LEADER';
     case 'EXEC':
       return 'EXECUTIVE';
+    case 'PROFESSIONAL':
+      return 'MID';
+    case 'MANAGER':
+      return 'SENIOR';
+    case 'ENTRY':
+      return 'JUNIOR';
     default:
       return 'MID';
   }
