@@ -29,8 +29,7 @@ export default function OrientationCard({
 
   const observation = useMemo(() => {
     const topMoat =
-      cardData?.card7_human?.advantages?.[0]?.proof_label
-      || cardData?.card7_human?.advantages?.[0]?.title
+      cardData?.card7_human?.advantages?.[0]?.title
       || (cardData?.card3_shield?.skills || [])
           .find((s: any) => s?.level === "best-in-class" || s?.level === "strong")?.name
       || null;
