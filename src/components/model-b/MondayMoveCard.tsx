@@ -14,7 +14,7 @@
 import { useMemo } from "react";
 
 type CardData = any;
-type Move = { action: string; hinglish: string; source: string; why?: string };
+type Move = { action: string; source: string; why?: string };
 
 const CONCRETE_VERBS = /\b(open|search|read|write|draft|send|email|call|post|publish|finish|complete|build|ship|record|message|dm|apply|review|list|map|sketch|outline|prepare|book|schedule)\b/i;
 const HAS_NUMBER = /\b\d+\b/;
@@ -38,7 +38,7 @@ function pickMondayMove(cardData: CardData): Move {
   if (server && typeof server === "object" && typeof server.action === "string" && server.action.trim().length > 0) {
     return {
       action: String(server.action),
-      hinglish: String(server.hinglish || "Yeh ek kaam Monday subah karo. Bas yahi."),
+      
       source: String(server.source || "Your Monday move"),
       why: typeof server.why === "string" ? server.why : undefined,
     };
@@ -59,7 +59,7 @@ function pickMondayMove(cardData: CardData): Move {
     if (role && typeof role === "string") {
       return {
         action: `Open Naukri Monday morning. Search "${role}". Read 3 listings end-to-end and copy 5 repeated keywords.`,
-        hinglish: `Monday subah Naukri kholo. "${role}" search karo. 3 listings padho, 5 keywords note karo.`,
+        
         source: "From your pivot paths",
         why: "These keywords go straight into your resume this week.",
       };
@@ -74,7 +74,7 @@ function pickMondayMove(cardData: CardData): Move {
     if (gap?.name) {
       return {
         action: `Open one ${gap.name} tutorial on Monday. Just one. Watch it end-to-end and ship one tiny output.`,
-        hinglish: `Monday ko ek ${gap.name} ka tutorial dekho. Sirf ek. Pura dekho, ek chhota output banao.`,
+        
         source: "From your skill shield",
         why: `${gap.name} is your highest-leverage gap right now.`,
       };
@@ -89,7 +89,7 @@ function pickMondayMove(cardData: CardData): Move {
     if (skill && typeof skill === "string") {
       return {
         action: `Spend 30 minutes on ${skill} Monday morning. Open one tutorial. Finish it.`,
-        hinglish: `Monday subah 30 minute ${skill} pe lagao. Ek tutorial. Khatam karo.`,
+        
         source: "From your survival diet",
         why: "Day 1 of the 7-day plan you already have.",
       };
@@ -106,7 +106,7 @@ function pickMondayMove(cardData: CardData): Move {
     if (good) {
       return {
         action: good,
-        hinglish: "Yeh ek kaam Monday subah karo. Bas yahi.",
+        
         source: "From your risk verdict",
       };
     }
@@ -117,7 +117,7 @@ function pickMondayMove(cardData: CardData): Move {
   const search = role && typeof role === "string" ? role : "your role";
   return {
     action: `Open Naukri Monday morning. Search "${search}". Read 3 listings end-to-end and copy 5 repeated keywords.`,
-    hinglish: `Monday subah Naukri kholo. "${search}" search karo. 3 listings padho, 5 keywords note karo.`,
+    
     source: "Default action",
     why: "Even 20 minutes here beats another anxious doom-scroll.",
   };
@@ -211,21 +211,6 @@ export default function MondayMoveCard({ cardData, firstName }: { cardData: Card
           Why: {move.why}
         </p>
       )}
-
-      <p
-        style={{
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 13.5,
-          fontWeight: 600,
-          color: "var(--mb-ink2)",
-          fontStyle: "italic",
-          lineHeight: 1.5,
-          marginTop: 6,
-          marginBottom: 0,
-        }}
-      >
-        {move.hinglish}
-      </p>
     </div>
   );
 }
