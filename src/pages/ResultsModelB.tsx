@@ -85,7 +85,7 @@ function handleCopyFallback(text: string) {
 //   • Trends (Card2MarketRadar) merged INTO Live Market tab (stacked below)
 //   • Human (Card7HumanAdvantage) merged INTO Blind spots tab (stacked below)
 // Tab count: 10 → 8. All downstream indices shift accordingly.
-const TAB_LABELS = ["Verdict", "Risk", "Live Market", "Shield", "Pivot", "Jobs", "Blind spots", "🛠 Tools"];
+const TAB_LABELS = ["Verdict", "Risk", "Live Market", "Shield", "Pivot", "Jobs", "Blind spots", "Advance"];
 const TOOLS_TAB_INDEX = 7;
 
 // Tabs where the header "Career Safety" score is hidden.
