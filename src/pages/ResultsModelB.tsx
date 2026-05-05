@@ -87,6 +87,9 @@ function handleCopyFallback(text: string) {
 // Tab count: 10 → 8. All downstream indices shift accordingly.
 const TAB_LABELS = ["Verdict", "Risk", "Live Market", "Shield", "Pivot", "Jobs", "Blind spots", "Advance"];
 const TOOLS_TAB_INDEX = 7;
+// Tabs surfaced in the top pill nav. Hidden tabs (2 Live Market, 5 Jobs,
+// 6 Blind spots) remain reachable via in-component CTAs.
+const PRIMARY_TAB_INDICES = new Set([0, 1, 3, 4, 7]);
 
 // Tabs where the header "Career Safety" score is hidden.
 // 0 = Verdict, 3 = Shield (sub-score conflict), 7 = Tools.
@@ -803,6 +806,7 @@ export default function ResultsModelB() {
           <div style={{ marginBottom: 20, WebkitOverflowScrolling: "touch" }}>
             <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {TAB_LABELS.map((label, i) => {
+                if (!PRIMARY_TAB_INDICES.has(i)) return null;
                 const state = getTabState(i);
                 const isActive = state === "active";
                 const isDone = state === "done";
