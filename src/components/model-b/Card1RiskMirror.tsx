@@ -412,20 +412,14 @@ export default function Card1RiskMirror({ cardData, onNext, onBack, monthlyScanC
           </div>
         )}
 
-        {academicExposure && (
+        {academicExposure && academicExposure.kind === "mapped" && (
           <div style={{ background: "var(--mb-navy-tint)", border: "1.5px solid var(--mb-navy-tint2)", borderRadius: 12, padding: "13px 16px", marginBottom: 18 }}>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--mb-navy)", marginBottom: 6 }}>
               Academic exposure check
             </div>
-            {academicExposure.kind === "mapped" ? (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.65, margin: 0, fontWeight: 600 }}>
-                Atlas maps this KG role to <strong style={{ color: "var(--mb-ink)", fontWeight: 800 }}>{academicExposure.risk_tier}</strong> AI exposure across {academicExposure.source_count} academic source{academicExposure.source_count === 1 ? "" : "s"}. Matched occupation: {academicExposure.occupations?.[0]?.atlas_title || "occupation mapped"}.
-              </p>
-            ) : (
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.65, margin: 0, fontWeight: 600 }}>
-                {academicExposure.message}. We are not showing a fake academic badge for this role.
-              </p>
-            )}
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--mb-ink2)", lineHeight: 1.65, margin: 0, fontWeight: 600 }}>
+              Atlas maps this KG role to <strong style={{ color: "var(--mb-ink)", fontWeight: 800 }}>{academicExposure.risk_tier}</strong> AI exposure across {academicExposure.source_count} academic source{academicExposure.source_count === 1 ? "" : "s"}. Matched occupation: {academicExposure.occupations?.[0]?.atlas_title || "occupation mapped"}.
+            </p>
           </div>
         )}
 
