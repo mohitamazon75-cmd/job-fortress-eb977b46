@@ -113,8 +113,12 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
             </p>
           </div>
 
-          {/* Method selector — Resume is preferred for accuracy; LinkedIn works but
-              can be incomplete when LinkedIn rate-limits our scraper. */}
+          {/* Method selector — Resume is the only active path right now.
+              LinkedIn-only scans had an 80% failure rate (52/65 fail Apr 22 - May 5)
+              caused by upstream profile-scraping issues. The button is shown as
+              "Coming Soon" so the feature is visible/promised but cannot be
+              clicked until the LinkedIn ingestion path is rebuilt. Decision:
+              co-founder, 2026-05-05 (pre-friendlies launch). */}
           {!method && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -122,7 +126,7 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
               transition={{ delay: 0.3 }}
               className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3"
             >
-              {/* RESUME — recommended path */}
+              {/* RESUME — only active path */}
               <motion.button
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
@@ -147,30 +151,36 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
                 </div>
               </motion.button>
 
-              {/* LINKEDIN — equal hierarchy, paid structured scraper backend */}
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setMethod('linkedin')}
-                className="group relative p-5 sm:p-8 rounded-2xl border-2 border-primary/40 bg-card hover:border-primary transition-all duration-300 text-center overflow-hidden"
+              {/* LINKEDIN — DISABLED, COMING SOON. Visual parity preserved so
+                  users know the feature is on the roadmap, but button is
+                  unclickable to keep them on the proven 98.6%-success resume path. */}
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                title="LinkedIn scan is coming soon — please upload your resume for now"
+                className="group relative p-5 sm:p-8 rounded-2xl border-2 border-border/60 bg-muted/40 text-center overflow-hidden cursor-not-allowed opacity-70"
               >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'hsl(var(--primary) / 0.04)' }} />
+                {/* Coming soon ribbon */}
+                <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-foreground/80 text-[9px] font-extrabold tracking-wider uppercase text-background shadow-sm">
+                  Coming Soon
+                </span>
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
-                    <Linkedin className="w-8 h-8 text-primary" />
+                  <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-foreground/5">
+                    <Linkedin className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <h3 className="font-bold text-foreground text-lg mb-1">LinkedIn URL</h3>
-                  <p className="text-sm text-muted-foreground">Public profile · full work history</p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-1">Fastest · no upload needed</p>
-                  <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-                    <Zap className="w-3 h-3" /> One-click
+                  <h3 className="font-bold text-muted-foreground text-lg mb-1">LinkedIn URL</h3>
+                  <p className="text-sm text-muted-foreground/80">Public profile · one-click scan</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">Rolling out shortly</p>
+                  <span className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-muted-foreground bg-foreground/5 px-3 py-1 rounded-full border border-border/60">
+                    <Lock className="w-3 h-3" /> In private beta
                   </span>
                 </div>
-              </motion.button>
+              </button>
             </motion.div>
           )}
 
-          {/* Heads-up note when both methods visible — sets accuracy expectations honestly */}
+          {/* Heads-up note — resume is the only active path */}
           {!method && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -179,8 +189,8 @@ export default function InputMethodStep({ onSubmitLinkedin, onSubmitResume, onSk
               className="mb-6 mx-auto max-w-md text-center"
             >
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                <span className="font-semibold text-foreground">Resume gives the sharpest signal.</span>{' '}
-                LinkedIn works in one click, but profiles are sometimes incomplete or rate-limited — if that happens we'll fall back to industry benchmarks for you.
+                <span className="font-semibold text-foreground">Resume upload gives the sharpest analysis.</span>{' '}
+                LinkedIn scanning is in private beta and rolling out shortly.
               </p>
             </motion.div>
           )}
